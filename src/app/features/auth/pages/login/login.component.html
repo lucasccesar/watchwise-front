@@ -1,0 +1,149 @@
+<section class="login" aria-labelledby="login-title">
+  <div class="login-heading">
+    <h1 id="login-title">{{ copy.title }}</h1>
+    <p>{{ copy.subtitle }}</p>
+  </div>
+
+  <div class="login-card">
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      (input)="clearStatus()"
+      [attr.aria-label]="copy.formLabel"
+      novalidate
+    >
+      <div class="field-group">
+        <label for="login-email">{{ copy.emailLabel }}</label>
+        <input
+          id="login-email"
+          type="email"
+          required
+          formControlName="email"
+          autocomplete="email"
+          inputmode="email"
+          spellcheck="false"
+          [placeholder]="copy.emailPlaceholder"
+          [class.input-invalid]="emailError()"
+          [attr.aria-invalid]="emailError() !== null"
+          [attr.aria-describedby]="emailError() ? 'login-email-error' : null"
+        />
+        @if (emailError(); as error) {
+          <p class="field-error" id="login-email-error">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4m0 4h.01" />
+            </svg>
+            <span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
+      <div class="field-group">
+        <div class="password-label-row">
+          <label for="login-password">{{ copy.passwordLabel }}</label>
+          <a class="text-link" routerLink="/forgot-password">{{ copy.forgotPassword }}</a>
+        </div>
+        <div class="password-field" [class.input-invalid]="passwordError()">
+          <input
+            id="login-password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            required
+            autocomplete="current-password"
+            [placeholder]="copy.passwordPlaceholder"
+            [attr.aria-invalid]="passwordError() !== null"
+            [attr.aria-describedby]="passwordError() ? 'login-password-error' : null"
+          />
+          <button
+            class="password-toggle"
+            type="button"
+            [attr.aria-label]="showPassword() ? copy.hidePassword : copy.showPassword"
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePassword()"
+          >
+            @if (showPassword()) {
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5.1 0 8.5 4.5 9.6 6.3a1.4 1.4 0 0 1 0 1.4 15 15 0 0 1-2.3 2.8M6.2 6.2a16 16 0 0 0-3.8 5.1 1.4 1.4 0 0 0 0 1.4C3.5 14.5 6.9 19 12 19a10 10 0 0 0 4.5-1.1" />
+              </svg>
+            } @else {
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M2.4 12.7a1.4 1.4 0 0 1 0-1.4C3.5 9.5 6.9 5 12 5s8.5 4.5 9.6 6.3a1.4 1.4 0 0 1 0 1.4C20.5 14.5 17.1 19 12 19s-8.5-4.5-9.6-6.3Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            }
+          </button>
+        </div>
+        @if (passwordError(); as error) {
+          <p class="field-error" id="login-password-error">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4m0 4h.01" />
+            </svg>
+            <span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
+      @if (serverError(); as error) {
+        <p class="form-message form-message--error" role="alert">{{ error }}</p>
+      }
+
+      @if (loginSucceeded()) {
+        <p class="form-message form-message--success" role="status">{{ copy.success }}</p>
+      }
+
+      <button class="submit-button" type="submit" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span class="auth-loading-spinner" aria-hidden="true"></span>
+        }
+        {{ isSubmitting() ? copy.submitting : copy.submit }}
+      </button>
+    </form>
+  </div>
+
+  <p class="sign-up-prompt">
+    {{ copy.noAccount }}
+    <a class="text-link" routerLink="/register">{{ copy.signUp }}</a>
+  </p>
+</section>

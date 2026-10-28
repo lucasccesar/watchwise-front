@@ -1,0 +1,101 @@
+:root {
+  color-scheme: dark;
+  --color-text: #f2f7fa;
+  --color-surface: #181818;
+  --color-surface-secondary: #1c1c1c;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-secondary: #30343b;
+  --color-tertiary: #757575;
+  --color-accent: #f59e0b;
+  --color-border: var(--color-secondary);
+  --color-error: #f87171;
+  --color-success: #22c55e;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-display-sm: 30px;
+  --line-height-display-sm: 38px;
+  --font-size-display-xs: 24px;
+  --line-height-display-xs: 32px;
+  --font-size-md: 16px;
+  --line-height-md: 24px;
+  --font-size-sm: 14px;
+  --line-height-sm: 20px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --content-margin: 15%;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 32%);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 36%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--color-surface);
+}
+
+body {
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+a {
+  font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --content-margin: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.auth-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--color-text) 45%, transparent);
+  border-top-color: var(--color-text);
+  border-radius: 50%;
+  animation: auth-spinner-spin 700ms linear infinite;
+}
+
+@keyframes auth-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
