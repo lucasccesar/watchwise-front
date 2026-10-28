@@ -187,10 +187,6 @@ input.input-invalid,
   color: var(--color-error);
 }
 
-.form-message--success {
-  color: var(--color-success);
-}
-
 .submit-button {
   display: inline-flex;
   min-height: 48px;

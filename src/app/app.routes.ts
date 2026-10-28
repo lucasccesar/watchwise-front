@@ -20,6 +20,33 @@ export const routes: Routes = [
             (module) => module.AUTH_ROUTES,
           ),
       },
+      {
+        path: 'home',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: { titleKey: 'homeTitle', messageKey: 'homeMessage' },
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: { titleKey: 'registerTitle', messageKey: 'registerMessage' },
+      },
+      {
+        path: 'forgot-password',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: {
+          titleKey: 'forgotPasswordTitle',
+          messageKey: 'forgotPasswordMessage',
+        },
+      },
     ],
   },
   // /explore remains unassigned for the future public presentation page.

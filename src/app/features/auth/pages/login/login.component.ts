@@ -1,14 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  ViewChild,
+  signal,
+} from '@angular/core';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthApiService } from '../../data-access/auth-api.service';
+import { GoogleIdentityService } from '../../data-access/google-identity.service';
+import { GOOGLE_OAUTH_CLIENT_ID } from '../../auth.config';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 
 @Component({
@@ -18,13 +26,16 @@ import { messageCatalog } from '../../../../shared/i18n/messages';
   styleUrl: './login.component.css',
   templateUrl: './login.component.html',
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
   protected readonly copy = messageCatalog['pt-BR'].auth.login;
+  protected readonly googleClientId = GOOGLE_OAUTH_CLIENT_ID;
   protected readonly showPassword = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly hasSubmitted = signal(false);
   protected readonly serverError = signal<string | null>(null);
-  protected readonly loginSucceeded = signal(false);
+
+  @ViewChild('googleButtonHost')
+  private googleButtonHost?: ElementRef<HTMLDivElement>;
 
   protected readonly form = new FormGroup({
     email: new FormControl('', {
@@ -37,7 +48,24 @@ export class LoginComponent {
     }),
   });
 
-  constructor(private readonly authApi: AuthApiService) {}
+  constructor(
+    private readonly authApi: AuthApiService,
+    private readonly router: Router,
+    private readonly googleIdentity: GoogleIdentityService,
+  ) {}
+
+  ngAfterViewInit(): void {
+    const buttonHost = this.googleButtonHost?.nativeElement;
+    if (!this.googleClientId || !buttonHost) {
+      return;
+    }
+
+    void this.googleIdentity
+      .renderButton(buttonHost, this.googleClientId, (idToken) =>
+        this.authenticateWithGoogle(idToken),
+      )
+      .catch(() => this.serverError.set(this.copy.googleLoadError));
+  }
 
   protected emailError(): string | null {
     const control = this.form.controls.email;
@@ -67,7 +95,6 @@ export class LoginComponent {
 
   protected clearStatus(): void {
     this.serverError.set(null);
-    this.loginSucceeded.set(false);
   }
 
   protected submit(): void {
@@ -90,15 +117,58 @@ export class LoginComponent {
       .login({ identifier: email.trim(), password })
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => this.loginSucceeded.set(true),
-        error: (error: unknown) => this.serverError.set(this.messageFor(error)),
+        next: () => void this.router.navigateByUrl('/home'),
+        error: (error: unknown) => {
+          if (this.isAlreadyAuthenticated(error)) {
+            void this.router.navigateByUrl('/home');
+            return;
+          }
+          this.serverError.set(this.messageFor(error));
+        },
       });
   }
 
-  private messageFor(error: unknown): string {
+  private authenticateWithGoogle(idToken: string): void {
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    this.clearStatus();
+    this.isSubmitting.set(true);
+    this.authApi
+      .loginWithGoogle(idToken)
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: () => void this.router.navigateByUrl('/home'),
+        error: (error: unknown) => {
+          if (this.isAlreadyAuthenticated(error)) {
+            void this.router.navigateByUrl('/home');
+            return;
+          }
+          this.serverError.set(this.messageFor(error, 'google'));
+        },
+      });
+  }
+
+  private isAlreadyAuthenticated(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 409;
+  }
+
+  private messageFor(
+    error: unknown,
+    provider: 'password' | 'google' = 'password',
+  ): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 401) {
-        return this.copy.invalidCredentials;
+        return provider === 'google'
+          ? this.copy.googleAuthError
+          : this.copy.invalidCredentials;
+      }
+      if (error.status === 404 && provider === 'google') {
+        return this.copy.googleAccountNotFound;
+      }
+      if (error.status === 429) {
+        return this.copy.tooManyAttempts;
       }
       if (error.status === 0) {
         return this.copy.connectionError;

@@ -1,3 +1,5 @@
+@import './app/features/auth/auth-shared.css';
+
 :root {
   color-scheme: dark;
   --color-text: #f2f7fa;

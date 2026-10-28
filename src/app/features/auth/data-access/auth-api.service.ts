@@ -7,15 +7,21 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface AuthenticatedUser {
+  id: string;
+  username: string;
+  email: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
   private readonly http = inject(HttpClient);
 
-  login(credentials: LoginRequest): Observable<void> {
-    return this.http.post<void>('/api/v1/auth/login', credentials);
+  login(credentials: LoginRequest): Observable<AuthenticatedUser> {
+    return this.http.post<AuthenticatedUser>('/api/v1/auth/login', credentials);
   }
 
-  loginWithGoogle(token: string): Observable<void> {
-    return this.http.post<void>('/api/v1/auth/oauth/google', { token });
+  loginWithGoogle(token: string): Observable<AuthenticatedUser> {
+    return this.http.post<AuthenticatedUser>('/api/v1/auth/oauth/google', { token });
   }
 }
