@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { routes } from './app.routes';
 
@@ -21,8 +22,19 @@ describe('auth destinations', () => {
     expect(findRoute('home')).toBeDefined();
   });
 
-  it('keeps future signup and recovery links on valid routes', () => {
-    expect(findRoute('register')).toBeDefined();
+  it('loads the signup screen from the registration route', async () => {
+    const signupRoute = findRoute('register');
+    expect(signupRoute).toBeDefined();
+    expect(signupRoute?.data).toBeUndefined();
+
+    const loadComponent = signupRoute?.loadComponent as
+      | (() => Promise<unknown>)
+      | undefined;
+    expect(loadComponent).toBeTypeOf('function');
+    expect(await loadComponent?.()).toHaveProperty('name', 'SignupComponent');
+  });
+
+  it('keeps the future recovery link on a valid route', () => {
     expect(findRoute('forgot-password')).toBeDefined();
   });
 

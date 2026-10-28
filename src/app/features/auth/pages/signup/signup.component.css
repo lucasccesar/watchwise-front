@@ -1,0 +1,65 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+}
+
+.signup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.signup-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.signup-heading h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-display-sm);
+  font-weight: 600;
+  line-height: var(--line-height-display-sm);
+}
+
+.signup-heading p {
+  margin: 0;
+  color: var(--color-tertiary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+}
+
+.signup-card {
+  padding: var(--space-8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.signup form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.signup-heading h1 {
+  letter-spacing: 0;
+}
+
+@media (max-width: 767px) {
+  .signup {
+    gap: var(--space-6);
+  }
+
+  .signup-heading h1 {
+    font-size: var(--font-size-display-xs);
+    line-height: var(--line-height-display-xs);
+  }
+
+  .signup-card {
+    padding: var(--space-6);
+  }
+}

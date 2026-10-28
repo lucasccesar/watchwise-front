@@ -31,10 +31,9 @@ export const routes: Routes = [
       {
         path: 'register',
         loadComponent: () =>
-          import('./shared/route-placeholder/route-placeholder.component').then(
-            (module) => module.RoutePlaceholderComponent,
+          import('./features/auth/pages/signup/signup.component').then(
+            (module) => module.SignupComponent,
           ),
-        data: { titleKey: 'registerTitle', messageKey: 'registerMessage' },
       },
       {
         path: 'forgot-password',
@@ -46,6 +45,22 @@ export const routes: Routes = [
           titleKey: 'forgotPasswordTitle',
           messageKey: 'forgotPasswordMessage',
         },
+      },
+      {
+        path: 'terms',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: { titleKey: 'termsTitle', messageKey: 'termsMessage' },
+      },
+      {
+        path: 'privacy',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: { titleKey: 'privacyTitle', messageKey: 'privacyMessage' },
       },
     ],
   },

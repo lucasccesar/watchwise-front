@@ -1,0 +1,186 @@
+<section class="signup" aria-labelledby="signup-title">
+  <div class="signup-heading">
+    <h1 id="signup-title">{{ copy.title }}</h1>
+    <p>{{ copy.subtitle }}</p>
+  </div>
+
+  <div class="signup-card">
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      (input)="clearStatus()"
+      [attr.aria-label]="copy.formLabel"
+      novalidate
+    >
+      <div class="auth-field-group">
+        <label class="auth-label" for="signup-name">{{ copy.nameLabel }}</label>
+        <input
+          id="signup-name"
+          class="auth-input"
+          type="text"
+          required
+          maxlength="40"
+          autocomplete="name"
+          spellcheck="false"
+          formControlName="name"
+          [placeholder]="copy.namePlaceholder"
+          [class.input-invalid]="nameError()"
+          [attr.aria-invalid]="nameError() !== null"
+          [attr.aria-describedby]="nameError() ? 'signup-name-error' : null"
+        />
+        @if (nameError(); as error) {
+          <p class="auth-field-error" id="signup-name-error">
+            <span aria-hidden="true">!</span><span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
+      <div class="auth-field-group">
+        <label class="auth-label" for="signup-username">{{ copy.usernameLabel }}</label>
+        <div class="auth-username-field" [class.input-invalid]="usernameError()">
+          <span class="auth-username-prefix" aria-hidden="true">@</span>
+          <input
+            id="signup-username"
+            class="auth-input"
+            type="text"
+            required
+            maxlength="20"
+            autocomplete="username"
+            autocapitalize="off"
+            spellcheck="false"
+            formControlName="username"
+            (input)="normalizeUsername($event)"
+            [placeholder]="copy.usernamePlaceholder"
+            [attr.aria-invalid]="usernameError() !== null"
+            [attr.aria-describedby]="usernameError() ? 'signup-username-error' : null"
+          />
+        </div>
+        @if (usernameError(); as error) {
+          <p class="auth-field-error" id="signup-username-error">
+            <span aria-hidden="true">!</span><span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
+      <div class="auth-field-group">
+        <label class="auth-label" for="signup-email">{{ copy.emailLabel }}</label>
+        <input
+          id="signup-email"
+          class="auth-input"
+          type="email"
+          required
+          autocomplete="email"
+          inputmode="email"
+          spellcheck="false"
+          formControlName="email"
+          [placeholder]="copy.emailPlaceholder"
+          [class.input-invalid]="emailError()"
+          [attr.aria-invalid]="emailError() !== null"
+          [attr.aria-describedby]="emailError() ? 'signup-email-error' : null"
+        />
+        @if (emailError(); as error) {
+          <p class="auth-field-error" id="signup-email-error">
+            <span aria-hidden="true">!</span><span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
+      <div class="auth-field-group">
+        <label class="auth-label" for="signup-password">{{ copy.passwordLabel }}</label>
+        <div class="auth-password-field" [class.input-invalid]="passwordError()">
+          <input
+            id="signup-password"
+            class="auth-input"
+            [type]="showPassword() ? 'text' : 'password'"
+            required
+            autocomplete="new-password"
+            formControlName="password"
+            [placeholder]="copy.passwordPlaceholder"
+            [attr.aria-invalid]="passwordError() !== null"
+            [attr.aria-describedby]="passwordError() ? 'signup-password-error' : 'signup-password-hint'"
+          />
+          <button
+            class="auth-password-toggle"
+            type="button"
+            [attr.aria-label]="showPassword() ? copy.hidePassword : copy.showPassword"
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePassword()"
+          >
+            @if (showPassword()) {
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5.1 0 8.5 4.5 9.6 6.3a1.4 1.4 0 0 1 0 1.4 15 15 0 0 1-2.3 2.8M6.2 6.2a16 16 0 0 0-3.8 5.1 1.4 1.4 0 0 0 0 1.4C3.5 14.5 6.9 19 12 19a10 10 0 0 0 4.5-1.1" />
+              </svg>
+            } @else {
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2.4 12.7a1.4 1.4 0 0 1 0-1.4C3.5 9.5 6.9 5 12 5s8.5 4.5 9.6 6.3a1.4 1.4 0 0 1 0 1.4C20.5 14.5 17.1 19 12 19s-8.5-4.5-9.6-6.3Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            }
+          </button>
+        </div>
+        @if (passwordError(); as error) {
+          <p class="auth-field-error" id="signup-password-error">
+            <span aria-hidden="true">!</span><span>{{ error }}</span>
+          </p>
+        } @else {
+          <p class="auth-password-hint" id="signup-password-hint">{{ copy.passwordHint }}</p>
+        }
+      </div>
+
+      <div class="auth-terms">
+        <div class="auth-checkbox-row">
+          <input
+            id="signup-terms"
+            type="checkbox"
+            formControlName="terms"
+            required
+            [attr.aria-invalid]="termsError() !== null"
+            [attr.aria-describedby]="termsError() ? 'signup-terms-error' : null"
+          />
+          <label for="signup-terms">
+            {{ copy.termsPrefix }}
+            <a class="auth-legal-link" routerLink="/terms">{{ copy.termsLink }}</a>
+            {{ copy.termsAnd }}
+            <a class="auth-legal-link" routerLink="/privacy">{{ copy.privacyLink }}</a>
+          </label>
+        </div>
+        @if (termsError(); as error) {
+          <p class="auth-field-error" id="signup-terms-error">
+            <span aria-hidden="true">!</span><span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
+      @if (submitMessage(); as message) {
+        <p class="auth-form-message auth-form-message--info" role="status">{{ message }}</p>
+      }
+
+      <button class="auth-submit-button" type="submit">
+        {{ copy.submit }}
+      </button>
+
+      <div class="auth-divider" role="separator" [attr.aria-label]="copy.or">
+        <span aria-hidden="true"></span>
+        <span>{{ copy.or }}</span>
+        <span aria-hidden="true"></span>
+      </div>
+
+      <button class="google-button" type="button" disabled>
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.46a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.58-5.17 3.58-8.81Z" />
+          <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.9l-3.88-3.02c-1.07.72-2.45 1.15-4.06 1.15-3.13 0-5.78-2.11-6.72-4.95H1.27v3.11A12 12 0 0 0 12 24Z" />
+          <path fill="#FBBC05" d="M5.28 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.38-2.28V6.61H1.27A12 12 0 0 0 0 12c0 1.94.46 3.77 1.27 5.39l4.01-3.11Z" />
+          <path fill="#EA4335" d="M12 4.77c1.76 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.27 6.61l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77Z" />
+        </svg>
+        <span>{{ copy.googleButton }}</span>
+      </button>
+      <p class="google-unavailable">{{ copy.googleUnavailable }}</p>
+    </form>
+  </div>
+
+  <p class="auth-switch-prompt">
+    {{ copy.alreadyAccount }}
+    <a class="auth-link" routerLink="/login">{{ copy.logIn }}</a>
+  </p>
+</section>
