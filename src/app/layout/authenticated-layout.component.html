@@ -56,7 +56,7 @@
           <span class="notification-dot" aria-hidden="true"></span>
         }
       </button>
-      @if (shellState.viewer(); as viewer) {
+      @if (currentViewer; as viewer) {
         @if (isAccountMenuOpen()) {
           <button
             class="account-menu-backdrop"

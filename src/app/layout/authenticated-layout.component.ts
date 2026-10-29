@@ -26,6 +26,10 @@ export class AuthenticatedLayoutComponent {
   protected readonly signOutError = signal<string | null>(null);
   protected readonly shellState = inject(AppShellStateService);
 
+  protected get currentViewer() {
+    return this.shellState.viewer() ?? this.session.user();
+  }
+
   constructor(
     private readonly authApi: AuthApiService,
     private readonly session: AuthSessionService,
