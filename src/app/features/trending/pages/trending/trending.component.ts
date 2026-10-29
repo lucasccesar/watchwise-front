@@ -34,12 +34,12 @@ type Sections = Record<TrendingType, SectionState>;
 const INITIAL_SECTION_SIZE = 12;
 const EXPANDED_SECTION_SIZE = 21;
 
-function emptySection(): SectionState {
+function emptySection(loading = false): SectionState {
   return {
     cards: [],
     page: null,
     visibleCount: INITIAL_SECTION_SIZE,
-    loading: false,
+    loading,
     error: false,
   };
 }
@@ -62,7 +62,10 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly sections = signal<Sections>({ MOVIE: emptySection(), SERIES: emptySection() });
   protected readonly sectionTypes: TrendingType[] = ['MOVIE', 'SERIES'];
   protected readonly periodRange = computed(() => this.formatPeriod(this.period()));
+  protected readonly heroBackdropLoading = signal(true);
+  private readonly heroBackdropFailed = signal(false);
   protected readonly heroBackdropUrl = computed(() => {
+    if (this.heroBackdropFailed()) return null;
     const path = this.sections().MOVIE.cards[0]?.backdropPath;
     return path ? this.tmdbImageUrl(path) : null;
   });
@@ -100,11 +103,14 @@ export class TrendingComponent implements OnInit, OnDestroy {
 
   protected load(): void {
     this.cancelRequests();
-    this.sections.set({ MOVIE: emptySection(), SERIES: emptySection() });
+    this.sections.set({ MOVIE: emptySection(true), SERIES: emptySection(true) });
     this.status.set('loading');
     this.errorMessage.set('');
+    this.heroBackdropFailed.set(false);
+    this.heroBackdropLoading.set(true);
     this.loadRequest = this.api.getTrending(this.period()).subscribe({
       next: (response) => {
+        this.heroBackdropLoading.set(Boolean(response.movies[0]?.backdropPath));
         this.sections.set({
           MOVIE: {
             cards: response.movies,
@@ -125,6 +131,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         if (this.handleSessionError(error)) return;
+        this.heroBackdropLoading.set(false);
         this.errorMessage.set(this.errorFor(error));
         this.status.set('error');
       },
@@ -181,8 +188,18 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected loadingPlaceholders(type: TrendingType): number[] {
     const state = this.section(type);
     if (!state.loading) return [];
-    const count = Math.max(0, EXPANDED_SECTION_SIZE - state.cards.length);
+    const targetCount = this.status() === 'loading' ? INITIAL_SECTION_SIZE : EXPANDED_SECTION_SIZE;
+    const count = Math.max(0, targetCount - state.cards.length);
     return Array.from({ length: count }, (_, index) => index);
+  }
+
+  protected onHeroBackdropLoaded(): void {
+    this.heroBackdropLoading.set(false);
+  }
+
+  protected onHeroBackdropError(): void {
+    this.heroBackdropFailed.set(true);
+    this.heroBackdropLoading.set(false);
   }
 
   protected section(type: TrendingType): SectionState {

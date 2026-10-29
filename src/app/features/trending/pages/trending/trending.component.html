@@ -1,7 +1,17 @@
 <div class="trending-page">
   <section class="tr-hero" aria-labelledby="tr-title">
+    @if (heroBackdropLoading()) {
+      <div class="tr-skeleton tr-hero-skeleton" aria-hidden="true"></div>
+    }
     @if (heroBackdropUrl(); as backdropUrl) {
-      <img class="tr-hero-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" />
+      <img
+        class="tr-hero-backdrop"
+        [src]="backdropUrl"
+        alt=""
+        aria-hidden="true"
+        (load)="onHeroBackdropLoaded()"
+        (error)="onHeroBackdropError()"
+      />
     }
     <div class="tr-hero-content">
       <h1 id="tr-title">{{ copy.title }}</h1>
@@ -44,12 +54,7 @@
     </button>
   </div>
 
-  @if (status() === 'loading') {
-    <div class="tr-page-state" role="status" aria-live="polite">
-      <span class="tr-spinner" aria-hidden="true"></span>
-      <p>{{ copy.loading }}</p>
-    </div>
-  } @else if (status() === 'error') {
+  @if (status() === 'error') {
     <div class="tr-page-state" role="alert">
       <h2>{{ copy.errorTitle }}</h2>
       <p>{{ errorMessage() }}</p>
@@ -72,7 +77,7 @@
             </h2>
           </div>
 
-          @if (visibleCards(type).length > 0) {
+          @if (visibleCards(type).length > 0 || section(type).loading) {
             <ol
               class="tr-grid"
               [class.tr-grid-list]="view() === 'list'"
@@ -172,7 +177,7 @@
                 </li>
               }
             </ol>
-          } @else {
+          } @else if (status() === 'ready') {
             <p class="tr-empty">{{ copy.noTitles }}</p>
           }
           @if (section(type).error) {
