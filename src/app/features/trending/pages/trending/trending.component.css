@@ -311,6 +311,7 @@ app-trending {
   display: grid;
   width: 22px;
   height: 22px;
+  box-sizing: border-box;
   place-items: center;
   border: 2px solid var(--color-surface);
   border-radius: var(--radius-full);
@@ -328,10 +329,11 @@ app-trending {
 }
 .tr-state-marker-watchlist {
   background: var(--color-secondary);
+  color: var(--color-accent);
 }
 .tr-state-marker-watchlist svg {
-  fill: var(--color-accent);
-  stroke: var(--color-accent);
+  fill: currentColor;
+  stroke: currentColor;
   stroke-width: 2;
 }
 .tr-state-marker-dropped {
