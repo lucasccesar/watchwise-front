@@ -330,6 +330,7 @@ app-trending {
   background: var(--color-secondary);
 }
 .tr-state-marker-watchlist svg {
+  fill: var(--color-accent);
   stroke: var(--color-accent);
   stroke-width: 2;
 }

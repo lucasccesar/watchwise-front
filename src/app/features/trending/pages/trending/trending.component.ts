@@ -270,7 +270,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected cardRating(card: TrendingCard): { label: string; value: string } | null {
     const hasCommunityScore = card.communityAverageScore != null;
     const score = card.communityAverageScore ?? card.tmdbVoteAverage;
-    if (score === null) return null;
+    if (score === null || score === undefined) return null;
     return {
       label: hasCommunityScore ? this.footerCopy.communityAverage : this.copy.tmdbRating,
       value: new Intl.NumberFormat('pt-BR', {
@@ -310,8 +310,8 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected stateLabel(card: TrendingCard): string | null {
     const viewer = card.viewerState;
     if (viewer?.watchStatus === 'WATCHED') return this.copy.watched;
-    if (viewer?.watchStatus === 'PARTIALLY_WATCHED') return this.copy.partlyWatched;
     if (viewer?.inWatchlist) return this.copy.inWatchlist;
+    if (viewer?.watchStatus === 'PARTIALLY_WATCHED') return this.copy.partlyWatched;
     if (viewer?.dropped) return this.copy.dropped;
     return null;
   }

@@ -126,8 +126,7 @@
                           class="tr-state-marker"
                           [class.tr-state-marker-watchlist]="
                             card.viewerState?.inWatchlist &&
-                            card.viewerState?.watchStatus !== 'WATCHED' &&
-                            card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
+                            card.viewerState?.watchStatus !== 'WATCHED'
                           "
                           [class.tr-state-marker-dropped]="
                             card.viewerState?.dropped && !card.viewerState?.inWatchlist
@@ -138,8 +137,7 @@
                           <svg viewBox="0 0 24 24" aria-hidden="true">
                             @if (
                               card.viewerState?.inWatchlist &&
-                              card.viewerState?.watchStatus !== 'WATCHED' &&
-                              card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
+                              card.viewerState?.watchStatus !== 'WATCHED'
                             ) {
                               <path d="M5 3h14v18l-7-4-7 4z" />
                             } @else if (card.viewerState?.dropped) {
