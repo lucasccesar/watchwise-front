@@ -28,6 +28,7 @@ export interface HomeContentCard {
   totalRuntimeMinutes: number | null;
   numberOfSeasons: number | null;
   numberOfEpisodes: number | null;
+  tmdbVoteAverage?: number | null;
   genres: string[] | null;
   previewStatus: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE' | null;
 }
@@ -47,6 +48,7 @@ export interface NextEpisode {
   releaseDate: string | null;
   contentId: string | null;
   communityAverageScore: number | null;
+  tmdbVoteAverage: number | null;
   availableToWatch: boolean | null;
 }
 

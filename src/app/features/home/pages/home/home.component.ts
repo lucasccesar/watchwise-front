@@ -169,6 +169,43 @@ export class HomeComponent implements OnInit {
     }).format(value);
   }
 
+  protected nextEpisodeRating(
+    episode: NextEpisode,
+  ): { label: string; value: string } | null {
+    if (this.hasUpcomingRelease(episode.releaseDate)) {
+      return null;
+    }
+
+    const hasCommunityScore = episode.communityAverageScore != null;
+    const score = episode.communityAverageScore ?? episode.tmdbVoteAverage;
+    if (score == null) {
+      return null;
+    }
+
+    return {
+      label: hasCommunityScore ? this.copy.communityAverage : this.copy.tmdbRating,
+      value: this.formatScore(score),
+    };
+  }
+
+  protected recentTmdbRating(
+    entry: HomeRecentlyWatched,
+  ): { label: string; value: string } | null {
+    if (this.hasUpcomingRelease(entry.card?.releaseDate)) {
+      return null;
+    }
+
+    const score = entry.card?.tmdbVoteAverage;
+    if (score == null) {
+      return null;
+    }
+
+    return {
+      label: this.copy.tmdbRating,
+      value: this.formatScore(score),
+    };
+  }
+
   protected toggleContentMenu(event: MouseEvent, menuId: string): void {
     event.stopPropagation();
     this.openContentMenuId.update((openId) =>
@@ -511,6 +548,29 @@ export class HomeComponent implements OnInit {
 
   protected progressPercent(episode: NextEpisode): number {
     return Math.round(Math.max(0, Math.min(100, episode.watchedPercentage ?? 0)));
+  }
+
+  private hasUpcomingRelease(value: string | null | undefined): boolean {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '');
+    if (!match) {
+      return false;
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const release = new Date(year, month - 1, day);
+    if (
+      release.getFullYear() !== year ||
+      release.getMonth() !== month - 1 ||
+      release.getDate() !== day
+    ) {
+      return false;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return release.getTime() > today.getTime();
   }
 
   protected episodeRemainingLabel(episode: NextEpisode): string | null {

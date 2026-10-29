@@ -94,13 +94,13 @@
                 <span class="episode-progress-track" aria-hidden="true">
                   <span [style.width.%]="progressPercent(episode)"></span>
                 </span>
-                @if (episode.communityAverageScore !== null) {
-                  <span class="episode-score" [attr.aria-label]="copy.communityAverage + ': ' + formatScore(episode.communityAverageScore)">
+                @if (nextEpisodeRating(episode); as rating) {
+                  <span class="home-item-rating" [attr.aria-label]="rating.label + ': ' + rating.value">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
                       <path d="m19 3 1.2 2.4 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z" />
                     </svg>
-                    <span>{{ formatScore(episode.communityAverageScore) }}</span>
+                    {{ rating.value }}
                   </span>
                 }
                 @if (episodeRemainingLabel(episode); as remainingLabel) {
@@ -354,6 +354,15 @@
                 }
                 @if (entry.card?.previewStatus === 'PARTIAL') {
                   <span class="preview-status">{{ copy.partialPreview }}</span>
+                }
+                @if (recentTmdbRating(entry); as rating) {
+                  <span class="home-item-rating" [attr.aria-label]="rating.label + ': ' + rating.value">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+                      <path d="m19 3 1.2 2.4 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z" />
+                    </svg>
+                    {{ rating.value }}
+                  </span>
                 }
                 <div class="content-menu-anchor">
                   <button

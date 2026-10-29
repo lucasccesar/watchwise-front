@@ -337,20 +337,23 @@
   background: var(--color-primary);
 }
 
-.episode-score {
+.home-item-rating {
   position: absolute;
+  z-index: 4;
   top: var(--space-2);
-  left: var(--space-2);
+  right: var(--space-2);
   display: inline-flex;
+  min-height: 18px;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2);
+  padding-inline: var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--font-size-xs);
   font-weight: 600;
   line-height: var(--line-height-xs);
+  transition: opacity 150ms ease;
 }
 
 .episode-remaining {
@@ -370,17 +373,17 @@
   white-space: nowrap;
 }
 
-.episode-score svg {
+.home-item-rating svg {
   width: 14px;
   height: 14px;
+  flex: 0 0 auto;
   fill: none;
-  stroke: var(--color-tertiary);
-  stroke-linecap: round;
-  stroke-linejoin: round;
   stroke-width: 1.8;
+  stroke: var(--color-accent);
+  stroke-linejoin: round;
 }
 
-.episode-score svg path:last-child {
+.home-item-rating svg path:last-child {
   fill: var(--color-accent);
   stroke: var(--color-accent);
 }
@@ -435,6 +438,14 @@
   .recent-card:focus-within .content-menu-trigger {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  .episode-card:hover .home-item-rating,
+  .episode-card:focus-within .home-item-rating,
+  .recent-card:hover .home-item-rating,
+  .recent-card:focus-within .home-item-rating {
+    opacity: 0;
+    pointer-events: none;
   }
 }
 
