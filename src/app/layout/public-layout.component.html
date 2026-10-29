@@ -10,7 +10,7 @@
   </main>
 
   <footer class="public-footer">
-    <nav class="public-footer-nav" aria-label="Legal">
+    <nav class="public-footer-nav" [attr.aria-label]="footerCopy.navLabel">
       @for (link of footerLinks; track link.path; let last = $last) {
         <a class="public-footer-link" [routerLink]="link.path">{{ link.label }}</a>
         @if (!last) {

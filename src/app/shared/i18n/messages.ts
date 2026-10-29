@@ -1,5 +1,14 @@
 export const messageCatalog = {
   'pt-BR': {
+    layout: {
+      publicFooter: {
+        navLabel: 'Links legais',
+        terms: 'Termos de Uso',
+        privacy: 'Política de Privacidade',
+        communityGuidelines: 'Diretrizes da comunidade',
+        helpContact: 'Ajuda e contato',
+      },
+    },
     auth: {
       login: {
         title: 'Entre na sua conta',
@@ -99,6 +108,15 @@ export const messageCatalog = {
     },
   },
   en: {
+    layout: {
+      publicFooter: {
+        navLabel: 'Legal links',
+        terms: 'Terms of Use',
+        privacy: 'Privacy',
+        communityGuidelines: 'Community Guidelines',
+        helpContact: 'Help & Contact',
+      },
+    },
     auth: {
       login: {
         title: 'Log in to your account',

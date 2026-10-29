@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { messageCatalog } from '../shared/i18n/messages';
 
 export const PUBLIC_FOOTER_LINKS = [
-  { label: 'Terms of Use', path: '/terms' },
-  { label: 'Privacy', path: '/privacy' },
-  { label: 'Community Guidelines', path: '/community-guidelines' },
-  { label: 'Help & Contact', path: '/help-contact' },
+  { labelKey: 'terms', path: '/terms' },
+  { labelKey: 'privacy', path: '/privacy' },
+  { labelKey: 'communityGuidelines', path: '/community-guidelines' },
+  { labelKey: 'helpContact', path: '/help-contact' },
 ] as const;
 
 @Component({
@@ -16,5 +17,9 @@ export const PUBLIC_FOOTER_LINKS = [
   templateUrl: './public-layout.component.html',
 })
 export class PublicLayoutComponent {
-  protected readonly footerLinks = PUBLIC_FOOTER_LINKS;
+  protected readonly footerCopy = messageCatalog['pt-BR'].layout.publicFooter;
+  protected readonly footerLinks = PUBLIC_FOOTER_LINKS.map((link) => ({
+    path: link.path,
+    label: this.footerCopy[link.labelKey],
+  }));
 }
