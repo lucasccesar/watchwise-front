@@ -295,7 +295,14 @@ app-trending {
   cursor: pointer;
 }
 .tr-show-more span {
-  padding-left: var(--space-2);
+  padding: 0;
+}
+.tr-show-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  line-height: var(--line-height-sm);
 }
 .tr-more-chevron {
   display: block;
@@ -308,6 +315,34 @@ app-trending {
 }
 .tr-more-chevron-up {
   transform: rotate(225deg);
+}
+.tr-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-secondary) 0%,
+    var(--color-secondary) 50%,
+    var(--color-surface-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: tr-skeleton-shimmer 1.2s linear infinite;
+}
+.tr-skeleton-poster {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+}
+.tr-skeleton-title,
+.tr-skeleton-meta {
+  display: block;
+  border-radius: var(--radius-sm);
+}
+.tr-skeleton-title {
+  width: 72%;
+  height: var(--line-height-sm);
+}
+.tr-skeleton-meta {
+  width: 48%;
+  height: var(--line-height-xs);
 }
 .tr-show-more:disabled {
   opacity: 0.65;
@@ -344,6 +379,11 @@ app-trending {
 @keyframes tr-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes tr-skeleton-shimmer {
+  to {
+    background-position: -200% 0;
   }
 }
 .tr-filter-layer {
@@ -559,7 +599,8 @@ app-trending {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tr-spinner {
+  .tr-spinner,
+  .tr-skeleton {
     animation: none;
   }
 }

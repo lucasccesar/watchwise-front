@@ -70,7 +70,11 @@
           </div>
 
           @if (visibleCards(type).length > 0) {
-            <ol class="tr-grid" [class.tr-grid-list]="view() === 'list'">
+            <ol
+              class="tr-grid"
+              [class.tr-grid-list]="view() === 'list'"
+              [attr.aria-busy]="section(type).loading"
+            >
               @for (card of visibleCards(type); track card.tmdbId) {
                 <li class="tr-card">
                   <article [attr.aria-label]="cardTitle(card)">
@@ -132,15 +136,23 @@
                         ><span>{{ cardLength(card) }}</span>
                       </div>
                       <p>{{ cardMeta(card) }}</p>
-                      @if (card.previewStatus === 'PARTIAL') {
-                        <span class="tr-preview-note">{{ copy.partialPreview }}</span>
-                      }
                       @if (card.previewStatus === 'UNAVAILABLE') {
                         <span class="tr-preview-note">{{ copy.unavailablePreview }}</span>
                       }
                       @if (stateLabel(card); as state) {
                         <span class="tr-list-state">{{ state }}</span>
                       }
+                    </div>
+                  </article>
+                </li>
+              }
+              @for (placeholder of loadingPlaceholders(type); track placeholder) {
+                <li class="tr-card tr-card-skeleton" aria-hidden="true">
+                  <article>
+                    <div class="tr-poster tr-skeleton tr-skeleton-poster"></div>
+                    <div class="tr-card-text">
+                      <span class="tr-skeleton tr-skeleton-title"></span>
+                      <span class="tr-skeleton tr-skeleton-meta"></span>
                     </div>
                   </article>
                 </li>
@@ -160,11 +172,13 @@
               (click)="toggleMore(type)"
             >
               {{ moreButtonLabel(type) }}
-              <span
-                class="tr-more-chevron"
-                [class.tr-more-chevron-up]="section(type).visibleCount > 12"
-                aria-hidden="true"
-              ></span>
+              @if (!section(type).loading) {
+                <span
+                  class="tr-more-chevron"
+                  [class.tr-more-chevron-up]="section(type).visibleCount > 12"
+                  aria-hidden="true"
+                ></span>
+              }
             </button>
           }
         </div>

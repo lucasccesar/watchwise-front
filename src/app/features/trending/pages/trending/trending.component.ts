@@ -31,8 +31,17 @@ interface SectionState {
 
 type Sections = Record<TrendingType, SectionState>;
 
+const INITIAL_SECTION_SIZE = 12;
+const EXPANDED_SECTION_SIZE = 21;
+
 function emptySection(): SectionState {
-  return { cards: [], page: null, visibleCount: 12, loading: false, error: false };
+  return {
+    cards: [],
+    page: null,
+    visibleCount: INITIAL_SECTION_SIZE,
+    loading: false,
+    error: false,
+  };
 }
 
 @Component({
@@ -91,14 +100,14 @@ export class TrendingComponent implements OnInit, OnDestroy {
           MOVIE: {
             cards: response.movies,
             page: response.moviesPage,
-            visibleCount: 12,
+            visibleCount: INITIAL_SECTION_SIZE,
             loading: false,
             error: false,
           },
           SERIES: {
             cards: response.series,
             page: response.seriesPage,
-            visibleCount: 12,
+            visibleCount: INITIAL_SECTION_SIZE,
             loading: false,
             error: false,
           },
@@ -160,6 +169,13 @@ export class TrendingComponent implements OnInit, OnDestroy {
     return state.cards.slice(0, state.visibleCount);
   }
 
+  protected loadingPlaceholders(type: TrendingType): number[] {
+    const state = this.section(type);
+    if (!state.loading) return [];
+    const count = Math.max(0, EXPANDED_SECTION_SIZE - state.cards.length);
+    return Array.from({ length: count }, (_, index) => index);
+  }
+
   protected section(type: TrendingType): SectionState {
     return this.sections()[type];
   }
@@ -167,9 +183,9 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected canShowMore(type: TrendingType): boolean {
     const state = this.section(type);
     return (
-      state.visibleCount > 12 ||
+      state.visibleCount > INITIAL_SECTION_SIZE ||
       state.cards.length > state.visibleCount ||
-      (state.page?.size === 12 &&
+      (state.page?.size === INITIAL_SECTION_SIZE &&
         (state.page.totalResults > state.cards.length || state.page.hasNext))
     );
   }
@@ -177,21 +193,21 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected moreButtonLabel(type: TrendingType): string {
     const state = this.section(type);
     if (state.loading) return this.copy.loadingMore;
-    return state.visibleCount > 12 ? this.copy.showFewer : this.copy.showMore;
+    return state.visibleCount > INITIAL_SECTION_SIZE ? this.copy.showFewer : this.copy.showMore;
   }
 
   protected toggleMore(type: TrendingType): void {
     const state = this.section(type);
     if (state.loading) return;
-    if (state.visibleCount > 12) {
-      this.updateSection(type, { visibleCount: 12 });
+    if (state.visibleCount > INITIAL_SECTION_SIZE) {
+      this.updateSection(type, { visibleCount: INITIAL_SECTION_SIZE });
       return;
     }
     if (state.cards.length > state.visibleCount) {
       this.updateSection(type, { visibleCount: state.cards.length });
       return;
     }
-    const firstExpandedPage = state.page?.size === 12;
+    const firstExpandedPage = state.page?.size === INITIAL_SECTION_SIZE;
     const nextPage = firstExpandedPage ? 1 : (state.page?.page ?? 0) + 1;
     if (nextPage > 500 || (!firstExpandedPage && !state.page?.hasNext)) return;
     this.updateSection(type, { loading: true, error: false });
