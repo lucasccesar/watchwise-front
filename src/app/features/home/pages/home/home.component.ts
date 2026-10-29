@@ -49,6 +49,7 @@ const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 })
 export class HomeComponent implements OnInit {
   protected readonly copy = messageCatalog['pt-BR'].home;
+  protected readonly copyrightYear = new Date().getFullYear();
   protected readonly summary = signal<HomeSummary | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
