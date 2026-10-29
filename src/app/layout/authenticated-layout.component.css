@@ -281,6 +281,22 @@
   background: color-mix(in srgb, var(--color-error) 24%, transparent);
 }
 
+.account-menu-item:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.account-menu-feedback {
+  padding: var(--space-1) var(--space-2);
+}
+
+.account-menu-feedback p {
+  margin: 0;
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+}
+
 .header-viewer img {
   display: block;
   width: 100%;

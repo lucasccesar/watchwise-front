@@ -35,4 +35,8 @@ export class AuthApiService {
   register(account: RegisterRequest): Observable<void> {
     return this.http.post<void>('/api/v1/auth/register', account);
   }
+
+  logout(): Observable<void> {
+    return this.http.post<void>('/api/v1/auth/logout', null);
+  }
 }
