@@ -10,8 +10,8 @@ export const messageCatalog = {
       },
     },
     home: {
-      home: 'Home',
-      homeTitle: 'Home',
+      home: 'Início',
+      homeTitle: 'Início',
       homeSubtitle: 'Continue de onde você parou, veja os próximos lançamentos e acompanhe as atividades da comunidade.',
       welcome: 'Pessoa cinéfila',
       welcomeBack: 'Olá',
@@ -43,9 +43,9 @@ export const messageCatalog = {
       picks: 'Escolhas',
       games: 'Jogos',
       navigationNote: 'Outras áreas estarão disponíveis nas próximas etapas.',
-      loadingTitle: 'Preparando sua Home',
+      loadingTitle: 'Preparando sua página inicial',
       loadingDescription: 'Estamos carregando seu resumo e suas atividades.',
-      errorTitle: 'Não foi possível carregar sua Home',
+      errorTitle: 'Não foi possível carregar sua página inicial',
       retry: 'Tentar novamente',
       forbiddenError: 'Este resumo não pode ser exibido para esta conta.',
       notFoundError: 'Não encontramos os dados desta conta.',
@@ -149,7 +149,7 @@ export const messageCatalog = {
       privacy: 'Privacidade',
       communityGuidelines: 'Diretrizes da comunidade',
       helpContact: 'Ajuda e contato',
-      homeFor: 'Home de',
+      homeFor: 'Início de',
     },
     auth: {
       login: {
@@ -232,7 +232,7 @@ export const messageCatalog = {
       },
       routes: {
         homeTitle: 'Sua conta está conectada',
-        homeMessage: 'A Home será incluída em uma próxima etapa do frontend.',
+        homeMessage: 'A página inicial será incluída em uma próxima etapa do frontend.',
         registerTitle: 'Cadastro planejado',
         registerMessage: 'A criação de conta será disponibilizada em uma próxima etapa.',
         forgotPasswordTitle: 'Recuperação planejada',
