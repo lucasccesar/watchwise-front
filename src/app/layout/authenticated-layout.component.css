@@ -563,7 +563,6 @@ a.navigation-link:hover {
 }
 
 @media (max-width: 380px) {
-  .product-header-start .search-button,
   .product-header-actions .icon-button {
     width: 36px;
     height: 40px;

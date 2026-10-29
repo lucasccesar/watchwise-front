@@ -1,0 +1,160 @@
+<div class="search-control" [class.search-control--open]="isOpen()" (keydown.escape)="onEscape($event)">
+  @if (!isOpen()) {
+    <button
+      #searchTrigger
+      class="search-trigger"
+      type="button"
+      [attr.aria-label]="copy.searchOpen"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      (click)="openSearch()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21 17.5 17.5M20 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z" /></svg>
+    </button>
+  } @else {
+    <button
+      class="search-backdrop"
+      type="button"
+      tabindex="-1"
+      [attr.aria-label]="copy.searchClose"
+      (click)="closeSearch()"
+    ></button>
+    <div class="search-layer" role="dialog" aria-modal="true" [attr.aria-label]="copy.search">
+      <form class="search-form" role="search" (submit)="onSubmit($event)">
+        <button class="mobile-search-close" type="button" [attr.aria-label]="copy.searchClose" (click)="closeSearch()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" /></svg>
+        </button>
+        <span class="search-field-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M21 21 17.5 17.5M20 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z" /></svg>
+        </span>
+        <input
+          #searchInput
+          type="search"
+          [value]="query()"
+          [attr.aria-label]="selectedScopePlaceholder"
+          [placeholder]="selectedScopePlaceholder"
+          inputmode="search"
+          enterkeyhint="search"
+          maxlength="100"
+          autocomplete="off"
+          (input)="onQueryInput($any($event.target).value)"
+        />
+        <div class="desktop-scope-picker">
+          <button
+            class="scope-picker-trigger"
+            type="button"
+            aria-haspopup="listbox"
+            [attr.aria-label]="copy.searchScopeLabel + ': ' + selectedScopeLabel"
+            [attr.aria-expanded]="isScopeMenuOpen()"
+            (click)="toggleScopeMenu()"
+          >
+            {{ selectedScopeLabel }}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          @if (isScopeMenuOpen()) {
+            <div class="scope-menu" role="listbox" [attr.aria-label]="copy.searchScopeLabel">
+              @for (scope of searchScopes; track scope.value) {
+                <button
+                  class="scope-option"
+                  type="button"
+                  role="option"
+                  [attr.aria-selected]="selectedScope() === scope.value"
+                  (click)="selectScope(scope.value)"
+                >
+                  <span>{{ scope.label }}</span>
+                  @if (selectedScope() === scope.value) {
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </form>
+
+      <div class="mobile-scope-group">
+        <span class="mobile-scope-label">{{ copy.searchScopeLabel }}</span>
+        <div class="mobile-scope-list" role="group" [attr.aria-label]="copy.searchScopeLabel">
+          @for (scope of searchScopes; track scope.value) {
+            <button
+              type="button"
+              [attr.aria-pressed]="selectedScope() === scope.value"
+              [class.mobile-scope--selected]="selectedScope() === scope.value"
+              (click)="selectScope(scope.value)"
+            >
+              {{ scope.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (showSearchPanel()) {
+        <section class="search-results-panel" aria-live="polite">
+          @if (isLoading()) {
+            <div class="search-skeletons" role="status" [attr.aria-label]="copy.searching">
+              @for (row of [1, 2, 3]; track row) {
+                <div class="search-skeleton search-pulse" aria-hidden="true">
+                  <span class="search-skeleton-image"></span>
+                  <span class="search-skeleton-copy">
+                    <span></span>
+                    <span></span>
+                  </span>
+                </div>
+              }
+            </div>
+          } @else if (errorMessage(); as error) {
+            <p class="search-feedback" role="alert">{{ error }}</p>
+          } @else if (results().length > 0) {
+            @for (result of results(); track result.kind + ':' + result.title + ':' + $index) {
+              <a
+                class="search-result"
+                [routerLink]="['/search']"
+                [queryParams]="resultQueryParams()"
+                (click)="closeSearch(false)"
+              >
+                @if (result.imageUrl) {
+                  <img
+                    class="search-result-image"
+                    [class.search-result-image--poster]="result.imageShape === 'poster'"
+                    [class.search-result-image--avatar]="result.imageShape === 'avatar'"
+                    [class.search-result-image--cover]="result.imageShape === 'cover'"
+                    [src]="result.imageUrl"
+                    alt=""
+                  />
+                } @else if (result.kind === 'person') {
+                  <span class="search-result-avatar-fallback" aria-hidden="true">{{ result.initials }}</span>
+                } @else {
+                  <span class="search-result-icon" aria-hidden="true">
+                    @if (result.kind === 'list') {
+                      <svg viewBox="0 0 24 24"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg>
+                    } @else if (result.kind === 'template') {
+                      <svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m8 4 4 16m4-16 4 16M3 9h18M3 15h18" /></svg>
+                    }
+                  </span>
+                }
+                <span class="search-result-copy">
+                  <span class="search-result-title">{{ result.title }}</span>
+                  <span class="search-result-meta">{{ result.meta }}</span>
+                </span>
+              </a>
+            }
+            <div class="search-results-divider" role="separator"></div>
+            <a
+              class="search-more-link"
+              [routerLink]="['/search']"
+              [queryParams]="resultQueryParams()"
+              (click)="closeSearch(false)"
+            >
+              <span>{{ copy.searchMore.replace('{query}', query().trim()) }}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-7-7m7 7-7 7" /></svg>
+            </a>
+          } @else if (hasSearched()) {
+            <p class="search-feedback">{{ copy.searchNoResults.replace('{query}', query().trim()) }}</p>
+          }
+        </section>
+      }
+    </div>
+  }
+</div>

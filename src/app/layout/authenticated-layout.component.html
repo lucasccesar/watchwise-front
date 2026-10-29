@@ -18,9 +18,7 @@
       <a class="brand" routerLink="/home" [attr.aria-label]="copy.home">
         <img src="/watchwise-logo.svg" alt="Watchwise" width="126" height="24" />
       </a>
-      <button class="icon-button search-button" type="button" aria-disabled="true" [attr.aria-label]="copy.searchUnavailable">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2" /><path d="m16.2 16.2 4.3 4.3" /></svg>
-      </button>
+      <app-header-search (opened)="closeMenusForSearch()" />
     </div>
 
     <nav

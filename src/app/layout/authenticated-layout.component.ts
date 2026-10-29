@@ -9,10 +9,11 @@ import { finalize } from 'rxjs';
 import { AuthSessionService } from '../core/session/session.service';
 import { AppShellStateService } from '../core/ui/app-shell-state.service';
 import { AuthApiService } from '../features/auth/data-access/auth-api.service';
+import { HeaderSearchComponent } from '../features/search-content/components/header-search/header-search.component';
 import { messageCatalog } from '../shared/i18n/messages';
 
 @Component({
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [HeaderSearchComponent, RouterLink, RouterLinkActive, RouterOutlet],
   selector: 'app-authenticated-layout',
   standalone: true,
   templateUrl: './authenticated-layout.component.html',
@@ -38,6 +39,11 @@ export class AuthenticatedLayoutComponent {
 
   protected closeMenu(): void {
     this.isMenuOpen.set(false);
+  }
+
+  protected closeMenusForSearch(): void {
+    this.closeMenu();
+    this.closeAccountMenu();
   }
 
   protected toggleAccountMenu(): void {
