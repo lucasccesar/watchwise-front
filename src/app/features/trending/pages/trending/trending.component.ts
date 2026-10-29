@@ -268,6 +268,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   }
 
   protected cardRating(card: TrendingCard): { label: string; value: string } | null {
+    if (this.isUpcoming(card)) return null;
     const hasCommunityScore = card.communityAverageScore != null;
     const score = card.communityAverageScore ?? card.tmdbVoteAverage;
     if (score === null || score === undefined) return null;
@@ -281,7 +282,43 @@ export class TrendingComponent implements OnInit, OnDestroy {
   }
 
   protected cardMeta(card: TrendingCard): string {
+    const upcoming = this.upcomingRelease(card);
+    if (upcoming) return `${this.copy.releaseDatePrefix} ${upcoming.long}`;
     return [card.year, ...(card.genres ?? []).slice(0, 2)].filter(Boolean).join(' · ');
+  }
+
+  protected isUpcoming(card: TrendingCard): boolean {
+    return this.upcomingRelease(card) !== null;
+  }
+
+  protected upcomingRelease(card: TrendingCard): { short: string; long: string } | null {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(card.releaseDate ?? '');
+    if (!match) return null;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const release = new Date(year, month - 1, day);
+    if (
+      release.getFullYear() !== year ||
+      release.getMonth() !== month - 1 ||
+      release.getDate() !== day
+    ) {
+      return null;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (release.getTime() <= today.getTime()) return null;
+
+    return {
+      short: new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(release),
+      long: new Intl.DateTimeFormat('pt-BR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(release),
+    };
   }
 
   protected cardLength(card: TrendingCard): string {

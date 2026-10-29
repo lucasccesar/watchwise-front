@@ -20,6 +20,7 @@ export interface TrendingCard {
   title: string | null;
   posterUrl: string | null;
   backdropPath: string | null;
+  releaseDate?: string | null;
   communityAverageScore?: number | null;
   year: number | null;
   genres: string[] | null;
