@@ -145,6 +145,7 @@ export const messageCatalog = {
       privacy: 'Privacidade',
       communityGuidelines: 'Diretrizes da comunidade',
       helpContact: 'Ajuda e contato',
+      copyright: '© 2024 Watchwise',
       homeFor: 'Home de',
     },
     auth: {
@@ -391,6 +392,7 @@ export const messageCatalog = {
       privacy: 'Privacy',
       communityGuidelines: 'Community guidelines',
       helpContact: 'Help & contact',
+      copyright: '© 2024 Watchwise',
       homeFor: 'Home for',
     },
     auth: {
