@@ -317,10 +317,16 @@
   right: 0;
   bottom: 0;
   left: 0;
-  height: 4px;
+  height: 6px;
   overflow: hidden;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   background: var(--color-secondary);
+}
+
+@media (max-width: 599px) {
+  .episode-progress-track {
+    height: 4px;
+  }
 }
 
 .episode-progress-track > span {
