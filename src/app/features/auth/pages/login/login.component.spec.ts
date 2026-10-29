@@ -2,6 +2,7 @@ import '@angular/compiler';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
+import { messageCatalog } from '../../../../shared/i18n/messages';
 import { LoginComponent } from './login.component';
 
 describe('LoginComponent API errors', () => {
@@ -85,5 +86,12 @@ describe('LoginComponent API errors', () => {
       identifier: 'user@example.com',
       password: 'valid-password',
     });
+  });
+
+  it('uses the prototype copy for the 30-day checkbox without extra helper text', () => {
+    const loginCopy = messageCatalog['pt-BR'].auth.login;
+
+    expect(loginCopy.rememberLabel).toBe('Keep me logged in for 30 days');
+    expect('rememberNote' in loginCopy).toBe(false);
   });
 });
