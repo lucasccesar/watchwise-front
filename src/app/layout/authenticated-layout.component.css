@@ -169,6 +169,22 @@
   padding: var(--space-2);
 }
 
+.account-menu-viewer-button {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-menu-viewer-button:hover,
+.account-menu-viewer-button:focus-visible {
+  background: var(--color-secondary);
+}
+
 .account-menu-avatar {
   display: grid;
   width: 40px;
@@ -223,6 +239,7 @@
 
 .account-menu-item {
   display: flex;
+  width: 100%;
   min-height: 40px;
   align-items: center;
   gap: var(--space-3);
@@ -235,6 +252,7 @@
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   text-align: left;
+  cursor: pointer;
 }
 
 .account-menu-item svg {
@@ -248,20 +266,19 @@
   stroke-width: 2;
 }
 
-.account-menu-item:disabled {
-  color: var(--color-tertiary);
-  cursor: default;
+.account-menu-item:hover,
+.account-menu-item:focus-visible {
+  background: var(--color-secondary);
 }
 
-.account-menu-item--danger:disabled {
+.account-menu-item--danger {
   color: var(--color-error);
+  font-weight: 600;
 }
 
-.account-menu-note {
-  margin: var(--space-2) var(--space-2) var(--space-1);
-  color: var(--color-tertiary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-xs);
+.account-menu-item--danger:hover,
+.account-menu-item--danger:focus-visible {
+  background: color-mix(in srgb, var(--color-error) 24%, transparent);
 }
 
 .header-viewer img,

@@ -87,12 +87,11 @@
           </button>
           @if (isAccountMenuOpen()) {
             <div class="account-menu" id="account-menu" role="menu" [attr.aria-label]="copy.accountMenu">
-              <div
-                class="account-menu-viewer"
+              <button
+                class="account-menu-viewer account-menu-viewer-button"
+                type="button"
                 role="menuitem"
-                aria-disabled="true"
-                tabindex="-1"
-                [attr.aria-label]="(viewer.name || viewer.username || copy.welcome) + (viewer.username ? ', @' + viewer.username : '') + ' — ' + copy.profile"
+                (click)="closeAccountMenu()"
               >
                 <span class="account-menu-avatar" aria-hidden="true">
                   @if (viewer.profilePicture) {
@@ -107,43 +106,42 @@
                     <span>@{{ viewer.username }}</span>
                   }
                 </span>
-              </div>
+              </button>
               <div class="account-menu-divider" role="separator"></div>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5H7.5C6.104 15.5 5.407 15.5 4.839 15.672C3.56 16.06 2.56 17.061 2.172 18.339C2 18.907 2 19.604 2 21M19 21V15M16 18H22M14.5 7.5C14.5 9.985 12.485 12 10 12C7.515 12 5.5 9.985 5.5 7.5C5.5 5.015 7.515 3 10 3C12.485 3 14.5 5.015 14.5 7.5Z" /></svg>
                 {{ copy.followerRequests }}
               </button>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 14v3m5-8v8m5-12v12" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M12 20V4M20 20V14" /></svg>
                 {{ copy.progress }}
               </button>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3H21V21H3ZM3 9H21M3 15H21M9 3V21M15 3V21" /></svg>
                 {{ copy.episodeRatingsMap }}
               </button>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3m13-8v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1 4 21 4.9 21 6V20C21 21.1 20.1 22 19 22H5C3.9 22 3 21.1 3 20V6C3 4.9 3.9 4 5 4Z" /></svg>
                 {{ copy.monthReview }}
               </button>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 2v4m8-4v4M4 9h16" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg>
                 {{ copy.yearReview }}
               </button>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 14v3m5-8v8m5-12v12" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3V21H21M7 15L11 11L14 14L20 8" /></svg>
                 {{ copy.allTimeStats }}
               </button>
               <div class="account-menu-divider" role="separator"></div>
-              <button class="account-menu-item" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M15 4v4M8 10v4m9 2v4" /></svg>
+              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6H20M4 12H20M4 18H20M15 4V8M8 10V14M17 16V20" /></svg>
                 {{ copy.settings }}
               </button>
               <div class="account-menu-divider" role="separator"></div>
-              <button class="account-menu-item account-menu-item--danger" type="button" role="menuitem" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9" /></svg>
+              <button class="account-menu-item account-menu-item--danger" type="button" role="menuitem" (click)="closeAccountMenu()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H9M16 17L21 12L16 7M21 12H9" /></svg>
                 {{ copy.signOut }}
               </button>
-              <p class="account-menu-note">{{ copy.menuOptionsUnavailable }}</p>
             </div>
           }
         </div>
