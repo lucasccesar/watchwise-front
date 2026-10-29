@@ -243,12 +243,8 @@ export class HomeComponent implements OnInit {
   }
 
   protected heroBackdrop(): string | null {
-    const summary = this.summary();
-    const latestWatch = summary?.recentlyWatched[0];
-    if (!summary?.latestWatchedBackdropPath || latestWatch?.content.type !== 'MOVIE') {
-      return null;
-    }
-    return this.imageUrl(summary.latestWatchedBackdropPath, 'w1920');
+    const path = this.summary()?.latestWatchedBackdropPath;
+    return path ? this.imageUrl(path, 'w1920') : null;
   }
 
   protected recentEpisodeRuntime(entry: HomeRecentlyWatched): string {
