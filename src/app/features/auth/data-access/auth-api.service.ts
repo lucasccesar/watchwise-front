@@ -1,9 +1,16 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 export interface LoginRequest {
   identifier: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  name: string;
+  email: string;
   password: string;
 }
 
@@ -15,7 +22,7 @@ export interface AuthenticatedUser {
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
-  private readonly http = inject(HttpClient);
+  constructor(private readonly http: HttpClient) {}
 
   login(credentials: LoginRequest): Observable<AuthenticatedUser> {
     return this.http.post<AuthenticatedUser>('/api/v1/auth/login', credentials);
@@ -23,5 +30,9 @@ export class AuthApiService {
 
   loginWithGoogle(token: string): Observable<AuthenticatedUser> {
     return this.http.post<AuthenticatedUser>('/api/v1/auth/oauth/google', { token });
+  }
+
+  register(account: RegisterRequest): Observable<void> {
+    return this.http.post<void>('/api/v1/auth/register', account);
   }
 }

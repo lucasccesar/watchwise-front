@@ -135,6 +135,10 @@
   color: var(--color-error);
 }
 
+.auth-form-message--success {
+  color: var(--color-success);
+}
+
 .auth-form-message--info {
   color: var(--color-tertiary);
 }
