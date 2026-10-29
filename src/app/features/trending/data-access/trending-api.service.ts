@@ -19,6 +19,7 @@ export interface TrendingCard {
   type: TrendingType;
   title: string | null;
   posterUrl: string | null;
+  backdropPath: string | null;
   year: number | null;
   genres: string[] | null;
   tmdbVoteAverage: number | null;

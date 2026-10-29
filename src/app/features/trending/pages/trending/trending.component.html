@@ -1,5 +1,8 @@
 <div class="trending-page">
   <section class="tr-hero" aria-labelledby="tr-title">
+    @if (heroBackdropUrl(); as backdropUrl) {
+      <img class="tr-hero-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" />
+    }
     <div class="tr-hero-content">
       <h1 id="tr-title">{{ copy.title }}</h1>
       <p class="tr-hero-date">

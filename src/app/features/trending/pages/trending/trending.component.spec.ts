@@ -17,6 +17,7 @@ const movie = (index: number): TrendingCard => ({
   type: 'MOVIE',
   title: `Movie ${index}`,
   posterUrl: null,
+  backdropPath: null,
   year: 2026,
   genres: [],
   tmdbVoteAverage: null,

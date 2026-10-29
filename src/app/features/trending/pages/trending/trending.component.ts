@@ -62,10 +62,19 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly sections = signal<Sections>({ MOVIE: emptySection(), SERIES: emptySection() });
   protected readonly sectionTypes: TrendingType[] = ['MOVIE', 'SERIES'];
   protected readonly periodRange = computed(() => this.formatPeriod(this.period()));
+  protected readonly heroBackdropUrl = computed(() => {
+    const path = this.sections().MOVIE.cards[0]?.backdropPath;
+    return path ? this.tmdbImageUrl(path) : null;
+  });
 
   private loadRequest?: Subscription;
   private readonly sectionRequests: Partial<Record<TrendingType, Subscription>> = {};
   private filterOpener: HTMLElement | null = null;
+
+  private tmdbImageUrl(path: string): string {
+    if (/^https?:\/\//i.test(path)) return path;
+    return `https://image.tmdb.org/t/p/w1920${path.startsWith('/') ? path : `/${path}`}`;
+  }
 
   @ViewChild('filterCloseButton')
   protected set filterCloseButton(button: ElementRef<HTMLButtonElement> | undefined) {
