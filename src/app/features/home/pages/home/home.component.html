@@ -16,8 +16,10 @@
   } @else if (summary(); as data) {
     <section class="home-hero" aria-labelledby="home-title">
       <div class="home-hero-content">
-        <h1 id="home-title">{{ copy.homeTitle }}</h1>
-        <p class="home-hero-date"><span>{{ heroDate() }}</span></p>
+        <div class="home-hero-heading">
+          <h1 id="home-title">{{ copy.homeTitle }}</h1>
+          <p class="home-hero-date"><span>{{ heroDate() }}</span></p>
+        </div>
         <p class="home-hero-description">{{ copy.homeSubtitle }}</p>
       </div>
     </section>
@@ -242,13 +244,19 @@
         <p>{{ watchActivitySummary() }}</p>
       </div>
       @if (hasWatchHistory()) {
-        <div class="daily-chart" role="group" [attr.aria-label]="copy.watchActivity">
-          @for (day of chartDays(); track trackByDate($index, day)) {
-            <div class="chart-day" role="img" [attr.aria-label]="day.description + ': ' + formatNumber(day.count) + ' ' + copy.episodesWatched">
-              <span class="chart-column" aria-hidden="true"><span class="chart-bar" [style.height.%]="day.height"></span></span>
-              <span class="chart-label">{{ day.label }}</span>
-            </div>
-          }
+        <div class="history-chart">
+          <div class="daily-chart" role="group" [attr.aria-label]="copy.watchActivity">
+            @for (day of chartDays(); track trackByDate($index, day)) {
+              <div class="chart-column" role="img" [attr.aria-label]="day.description + ': ' + formatNumber(day.count) + ' ' + copy.episodesWatched">
+                <span class="chart-bar" aria-hidden="true" [style.height.%]="day.height"></span>
+              </div>
+            }
+          </div>
+          <div class="chart-labels" aria-hidden="true">
+            @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
+              <span class="chart-label">{{ index + 1 }}</span>
+            }
+          </div>
         </div>
       } @else {
         <p class="empty-chart">{{ copy.noHistory }}</p>
@@ -258,16 +266,17 @@
         @if (genreBreakdown().length > 0) {
           <ol class="genre-breakdown">
             @for (genre of genreBreakdown(); track genre.genre; let index = $index) {
-              <li class="genre-item" [class.genre-item--lower]="index % 2 === 1" [style.--genre-weight]="genre.weight">
+              <li class="genre-item" [class.genre-item--lower]="index % 2 === 1" [style.--genre-weight]="genre.weight" [style.--genre-color]="genreColorToken(index)">
                 <div class="genre-item-label">
                   <strong>{{ genre.genre }}</strong>
-                  <span>
-                    @if (genre.episodes > 0) { {{ formatNumber(genre.episodes) }} {{ copy.episodesShortLabel }} }
-                    @if (genre.episodes > 0 && genre.movies > 0) { <span aria-hidden="true"> · </span> }
-                    @if (genre.movies > 0) { {{ formatNumber(genre.movies) }} {{ copy.moviesShortLabel }} }
-                  </span>
+                  @if (genre.episodes > 0) {
+                    <span>{{ formatNumber(genre.episodes) }} {{ copy.episodesShortLabel }}</span>
+                  }
+                  @if (genre.movies > 0) {
+                    <span>{{ formatNumber(genre.movies) }} {{ copy.moviesShortLabel }}</span>
+                  }
                 </div>
-                <span class="genre-color-bar" [class]="genreColorClass(index)" aria-hidden="true"></span>
+                <span class="genre-color-bar" aria-hidden="true"></span>
               </li>
             }
           </ol>
@@ -325,17 +334,31 @@
               </div>
               <div class="recent-card-copy">
                 <div class="recent-title-row">
-                  <strong>{{ entry.card?.title || copy.titleUnavailable }}</strong>
-                  @if (entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) {
-                    <span>{{ episodeLabelForEntry(entry) }}</span>
-                  } @else if (entry.card?.runtimeMinutes) {
-                    <span>{{ formatRuntime(entry.card?.runtimeMinutes) }}</span>
+                  @if (entry.content.type === 'EPISODE') {
+                    @if (recentSeriesTitle(entry); as seriesTitle) {
+                      <strong>{{ seriesTitle }}</strong>
+                    }
+                    @if (episodeLabelForEntry(entry); as episodeLabel) {
+                      <span>{{ episodeLabel }}</span>
+                    }
+                  } @else {
+                    <strong>{{ entry.card?.title || copy.titleUnavailable }}</strong>
+                    @if (recentRuntime(entry); as runtime) {
+                      <span>{{ formatRuntime(runtime) }}</span>
+                    }
                   }
                 </div>
                 <div class="recent-subtitle-row">
-                  <span>{{ recentSubtitle(entry) }}</span>
-                  @if (entry.card?.releaseYear) {
-                    <span>{{ entry.card?.releaseYear }}</span>
+                  @if (entry.content.type === 'EPISODE') {
+                    <span>{{ entry.card?.title || copy.titleUnavailable }}</span>
+                    @if (recentRuntime(entry); as runtime) {
+                      <span>{{ formatRuntime(runtime) }}</span>
+                    }
+                  } @else {
+                    <span>{{ recentSubtitle(entry) }}</span>
+                    @if (entry.card?.releaseYear) {
+                      <span>{{ entry.card?.releaseYear }}</span>
+                    }
                   }
                 </div>
               </div>

@@ -32,6 +32,13 @@
   gap: var(--space-4);
 }
 
+.home-hero-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .home-hero h1 {
   display: flex;
   flex-direction: column;
@@ -64,10 +71,10 @@
 }
 
 .home-hero-description {
-  max-width: 520px;
+  max-width: 480px;
   margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-sm);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
 }
 
 .stats-section {
@@ -109,6 +116,7 @@
 .stat-label {
   color: var(--color-tertiary);
   font-size: var(--font-size-xs);
+  font-weight: 600;
   line-height: var(--line-height-xs);
 }
 
@@ -346,25 +354,29 @@
   gap: var(--space-1);
   padding: 0 8px 0 6px;
   transform: translate(-50%, -50%);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-secondary);
-  color: var(--color-text);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-surface);
+  color: var(--color-primary);
   font-size: var(--font-size-xs);
   font-weight: 600;
+  font-family: inherit;
   line-height: var(--line-height-xs);
   opacity: 0;
   pointer-events: none;
+  transition: opacity 150ms ease;
+  white-space: nowrap;
 }
 
 .mark-watched-button svg {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2;
+  stroke-width: 3;
 }
 
 .episode-card:focus-within .mark-watched-button,
@@ -687,23 +699,25 @@
 
 .history-heading > p {
   margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-sm);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
 }
 
-.daily-chart {
+.history-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.daily-chart,
+.chart-labels {
   display: grid;
   grid-template-columns: repeat(30, minmax(0, 1fr));
   gap: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
 }
 
-.chart-day {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
+.daily-chart {
+  border-bottom: 1px solid var(--color-border);
 }
 
 .chart-column {
@@ -726,13 +740,14 @@
   color: var(--color-tertiary);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
+  text-align: center;
 }
 
 .genre-section {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding-top: var(--space-1);
+  padding-top: var(--space-2);
 }
 
 .genre-section h3 {
@@ -748,14 +763,13 @@
   align-items: stretch;
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid var(--color-border);
   list-style: none;
 }
 
 .genre-item {
   position: relative;
   min-width: 0;
-  height: 104px;
+  height: 148px;
   flex: var(--genre-weight) 1 0;
 }
 
@@ -764,24 +778,18 @@
   top: 0;
   left: 0;
   display: flex;
-  max-width: 100%;
   flex-direction: column;
-  gap: 2px;
   padding: var(--space-1) var(--space-2);
-  overflow: hidden;
+  border-left: 4px solid var(--genre-color);
+  overflow: visible;
   background: var(--color-secondary);
+  white-space: nowrap;
+  z-index: 1;
 }
 
 .genre-item--lower .genre-item-label {
   top: auto;
   bottom: 0;
-}
-
-.genre-item-label strong,
-.genre-item-label > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .genre-item-label strong {
@@ -799,17 +807,11 @@
 .genre-color-bar {
   position: absolute;
   right: 0;
-  bottom: 48px;
+  bottom: 62px;
   left: 0;
-  height: 6px;
+  height: 24px;
+  background: var(--genre-color);
 }
-
-.genre-color-1 { background: var(--color-chartb-1); }
-.genre-color-2 { background: var(--color-chartb-2); }
-.genre-color-3 { background: var(--color-chartb-3); }
-.genre-color-4 { background: var(--color-chartb-4); }
-.genre-color-5 { background: var(--color-chartb-5); }
-.genre-color-6 { background: var(--color-chartb-6); }
 
 .recent-list {
   display: grid;
@@ -1053,9 +1055,9 @@
 .social-content-copy h3 {
   overflow: hidden;
   margin: 0;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   font-weight: 600;
-  line-height: var(--line-height-md);
+  line-height: var(--line-height-lg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1591,5 +1593,9 @@
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
     animation-duration: 0.01ms;
+  }
+
+  .mark-watched-button {
+    transition: none;
   }
 }

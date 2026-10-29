@@ -18,7 +18,6 @@ import {
 
 interface ChartDay {
   date: string;
-  label: string;
   count: number;
   height: number;
   description: string;
@@ -39,6 +38,7 @@ interface UpcomingDateGroup {
 }
 
 type HomeStatus = 'loading' | 'ready' | 'error';
+const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
 @Component({
   imports: [RouterLink],
@@ -219,6 +219,22 @@ export class HomeComponent implements OnInit {
     return `${this.copy.seasonShort}${season} · ${this.copy.episodeShort}${episode}`;
   }
 
+  protected recentSeriesTitle(entry: HomeRecentlyWatched): string | null {
+    if (entry.content.type !== 'EPISODE' || !entry.content.seriesTmdbId) {
+      return null;
+    }
+    const summary = this.summary();
+    return summary?.nextEpisodes.find(
+      (episode) => episode.seriesTmdbId === entry.content.seriesTmdbId,
+    )?.seriesTitle ?? summary?.upcomingReleases.find(
+      (release) => release.content.seriesTmdbId === entry.content.seriesTmdbId,
+    )?.content.seriesTitle ?? null;
+  }
+
+  protected recentRuntime(entry: HomeRecentlyWatched): number | null {
+    return entry.card?.runtimeMinutes ?? entry.content.runtimeMinutes;
+  }
+
   protected recentSubtitle(entry: HomeRecentlyWatched): string {
     const firstGenre = entry.card?.genres?.[0];
     if (firstGenre) {
@@ -375,8 +391,8 @@ export class HomeComponent implements OnInit {
     return `${release.eventType}-${release.date}-${release.content.tmdbId ?? ''}-${release.content.seasonNumber ?? ''}-${release.content.episodeNumber ?? ''}`;
   }
 
-  protected genreColorClass(index: number): string {
-    return `genre-color-${(index % 6) + 1}`;
+  protected genreColorToken(index: number): string {
+    return `var(--color-chartb-${GENRE_CHART_COLOR_ORDER[index % GENRE_CHART_COLOR_ORDER.length]})`;
   }
 
   private parseDate(value: string | null | undefined): Date | null {
@@ -398,14 +414,12 @@ export class HomeComponent implements OnInit {
     const maximum = Math.max(1, ...dates.map(({ iso }) => counts.get(iso) ?? 0));
     return dates.map(({ iso, date }) => {
       const count = counts.get(iso) ?? 0;
-      const label = String(date.getUTCDate());
       const description = new Intl.DateTimeFormat('pt-BR', {
         dateStyle: 'long',
         timeZone: 'UTC',
       }).format(date);
       return {
         date: iso,
-        label,
         count,
         height: count === 0 ? 0 : Math.max(8, Math.round((count / maximum) * 100)),
         description,
