@@ -59,7 +59,7 @@ label {
   line-height: var(--line-height-sm);
 }
 
-input {
+input:not([type='checkbox']) {
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -80,9 +80,13 @@ input::placeholder {
   opacity: 1;
 }
 
-input:focus {
+input:not([type='checkbox']):focus {
   border-color: var(--color-primary);
   outline: 2px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.login .auth-checkbox-row label {
+  font-weight: 400;
 }
 
 input.input-invalid,
