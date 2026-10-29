@@ -38,6 +38,17 @@ describe('auth destinations', () => {
     expect(findRoute('forgot-password')).toBeDefined();
   });
 
+  it('provides valid placeholder routes for every login footer link', () => {
+    for (const path of [
+      'terms',
+      'privacy',
+      'community-guidelines',
+      'help-contact',
+    ]) {
+      expect(findRoute(path), `missing footer destination: /${path}`).toBeDefined();
+    }
+  });
+
   it('leaves the future public presentation route unassigned', () => {
     expect(findRoute('explore')).toBeUndefined();
   });

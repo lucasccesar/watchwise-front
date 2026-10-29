@@ -10,6 +10,13 @@
   </main>
 
   <footer class="public-footer">
-    <span>Watchwise</span>
+    <nav class="public-footer-nav" aria-label="Legal">
+      @for (link of footerLinks; track link.path; let last = $last) {
+        <a class="public-footer-link" [routerLink]="link.path">{{ link.label }}</a>
+        @if (!last) {
+          <span class="public-footer-separator" aria-hidden="true">·</span>
+        }
+      }
+    </nav>
   </footer>
 </div>

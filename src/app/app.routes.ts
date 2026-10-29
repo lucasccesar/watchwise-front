@@ -62,6 +62,25 @@ export const routes: Routes = [
           ),
         data: { titleKey: 'privacyTitle', messageKey: 'privacyMessage' },
       },
+      {
+        path: 'community-guidelines',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: {
+          titleKey: 'communityGuidelinesTitle',
+          messageKey: 'communityGuidelinesMessage',
+        },
+      },
+      {
+        path: 'help-contact',
+        loadComponent: () =>
+          import('./shared/route-placeholder/route-placeholder.component').then(
+            (module) => module.RoutePlaceholderComponent,
+          ),
+        data: { titleKey: 'helpContactTitle', messageKey: 'helpContactMessage' },
+      },
     ],
   },
   // /explore remains unassigned for the future public presentation page.
