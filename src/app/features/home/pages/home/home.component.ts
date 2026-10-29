@@ -18,6 +18,7 @@ import {
 
 interface ChartDay {
   date: string;
+  label: string;
   count: number;
   height: number;
   description: string;
@@ -219,6 +220,14 @@ export class HomeComponent implements OnInit {
     return `${this.copy.seasonShort}${season} · ${this.copy.episodeShort}${episode}`;
   }
 
+  protected heroImage(entry: HomeRecentlyWatched): string | null {
+    return this.recentPoster(entry);
+  }
+
+  protected recentPoster(entry: HomeRecentlyWatched): string | null {
+    return this.imageUrl(entry.customPosterUrl) ?? this.posterFor(entry.card);
+  }
+
   protected recentSeriesTitle(entry: HomeRecentlyWatched): string | null {
     if (entry.content.type !== 'EPISODE' || !entry.content.seriesTmdbId) {
       return null;
@@ -228,7 +237,23 @@ export class HomeComponent implements OnInit {
       (episode) => episode.seriesTmdbId === entry.content.seriesTmdbId,
     )?.seriesTitle ?? summary?.upcomingReleases.find(
       (release) => release.content.seriesTmdbId === entry.content.seriesTmdbId,
-    )?.content.seriesTitle ?? null;
+    )?.content.seriesTitle ?? summary?.socialActivities.find(
+      (activity) =>
+        activity.content?.seriesTmdbId === entry.content.seriesTmdbId &&
+        activity.card?.type === 'SERIES',
+    )?.card?.title ?? null;
+  }
+
+  protected recentPrimaryTitle(entry: HomeRecentlyWatched): string {
+    return this.recentSeriesTitle(entry) ?? entry.card?.title ?? this.copy.titleUnavailable;
+  }
+
+  protected recentSecondaryTitle(entry: HomeRecentlyWatched): string {
+    const seriesTitle = this.recentSeriesTitle(entry);
+    if (seriesTitle && entry.card?.title && seriesTitle !== entry.card.title) {
+      return entry.card.title;
+    }
+    return this.episodeLabelForEntry(entry) || this.copy.episode;
   }
 
   protected recentRuntime(entry: HomeRecentlyWatched): number | null {
@@ -420,6 +445,7 @@ export class HomeComponent implements OnInit {
       }).format(date);
       return {
         date: iso,
+        label: String(date.getUTCDate()),
         count,
         height: count === 0 ? 0 : Math.max(8, Math.round((count / maximum) * 100)),
         description,

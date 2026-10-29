@@ -12,9 +12,11 @@ import { messageCatalog } from '../shared/i18n/messages';
 export class AuthenticatedLayoutComponent {
   protected readonly copy = messageCatalog['pt-BR'].home;
   protected readonly isMenuOpen = signal(false);
+  protected readonly isAccountMenuOpen = signal(false);
   protected readonly shellState = inject(AppShellStateService);
 
   protected toggleMenu(): void {
+    this.closeAccountMenu();
     this.isMenuOpen.update((open) => !open);
   }
 
@@ -22,8 +24,18 @@ export class AuthenticatedLayoutComponent {
     this.isMenuOpen.set(false);
   }
 
-  @HostListener('document:keydown.escape')
-  protected closeMenuOnEscape(): void {
+  protected toggleAccountMenu(): void {
     this.closeMenu();
+    this.isAccountMenuOpen.update((open) => !open);
+  }
+
+  protected closeAccountMenu(): void {
+    this.isAccountMenuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeMenusOnEscape(): void {
+    this.closeMenu();
+    this.closeAccountMenu();
   }
 }
