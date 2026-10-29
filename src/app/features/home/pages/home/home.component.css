@@ -966,6 +966,22 @@
   stroke-linejoin: round;
 }
 
+.recent-score--action {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.recent-score--action:hover {
+  background: var(--color-surface-secondary);
+}
+
+.recent-score--action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .preview-status {
   top: var(--space-2);
   left: var(--space-2);

@@ -388,24 +388,29 @@
                   </div>
                 }
                 <span class="recent-date">{{ formatLongDate(entry.watchedDate) }}</span>
-                <span
-                  class="recent-score"
-                  [class.recent-score--unrated]="entry.score === null"
-                  [attr.aria-label]="
-                    entry.score === null
-                      ? copy.rate
-                      : copy.score + ': ' + formatScore(entry.score)
-                  "
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
-                  </svg>
-                  @if (entry.score === null) {
+                @if (entry.score === null) {
+                  <button
+                    class="recent-score recent-score--unrated recent-score--action"
+                    type="button"
+                    [attr.aria-label]="copy.rate"
+                    (click)="openRatingModal(entry)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
+                    </svg>
                     {{ copy.rate }}
-                  } @else {
+                  </button>
+                } @else {
+                  <span
+                    class="recent-score"
+                    [attr.aria-label]="copy.score + ': ' + formatScore(entry.score)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
+                    </svg>
                     {{ formatScore(entry.score) }}
-                  }
-                </span>
+                  </span>
+                }
               </div>
               <div class="recent-card-copy">
                 <div
@@ -551,7 +556,7 @@
         >
           <header class="watch-log-header">
             <div>
-              <h2 id="watch-log-title">{{ copy.markWatched }}</h2>
+              <h2 id="watch-log-title">{{ target.kind === 'rating' ? copy.rate : copy.markWatched }}</h2>
               <span>{{ target.title }}<span aria-hidden="true"> · </span>{{ target.subtitle }}</span>
             </div>
             <button
@@ -566,7 +571,8 @@
             </button>
           </header>
 
-          <div class="watch-log-controls">
+          @if (target.kind === 'watch') {
+            <div class="watch-log-controls">
             <div class="watch-date-picker">
               <button
                 class="watch-date-trigger"
@@ -623,18 +629,19 @@
               <input type="checkbox" [checked]="watchLogRewatch()" (change)="setWatchLogRewatch($event)" />
               {{ copy.watchedBefore }}
             </label>
-          </div>
-
-          <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
-            <span>{{ copy.watchedWith }}</span>
-            <div>
-              <span class="watch-log-just-you">{{ copy.justYou }}</span>
-              <button type="button" disabled [title]="copy.actionUnavailableShort">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                {{ copy.addPerson }}
-              </button>
             </div>
-          </div>
+
+            <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
+              <span>{{ copy.watchedWith }}</span>
+              <div>
+                <span class="watch-log-just-you">{{ copy.justYou }}</span>
+                <button type="button" disabled [title]="copy.actionUnavailableShort">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                  {{ copy.addPerson }}
+                </button>
+              </div>
+            </div>
+          }
 
           <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
             <span>{{ copy.yourRating }}</span>
@@ -672,8 +679,8 @@
               class="watch-log-save"
               type="button"
               disabled
-              [attr.aria-label]="copy.markWatched + '. ' + copy.markWatchedUnavailable"
-              [title]="copy.markWatchedUnavailable"
+              [attr.aria-label]="(target.kind === 'rating' ? copy.rate : copy.markWatched) + '. ' + (target.kind === 'rating' ? copy.actionUnavailable : copy.markWatchedUnavailable)"
+              [title]="target.kind === 'rating' ? copy.actionUnavailable : copy.markWatchedUnavailable"
             >{{ copy.save }}</button>
           </footer>
         </section>

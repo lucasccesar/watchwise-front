@@ -39,6 +39,7 @@ interface UpcomingDateGroup {
 }
 
 interface WatchLogTarget {
+  kind: 'watch' | 'rating';
   title: string;
   subtitle: string;
 }
@@ -190,6 +191,20 @@ export class HomeComponent implements OnInit {
     this.showWatchLog(title, subtitle, true);
   }
 
+  protected openRatingModal(entry: HomeRecentlyWatched): void {
+    this.openContentMenuId.set(null);
+    const title = entry.content.type === 'EPISODE'
+      ? this.recentEpisodeSeriesTitle(entry)
+      : entry.card?.title || this.copy.titleUnavailable;
+    const subtitle = entry.content.type === 'EPISODE'
+      ? `${this.episodeLabelForEntry(entry)} · ${this.recentEpisodeTitle(entry)}`
+      : this.copy.movie;
+    const opener = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    this.showDialog({ kind: 'rating', title, subtitle }, opener);
+  }
+
   protected toggleWatchCalendar(): void {
     this.watchCalendarOpen.update((open) => !open);
   }
@@ -297,12 +312,17 @@ export class HomeComponent implements OnInit {
   }
 
   private showWatchLog(title: string, subtitle: string, isRewatch: boolean): void {
-    this.watchLogOpener = document.querySelector<HTMLElement>(
+    const opener = document.querySelector<HTMLElement>(
       '.content-menu-trigger[aria-expanded="true"]',
     );
-    this.watchLogTarget.set({ title, subtitle });
+    this.showDialog({ kind: 'watch', title, subtitle }, opener);
     this.watchLogDate.set(this.toDateKey(new Date()));
     this.watchLogRewatch.set(isRewatch);
+  }
+
+  private showDialog(target: WatchLogTarget, opener: HTMLElement | null): void {
+    this.watchLogOpener = opener;
+    this.watchLogTarget.set(target);
     this.watchLogRating.set(null);
     this.watchLogReview.set('');
     this.watchCalendarMonth.set(this.firstOfMonth(new Date()));
