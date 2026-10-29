@@ -15,6 +15,9 @@
     </section>
   } @else if (summary(); as data) {
     <section class="home-hero" aria-labelledby="home-title">
+      @if (heroBackdrop(); as backdrop) {
+        <img class="home-hero-backdrop" [src]="backdrop" alt="" aria-hidden="true" />
+      }
       <div class="home-hero-content">
         <div class="home-hero-heading">
           <h1 id="home-title">{{ copy.homeTitle }}</h1>

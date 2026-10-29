@@ -226,30 +226,7 @@ export class HomeComponent implements OnInit {
   }
 
   protected recentSeriesTitle(entry: HomeRecentlyWatched): string | null {
-    if (entry.content.type !== 'EPISODE' || !entry.content.seriesTmdbId) {
-      return null;
-    }
-    const summary = this.summary();
-    const seriesTmdbId = entry.content.seriesTmdbId;
-    const upcomingRelease = summary?.upcomingReleases.find(
-      (release) => release.content.seriesTmdbId === seriesTmdbId ||
-        (release.eventType === 'SERIES' && release.content.tmdbId === seriesTmdbId),
-    );
-    const recentlyWatchedSeries = summary?.recentlyWatched.find(
-      (recent) => recent.content.type === 'SERIES' && recent.content.tmdbId === seriesTmdbId,
-    )?.card?.title;
-    const socialSeries = summary?.socialActivities.find(
-      (activity) =>
-        activity.card?.type === 'SERIES' &&
-        (activity.card.tmdbId === seriesTmdbId ||
-          activity.content?.seriesTmdbId === seriesTmdbId ||
-          (activity.content?.type === 'SERIES' && activity.content.tmdbId === seriesTmdbId)),
-    )?.card?.title;
-    return summary?.nextEpisodes.find(
-      (episode) => episode.seriesTmdbId === seriesTmdbId,
-    )?.seriesTitle ?? upcomingRelease?.content.seriesTitle ??
-      (upcomingRelease?.eventType === 'SERIES' ? upcomingRelease.content.title : null) ??
-      recentlyWatchedSeries ?? socialSeries ?? null;
+    return entry.seriesTitle;
   }
 
   protected recentEpisodeSeriesTitle(entry: HomeRecentlyWatched): string {
@@ -263,6 +240,15 @@ export class HomeComponent implements OnInit {
   protected recentRuntime(entry: HomeRecentlyWatched): number | null {
     const cardRuntime = entry.card?.runtimeMinutes;
     return cardRuntime && cardRuntime > 0 ? cardRuntime : entry.content.runtimeMinutes;
+  }
+
+  protected heroBackdrop(): string | null {
+    const summary = this.summary();
+    const latestWatch = summary?.recentlyWatched[0];
+    if (!summary?.latestWatchedBackdropPath || latestWatch?.content.type !== 'MOVIE') {
+      return null;
+    }
+    return this.imageUrl(summary.latestWatchedBackdropPath, 'w1920');
   }
 
   protected recentEpisodeRuntime(entry: HomeRecentlyWatched): string {
@@ -329,7 +315,7 @@ export class HomeComponent implements OnInit {
 
   protected imageUrl(
     path: string | null | undefined,
-    size: 'w342' | 'w780' = 'w342',
+    size: 'w342' | 'w780' | 'w1920' = 'w342',
   ): string | null {
     if (!path) {
       return null;

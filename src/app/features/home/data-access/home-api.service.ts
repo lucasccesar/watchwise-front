@@ -98,6 +98,7 @@ export interface HomeRecentlyWatched {
   customPosterUrl: string | null;
   companionProfilePictures: string[];
   card: HomeContentCard | null;
+  seriesTitle: string | null;
 }
 
 export interface HomeSocialActivity {
@@ -138,6 +139,7 @@ export interface HomeSummary {
   totalDistinctMoviesWatched: number;
   totalEpisodesWatched: number;
   distinctSeriesWatched: number;
+  latestWatchedBackdropPath: string | null;
   nextEpisodes: NextEpisode[];
   upcomingReleases: UpcomingRelease[];
   watchCountByDayLast30Days: DailyWatchCount[];
