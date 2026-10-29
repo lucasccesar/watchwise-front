@@ -225,17 +225,7 @@ app-trending {
   height: 20px;
   fill: currentColor;
 }
-@media (hover: hover) and (pointer: fine) {
-  .tr-content-menu-trigger {
-    opacity: 0;
-    pointer-events: none;
-  }
-  .tr-card:hover .tr-content-menu-trigger,
-  .tr-card:focus-within .tr-content-menu-trigger {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
+.tr-community-rating,
 .tr-my-rating,
 .tr-watched-date {
   position: absolute;
@@ -250,6 +240,50 @@ app-trending {
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
   font-weight: 600;
+}
+.tr-community-rating {
+  z-index: 4;
+  top: var(--space-2);
+  right: var(--space-2);
+  transition: opacity 150ms ease;
+}
+.tr-community-rating svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.tr-community-rating svg path:last-child {
+  fill: var(--color-accent);
+  stroke: var(--color-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tr-content-menu-trigger {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tr-card:hover .tr-content-menu-trigger,
+  .tr-card:focus-within .tr-content-menu-trigger {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .tr-card:hover .tr-community-rating,
+  .tr-card:focus-within .tr-community-rating {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .tr-content-menu-trigger {
+    right: auto;
+    left: var(--space-2);
+  }
+}
+.tr-community-rating + .tr-content-menu-trigger {
+  transition: opacity 150ms ease;
 }
 .tr-my-rating svg {
   width: 12px;
@@ -672,8 +706,10 @@ app-trending {
 }
 @media (prefers-reduced-motion: reduce) {
   .tr-spinner,
-  .tr-skeleton {
+  .tr-skeleton,
+  .tr-community-rating {
     animation: none;
+    transition: none;
   }
   .tr-content-menu-trigger {
     transition: none;

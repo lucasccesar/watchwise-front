@@ -267,6 +267,19 @@ export class TrendingComponent implements OnInit, OnDestroy {
     return card.title || this.copy.untitled;
   }
 
+  protected cardRating(card: TrendingCard): { label: string; value: string } | null {
+    const hasCommunityScore = card.communityAverageScore != null;
+    const score = card.communityAverageScore ?? card.tmdbVoteAverage;
+    if (score === null) return null;
+    return {
+      label: hasCommunityScore ? this.footerCopy.communityAverage : this.copy.tmdbRating,
+      value: new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }).format(score),
+    };
+  }
+
   protected cardMeta(card: TrendingCard): string {
     return [card.year, ...(card.genres ?? []).slice(0, 2)].filter(Boolean).join(' · ');
   }
