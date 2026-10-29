@@ -33,7 +33,7 @@
             <div class="stat-copy">
               <span class="stat-label">{{ copy.episodesWatched }}</span>
               <strong>{{ formatNumber(data.totalEpisodesWatched) }}</strong>
-            <span class="stat-detail">{{ copy.from }} {{ formatNumber(data.distinctSeriesWatched) }} {{ copy.seriesPlural }}</span>
+            <span class="stat-detail">{{ copy.from }} {{ quantityLabel(data.distinctSeriesWatched, copy.seriesSingular, copy.seriesPlural) }}</span>
           </div>
           <span class="stat-icon stat-icon--series" aria-hidden="true">
             <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="3" /><path d="m7 2 5 5 5-5" /></svg>
@@ -41,7 +41,7 @@
           <div class="stat-copy">
             <span class="stat-label">{{ copy.timeWatching }}</span>
             <strong>{{ formatDuration(data.totalMinutesWatchedEpisodes) }}</strong>
-            <span class="stat-detail">{{ totalHours(data.totalMinutesWatchedEpisodes) }} {{ copy.hours }}</span>
+            <span class="stat-detail">{{ totalHoursLabel(data.totalMinutesWatchedEpisodes) }}</span>
           </div>
         </article>
 
@@ -49,7 +49,7 @@
           <div class="stat-copy">
             <span class="stat-label">{{ copy.moviesWatched }}</span>
             <strong>{{ formatNumber(data.totalDistinctMoviesWatched) }}</strong>
-            <span class="stat-detail">{{ formatNumber(data.totalMoviesWatched) }} {{ copy.plays }}</span>
+            <span class="stat-detail">{{ quantityLabel(data.totalMoviesWatched, copy.playSingular, copy.plays) }}</span>
           </div>
           <span class="stat-icon stat-icon--movie" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M22 12H2M22 7H17M7 7H2M22 17H17M7 17H2M17 2V22M7 2V22M2 6.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.073 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.926 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V6.8C22 5.12 22 4.28 21.673 3.638C21.385 3.074 20.926 2.615 20.362 2.327C19.72 2 18.88 2 17.2 2H6.8C5.12 2 4.28 2 3.638 2.327C3.073 2.615 2.615 3.073 2.327 3.638C2 4.28 2 5.12 2 6.8Z" /></svg>
@@ -57,7 +57,7 @@
           <div class="stat-copy">
             <span class="stat-label">{{ copy.timeWatching }}</span>
             <strong>{{ formatDuration(data.totalMinutesWatchedMovies) }}</strong>
-            <span class="stat-detail">{{ totalHours(data.totalMinutesWatchedMovies) }} {{ copy.hours }}</span>
+            <span class="stat-detail">{{ totalHoursLabel(data.totalMinutesWatchedMovies) }}</span>
           </div>
         </article>
       </div>
@@ -313,10 +313,10 @@
                 <div class="genre-item-label">
                   <strong>{{ genre.genre }}</strong>
                   @if (genre.episodes > 0) {
-                    <span>{{ formatNumber(genre.episodes) }} {{ copy.episodesShortLabel }}</span>
+                    <span>{{ quantityLabel(genre.episodes, copy.episodeSingular, copy.episodesShortLabel) }}</span>
                   }
                   @if (genre.movies > 0) {
-                    <span>{{ formatNumber(genre.movies) }} {{ copy.moviesShortLabel }}</span>
+                    <span>{{ quantityLabel(genre.movies, copy.movieSingular, copy.moviesShortLabel) }}</span>
                   }
                 </div>
                 <span class="genre-color-bar" aria-hidden="true"></span>

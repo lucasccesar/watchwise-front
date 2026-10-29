@@ -158,6 +158,10 @@ export class HomeComponent implements OnInit {
     return new Intl.NumberFormat('pt-BR').format(value ?? 0);
   }
 
+  protected quantityLabel(count: number | null | undefined, singular: string, plural: string): string {
+    return `${this.formatNumber(count)} ${count === 1 ? singular : plural}`;
+  }
+
   protected formatScore(value: number): string {
     return new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: 1,
@@ -377,8 +381,9 @@ export class HomeComponent implements OnInit {
     return `${this.formatNumber(remainingMinutes)}${this.copy.minuteShort}`;
   }
 
-  protected totalHours(minutes: number | null | undefined): string {
-    return this.formatNumber(Math.floor(Math.max(0, minutes ?? 0) / 60));
+  protected totalHoursLabel(minutes: number | null | undefined): string {
+    const hours = Math.floor(Math.max(0, minutes ?? 0) / 60);
+    return this.quantityLabel(hours, this.copy.hourSingular, this.copy.hours);
   }
 
   protected formatRuntime(minutes: number | null | undefined): string {
@@ -556,7 +561,7 @@ export class HomeComponent implements OnInit {
     } else if (event.eventType === 'SEASON' && event.content.seasonNumber !== null && event.content.seasonNumber !== undefined) {
       parts.push(`${this.copy.season} ${event.content.seasonNumber}`);
     } else if (event.eventType === 'SERIES' && event.content.episodeCount !== null && event.content.episodeCount !== undefined) {
-      parts.push(`${this.formatNumber(event.content.episodeCount)} ${this.copy.episodes}`);
+      parts.push(this.quantityLabel(event.content.episodeCount, this.copy.episodeSingular, this.copy.episodes));
     }
     return parts.length ? parts.join(' · ') : null;
   }
@@ -647,7 +652,8 @@ export class HomeComponent implements OnInit {
     }
     const days = Math.floor(hours / 24);
     if (days < 7) {
-      return this.copy.daysAgo.replace('{count}', this.formatNumber(days));
+      const message = days === 1 ? this.copy.dayAgoSingular : this.copy.daysAgo;
+      return message.replace('{count}', this.formatNumber(days));
     }
     return this.formatLongDate(value);
   }
@@ -655,7 +661,7 @@ export class HomeComponent implements OnInit {
   protected watchActivitySummary(): string {
     const count = (this.summary()?.watchCountByDayLast30Days ?? [])
       .reduce((total, day) => total + day.count, 0);
-    return `${this.formatNumber(count)} ${this.copy.activityRecords}`;
+    return this.quantityLabel(count, this.copy.activityRecordSingular, this.copy.activityRecords);
   }
 
   protected setHoveredChartDay(index: number): void {
