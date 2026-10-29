@@ -163,6 +163,10 @@ input.input-invalid,
   outline-offset: -4px;
 }
 
+.remember-note {
+  margin-left: calc(18px + var(--space-3));
+}
+
 .field-error {
   display: flex;
   align-items: center;

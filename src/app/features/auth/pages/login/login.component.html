@@ -125,6 +125,14 @@
         }
       </div>
 
+      <div class="auth-terms">
+        <div class="auth-checkbox-row">
+          <input id="login-remember" type="checkbox" formControlName="remember" />
+          <label for="login-remember">{{ copy.rememberLabel }}</label>
+        </div>
+        <p class="auth-password-hint remember-note">{{ copy.rememberNote }}</p>
+      </div>
+
       @if (serverError(); as error) {
         <p class="form-message form-message--error" role="alert">{{ error }}</p>
       }

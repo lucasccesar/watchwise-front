@@ -46,6 +46,7 @@ export class LoginComponent implements AfterViewInit {
       nonNullable: true,
       validators: [Validators.required],
     }),
+    remember: new FormControl(true, { nonNullable: true }),
   });
 
   constructor(

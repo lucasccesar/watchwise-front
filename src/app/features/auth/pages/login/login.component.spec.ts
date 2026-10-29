@@ -27,13 +27,63 @@ describe('LoginComponent API errors', () => {
       router,
     );
     const login = component as unknown as {
-      form: { setValue(value: { email: string; password: string }): void };
+      form: {
+        setValue(value: {
+          email: string;
+          password: string;
+          remember: boolean;
+        }): void;
+      };
       submit(): void;
     };
 
-    login.form.setValue({ email: 'user@example.com', password: 'valid-password' });
+    login.form.setValue({
+      email: 'user@example.com',
+      password: 'valid-password',
+      remember: true,
+    });
     login.submit();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
+  });
+
+  it('shows the 30-day option without adding it to the API login payload', () => {
+    const authApi = {
+      login: vi.fn().mockReturnValue(
+        of({ id: 'user-1', username: 'watchwise', email: 'user@example.com' }),
+      ),
+    };
+    const router = { navigateByUrl: vi.fn().mockResolvedValue(true) };
+    const LoginWithDependencies = LoginComponent as unknown as new (
+      authApi: unknown,
+      router: unknown,
+    ) => LoginComponent;
+    const component = new LoginWithDependencies(authApi, router);
+    const login = component as unknown as {
+      form: {
+        contains(name: string): boolean;
+        get(name: string): { value: boolean } | null;
+        setValue(value: {
+          email: string;
+          password: string;
+          remember: boolean;
+        }): void;
+      };
+      submit(): void;
+    };
+
+    expect(login.form.contains('remember')).toBe(true);
+    expect(login.form.get('remember')?.value).toBe(true);
+    login.form.setValue({
+      email: 'user@example.com',
+      password: 'valid-password',
+      remember: true,
+    });
+    login.submit();
+
+    expect(authApi.login).toHaveBeenCalledWith({
+      identifier: 'user@example.com',
+      password: 'valid-password',
+    });
   });
 });
