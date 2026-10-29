@@ -103,16 +103,43 @@
                     <span>{{ formatScore(episode.communityAverageScore) }}</span>
                   </span>
                 }
-                <button
-                  class="mark-watched-button"
-                  type="button"
-                  disabled
-                  [attr.aria-label]="copy.markWatched + '. ' + copy.markWatchedUnavailable"
-                  [title]="copy.markWatchedUnavailable"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
-                  {{ copy.markWatched }}
-                </button>
+                <div class="episode-menu-anchor">
+                  <button
+                    class="episode-menu-trigger"
+                    type="button"
+                    [attr.aria-label]="copy.episodeOptions"
+                    aria-haspopup="menu"
+                    [attr.aria-expanded]="openEpisodeMenuId() === episode.seriesTmdbId"
+                    (click)="toggleEpisodeMenu($event, episode.seriesTmdbId)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="5" cy="12" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="19" cy="12" r="2" />
+                    </svg>
+                  </button>
+                  @if (openEpisodeMenuId() === episode.seriesTmdbId) {
+                    <div
+                      class="episode-dropdown-menu"
+                      role="menu"
+                      [attr.aria-label]="copy.episodeOptions"
+                    >
+                      <button
+                        class="episode-dropdown-item"
+                        type="button"
+                        role="menuitem"
+                        disabled
+                        [attr.aria-label]="copy.markWatched + '. ' + copy.markWatchedUnavailable"
+                        [title]="copy.markWatchedUnavailable"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="m5 12 4 4L19 6" />
+                        </svg>
+                        <span>{{ copy.markWatched }}</span>
+                      </button>
+                    </div>
+                  }
+                </div>
               </div>
               <div class="episode-info">
                 <div class="episode-info-line">

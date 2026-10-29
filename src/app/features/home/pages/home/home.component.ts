@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { AuthSessionService } from '../../../../core/session/session.service';
@@ -53,6 +53,7 @@ export class HomeComponent implements OnInit {
   protected readonly summary = signal<HomeSummary | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly openEpisodeMenuId = signal<string | null>(null);
   protected readonly upcomingView = signal<'calendar' | 'next'>('calendar');
   protected readonly chartDays = computed(() =>
     this.createChartDays(this.summary()?.watchCountByDayLast30Days ?? []),
@@ -116,6 +117,23 @@ export class HomeComponent implements OnInit {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     }).format(value);
+  }
+
+  protected toggleEpisodeMenu(event: MouseEvent, seriesTmdbId: string): void {
+    event.stopPropagation();
+    this.openEpisodeMenuId.update((openId) =>
+      openId === seriesTmdbId ? null : seriesTmdbId,
+    );
+  }
+
+  @HostListener('document:click')
+  protected closeEpisodeMenuOnDocumentClick(): void {
+    this.openEpisodeMenuId.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeEpisodeMenuOnEscape(): void {
+    this.openEpisodeMenuId.set(null);
   }
 
   protected formatDuration(minutes: number | null | undefined): string {
