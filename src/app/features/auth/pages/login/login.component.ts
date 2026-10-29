@@ -39,15 +39,15 @@ export class LoginComponent implements AfterViewInit {
   private googleButtonHost?: ElementRef<HTMLDivElement>;
 
   protected readonly form = new FormGroup({
-    email: new FormControl('', {
+    identifier: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.email],
+      validators: [Validators.required],
     }),
     password: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required],
     }),
-    remember: new FormControl(true, { nonNullable: true }),
+    rememberMe: new FormControl(false, { nonNullable: true }),
   });
 
   constructor(
@@ -70,16 +70,13 @@ export class LoginComponent implements AfterViewInit {
       .catch(() => this.serverError.set(this.copy.googleLoadError));
   }
 
-  protected emailError(): string | null {
-    const control = this.form.controls.email;
+  protected identifierError(): string | null {
+    const control = this.form.controls.identifier;
     if (!control.touched && !this.hasSubmitted()) {
       return null;
     }
     if (control.hasError('required')) {
-      return this.copy.emailRequired;
-    }
-    if (control.hasError('email')) {
-      return this.copy.emailInvalid;
+      return this.copy.identifierRequired;
     }
     return null;
   }
@@ -114,10 +111,10 @@ export class LoginComponent implements AfterViewInit {
     }
 
     this.isSubmitting.set(true);
-    const { email, password } = this.form.getRawValue();
+    const { identifier, password, rememberMe } = this.form.getRawValue();
 
     this.authApi
-      .login({ identifier: email.trim(), password })
+      .login({ identifier: identifier.trim(), password, rememberMe })
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
         next: (user) => {

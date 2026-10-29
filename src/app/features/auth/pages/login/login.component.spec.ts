@@ -22,33 +22,37 @@ describe('LoginComponent API errors', () => {
     const LoginWithRouter = LoginComponent as unknown as new (
       authApi: unknown,
       router: unknown,
+      googleIdentity: unknown,
+      session: unknown,
     ) => LoginComponent;
     const component = new LoginWithRouter(
       { login: () => of({ id: 'user-1', username: 'watchwise', email: 'user@example.com' }) },
       router,
+      {},
+      { setUser: vi.fn() },
     );
     const login = component as unknown as {
       form: {
         setValue(value: {
-          email: string;
+          identifier: string;
           password: string;
-          remember: boolean;
+          rememberMe: boolean;
         }): void;
       };
       submit(): void;
     };
 
     login.form.setValue({
-      email: 'user@example.com',
+      identifier: 'user@example.com',
       password: 'valid-password',
-      remember: true,
+      rememberMe: false,
     });
     login.submit();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
   });
 
-  it('shows the 30-day option without adding it to the API login payload', () => {
+  it('defaults rememberMe to false and sends it with the identifier and password', () => {
     const authApi = {
       login: vi.fn().mockReturnValue(
         of({ id: 'user-1', username: 'watchwise', email: 'user@example.com' }),
@@ -58,40 +62,43 @@ describe('LoginComponent API errors', () => {
     const LoginWithDependencies = LoginComponent as unknown as new (
       authApi: unknown,
       router: unknown,
+      googleIdentity: unknown,
+      session: unknown,
     ) => LoginComponent;
-    const component = new LoginWithDependencies(authApi, router);
+    const component = new LoginWithDependencies(authApi, router, {}, { setUser: vi.fn() });
     const login = component as unknown as {
       form: {
         contains(name: string): boolean;
         get(name: string): { value: boolean } | null;
         setValue(value: {
-          email: string;
+          identifier: string;
           password: string;
-          remember: boolean;
+          rememberMe: boolean;
         }): void;
       };
       submit(): void;
     };
 
-    expect(login.form.contains('remember')).toBe(true);
-    expect(login.form.get('remember')?.value).toBe(true);
+    expect(login.form.contains('rememberMe')).toBe(true);
+    expect(login.form.get('rememberMe')?.value).toBe(false);
     login.form.setValue({
-      email: 'user@example.com',
+      identifier: 'lucas',
       password: 'valid-password',
-      remember: true,
+      rememberMe: false,
     });
     login.submit();
 
     expect(authApi.login).toHaveBeenCalledWith({
-      identifier: 'user@example.com',
+      identifier: 'lucas',
       password: 'valid-password',
+      rememberMe: false,
     });
   });
 
   it('uses the prototype copy for the 30-day checkbox without extra helper text', () => {
     const loginCopy = messageCatalog['pt-BR'].auth.login;
 
-    expect(loginCopy.rememberLabel).toBe('Keep me logged in for 30 days');
+    expect(loginCopy.rememberLabel).toBe('Manter minha sessão por 30 dias');
     expect('rememberNote' in loginCopy).toBe(false);
   });
 });

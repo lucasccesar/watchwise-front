@@ -13,22 +13,21 @@
       novalidate
     >
       <div class="field-group">
-        <label for="login-email">{{ copy.emailLabel }}</label>
+        <label for="login-identifier">{{ copy.identifierLabel }}</label>
         <input
-          id="login-email"
-          type="email"
+          id="login-identifier"
+          type="text"
           required
-          formControlName="email"
-          autocomplete="email"
-          inputmode="email"
+          formControlName="identifier"
+          autocomplete="username"
           spellcheck="false"
-          [placeholder]="copy.emailPlaceholder"
-          [class.input-invalid]="emailError()"
-          [attr.aria-invalid]="emailError() !== null"
-          [attr.aria-describedby]="emailError() ? 'login-email-error' : null"
+          [placeholder]="copy.identifierPlaceholder"
+          [class.input-invalid]="identifierError()"
+          [attr.aria-invalid]="identifierError() !== null"
+          [attr.aria-describedby]="identifierError() ? 'login-identifier-error' : null"
         />
-        @if (emailError(); as error) {
-          <p class="field-error" id="login-email-error">
+        @if (identifierError(); as error) {
+          <p class="field-error" id="login-identifier-error">
             <svg
               aria-hidden="true"
               viewBox="0 0 24 24"
@@ -127,7 +126,7 @@
 
       <div class="auth-terms">
         <div class="auth-checkbox-row">
-          <input id="login-remember" type="checkbox" formControlName="remember" />
+          <input id="login-remember" type="checkbox" formControlName="rememberMe" />
           <label for="login-remember">{{ copy.rememberLabel }}</label>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface LoginRequest {
   identifier: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterRequest {
