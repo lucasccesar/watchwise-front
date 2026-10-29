@@ -1,4 +1,5 @@
 app-header-search {
+  position: relative;
   display: block;
   flex: 0 0 auto;
   width: 40px;
@@ -6,7 +7,7 @@ app-header-search {
 }
 
 app-header-search.header-search-host--open {
-  width: 360px;
+  z-index: 41;
 }
 
 .search-control {
@@ -16,6 +17,9 @@ app-header-search.header-search-host--open {
 }
 
 .search-control--open {
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 41;
   width: 360px;
 }
@@ -126,6 +130,10 @@ app-header-search.header-search-host--open {
   font: inherit;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
+}
+
+.search-form input:focus-visible {
+  outline: none;
 }
 
 .search-form input::placeholder {
