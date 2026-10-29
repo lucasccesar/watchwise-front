@@ -86,6 +86,17 @@
                           copy.noPoster
                         }}</span>
                       }
+                      <button
+                        class="tr-content-menu-trigger"
+                        type="button"
+                        [attr.aria-label]="footerCopy.contentOptions"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="5" cy="12" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <circle cx="19" cy="12" r="2" />
+                        </svg>
+                      </button>
                       @if (stateLabel(card); as state) {
                         <span
                           class="tr-state-marker"
