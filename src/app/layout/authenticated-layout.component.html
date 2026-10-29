@@ -27,13 +27,13 @@
       [class.product-navigation--open]="isMenuOpen()"
       [attr.aria-label]="copy.mainNavigation"
     >
-      <a class="navigation-link navigation-link--active" routerLink="/home" routerLinkActive="navigation-link--active" aria-current="page" (click)="closeMenu()">
+      <a class="navigation-link" routerLink="/home" routerLinkActive="navigation-link--active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" (click)="closeMenu()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg>
         <span>{{ copy.home }}</span>
       </a>
       <span class="navigation-section-label">{{ copy.discover }}</span>
       <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg><span>{{ copy.social }}</span></span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.trending }}</span></span>
+      <a class="navigation-link" routerLink="/trending" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.trending }}</span></a>
       <span class="navigation-section-label">{{ copy.yourSpace }}</span>
       <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.diary }}</span></span>
       <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.watchlist }}</span></span>
@@ -167,7 +167,7 @@
   </div>
 
   <nav class="mobile-bottom-navigation" [attr.aria-label]="copy.mainNavigation">
-    <a class="bottom-nav-link bottom-nav-link--active" routerLink="/home" aria-current="page">
+    <a class="bottom-nav-link" routerLink="/home" routerLinkActive="bottom-nav-link--active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
       <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7.5 9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg></span>
       <span>{{ copy.home }}</span>
     </a>

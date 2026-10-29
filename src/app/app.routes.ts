@@ -94,5 +94,23 @@ export const routes: Routes = [
       },
     ],
   },
+  {
+    path: 'trending',
+    canActivate: [authenticatedGuard],
+    title: 'Em alta | Watchwise',
+    loadComponent: () =>
+      import('./layout/authenticated-layout.component').then(
+        (module) => module.AuthenticatedLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/trending/pages/trending/trending.component').then(
+            (module) => module.TrendingComponent,
+          ),
+      },
+    ],
+  },
   // /explore remains unassigned for the future public presentation page.
 ];

@@ -1,0 +1,312 @@
+<div class="trending-page">
+  <section class="tr-hero" aria-labelledby="tr-title">
+    <div class="tr-hero-content">
+      <h1 id="tr-title">{{ copy.title }}</h1>
+      <p class="tr-hero-date">
+        <span>{{ periodRange() }}</span>
+      </p>
+      <p class="tr-hero-description">{{ copy.description }}</p>
+    </div>
+  </section>
+
+  <div class="tr-toolbar">
+    <label class="tr-search">
+      <span class="tr-visually-hidden">{{ copy.searchLabel }}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m16 16 5 5" />
+      </svg>
+      <input
+        type="search"
+        [value]="query()"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="updateQuery($event)"
+      />
+    </label>
+    <span class="tr-mobile-date">{{ periodRange() }}</span>
+    <div class="tr-period" role="group" [attr.aria-label]="copy.periodLabel">
+      <button
+        type="button"
+        [attr.aria-pressed]="period() === 'day'"
+        [class.tr-period-active]="period() === 'day'"
+        (click)="changePeriod('day')"
+      >
+        {{ copy.today }}
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="period() === 'week'"
+        [class.tr-period-active]="period() === 'week'"
+        (click)="changePeriod('week')"
+      >
+        {{ copy.thisWeek }}
+      </button>
+    </div>
+    <button
+      class="tr-filter-trigger"
+      type="button"
+      [attr.aria-label]="copy.filters"
+      [attr.aria-expanded]="filterOpen()"
+      aria-haspopup="dialog"
+      (click)="openFilters($event)"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
+    </button>
+  </div>
+
+  @if (status() === 'loading') {
+    <div class="tr-page-state" role="status" aria-live="polite">
+      <span class="tr-spinner" aria-hidden="true"></span>
+      <p>{{ copy.loading }}</p>
+    </div>
+  } @else if (status() === 'error') {
+    <div class="tr-page-state" role="alert">
+      <h2>{{ copy.errorTitle }}</h2>
+      <p>{{ errorMessage() }}</p>
+      <button type="button" (click)="load()">{{ copy.retry }}</button>
+    </div>
+  } @else {
+    @if (selectedType()) {
+      <button class="tr-back" type="button" (click)="showBoth()">
+        ← {{ copy.backToTrending }}
+      </button>
+    }
+    @for (type of sectionTypes; track type) {
+      @if (selectedType() === null || selectedType() === type) {
+        <section
+          class="tr-section"
+          [class.tr-section-series]="type === 'SERIES'"
+          [attr.aria-labelledby]="type === 'MOVIE' ? 'tr-movies' : 'tr-series'"
+        >
+          <div class="tr-section-inner">
+            <div class="tr-section-heading">
+              <h2 [id]="type === 'MOVIE' ? 'tr-movies' : 'tr-series'">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m2 17 6-6 4 4 10-10M15 5h7v7" />
+                </svg>
+                {{ title(type) }}
+              </h2>
+              @if (selectedType() === null) {
+                <button class="tr-see-all" type="button" (click)="showAll(type)">
+                  {{ type === 'MOVIE' ? copy.seeAllMovies : copy.seeAllSeries }}
+                  <span aria-hidden="true">›</span>
+                </button>
+              }
+            </div>
+
+            @if (visibleCards(type).length > 0) {
+              <ol class="tr-grid" [class.tr-grid-list]="view() === 'list'">
+                @for (card of visibleCards(type); track card.tmdbId) {
+                  <li class="tr-card">
+                    <article [attr.aria-label]="cardTitle(card)">
+                      <div class="tr-poster">
+                        @if (card.posterUrl) {
+                          <img [src]="card.posterUrl" alt="" loading="lazy" />
+                        } @else {
+                          <span class="tr-poster-empty" aria-hidden="true">{{
+                            copy.noPoster
+                          }}</span>
+                        }
+                        @if (rating(card); as score) {
+                          <span
+                            class="tr-score"
+                            [attr.aria-label]="copy.tmdbRating + ': ' + score + ' / 10'"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path
+                                d="m12 2 3.1 6.3 7 .9-5 5 .9 7-6-3.3-6 3.3.9-7-5-5 7-.9z"
+                              /></svg
+                            >{{ score }}</span
+                          >
+                        }
+                        @if (stateLabel(card); as state) {
+                          <span
+                            class="tr-state-marker"
+                            [class.tr-state-marker-watchlist]="
+                              card.viewerState?.inWatchlist &&
+                              card.viewerState?.watchStatus !== 'WATCHED' &&
+                              card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
+                            "
+                            [class.tr-state-marker-dropped]="
+                              card.viewerState?.dropped && !card.viewerState?.inWatchlist
+                            "
+                            [attr.aria-label]="state"
+                            [title]="state"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              @if (
+                                card.viewerState?.inWatchlist &&
+                                card.viewerState?.watchStatus !== 'WATCHED' &&
+                                card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
+                              ) {
+                                <path d="M5 3h14v18l-7-4-7 4z" />
+                              } @else if (card.viewerState?.dropped) {
+                                <path d="M5 12h14" />
+                              } @else {
+                                <path d="m5 12 4 4L19 6" />
+                              }
+                            </svg>
+                          </span>
+                        }
+                        @if (watchedDate(card); as date) {
+                          <span class="tr-watched-date">{{ date }}</span>
+                        }
+                        @if (card.viewerState?.myRating; as myRating) {
+                          <span
+                            class="tr-my-rating"
+                            [attr.aria-label]="copy.yourRating + ': ' + myRating + ' / 10'"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path
+                                d="m12 2 3.1 6.3 7 .9-5 5 .9 7-6-3.3-6 3.3.9-7-5-5 7-.9z"
+                              /></svg
+                            >{{ myRating }}</span
+                          >
+                        }
+                      </div>
+                      <div class="tr-card-text">
+                        <div class="tr-card-main">
+                          <strong>{{ cardTitle(card) }}</strong
+                          ><span>{{ cardLength(card) }}</span>
+                        </div>
+                        <p>{{ cardMeta(card) }}</p>
+                        @if (card.previewStatus === 'PARTIAL') {
+                          <span class="tr-preview-note">{{ copy.partialPreview }}</span>
+                        }
+                        @if (card.previewStatus === 'UNAVAILABLE') {
+                          <span class="tr-preview-note">{{ copy.unavailablePreview }}</span>
+                        }
+                        @if (stateLabel(card); as state) {
+                          <span class="tr-list-state">{{ state }}</span>
+                        }
+                      </div>
+                    </article>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p class="tr-empty">{{ query().trim() ? copy.noMatches : copy.noTitles }}</p>
+            }
+
+            @if (section(type).error) {
+              <p class="tr-section-error" role="alert">{{ copy.moreError }}</p>
+            }
+            @if (canShowMore(type)) {
+              <button
+                class="tr-show-more"
+                type="button"
+                [disabled]="section(type).loading"
+                (click)="showMore(type)"
+              >
+                {{ section(type).loading ? copy.loadingMore : copy.showMore }}
+                <span aria-hidden="true">⌄</span>
+              </button>
+            }
+            @if (section(type).visibleCount > 12 && selectedType() === null) {
+              <button class="tr-show-fewer" type="button" (click)="showFewer(type)">
+                {{ copy.showFewer }}
+              </button>
+            }
+          </div>
+        </section>
+      }
+    }
+  }
+
+  <footer class="home-footer">
+    <div class="home-footer-content">
+      <div class="home-footer-primary">
+        <img
+          class="home-footer-brand"
+          src="/watchwise-logo.svg"
+          alt="Watchwise"
+          width="105"
+          height="20"
+        />
+        <nav class="home-footer-nav" [attr.aria-label]="footerCopy.footerNavigation">
+          <a routerLink="/terms">{{ footerCopy.terms }}</a>
+          <a routerLink="/privacy">{{ footerCopy.privacy }}</a>
+          <a routerLink="/community-guidelines">{{ footerCopy.communityGuidelines }}</a>
+          <a routerLink="/help-contact">{{ footerCopy.helpContact }}</a>
+        </nav>
+      </div>
+      <div class="home-footer-secondary">
+        <div class="home-footer-tmdb-credit">
+          <a
+            href="https://www.themoviedb.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="The Movie Database (TMDB)"
+          >
+            <img src="/tmdb-logo.svg" alt="TMDB" width="69" height="9" />
+          </a>
+          <p>{{ copy.tmdbAttribution }}</p>
+        </div>
+        <span class="home-footer-copyright">© {{ copyrightYear }} Watchwise</span>
+      </div>
+    </div>
+  </footer>
+
+  @if (filterOpen()) {
+    <div class="tr-filter-layer">
+      <button
+        class="tr-filter-backdrop"
+        type="button"
+        [attr.aria-label]="copy.closeFilters"
+        (click)="closeFilters()"
+      ></button>
+      <div
+        #filterDialog
+        class="tr-filter-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tr-filter-title"
+      >
+        <div class="tr-filter-heading">
+          <h2 id="tr-filter-title">{{ copy.filters }}</h2>
+          <button
+            #filterCloseButton
+            type="button"
+            [attr.aria-label]="copy.closeFilters"
+            (click)="closeFilters()"
+          >
+            ×
+          </button>
+        </div>
+        <label class="tr-filter-search"
+          ><span>{{ copy.searchLabel }}</span
+          ><input
+            type="search"
+            [value]="query()"
+            [placeholder]="copy.searchPlaceholder"
+            (input)="updateQuery($event)"
+        /></label>
+        <fieldset>
+          <legend>{{ copy.periodLabel }}</legend>
+          <button
+            type="button"
+            [attr.aria-pressed]="period() === 'day'"
+            (click)="changePeriod('day')"
+          >
+            {{ copy.today }}</button
+          ><button
+            type="button"
+            [attr.aria-pressed]="period() === 'week'"
+            (click)="changePeriod('week')"
+          >
+            {{ copy.thisWeek }}
+          </button>
+        </fieldset>
+        <fieldset>
+          <legend>{{ copy.viewLabel }}</legend>
+          <button type="button" [attr.aria-pressed]="view() === 'grid'" (click)="view.set('grid')">
+            {{ copy.grid }}</button
+          ><button type="button" [attr.aria-pressed]="view() === 'list'" (click)="view.set('list')">
+            {{ copy.list }}
+          </button>
+        </fieldset>
+        <button class="tr-filter-done" type="button" (click)="closeFilters()">
+          {{ copy.apply }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

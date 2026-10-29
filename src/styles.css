@@ -2,6 +2,7 @@
 @import './app/layout/authenticated-layout.component.css';
 @import './app/features/home/pages/home/home.component.css';
 @import './app/features/search-content/components/header-search/header-search.component.css';
+@import './app/features/trending/pages/trending/trending.component.css';
 
 :root {
   color-scheme: dark;
@@ -29,6 +30,8 @@
   --color-chartb-5: #ef4444;
   --color-chartb-6: #f97316;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-display-2xl: 72px;
+  --line-height-display-2xl: 90px;
   --font-size-display-sm: 30px;
   --line-height-display-sm: 38px;
   --font-size-display-xs: 24px;
