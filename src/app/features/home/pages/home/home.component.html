@@ -272,17 +272,29 @@
         <p>{{ watchActivitySummary() }}</p>
       </div>
       @if (hasWatchHistory()) {
-        <div class="history-chart">
+        <div class="history-chart" (mouseleave)="clearHoveredChartDay()">
           <div class="daily-chart" role="group" [attr.aria-label]="copy.watchActivity">
-            @for (day of chartDays(); track trackByDate($index, day)) {
-              <div class="chart-column" role="img" [attr.aria-label]="day.description + ': ' + formatNumber(day.count) + ' ' + copy.episodesWatched">
+            @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
+              <div
+                class="chart-column"
+                [class.chart-column--active]="hoveredChartDayIndex() === index"
+                [class.chart-column--muted]="hoveredChartDayIndex() !== null && hoveredChartDayIndex() !== index"
+                [style.--chart-bar-height]="day.height + '%'"
+                role="img"
+                [attr.aria-label]="day.description + ': ' + chartDayCountLabel(day)"
+                (mouseenter)="setHoveredChartDay(index)"
+              >
                 <span class="chart-bar" aria-hidden="true" [style.height.%]="day.height"></span>
+                <span class="chart-tooltip" aria-hidden="true">{{ chartDayCountLabel(day) }}</span>
               </div>
             }
           </div>
           <div class="chart-labels" aria-hidden="true">
             @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
-              <span class="chart-label">{{ day.label }}</span>
+              <span
+                class="chart-label"
+                [class.chart-label--muted]="hoveredChartDayIndex() !== null && hoveredChartDayIndex() !== index"
+              >{{ day.label }}</span>
             }
           </div>
         </div>

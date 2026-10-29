@@ -804,11 +804,13 @@
 }
 
 .chart-column {
+  position: relative;
   display: flex;
   width: 100%;
   height: 120px;
   align-items: flex-end;
   justify-content: center;
+  transition: opacity 200ms ease;
 }
 
 .chart-bar {
@@ -817,6 +819,55 @@
   min-height: 0;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   background: var(--color-primary);
+  transition: opacity 200ms ease;
+}
+
+.chart-column--active {
+  z-index: 2;
+}
+
+.chart-column--muted .chart-bar,
+.chart-label--muted {
+  opacity: 0.35;
+}
+
+.chart-tooltip {
+  position: absolute;
+  bottom: calc(var(--chart-bar-height) + var(--space-1));
+  left: 50%;
+  z-index: 1;
+  width: max-content;
+  max-width: min(220px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: var(--space-1) var(--space-2);
+  border-left: 4px solid var(--color-primary);
+  background: var(--color-secondary);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  text-align: center;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease, visibility 0s linear 200ms;
+  visibility: hidden;
+}
+
+.chart-column:first-child .chart-tooltip {
+  left: 0;
+  transform: none;
+}
+
+.chart-column:last-child .chart-tooltip {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.chart-column--active .chart-tooltip {
+  opacity: 1;
+  transition: opacity 200ms ease;
+  visibility: visible;
 }
 
 .chart-label {
@@ -824,6 +875,16 @@
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
   text-align: center;
+  transition: opacity 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-column,
+  .chart-bar,
+  .chart-tooltip,
+  .chart-label {
+    transition: none;
+  }
 }
 
 .genre-section {

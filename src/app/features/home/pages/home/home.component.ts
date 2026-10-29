@@ -66,6 +66,7 @@ export class HomeComponent implements OnInit {
   protected readonly copy = messageCatalog['pt-BR'].home;
   protected readonly copyrightYear = new Date().getFullYear();
   protected readonly summary = signal<HomeSummary | null>(null);
+  protected readonly hoveredChartDayIndex = signal<number | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly openContentMenuId = signal<string | null>(null);
@@ -641,6 +642,21 @@ export class HomeComponent implements OnInit {
     const count = (this.summary()?.watchCountByDayLast30Days ?? [])
       .reduce((total, day) => total + day.count, 0);
     return `${this.formatNumber(count)} ${this.copy.activityRecords}`;
+  }
+
+  protected setHoveredChartDay(index: number): void {
+    this.hoveredChartDayIndex.set(index);
+  }
+
+  protected clearHoveredChartDay(): void {
+    this.hoveredChartDayIndex.set(null);
+  }
+
+  protected chartDayCountLabel(day: ChartDay): string {
+    const message = day.count === 1
+      ? this.copy.watchRecordSingular
+      : this.copy.watchRecordsPlural;
+    return message.replace('{count}', this.formatNumber(day.count));
   }
 
   protected trackByDate(_index: number, day: ChartDay): string {
