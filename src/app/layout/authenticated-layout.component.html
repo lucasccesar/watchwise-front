@@ -81,7 +81,7 @@
               @if (viewer.profilePicture) {
                 <img [src]="viewer.profilePicture" alt="" />
               } @else {
-                <span class="header-viewer-initial" aria-hidden="true">{{ (viewer.name || viewer.username || '?').charAt(0).toLocaleUpperCase('pt-BR') }}</span>
+                <img src="/default-user-avatar.png" alt="" />
               }
             </span>
           </button>
@@ -97,7 +97,7 @@
                   @if (viewer.profilePicture) {
                     <img [src]="viewer.profilePicture" alt="" />
                   } @else {
-                    {{ (viewer.name || viewer.username || '?').charAt(0).toLocaleUpperCase('pt-BR') }}
+                    <img src="/default-user-avatar.png" alt="" />
                   }
                 </span>
                 <span class="account-menu-viewer-copy">

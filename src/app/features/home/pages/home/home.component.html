@@ -388,7 +388,7 @@
                   @if (activity.user.profilePicture) {
                     <img [src]="activity.user.profilePicture" alt="" loading="lazy" />
                   } @else {
-                    {{ activityUser(activity).charAt(0).toLocaleUpperCase('pt-BR') }}
+                    <img src="/default-user-avatar.png" alt="" loading="lazy" />
                   }
                 </span>
                 <div class="social-author-copy">
