@@ -49,9 +49,9 @@
   letter-spacing: 0;
 }
 
-@media (max-width: 767px) {
-  .signup {
-    gap: var(--space-6);
+@media (max-width: 800px) {
+  :host {
+    max-width: none;
   }
 
   .signup-heading h1 {
@@ -60,6 +60,9 @@
   }
 
   .signup-card {
-    padding: var(--space-6);
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
 }
