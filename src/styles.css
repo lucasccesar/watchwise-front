@@ -1,4 +1,6 @@
 @import './app/features/auth/auth-shared.css';
+@import './app/layout/authenticated-layout.component.css';
+@import './app/features/home/pages/home/home.component.css';
 
 :root {
   color-scheme: dark;
@@ -13,6 +15,12 @@
   --color-border: var(--color-secondary);
   --color-error: #f87171;
   --color-success: #22c55e;
+  --color-chart-1: #2563eb;
+  --color-chart-2: #10b981;
+  --color-chart-3: #8b5cf6;
+  --color-chart-4: #f59e0b;
+  --color-chart-5: #ef4444;
+  --color-chart-6: #f97316;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-size-display-sm: 30px;
   --line-height-display-sm: 38px;

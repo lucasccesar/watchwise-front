@@ -1,0 +1,161 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+
+export interface GenreCount {
+  genre: string;
+  count: number;
+}
+
+export interface DailyWatchCount {
+  watchedDate: string;
+  count: number;
+}
+
+export interface HomeContentCard {
+  contentId: string | null;
+  type: string | null;
+  tmdbId: string | null;
+  seriesTmdbId: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  title: string | null;
+  posterPath: string | null;
+  customPosterUrl: string | null;
+  releaseDate: string | null;
+  releaseYear: number | null;
+  runtimeMinutes: number | null;
+  totalRuntimeMinutes: number | null;
+  numberOfSeasons: number | null;
+  numberOfEpisodes: number | null;
+  genres: string[] | null;
+  previewStatus: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE' | null;
+}
+
+export interface NextEpisode {
+  seriesTmdbId: string;
+  maxSeasonNumber: number | null;
+  maxEpisodeNumber: number | null;
+  lastWatchedDate: string | null;
+  watchedEpisodeCount: number | null;
+  totalEpisodeCount: number | null;
+  watchedPercentage: number | null;
+  seriesTitle: string | null;
+  episodeTitle: string | null;
+  stillPath: string | null;
+  runtimeMinutes: number | null;
+  releaseDate: string | null;
+  contentId: string | null;
+  communityAverageScore: number | null;
+  availableToWatch: boolean | null;
+}
+
+export interface UpcomingReleaseContent {
+  tmdbId?: string | null;
+  seriesTmdbId?: string | null;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
+  episodeCount?: number | null;
+  title?: string | null;
+  seriesTitle?: string | null;
+  posterPath?: string | null;
+  stillPath?: string | null;
+}
+
+/** The API DTO currently serializes `date`; the local screen snapshot names this field `releaseDate`. */
+export interface UpcomingRelease {
+  date: string;
+  eventType: 'MOVIE' | 'EPISODE' | 'SEASON' | 'SERIES';
+  releaseStatus: 'RELEASED' | 'UPCOMING' | 'UNKNOWN';
+  watchStatus: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN';
+  sources: ('IN_PROGRESS' | 'WATCHLIST')[];
+  content: UpcomingReleaseContent;
+  releaseContext: {
+    releaseTime: string | null;
+    network: string | null;
+  } | null;
+}
+
+export interface HomeViewer {
+  name: string | null;
+  username: string | null;
+  profilePicture: string | null;
+}
+
+export interface HomeRecentlyWatched {
+  id: string;
+  content: {
+    id: string | null;
+    tmdbId: string | null;
+    type: string | null;
+    seriesTmdbId: string | null;
+    seasonNumber: number | null;
+    episodeNumber: number | null;
+    runtimeMinutes: number | null;
+  };
+  score: number | null;
+  watchedDate: string;
+  customPosterUrl: string | null;
+  companionProfilePictures: string[];
+  card: HomeContentCard | null;
+}
+
+export interface HomeSocialActivity {
+  eventType:
+    | 'DIARY_ENTRY'
+    | 'CONTENT_REVIEW'
+    | 'DROPPED'
+    | 'TOP5_UPDATE'
+    | 'PICK_CREATED'
+    | 'PICKS_TEMPLATE_CREATED'
+    | 'DAILY_GAME_RESULT';
+  id: string;
+  user: {
+    id?: string;
+    username?: string | null;
+    name?: string | null;
+    profilePicture?: string | null;
+  };
+  content: {
+    id: string | null;
+    tmdbId: string | null;
+    type: string | null;
+    seriesTmdbId: string | null;
+    seasonNumber: number | null;
+    episodeNumber: number | null;
+  } | null;
+  targetLabel: string | null;
+  likesCount: number | null;
+  commentsCount: number | null;
+  createdAt: string;
+  card: HomeContentCard | null;
+}
+
+export interface HomeSummary {
+  totalMinutesWatchedMovies: number;
+  totalMinutesWatchedEpisodes: number;
+  totalMoviesWatched: number;
+  totalDistinctMoviesWatched: number;
+  totalEpisodesWatched: number;
+  // distinctSeriesWatched is returned by the API but is absent from the local Home contract.
+  nextEpisodes: NextEpisode[];
+  upcomingReleases: UpcomingRelease[];
+  watchCountByDayLast30Days: DailyWatchCount[];
+  genreCountsMoviesLast30Days: GenreCount[];
+  genreCountsEpisodesLast30Days: GenreCount[];
+  viewer: HomeViewer | null;
+  hasUnreadNotifications: boolean;
+  recentlyWatched: HomeRecentlyWatched[];
+  socialActivities: HomeSocialActivity[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class HomeApiService {
+  constructor(private readonly http: HttpClient) {}
+
+  getHomeSummary(userId: string): Observable<HomeSummary> {
+    return this.http.get<HomeSummary>(
+      `/api/v1/users/${encodeURIComponent(userId)}/summary/home`,
+    );
+  }
+}

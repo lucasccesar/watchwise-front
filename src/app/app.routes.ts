@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authenticatedGuard } from './core/session/authenticated.guard';
 
 export const routes: Routes = [
   {
@@ -19,14 +20,6 @@ export const routes: Routes = [
           import('./features/auth/auth.routes').then(
             (module) => module.AUTH_ROUTES,
           ),
-      },
-      {
-        path: 'home',
-        loadComponent: () =>
-          import('./shared/route-placeholder/route-placeholder.component').then(
-            (module) => module.RoutePlaceholderComponent,
-          ),
-        data: { titleKey: 'homeTitle', messageKey: 'homeMessage' },
       },
       {
         path: 'register',
@@ -80,6 +73,23 @@ export const routes: Routes = [
             (module) => module.RoutePlaceholderComponent,
           ),
         data: { titleKey: 'helpContactTitle', messageKey: 'helpContactMessage' },
+      },
+    ],
+  },
+  {
+    path: 'home',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./layout/authenticated-layout.component').then(
+        (module) => module.AuthenticatedLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/home/pages/home/home.component').then(
+            (module) => module.HomeComponent,
+          ),
       },
     ],
   },

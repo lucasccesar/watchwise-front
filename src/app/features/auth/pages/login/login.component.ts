@@ -15,6 +15,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthApiService } from '../../data-access/auth-api.service';
+import { AuthSessionService } from '../../../../core/session/session.service';
 import { GoogleIdentityService } from '../../data-access/google-identity.service';
 import { GOOGLE_OAUTH_CLIENT_ID } from '../../auth.config';
 import { messageCatalog } from '../../../../shared/i18n/messages';
@@ -53,6 +54,7 @@ export class LoginComponent implements AfterViewInit {
     private readonly authApi: AuthApiService,
     private readonly router: Router,
     private readonly googleIdentity: GoogleIdentityService,
+    private readonly session: AuthSessionService,
   ) {}
 
   ngAfterViewInit(): void {
@@ -118,7 +120,10 @@ export class LoginComponent implements AfterViewInit {
       .login({ identifier: email.trim(), password })
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => void this.router.navigateByUrl('/home'),
+        next: (user) => {
+          this.session.setUser(user);
+          void this.router.navigateByUrl('/home');
+        },
         error: (error: unknown) => {
           if (this.isAlreadyAuthenticated(error)) {
             void this.router.navigateByUrl('/home');
@@ -140,7 +145,10 @@ export class LoginComponent implements AfterViewInit {
       .loginWithGoogle(idToken)
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => void this.router.navigateByUrl('/home'),
+        next: (user) => {
+          this.session.setUser(user);
+          void this.router.navigateByUrl('/home');
+        },
         error: (error: unknown) => {
           if (this.isAlreadyAuthenticated(error)) {
             void this.router.navigateByUrl('/home');

@@ -1,0 +1,370 @@
+<div class="home-page">
+  @if (status() === 'loading') {
+    <section class="page-state" role="status" aria-live="polite">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <h1>{{ copy.loadingTitle }}</h1>
+      <p>{{ copy.loadingDescription }}</p>
+    </section>
+  } @else if (status() === 'error') {
+    <section class="page-state page-state--error" role="alert">
+      <div class="state-icon" aria-hidden="true">!</div>
+      <h1>{{ copy.errorTitle }}</h1>
+      <p>{{ errorMessage() }}</p>
+      <button class="primary-button" type="button" (click)="loadSummary()">
+        {{ copy.retry }}
+      </button>
+    </section>
+  } @else if (summary(); as data) {
+    <header class="home-heading">
+      <div>
+        <p class="home-eyebrow">{{ formatDate(todayIsoDate()) }}</p>
+        <h1>{{ copy.homeTitle }}</h1>
+        <p class="home-greeting">{{ copy.welcomeBack }}, {{ viewerName() }}</p>
+        <p class="home-subtitle">{{ copy.homeSubtitle }}</p>
+      </div>
+      @if (data.hasUnreadNotifications) {
+        <span class="notification-status" role="status">
+          <span class="notification-status-dot" aria-hidden="true"></span>
+          {{ copy.notificationsUnread }}
+        </span>
+      }
+    </header>
+
+    <section class="stats-section" aria-labelledby="stats-title">
+      <h2 class="visually-hidden" id="stats-title">{{ copy.statistics }}</h2>
+      <div class="stats-track">
+        <article class="stats-card" aria-label="{{ copy.episodesWatched }}">
+          <div class="stat-metric">
+            <span class="stat-icon stat-icon--series" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M17 2 12 7 7 2M6.8 22h10.4c1.68 0 2.52 0 3.16-.33a3 3 0 0 0 1.31-1.3c.33-.64.33-1.48.33-3.16v-5.42c0-1.68 0-2.52-.33-3.16a3 3 0 0 0-1.31-1.31C19.72 7 18.88 7 17.2 7H6.8c-1.68 0-2.52 0-3.16.32a3 3 0 0 0-1.31 1.31C2 9.28 2 10.12 2 11.8v5.42c0 1.68 0 2.52.33 3.16a3 3 0 0 0 1.31 1.3c.64.33 1.48.33 3.16.33Z" /></svg>
+            </span>
+            <div class="stat-copy">
+              <span class="stat-label">{{ copy.episodesWatched }}</span>
+              <strong>{{ formatNumber(data.totalEpisodesWatched) }}</strong>
+            </div>
+          </div>
+          <div class="stat-metric">
+            <span class="stat-icon stat-icon--time" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            </span>
+            <div class="stat-copy">
+              <span class="stat-label">{{ copy.seriesTime }}</span>
+              <strong>{{ formatDuration(data.totalMinutesWatchedEpisodes) }}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="stats-card" [attr.aria-label]="copy.moviesWatched">
+          <div class="stat-metric">
+            <span class="stat-icon stat-icon--movies" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M22 12H2m20-5h-5M7 7H2m20 10h-5M7 17H2M17 2v20M7 2v20M2 6.8v10.4c0 1.68 0 2.52.33 3.16a3 3 0 0 0 1.31 1.31C4.28 22 5.12 22 6.8 22h10.4c1.68 0 2.52 0 3.16-.33a3 3 0 0 0 1.31-1.31c.33-.64.33-1.48.33-3.16V6.8c0-1.68 0-2.52-.33-3.16a3 3 0 0 0-1.31-1.31C19.72 2 18.88 2 17.2 2H6.8c-1.68 0-2.52 0-3.16.33a3 3 0 0 0-1.31 1.31C2 4.28 2 5.12 2 6.8Z" /></svg>
+            </span>
+            <div class="stat-copy">
+              <span class="stat-label">{{ copy.moviesWatched }}</span>
+              <strong>{{ formatNumber(data.totalMoviesWatched) }}</strong>
+              <span class="stat-detail">{{ formatNumber(data.totalDistinctMoviesWatched) }} {{ copy.distinctMovies }}</span>
+            </div>
+          </div>
+          <div class="stat-metric">
+            <span class="stat-icon stat-icon--time" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            </span>
+            <div class="stat-copy">
+              <span class="stat-label">{{ copy.moviesTime }}</span>
+              <strong>{{ formatDuration(data.totalMinutesWatchedMovies) }}</strong>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="home-content-grid">
+      <section class="home-section continue-section" aria-labelledby="continue-title">
+        <div class="section-heading">
+          <h2 id="continue-title">{{ copy.continueWatching }}</h2>
+          <span class="section-count">{{ formatNumber(data.nextEpisodes.length) }}</span>
+        </div>
+        @if (data.nextEpisodes.length > 0) {
+          <div class="episode-list">
+            @for (episode of data.nextEpisodes; track episode.seriesTmdbId) {
+              <article class="episode-card">
+                <div class="episode-image">
+                  @if (imageUrl(episode.stillPath, 'w780')) {
+                    <img [src]="imageUrl(episode.stillPath, 'w780')" alt="" loading="lazy" />
+                  } @else {
+                    <span class="image-blank" aria-hidden="true"></span>
+                  }
+                  @if (episode.watchedPercentage !== null) {
+                    <span class="episode-progress-label">{{ formatNumber(progressPercent(episode)) }}%</span>
+                  }
+                </div>
+                <div class="episode-content">
+                  <div class="episode-title-row">
+                    <div class="episode-title-copy">
+                      <h3>{{ episode.seriesTitle || copy.titleUnavailable }}</h3>
+                      <p>{{ episodeLabel(episode) }}<span aria-hidden="true"> · </span>{{ episode.episodeTitle || copy.episode }}</p>
+                    </div>
+                    <span class="episode-type">{{ copy.series }}</span>
+                  </div>
+                  <div class="episode-progress-track" role="progressbar" [attr.aria-label]="copy.progress" [attr.aria-valuenow]="progressPercent(episode)" aria-valuemin="0" aria-valuemax="100">
+                    <span [style.width.%]="progressPercent(episode)"></span>
+                  </div>
+                  <div class="episode-meta">
+                    <span>{{ movieProgressLabel(episode) }}</span>
+                    @if (episode.runtimeMinutes) {
+                      <span>{{ formatNumber(episode.runtimeMinutes) }} {{ copy.minutes }}</span>
+                    }
+                    @if (episode.communityAverageScore !== null) {
+                      <span class="community-score" [attr.aria-label]="copy.communityAverage">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>
+                        {{ formatScore(episode.communityAverageScore) }}
+                      </span>
+                    }
+                  </div>
+                  <button class="secondary-button mark-watched-button" type="button" disabled [title]="copy.actionUnavailable" [attr.aria-label]="copy.markWatched + ': ' + copy.actionUnavailableShort">
+                    {{ copy.markWatched }}
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">{{ copy.noProgress }}</p>
+        }
+        @if (data.nextEpisodes.length > 0) {
+          <p class="inline-note">{{ copy.actionUnavailableShort }}</p>
+        }
+      </section>
+
+      <section class="home-section upcoming-section" aria-labelledby="upcoming-title">
+        <div class="section-heading section-heading--wrap">
+          <h2 id="upcoming-title">{{ copy.upcoming }}</h2>
+          <div class="view-switch" role="group" [attr.aria-label]="copy.upcoming">
+            <button type="button" [attr.aria-pressed]="upcomingView() === 'calendar'" [class.view-switch--active]="upcomingView() === 'calendar'" (click)="upcomingView.set('calendar')">{{ copy.calendarView }}</button>
+            <button type="button" [attr.aria-pressed]="upcomingView() === 'next'" [class.view-switch--active]="upcomingView() === 'next'" (click)="upcomingView.set('next')">{{ copy.nextView }}</button>
+          </div>
+        </div>
+        @if (data.upcomingReleases.length > 0) {
+          @if (upcomingView() === 'calendar') {
+            <ol class="upcoming-groups" [attr.aria-label]="copy.upcomingCalendar">
+              @for (group of upcomingGroups(); track group.date) {
+                <li class="upcoming-day">
+                  <div class="upcoming-day-heading">
+                    <strong>{{ group.label }}</strong>
+                    <span>{{ group.shortDate }}</span>
+                  </div>
+                  <div class="upcoming-day-items">
+                    @for (release of group.releases; track trackByUpcoming($index, release)) {
+                      <article class="release-row">
+                        <div class="release-row-topline">
+                          <span class="release-kind" [class.release-kind--episode]="release.eventType === 'EPISODE'">{{ releaseTypeLabel(release) }}</span>
+                          <span class="release-status">{{ releaseStatusLabel(release) }}</span>
+                          <span class="watch-status">{{ watchStatusLabel(release) }}</span>
+                        </div>
+                        <div class="release-row-title">
+                          <strong>{{ releaseTitle(release) }}</strong>
+                          @if (releaseSubtitle(release); as subtitle) {
+                            <span>{{ subtitle }}</span>
+                          }
+                        </div>
+                        <div class="release-row-meta">
+                          @for (source of releaseSourceLabels(release); track source) {
+                            <span class="source-chip">{{ source }}</span>
+                          }
+                          @if (release.releaseContext?.network) {
+                            <span>{{ copy.network }}: {{ release.releaseContext?.network }}</span>
+                          }
+                        </div>
+                      </article>
+                    }
+                  </div>
+                </li>
+              }
+            </ol>
+          } @else {
+            <ol class="release-poster-list" [attr.aria-label]="copy.upcomingItems">
+              @for (release of data.upcomingReleases; track trackByUpcoming($index, release)) {
+                <li>
+                  <article class="release-poster-card">
+                    <div class="release-poster">
+                      @if (imageUrl(release.content.posterPath || release.content.stillPath)) {
+                        <img [src]="imageUrl(release.content.posterPath || release.content.stillPath)" alt="" loading="lazy" />
+                      } @else {
+                    <span class="image-blank" aria-hidden="true"></span>
+                      }
+                      <span class="release-kind release-kind--overlay">{{ releaseTypeLabel(release) }}</span>
+                    </div>
+                    <div class="release-poster-copy">
+                      <strong>{{ releaseTitle(release) }}</strong>
+                      @if (releaseSubtitle(release); as subtitle) {
+                        <span>{{ subtitle }}</span>
+                      }
+                      <span>{{ formatDate(release.date) }}</span>
+                      <span>{{ releaseStatusLabel(release) }} · {{ watchStatusLabel(release) }}</span>
+                      <div class="release-poster-sources">
+                        @for (source of releaseSourceLabels(release); track source) {
+                          <span class="source-chip">{{ source }}</span>
+                        }
+                        @if (release.releaseContext?.network) {
+                          <span>{{ release.releaseContext?.network }}</span>
+                        }
+                      </div>
+                    </div>
+                  </article>
+                </li>
+              }
+            </ol>
+          }
+        } @else {
+          <p class="empty-state">{{ copy.emptyUpcoming }}</p>
+        }
+      </section>
+
+      <section class="home-section history-section" aria-labelledby="history-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="history-title">{{ copy.last30Days }}</h2>
+            <p class="section-subtitle">{{ copy.watchActivity }}</p>
+          </div>
+        </div>
+        @if (hasWatchHistory()) {
+          <div class="daily-chart" role="group" [attr.aria-label]="copy.watchActivity">
+            @for (day of chartDays(); track trackByDate($index, day)) {
+              <div class="chart-day" role="img" [attr.aria-label]="day.description + ': ' + formatNumber(day.count) + ' ' + copy.episodesWatched">
+                <span class="chart-column" aria-hidden="true"><span class="chart-bar" [style.height.%]="day.height"></span></span>
+                <span class="chart-label">{{ day.label }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-chart">{{ copy.noHistory }}</p>
+        }
+        <div class="genre-charts">
+          <section class="genre-chart" aria-labelledby="movie-genres-title">
+            <h3 id="movie-genres-title">{{ copy.moviesGenres }}</h3>
+            @if (movieGenres().length > 0) {
+              <ol class="genre-list genre-list--movies">
+                @for (genre of movieGenres(); track trackByGenre($index, genre); let index = $index) {
+                  <li>
+                    <span class="genre-label">{{ genre.genre }}</span>
+                    <span class="genre-track"><span [style.width.%]="genre.percentage" [class]="genreColorClass(index)"></span></span>
+                    <strong>{{ formatNumber(genre.count) }}</strong>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p class="empty-genre">{{ copy.noGenres }}</p>
+            }
+          </section>
+          <section class="genre-chart" aria-labelledby="episode-genres-title">
+            <h3 id="episode-genres-title">{{ copy.episodesGenres }}</h3>
+            @if (episodeGenres().length > 0) {
+              <ol class="genre-list genre-list--episodes">
+                @for (genre of episodeGenres(); track trackByGenre($index, genre); let index = $index) {
+                  <li>
+                    <span class="genre-label">{{ genre.genre }}</span>
+                    <span class="genre-track"><span [style.width.%]="genre.percentage" [class]="genreColorClass(index)"></span></span>
+                    <strong>{{ formatNumber(genre.count) }}</strong>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p class="empty-genre">{{ copy.noGenres }}</p>
+            }
+          </section>
+        </div>
+      </section>
+
+      <section class="home-section recent-section" aria-labelledby="recent-title">
+        <div class="section-heading">
+          <h2 id="recent-title">{{ copy.recentlyWatched }}</h2>
+        </div>
+        @if (data.recentlyWatched.length > 0) {
+          <ol class="recent-list">
+            @for (entry of data.recentlyWatched; track entry.id; let index = $index) {
+              <li>
+                <article class="recent-card">
+                  @if (posterFor(entry.card); as poster) {
+                    <div class="recent-poster">
+                      <img [src]="poster" alt="" loading="lazy" />
+                      @if (entry.card?.previewStatus === 'PARTIAL') {
+                        <span class="preview-badge">{{ copy.partialPreview }}</span>
+                      }
+                    </div>
+                  } @else if (entry.card?.previewStatus === 'PARTIAL' || entry.card?.previewStatus === 'UNAVAILABLE') {
+                    <div class="recent-poster">
+                      <span class="image-placeholder" aria-hidden="true">{{ entry.card?.previewStatus === 'PARTIAL' ? copy.partialPreview : copy.unavailablePreview }}</span>
+                    </div>
+                  }
+                  <div class="recent-card-copy">
+                    <span class="recent-rank" aria-hidden="true">{{ index + 1 }}</span>
+                    <h3>{{ entry.card?.title || copy.titleUnavailable }}</h3>
+                    @if (entry.card?.releaseYear) {
+                      <span>{{ entry.card?.releaseYear }}</span>
+                    }
+                    <span>{{ copy.watchedOn }} {{ formatDate(entry.watchedDate) }}</span>
+                    @if (entry.score !== null) {
+                      <span class="recent-score"><span aria-hidden="true">★</span> {{ formatNumber(entry.score) }} · {{ copy.score }}</span>
+                    }
+                  </div>
+                </article>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="empty-state">{{ copy.emptyRecentlyWatched }}</p>
+        }
+      </section>
+
+      <section class="home-section social-section" aria-labelledby="social-title">
+        <div class="section-heading">
+          <h2 id="social-title">{{ copy.socialActivities }}</h2>
+        </div>
+        @if (data.socialActivities.length > 0) {
+          <ol class="social-list">
+            @for (activity of data.socialActivities; track activity.id) {
+              <li>
+                <article class="social-card">
+                  <div class="social-avatar">
+                    @if (activity.user.profilePicture) {
+                      <img [src]="activity.user.profilePicture" alt="" loading="lazy" />
+                    } @else {
+                      <span aria-hidden="true">{{ activityUser(activity).charAt(0).toLocaleUpperCase('pt-BR') }}</span>
+                    }
+                  </div>
+                  <div class="social-card-copy">
+                    <p><strong>{{ activityUser(activity) }}</strong> {{ activityVerb(activity) }}</p>
+                    @if (activity.targetLabel) {
+                      <span class="social-target">{{ activity.targetLabel }}</span>
+                    } @else if (activity.card?.title) {
+                      <span class="social-target">{{ activity.card?.title }}</span>
+                    }
+                    <div class="social-meta">
+                      <time [attr.datetime]="activity.createdAt">{{ formatActivityDate(activity.createdAt) }}</time>
+                      @if (activity.likesCount) {
+                        <span>{{ formatNumber(activity.likesCount) }} {{ copy.likes }}</span>
+                      }
+                      @if (activity.commentsCount) {
+                        <span>{{ formatNumber(activity.commentsCount) }} {{ copy.comments }}</span>
+                      }
+                    </div>
+                      @if (activity.card?.previewStatus === 'PARTIAL') {
+                        <span class="social-preview-status">{{ copy.partialPreview }}</span>
+                    }
+                  </div>
+                  @if (posterFor(activity.card); as poster) {
+                    <img class="social-poster" [src]="poster" alt="" loading="lazy" />
+                  } @else if (activity.card?.previewStatus === 'UNAVAILABLE' || activity.card?.previewStatus === 'PARTIAL') {
+                    <span class="social-poster social-poster--empty" [attr.aria-label]="activity.card?.previewStatus === 'PARTIAL' ? copy.partialPreview : copy.unavailablePreview">—</span>
+                  }
+                </article>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="empty-state">{{ copy.emptySocial }}</p>
+        }
+      </section>
+    </div>
+  }
+</div>

@@ -1,0 +1,99 @@
+<div class="product-shell">
+  <header class="product-header">
+    <div class="product-header-start">
+      <button
+        class="icon-button menu-toggle"
+        type="button"
+        [attr.aria-label]="isMenuOpen() ? copy.closeMenu : copy.openMenu"
+        [attr.aria-expanded]="isMenuOpen()"
+        aria-controls="product-navigation"
+        (click)="toggleMenu()"
+      >
+        @if (isMenuOpen()) {
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+        }
+      </button>
+      <a class="brand" routerLink="/home" [attr.aria-label]="copy.home">
+        <img src="/watchwise-logo.svg" alt="Watchwise" width="126" height="24" />
+      </a>
+    </div>
+
+    <nav
+      class="product-navigation"
+      id="product-navigation"
+      [class.product-navigation--open]="isMenuOpen()"
+      [attr.aria-label]="copy.mainNavigation"
+    >
+      <a class="navigation-link navigation-link--active" routerLink="/home" routerLinkActive="navigation-link--active" (click)="closeMenu()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg>
+        <span>{{ copy.home }}</span>
+      </a>
+      <span class="navigation-section-label">{{ copy.discover }}</span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg><span>{{ copy.social }}</span></span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.trending }}</span></span>
+      <span class="navigation-section-label">{{ copy.yourSpace }}</span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.diary }}</span></span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.watchlist }}</span></span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.lists }}</span></span>
+      <span class="navigation-link navigation-link--unavailable navigation-link--optional" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.picks }}</span></span>
+      <span class="navigation-link navigation-link--unavailable navigation-link--optional" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 9h.01M16 9h.01M8 15c1 1.2 2.3 2 4 2s3-.8 4-2" /></svg><span>{{ copy.games }}</span></span>
+      <p class="navigation-note">{{ copy.navigationNote }}</p>
+    </nav>
+
+    <div class="product-header-actions">
+      <button class="icon-button" type="button" disabled [attr.aria-label]="copy.searchUnavailable">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2" /><path d="m16.2 16.2 4.3 4.3" /></svg>
+      </button>
+      <button
+        class="icon-button notification-button"
+        type="button"
+        disabled
+        [attr.aria-label]="shellState.hasUnreadNotifications() ? copy.notificationsUnread : copy.notifications"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
+        @if (shellState.hasUnreadNotifications()) {
+          <span class="notification-dot" aria-hidden="true"></span>
+        }
+      </button>
+      @if (shellState.viewer(); as viewer) {
+        <span class="header-viewer">
+          @if (viewer.profilePicture) {
+            <img [src]="viewer.profilePicture" alt="" />
+          } @else {
+            <span class="header-viewer-initial" aria-hidden="true">{{ (viewer.name || viewer.username || '?').charAt(0).toLocaleUpperCase('pt-BR') }}</span>
+          }
+          <span>{{ viewer.name || viewer.username }}</span>
+        </span>
+      }
+    </div>
+  </header>
+
+  <div class="product-body">
+    @if (isMenuOpen()) {
+      <button class="navigation-backdrop" type="button" [attr.aria-label]="copy.closeMenu" (click)="closeMenu()"></button>
+    }
+    <main class="product-main"><router-outlet /></main>
+  </div>
+
+  <nav class="mobile-bottom-navigation" [attr.aria-label]="copy.mainNavigation">
+    <a class="bottom-nav-link bottom-nav-link--active" routerLink="/home" routerLinkActive="bottom-nav-link--active">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg>
+      <span>{{ copy.home }}</span>
+    </a>
+    <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg>
+      <span>{{ copy.social }}</span>
+    </span>
+    <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg>
+      <span>{{ copy.diary }}</span>
+    </span>
+    <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg>
+      <span>{{ copy.watchlist }}</span>
+    </span>
+  </nav>
+</div>
