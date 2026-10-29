@@ -37,7 +37,7 @@ const initial: TrendingResponse = {
 function read(component: TrendingComponent) {
   return component as unknown as {
     section(type: TrendingType): { cards: TrendingCard[]; visibleCount: number };
-    showMore(type: TrendingType): void;
+    toggleMore(type: TrendingType): void;
     status(): string;
   };
 }
@@ -60,7 +60,7 @@ describe('TrendingComponent', () => {
     );
 
     component.ngOnInit();
-    read(component).showMore('MOVIE');
+    read(component).toggleMore('MOVIE');
 
     expect(api.getTrending).toHaveBeenCalledWith('week');
     expect(api.getSection).toHaveBeenCalledWith('MOVIE', 'week', 1);

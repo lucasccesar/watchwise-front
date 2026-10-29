@@ -46,10 +46,8 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly footerCopy = messageCatalog['pt-BR'].home;
   protected readonly copyrightYear = new Date().getFullYear();
   protected readonly period = signal<TrendingWindow>('week');
-  protected readonly query = signal('');
   protected readonly view = signal<'grid' | 'list'>('grid');
   protected readonly filterOpen = signal(false);
-  protected readonly selectedType = signal<TrendingType | null>(null);
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly errorMessage = signal('');
   protected readonly sections = signal<Sections>({ MOVIE: emptySection(), SERIES: emptySection() });
@@ -118,7 +116,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected changePeriod(period: TrendingWindow): void {
     if (period === this.period()) return;
     this.period.set(period);
-    this.selectedType.set(null);
     this.closeFilters();
     this.load();
   }
@@ -158,17 +155,9 @@ export class TrendingComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected updateQuery(event: Event): void {
-    this.query.set((event.target as HTMLInputElement).value);
-  }
-
   protected visibleCards(type: TrendingType): TrendingCard[] {
     const state = this.sections()[type];
-    const query = this.query().trim().toLocaleLowerCase('pt-BR');
-    const matches = query
-      ? state.cards.filter((card) => (card.title ?? '').toLocaleLowerCase('pt-BR').includes(query))
-      : state.cards;
-    return matches.slice(0, state.visibleCount);
+    return state.cards.slice(0, state.visibleCount);
   }
 
   protected section(type: TrendingType): SectionState {
@@ -177,18 +166,27 @@ export class TrendingComponent implements OnInit, OnDestroy {
 
   protected canShowMore(type: TrendingType): boolean {
     const state = this.section(type);
-    if (this.query().trim()) return false;
     return (
+      state.visibleCount > 12 ||
       state.cards.length > state.visibleCount ||
       (state.page?.size === 12 &&
-        (state.page.totalResults > state.cards.length || state.page.hasNext)) ||
-      (!!state.page?.hasNext && state.page.page < 500)
+        (state.page.totalResults > state.cards.length || state.page.hasNext))
     );
   }
 
-  protected showMore(type: TrendingType): void {
+  protected moreButtonLabel(type: TrendingType): string {
+    const state = this.section(type);
+    if (state.loading) return this.copy.loadingMore;
+    return state.visibleCount > 12 ? this.copy.showFewer : this.copy.showMore;
+  }
+
+  protected toggleMore(type: TrendingType): void {
     const state = this.section(type);
     if (state.loading) return;
+    if (state.visibleCount > 12) {
+      this.updateSection(type, { visibleCount: 12 });
+      return;
+    }
     if (state.cards.length > state.visibleCount) {
       this.updateSection(type, { visibleCount: state.cards.length });
       return;
@@ -219,27 +217,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected showFewer(type: TrendingType): void {
-    this.updateSection(type, { visibleCount: 12 });
-  }
-
-  protected showAll(type: TrendingType): void {
-    this.selectedType.set(type);
-    const state = this.section(type);
-    if (
-      state.visibleCount === 12 &&
-      (state.cards.length > 12 ||
-        (state.page?.totalResults ?? 0) > state.cards.length ||
-        !!state.page?.hasNext)
-    ) {
-      this.showMore(type);
-    }
-  }
-
-  protected showBoth(): void {
-    this.selectedType.set(null);
-  }
-
   protected title(type: TrendingType): string {
     return type === 'MOVIE' ? this.copy.movies : this.copy.series;
   }
@@ -262,15 +239,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
       return `${card.numberOfSeasons} ${card.numberOfSeasons === 1 ? this.copy.season : this.copy.seasons}`;
     }
     return '';
-  }
-
-  protected rating(card: TrendingCard): string | null {
-    return card.tmdbVoteAverage == null
-      ? null
-      : new Intl.NumberFormat('pt-BR', {
-          maximumFractionDigits: 1,
-          minimumFractionDigits: 1,
-        }).format(card.tmdbVoteAverage);
   }
 
   protected watchedDate(card: TrendingCard): string | null {

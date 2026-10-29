@@ -10,19 +10,6 @@
   </section>
 
   <div class="tr-toolbar">
-    <label class="tr-search">
-      <span class="tr-visually-hidden">{{ copy.searchLabel }}</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m16 16 5 5" />
-      </svg>
-      <input
-        type="search"
-        [value]="query()"
-        [placeholder]="copy.searchPlaceholder"
-        (input)="updateQuery($event)"
-      />
-    </label>
     <span class="tr-mobile-date">{{ periodRange() }}</span>
     <div class="tr-period" role="group" [attr.aria-label]="copy.periodLabel">
       <button
@@ -66,148 +53,122 @@
       <button type="button" (click)="load()">{{ copy.retry }}</button>
     </div>
   } @else {
-    @if (selectedType()) {
-      <button class="tr-back" type="button" (click)="showBoth()">
-        ← {{ copy.backToTrending }}
-      </button>
-    }
     @for (type of sectionTypes; track type) {
-      @if (selectedType() === null || selectedType() === type) {
-        <section
-          class="tr-section"
-          [class.tr-section-series]="type === 'SERIES'"
-          [attr.aria-labelledby]="type === 'MOVIE' ? 'tr-movies' : 'tr-series'"
-        >
-          <div class="tr-section-inner">
-            <div class="tr-section-heading">
-              <h2 [id]="type === 'MOVIE' ? 'tr-movies' : 'tr-series'">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m2 17 6-6 4 4 10-10M15 5h7v7" />
-                </svg>
-                {{ title(type) }}
-              </h2>
-              @if (selectedType() === null) {
-                <button class="tr-see-all" type="button" (click)="showAll(type)">
-                  {{ type === 'MOVIE' ? copy.seeAllMovies : copy.seeAllSeries }}
-                  <span aria-hidden="true">›</span>
-                </button>
-              }
-            </div>
+      <section
+        class="tr-section"
+        [class.tr-section-series]="type === 'SERIES'"
+        [attr.aria-labelledby]="type === 'MOVIE' ? 'tr-movies' : 'tr-series'"
+      >
+        <div class="tr-section-inner">
+          <div class="tr-section-heading">
+            <h2 [id]="type === 'MOVIE' ? 'tr-movies' : 'tr-series'">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m2 17 6-6 4 4 10-10M15 5h7v7" />
+              </svg>
+              {{ title(type) }}
+            </h2>
+          </div>
 
-            @if (visibleCards(type).length > 0) {
-              <ol class="tr-grid" [class.tr-grid-list]="view() === 'list'">
-                @for (card of visibleCards(type); track card.tmdbId) {
-                  <li class="tr-card">
-                    <article [attr.aria-label]="cardTitle(card)">
-                      <div class="tr-poster">
-                        @if (card.posterUrl) {
-                          <img [src]="card.posterUrl" alt="" loading="lazy" />
-                        } @else {
-                          <span class="tr-poster-empty" aria-hidden="true">{{
-                            copy.noPoster
-                          }}</span>
-                        }
-                        @if (rating(card); as score) {
-                          <span
-                            class="tr-score"
-                            [attr.aria-label]="copy.tmdbRating + ': ' + score + ' / 10'"
-                            ><svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path
-                                d="m12 2 3.1 6.3 7 .9-5 5 .9 7-6-3.3-6 3.3.9-7-5-5 7-.9z"
-                              /></svg
-                            >{{ score }}</span
-                          >
-                        }
-                        @if (stateLabel(card); as state) {
-                          <span
-                            class="tr-state-marker"
-                            [class.tr-state-marker-watchlist]="
+          @if (visibleCards(type).length > 0) {
+            <ol class="tr-grid" [class.tr-grid-list]="view() === 'list'">
+              @for (card of visibleCards(type); track card.tmdbId) {
+                <li class="tr-card">
+                  <article [attr.aria-label]="cardTitle(card)">
+                    <div class="tr-poster">
+                      @if (card.posterUrl) {
+                        <img [src]="card.posterUrl" alt="" loading="lazy" />
+                      } @else {
+                        <span class="tr-poster-empty" aria-hidden="true">{{
+                          copy.noPoster
+                        }}</span>
+                      }
+                      @if (stateLabel(card); as state) {
+                        <span
+                          class="tr-state-marker"
+                          [class.tr-state-marker-watchlist]="
+                            card.viewerState?.inWatchlist &&
+                            card.viewerState?.watchStatus !== 'WATCHED' &&
+                            card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
+                          "
+                          [class.tr-state-marker-dropped]="
+                            card.viewerState?.dropped && !card.viewerState?.inWatchlist
+                          "
+                          [attr.aria-label]="state"
+                          [title]="state"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            @if (
                               card.viewerState?.inWatchlist &&
                               card.viewerState?.watchStatus !== 'WATCHED' &&
                               card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
-                            "
-                            [class.tr-state-marker-dropped]="
-                              card.viewerState?.dropped && !card.viewerState?.inWatchlist
-                            "
-                            [attr.aria-label]="state"
-                            [title]="state"
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              @if (
-                                card.viewerState?.inWatchlist &&
-                                card.viewerState?.watchStatus !== 'WATCHED' &&
-                                card.viewerState?.watchStatus !== 'PARTIALLY_WATCHED'
-                              ) {
-                                <path d="M5 3h14v18l-7-4-7 4z" />
-                              } @else if (card.viewerState?.dropped) {
-                                <path d="M5 12h14" />
-                              } @else {
-                                <path d="m5 12 4 4L19 6" />
-                              }
-                            </svg>
-                          </span>
-                        }
-                        @if (watchedDate(card); as date) {
-                          <span class="tr-watched-date">{{ date }}</span>
-                        }
-                        @if (card.viewerState?.myRating; as myRating) {
-                          <span
-                            class="tr-my-rating"
-                            [attr.aria-label]="copy.yourRating + ': ' + myRating + ' / 10'"
-                            ><svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path
-                                d="m12 2 3.1 6.3 7 .9-5 5 .9 7-6-3.3-6 3.3.9-7-5-5 7-.9z"
-                              /></svg
-                            >{{ myRating }}</span
-                          >
-                        }
+                            ) {
+                              <path d="M5 3h14v18l-7-4-7 4z" />
+                            } @else if (card.viewerState?.dropped) {
+                              <path d="M5 12h14" />
+                            } @else {
+                              <path d="m5 12 4 4L19 6" />
+                            }
+                          </svg>
+                        </span>
+                      }
+                      @if (watchedDate(card); as date) {
+                        <span class="tr-watched-date">{{ date }}</span>
+                      }
+                      @if (card.viewerState?.myRating; as myRating) {
+                        <span
+                          class="tr-my-rating"
+                          [attr.aria-label]="copy.yourRating + ': ' + myRating + ' / 10'"
+                          ><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="m12 2 3.1 6.3 7 .9-5 5 .9 7-6-3.3-6 3.3.9-7-5-5 7-.9z"
+                            /></svg
+                          >{{ myRating }}</span
+                        >
+                      }
+                    </div>
+                    <div class="tr-card-text">
+                      <div class="tr-card-main">
+                        <strong>{{ cardTitle(card) }}</strong
+                        ><span>{{ cardLength(card) }}</span>
                       </div>
-                      <div class="tr-card-text">
-                        <div class="tr-card-main">
-                          <strong>{{ cardTitle(card) }}</strong
-                          ><span>{{ cardLength(card) }}</span>
-                        </div>
-                        <p>{{ cardMeta(card) }}</p>
-                        @if (card.previewStatus === 'PARTIAL') {
-                          <span class="tr-preview-note">{{ copy.partialPreview }}</span>
-                        }
-                        @if (card.previewStatus === 'UNAVAILABLE') {
-                          <span class="tr-preview-note">{{ copy.unavailablePreview }}</span>
-                        }
-                        @if (stateLabel(card); as state) {
-                          <span class="tr-list-state">{{ state }}</span>
-                        }
-                      </div>
-                    </article>
-                  </li>
-                }
-              </ol>
-            } @else {
-              <p class="tr-empty">{{ query().trim() ? copy.noMatches : copy.noTitles }}</p>
-            }
-
-            @if (section(type).error) {
-              <p class="tr-section-error" role="alert">{{ copy.moreError }}</p>
-            }
-            @if (canShowMore(type)) {
-              <button
-                class="tr-show-more"
-                type="button"
-                [disabled]="section(type).loading"
-                (click)="showMore(type)"
-              >
-                {{ section(type).loading ? copy.loadingMore : copy.showMore }}
-                <span aria-hidden="true">⌄</span>
-              </button>
-            }
-            @if (section(type).visibleCount > 12 && selectedType() === null) {
-              <button class="tr-show-fewer" type="button" (click)="showFewer(type)">
-                {{ copy.showFewer }}
-              </button>
-            }
-          </div>
-        </section>
-      }
+                      <p>{{ cardMeta(card) }}</p>
+                      @if (card.previewStatus === 'PARTIAL') {
+                        <span class="tr-preview-note">{{ copy.partialPreview }}</span>
+                      }
+                      @if (card.previewStatus === 'UNAVAILABLE') {
+                        <span class="tr-preview-note">{{ copy.unavailablePreview }}</span>
+                      }
+                      @if (stateLabel(card); as state) {
+                        <span class="tr-list-state">{{ state }}</span>
+                      }
+                    </div>
+                  </article>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="tr-empty">{{ copy.noTitles }}</p>
+          }
+          @if (section(type).error) {
+            <p class="tr-section-error" role="alert">{{ copy.moreError }}</p>
+          }
+          @if (canShowMore(type)) {
+            <button
+              class="tr-show-more"
+              type="button"
+              [disabled]="section(type).loading"
+              (click)="toggleMore(type)"
+            >
+              {{ moreButtonLabel(type) }}
+              <span
+                class="tr-more-chevron"
+                [class.tr-more-chevron-up]="section(type).visibleCount > 12"
+                aria-hidden="true"
+              ></span>
+            </button>
+          }
+        </div>
+      </section>
     }
   }
 
@@ -271,14 +232,6 @@
             ×
           </button>
         </div>
-        <label class="tr-filter-search"
-          ><span>{{ copy.searchLabel }}</span
-          ><input
-            type="search"
-            [value]="query()"
-            [placeholder]="copy.searchPlaceholder"
-            (input)="updateQuery($event)"
-        /></label>
         <fieldset>
           <legend>{{ copy.periodLabel }}</legend>
           <button
