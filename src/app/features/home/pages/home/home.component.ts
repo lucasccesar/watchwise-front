@@ -215,9 +215,9 @@ export class HomeComponent implements OnInit {
     const season = entry.content.seasonNumber;
     const episode = entry.content.episodeNumber;
     if (season === null || episode === null) {
-      return '';
+      return `${this.copy.seasonShort}—${this.copy.episodeShort}—`;
     }
-    return `${this.copy.seasonShort}${season} · ${this.copy.episodeShort}${episode}`;
+    return `${this.copy.seasonShort}${season}${this.copy.episodeShort}${episode}`;
   }
 
   protected recentPoster(entry: HomeRecentlyWatched): string | null {
@@ -229,31 +229,44 @@ export class HomeComponent implements OnInit {
       return null;
     }
     const summary = this.summary();
-    return summary?.nextEpisodes.find(
-      (episode) => episode.seriesTmdbId === entry.content.seriesTmdbId,
-    )?.seriesTitle ?? summary?.upcomingReleases.find(
-      (release) => release.content.seriesTmdbId === entry.content.seriesTmdbId,
-    )?.content.seriesTitle ?? summary?.socialActivities.find(
+    const seriesTmdbId = entry.content.seriesTmdbId;
+    const upcomingRelease = summary?.upcomingReleases.find(
+      (release) => release.content.seriesTmdbId === seriesTmdbId ||
+        (release.eventType === 'SERIES' && release.content.tmdbId === seriesTmdbId),
+    );
+    const recentlyWatchedSeries = summary?.recentlyWatched.find(
+      (recent) => recent.content.type === 'SERIES' && recent.content.tmdbId === seriesTmdbId,
+    )?.card?.title;
+    const socialSeries = summary?.socialActivities.find(
       (activity) =>
-        activity.content?.seriesTmdbId === entry.content.seriesTmdbId &&
-        activity.card?.type === 'SERIES',
-    )?.card?.title ?? null;
+        activity.card?.type === 'SERIES' &&
+        (activity.card.tmdbId === seriesTmdbId ||
+          activity.content?.seriesTmdbId === seriesTmdbId ||
+          (activity.content?.type === 'SERIES' && activity.content.tmdbId === seriesTmdbId)),
+    )?.card?.title;
+    return summary?.nextEpisodes.find(
+      (episode) => episode.seriesTmdbId === seriesTmdbId,
+    )?.seriesTitle ?? upcomingRelease?.content.seriesTitle ??
+      (upcomingRelease?.eventType === 'SERIES' ? upcomingRelease.content.title : null) ??
+      recentlyWatchedSeries ?? socialSeries ?? null;
   }
 
-  protected recentPrimaryTitle(entry: HomeRecentlyWatched): string {
-    return this.recentSeriesTitle(entry) ?? entry.card?.title ?? this.copy.titleUnavailable;
+  protected recentEpisodeSeriesTitle(entry: HomeRecentlyWatched): string {
+    return this.recentSeriesTitle(entry) ?? this.copy.titleUnavailable;
   }
 
-  protected recentSecondaryTitle(entry: HomeRecentlyWatched): string {
-    const seriesTitle = this.recentSeriesTitle(entry);
-    if (seriesTitle && entry.card?.title && seriesTitle !== entry.card.title) {
-      return entry.card.title;
-    }
-    return this.episodeLabelForEntry(entry) || this.copy.episode;
+  protected recentEpisodeTitle(entry: HomeRecentlyWatched): string {
+    return entry.card?.title || this.copy.titleUnavailable;
   }
 
   protected recentRuntime(entry: HomeRecentlyWatched): number | null {
-    return entry.card?.runtimeMinutes ?? entry.content.runtimeMinutes;
+    const cardRuntime = entry.card?.runtimeMinutes;
+    return cardRuntime && cardRuntime > 0 ? cardRuntime : entry.content.runtimeMinutes;
+  }
+
+  protected recentEpisodeRuntime(entry: HomeRecentlyWatched): string {
+    const runtime = this.recentRuntime(entry);
+    return runtime && runtime > 0 ? this.formatRuntime(runtime) : '—';
   }
 
   protected recentSubtitle(entry: HomeRecentlyWatched): string {

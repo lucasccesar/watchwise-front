@@ -333,12 +333,13 @@
                 }
               </div>
               <div class="recent-card-copy">
-                <div class="recent-title-row">
+                <div
+                  class="recent-title-row"
+                  [class.recent-episode-row]="entry.content.type === 'EPISODE'"
+                >
                   @if (entry.content.type === 'EPISODE') {
-                    <strong>{{ recentPrimaryTitle(entry) }}</strong>
-                    @if (episodeLabelForEntry(entry); as episodeLabel) {
-                      <span>{{ episodeLabel }}</span>
-                    }
+                    <strong>{{ recentEpisodeSeriesTitle(entry) }}</strong>
+                    <span>{{ episodeLabelForEntry(entry) }}</span>
                   } @else {
                     <strong>{{ entry.card?.title || copy.titleUnavailable }}</strong>
                     @if (recentRuntime(entry); as runtime) {
@@ -346,12 +347,13 @@
                     }
                   }
                 </div>
-                <div class="recent-subtitle-row">
+                <div
+                  class="recent-subtitle-row"
+                  [class.recent-episode-row]="entry.content.type === 'EPISODE'"
+                >
                   @if (entry.content.type === 'EPISODE') {
-                    <span>{{ recentSecondaryTitle(entry) }}</span>
-                    @if (recentRuntime(entry); as runtime) {
-                      <span>{{ formatRuntime(runtime) }}</span>
-                    }
+                    <span>{{ recentEpisodeTitle(entry) }}</span>
+                    <span>{{ recentEpisodeRuntime(entry) }}</span>
                   } @else {
                     <span>{{ recentSubtitle(entry) }}</span>
                     @if (entry.card?.releaseYear) {
