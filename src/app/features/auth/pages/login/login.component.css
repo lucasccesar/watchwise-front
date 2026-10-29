@@ -72,7 +72,7 @@ input:not([type='checkbox']) {
   color: var(--color-text);
   font-size: var(--font-size-md);
   line-height: var(--line-height-md);
-  transition: border-color 120ms ease;
+  transition: border-color .12s;
 }
 
 input::placeholder {
@@ -124,7 +124,7 @@ input.input-invalid,
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
-  transition: border-color 120ms ease;
+  transition: border-color .12s;
 }
 
 .password-field:focus-within {
@@ -233,9 +233,9 @@ input.input-invalid,
   text-align: center;
 }
 
-@media (max-width: 767px) {
-  .login {
-    gap: var(--space-6);
+@media (max-width: 800px) {
+  :host {
+    max-width: none;
   }
 
   .login-heading h1 {
@@ -244,6 +244,9 @@ input.input-invalid,
   }
 
   .login-card {
-    padding: var(--space-6);
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
 }
