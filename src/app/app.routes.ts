@@ -86,6 +86,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        title: 'Home | Watchwise',
         loadComponent: () =>
           import('./features/home/pages/home/home.component').then(
             (module) => module.HomeComponent,

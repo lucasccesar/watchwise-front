@@ -220,10 +220,6 @@ export class HomeComponent implements OnInit {
     return `${this.copy.seasonShort}${season} · ${this.copy.episodeShort}${episode}`;
   }
 
-  protected heroImage(entry: HomeRecentlyWatched): string | null {
-    return this.recentPoster(entry);
-  }
-
   protected recentPoster(entry: HomeRecentlyWatched): string | null {
     return this.imageUrl(entry.customPosterUrl) ?? this.posterFor(entry.card);
   }

@@ -15,11 +15,6 @@
     </section>
   } @else if (summary(); as data) {
     <section class="home-hero" aria-labelledby="home-title">
-      @if (data.recentlyWatched[0]; as latestWatched) {
-        @if (heroImage(latestWatched); as heroPoster) {
-          <img class="home-hero-image" [src]="heroPoster" alt="" fetchpriority="high" />
-        }
-      }
       <div class="home-hero-content">
         <div class="home-hero-heading">
           <h1 id="home-title">{{ copy.homeTitle }}</h1>
