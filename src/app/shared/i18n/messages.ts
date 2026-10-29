@@ -207,6 +207,8 @@ export const messageCatalog = {
       privacy: 'Privacidade',
       communityGuidelines: 'Diretrizes da comunidade',
       helpContact: 'Ajuda e contato',
+      episodeRemainingSingular: '{count} episódio restante',
+      episodesRemainingPlural: '{count} episódios restantes',
       homeFor: 'Início de',
     },
     auth: {
@@ -514,6 +516,8 @@ export const messageCatalog = {
       privacy: 'Privacy',
       communityGuidelines: 'Community guidelines',
       helpContact: 'Help & contact',
+      episodeRemainingSingular: '{count} episode remaining',
+      episodesRemainingPlural: '{count} episodes remaining',
       homeFor: 'Home for',
     },
     auth: {

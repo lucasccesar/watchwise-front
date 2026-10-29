@@ -103,6 +103,9 @@
                     <span>{{ formatScore(episode.communityAverageScore) }}</span>
                   </span>
                 }
+                @if (episodeRemainingLabel(episode); as remainingLabel) {
+                  <span class="episode-remaining">{{ remainingLabel }}</span>
+                }
                 <div class="content-menu-anchor">
                   <button
                     class="content-menu-trigger"

@@ -351,6 +351,23 @@
   line-height: var(--line-height-xs);
 }
 
+.episode-remaining {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: inline-flex;
+  min-height: 18px;
+  align-items: center;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: var(--line-height-xs);
+  white-space: nowrap;
+}
+
 .episode-score svg {
   width: 14px;
   height: 14px;

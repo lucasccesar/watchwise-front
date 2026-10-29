@@ -508,6 +508,20 @@ export class HomeComponent implements OnInit {
     return Math.round(Math.max(0, Math.min(100, episode.watchedPercentage ?? 0)));
   }
 
+  protected episodeRemainingLabel(episode: NextEpisode): string | null {
+    const watched = episode.watchedEpisodeCount;
+    const total = episode.totalEpisodeCount;
+    if (watched === null || total === null) {
+      return null;
+    }
+
+    const remaining = Math.max(0, total - watched);
+    const message = remaining === 1
+      ? this.copy.episodeRemainingSingular
+      : this.copy.episodesRemainingPlural;
+    return message.replace('{count}', this.formatNumber(remaining));
+  }
+
   protected releaseTypeLabel(event: UpcomingRelease): string {
     switch (event.eventType) {
       case 'MOVIE':
