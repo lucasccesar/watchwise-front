@@ -277,6 +277,8 @@
 }
 
 .episode-visual {
+  --episode-progress-height: 6px;
+
   position: relative;
   aspect-ratio: 16 / 9;
   overflow: visible;
@@ -317,15 +319,15 @@
   right: 0;
   bottom: 0;
   left: 0;
-  height: 6px;
+  height: var(--episode-progress-height);
   overflow: hidden;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   background: var(--color-secondary);
 }
 
 @media (max-width: 599px) {
-  .episode-progress-track {
-    height: 4px;
+  .episode-visual {
+    --episode-progress-height: 4px;
   }
 }
 
@@ -354,7 +356,7 @@
 .episode-remaining {
   position: absolute;
   right: var(--space-2);
-  bottom: var(--space-2);
+  bottom: calc(var(--space-2) + var(--episode-progress-height));
   display: inline-flex;
   min-height: 18px;
   align-items: center;
