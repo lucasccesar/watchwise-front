@@ -137,7 +137,7 @@ export interface HomeSummary {
   totalMoviesWatched: number;
   totalDistinctMoviesWatched: number;
   totalEpisodesWatched: number;
-  // distinctSeriesWatched is returned by the API but is absent from the local Home contract.
+  distinctSeriesWatched: number;
   nextEpisodes: NextEpisode[];
   upcomingReleases: UpcomingRelease[];
   watchCountByDayLast30Days: DailyWatchCount[];

@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
@@ -9,6 +9,7 @@ import {
   GenreCount,
   HomeApiService,
   HomeContentCard,
+  HomeRecentlyWatched,
   HomeSocialActivity,
   HomeSummary,
   NextEpisode,
@@ -23,10 +24,11 @@ interface ChartDay {
   description: string;
 }
 
-interface GenreBar {
+interface GenreBreakdown {
   genre: string;
-  count: number;
-  percentage: number;
+  episodes: number;
+  movies: number;
+  weight: number;
 }
 
 interface UpcomingDateGroup {
@@ -39,6 +41,7 @@ interface UpcomingDateGroup {
 type HomeStatus = 'loading' | 'ready' | 'error';
 
 @Component({
+  imports: [RouterLink],
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
@@ -49,26 +52,21 @@ export class HomeComponent implements OnInit {
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly upcomingView = signal<'calendar' | 'next'>('calendar');
-  protected readonly hasWatchHistory = computed(() =>
-    this.chartDays().some((day) => day.count > 0),
-  );
   protected readonly chartDays = computed(() =>
     this.createChartDays(this.summary()?.watchCountByDayLast30Days ?? []),
   );
-  protected readonly movieGenres = computed(() =>
-    this.createGenreBars(this.summary()?.genreCountsMoviesLast30Days ?? []),
+  protected readonly hasWatchHistory = computed(() =>
+    this.chartDays().some((day) => day.count > 0),
   );
-  protected readonly episodeGenres = computed(() =>
-    this.createGenreBars(this.summary()?.genreCountsEpisodesLast30Days ?? []),
+  protected readonly genreBreakdown = computed(() =>
+    this.createGenreBreakdown(
+      this.summary()?.genreCountsEpisodesLast30Days ?? [],
+      this.summary()?.genreCountsMoviesLast30Days ?? [],
+    ),
   );
   protected readonly upcomingGroups = computed(() =>
     this.groupUpcoming(this.summary()?.upcomingReleases ?? []),
   );
-  protected readonly viewerName = computed(() => {
-    const viewer = this.summary()?.viewer;
-    const sessionUser = this.session.user();
-    return viewer?.name?.trim() || sessionUser?.name || viewer?.username || sessionUser?.username || this.copy.welcome;
-  });
 
   constructor(
     private readonly api: HomeApiService,
@@ -125,20 +123,44 @@ export class HomeComponent implements OnInit {
     const remainingMinutes = total % 60;
 
     if (days > 0) {
-      return `${this.formatNumber(days)} ${this.copy.dayShort} ${this.formatNumber(hours)} ${this.copy.hourShort}`;
+      return `${this.formatNumber(days)}${this.copy.dayShort} ${this.formatNumber(hours)}${this.copy.hourShort}`;
     }
     if (hours > 0) {
-      return `${this.formatNumber(hours)} ${this.copy.hourShort} ${this.formatNumber(remainingMinutes)} ${this.copy.minuteShort}`;
+      return `${this.formatNumber(hours)}${this.copy.hourShort} ${this.formatNumber(remainingMinutes)}${this.copy.minuteShort}`;
     }
-    return `${this.formatNumber(remainingMinutes)} ${this.copy.minuteShort}`;
+    return `${this.formatNumber(remainingMinutes)}${this.copy.minuteShort}`;
+  }
+
+  protected totalHours(minutes: number | null | undefined): string {
+    return this.formatNumber(Math.floor(Math.max(0, minutes ?? 0) / 60));
+  }
+
+  protected formatRuntime(minutes: number | null | undefined): string {
+    if (!minutes) {
+      return '';
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours > 0 && remainingMinutes > 0) {
+      return `${hours}${this.copy.hourShort} ${remainingMinutes} ${this.copy.minuteShort}`;
+    }
+    if (hours > 0) {
+      return `${hours}${this.copy.hourShort}`;
+    }
+    return `${remainingMinutes} ${this.copy.minuteShort}`;
+  }
+
+  protected heroDate(): string {
+    return new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }).format(new Date());
   }
 
   protected formatDate(value: string | null | undefined): string {
-    if (!value) {
-      return this.copy.dateUnavailable;
-    }
-    const date = new Date(`${value}T12:00:00Z`);
-    if (Number.isNaN(date.getTime())) {
+    const date = this.parseDate(value);
+    if (!date) {
       return this.copy.dateUnavailable;
     }
     return new Intl.DateTimeFormat('pt-BR', {
@@ -148,26 +170,35 @@ export class HomeComponent implements OnInit {
     }).format(date);
   }
 
-  protected todayIsoDate(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  protected formatLongDate(value: string | null | undefined): string {
+    const date = this.parseDate(value);
+    if (!date) {
+      return this.copy.dateUnavailable;
+    }
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(date);
   }
 
-  protected formatActivityDate(value: string): string {
-    return this.formatDate(value.slice(0, 10));
-  }
-
-  protected movieProgressLabel(episode: NextEpisode): string {
-    const watched = this.formatNumber(episode.watchedEpisodeCount);
-    const total = episode.totalEpisodeCount
-      ? this.formatNumber(episode.totalEpisodeCount)
-      : null;
-    return total
-      ? `${watched} ${this.copy.of} ${total} ${this.copy.episodes}`
-      : `${watched} ${this.copy.episodesWatched}`;
+  protected formatReleaseTime(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    const timeMatch = value.match(/^(\d{1,2}:\d{2})/);
+    if (timeMatch) {
+      return timeMatch[1];
+    }
+    const time = new Date(value);
+    if (Number.isNaN(time.getTime())) {
+      return value;
+    }
+    return new Intl.DateTimeFormat('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(time);
   }
 
   protected episodeLabel(episode: NextEpisode): string {
@@ -176,7 +207,24 @@ export class HomeComponent implements OnInit {
     if (season === null || number === null) {
       return this.copy.episode;
     }
-    return `${this.copy.seasonShort} ${season} · ${this.copy.episodeShort} ${number}`;
+    return `${this.copy.seasonShort}${season} · ${this.copy.episodeShort}${number}`;
+  }
+
+  protected episodeLabelForEntry(entry: HomeRecentlyWatched): string {
+    const season = entry.content.seasonNumber;
+    const episode = entry.content.episodeNumber;
+    if (season === null || episode === null) {
+      return '';
+    }
+    return `${this.copy.seasonShort}${season} · ${this.copy.episodeShort}${episode}`;
+  }
+
+  protected recentSubtitle(entry: HomeRecentlyWatched): string {
+    const firstGenre = entry.card?.genres?.[0];
+    if (firstGenre) {
+      return firstGenre;
+    }
+    return entry.content.type === 'EPISODE' ? this.copy.episode : this.copy.movie;
   }
 
   protected progressPercent(episode: NextEpisode): number {
@@ -194,35 +242,7 @@ export class HomeComponent implements OnInit {
       case 'SERIES':
         return this.copy.series;
       default:
-        return this.copy.upcoming;
-    }
-  }
-
-  protected releaseStatusLabel(event: UpcomingRelease): string {
-    switch (event.releaseStatus) {
-      case 'RELEASED':
-        return this.copy.statusReleased;
-      case 'UPCOMING':
-        return this.copy.statusUpcoming;
-      case 'UNKNOWN':
-        return this.copy.statusUnknown;
-      default:
-        return this.copy.statusUnknown;
-    }
-  }
-
-  protected watchStatusLabel(event: UpcomingRelease): string {
-    switch (event.watchStatus) {
-      case 'WATCHED':
-        return this.copy.watchStatusWatched;
-      case 'PARTIALLY_WATCHED':
-        return this.copy.watchStatusPartial;
-      case 'UNWATCHED':
-        return this.copy.watchStatusUnwatched;
-      case 'UNKNOWN':
-        return this.copy.watchStatusUnknown;
-      default:
-        return this.copy.watchStatusUnknown;
+        return this.copy.upcomingShort;
     }
   }
 
@@ -237,10 +257,10 @@ export class HomeComponent implements OnInit {
         parts.push(event.content.title);
       }
       if (event.content.seasonNumber !== null && event.content.seasonNumber !== undefined) {
-        parts.push(`${this.copy.seasonShort} ${event.content.seasonNumber}`);
+        parts.push(`${this.copy.seasonShort}${event.content.seasonNumber}`);
       }
       if (event.content.episodeNumber !== null && event.content.episodeNumber !== undefined) {
-        parts.push(`${this.copy.episodeShort} ${event.content.episodeNumber}`);
+        parts.push(`${this.copy.episodeShort}${event.content.episodeNumber}`);
       }
     } else if (event.eventType === 'SEASON' && event.content.seasonNumber !== null && event.content.seasonNumber !== undefined) {
       parts.push(`${this.copy.season} ${event.content.seasonNumber}`);
@@ -256,7 +276,10 @@ export class HomeComponent implements OnInit {
     );
   }
 
-  protected imageUrl(path: string | null | undefined, size: 'w342' | 'w780' = 'w342'): string | null {
+  protected imageUrl(
+    path: string | null | undefined,
+    size: 'w342' | 'w780' = 'w342',
+  ): string | null {
     if (!path) {
       return null;
     }
@@ -296,12 +319,56 @@ export class HomeComponent implements OnInit {
     return activity.user.name || activity.user.username || this.copy.someone;
   }
 
-  protected trackByDate(_index: number, day: ChartDay): string {
-    return day.date;
+  protected socialSubtitle(activity: HomeSocialActivity): string {
+    if (!activity.content) {
+      return activity.targetLabel || '';
+    }
+    if (activity.content.type === 'EPISODE') {
+      const parts = [
+        activity.card?.type === 'SERIES' ? activity.card.title : null,
+        activity.content.seasonNumber === null ? null : `${this.copy.seasonShort}${activity.content.seasonNumber}`,
+        activity.content.episodeNumber === null ? null : `${this.copy.episodeShort}${activity.content.episodeNumber}`,
+      ].filter((part): part is string => Boolean(part));
+      return parts.join(' · ');
+    }
+    return activity.card?.releaseYear
+      ? String(activity.card.releaseYear)
+      : activity.card?.type === 'MOVIE'
+        ? this.copy.movie
+        : activity.targetLabel || '';
   }
 
-  protected trackByGenre(_index: number, genre: GenreBar): string {
-    return genre.genre;
+  protected relativeActivityDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return this.copy.dateUnavailable;
+    }
+    const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60_000));
+    if (minutes < 1) {
+      return this.copy.justNow;
+    }
+    if (minutes < 60) {
+      return this.copy.minutesAgo.replace('{count}', this.formatNumber(minutes));
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return this.copy.hoursAgo.replace('{count}', this.formatNumber(hours));
+    }
+    const days = Math.floor(hours / 24);
+    if (days < 7) {
+      return this.copy.daysAgo.replace('{count}', this.formatNumber(days));
+    }
+    return this.formatLongDate(value);
+  }
+
+  protected watchActivitySummary(): string {
+    const count = (this.summary()?.watchCountByDayLast30Days ?? [])
+      .reduce((total, day) => total + day.count, 0);
+    return `${this.formatNumber(count)} ${this.copy.activityRecords}`;
+  }
+
+  protected trackByDate(_index: number, day: ChartDay): string {
+    return day.date;
   }
 
   protected trackByUpcoming(_index: number, release: UpcomingRelease): string {
@@ -310,6 +377,14 @@ export class HomeComponent implements OnInit {
 
   protected genreColorClass(index: number): string {
     return `genre-color-${(index % 6) + 1}`;
+  }
+
+  private parseDate(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+    const date = new Date(`${value.slice(0, 10)}T12:00:00Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private createChartDays(data: DailyWatchCount[]): ChartDay[] {
@@ -321,31 +396,70 @@ export class HomeComponent implements OnInit {
       dates.push({ iso: date.toISOString().slice(0, 10), date });
     }
     const maximum = Math.max(1, ...dates.map(({ iso }) => counts.get(iso) ?? 0));
-    return dates.map(({ iso, date }, index) => {
+    return dates.map(({ iso, date }) => {
       const count = counts.get(iso) ?? 0;
-      const label = index % 5 === 0 || index === dates.length - 1
-        ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(date)
-        : '';
-      const description = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'UTC' }).format(date);
-      return { date: iso, label, count, height: count === 0 ? 3 : Math.max(8, Math.round((count / maximum) * 100)), description };
+      const label = String(date.getUTCDate());
+      const description = new Intl.DateTimeFormat('pt-BR', {
+        dateStyle: 'long',
+        timeZone: 'UTC',
+      }).format(date);
+      return {
+        date: iso,
+        label,
+        count,
+        height: count === 0 ? 0 : Math.max(8, Math.round((count / maximum) * 100)),
+        description,
+      };
     });
   }
 
-  private createGenreBars(data: GenreCount[]): GenreBar[] {
-    const maximum = Math.max(1, ...data.map((item) => item.count));
-    return data.map((item) => ({
-      genre: item.genre,
-      count: item.count,
-      percentage: Math.max(4, Math.round((item.count / maximum) * 100)),
+  private createGenreBreakdown(
+    episodes: GenreCount[],
+    movies: GenreCount[],
+  ): GenreBreakdown[] {
+    const genres = new Map<string, GenreBreakdown>();
+    for (const item of episodes) {
+      const genre = genres.get(item.genre) ?? {
+        genre: item.genre,
+        episodes: 0,
+        movies: 0,
+        weight: 0,
+      };
+      genre.episodes = item.count;
+      genres.set(item.genre, genre);
+    }
+    for (const item of movies) {
+      const genre = genres.get(item.genre) ?? {
+        genre: item.genre,
+        episodes: 0,
+        movies: 0,
+        weight: 0,
+      };
+      genre.movies = item.count;
+      genres.set(item.genre, genre);
+    }
+    const sorted = [...genres.values()]
+      .sort((a, b) => b.episodes + b.movies - (a.episodes + a.movies))
+      .slice(0, 6);
+    const total = Math.max(1, sorted.reduce((sum, genre) => sum + genre.episodes + genre.movies, 0));
+    return sorted.map((genre) => ({
+      ...genre,
+      weight: Math.max(1, genre.episodes + genre.movies) / total,
     }));
   }
 
   private groupUpcoming(releases: UpcomingRelease[]): UpcomingDateGroup[] {
     const groups = new Map<string, UpcomingRelease[]>();
+    const today = new Date();
+    for (let offset = 0; offset < 5; offset += 1) {
+      const date = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + offset));
+      groups.set(date.toISOString().slice(0, 10), []);
+    }
     for (const release of releases) {
-      const group = groups.get(release.date) ?? [];
-      group.push(release);
-      groups.set(release.date, group);
+      const group = groups.get(release.date);
+      if (group) {
+        group.push(release);
+      }
     }
     return [...groups.entries()].map(([date, items]) => ({
       date,
@@ -356,8 +470,8 @@ export class HomeComponent implements OnInit {
   }
 
   private releaseDateLabel(value: string): string {
-    const releaseDate = new Date(`${value}T12:00:00Z`);
-    if (Number.isNaN(releaseDate.getTime())) {
+    const releaseDate = this.parseDate(value);
+    if (!releaseDate) {
       return this.copy.dateUnavailable;
     }
     const today = new Date();
@@ -369,7 +483,10 @@ export class HomeComponent implements OnInit {
     if (value === tomorrow) {
       return this.copy.tomorrow;
     }
-    return new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' }).format(releaseDate);
+    return new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      timeZone: 'UTC',
+    }).format(releaseDate);
   }
 
   private handleLoadError(error: unknown): void {

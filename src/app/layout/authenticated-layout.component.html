@@ -18,6 +18,9 @@
       <a class="brand" routerLink="/home" [attr.aria-label]="copy.home">
         <img src="/watchwise-logo.svg" alt="Watchwise" width="126" height="24" />
       </a>
+      <button class="icon-button search-button" type="button" aria-disabled="true" [attr.aria-label]="copy.searchUnavailable">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2" /><path d="m16.2 16.2 4.3 4.3" /></svg>
+      </button>
     </div>
 
     <nav
@@ -26,7 +29,7 @@
       [class.product-navigation--open]="isMenuOpen()"
       [attr.aria-label]="copy.mainNavigation"
     >
-      <a class="navigation-link navigation-link--active" routerLink="/home" routerLinkActive="navigation-link--active" (click)="closeMenu()">
+      <a class="navigation-link navigation-link--active" routerLink="/home" routerLinkActive="navigation-link--active" aria-current="page" (click)="closeMenu()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg>
         <span>{{ copy.home }}</span>
       </a>
@@ -37,20 +40,17 @@
       <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.diary }}</span></span>
       <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.watchlist }}</span></span>
       <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.lists }}</span></span>
+      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.lists }}</span></span>
       <span class="navigation-link navigation-link--unavailable navigation-link--optional" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.picks }}</span></span>
       <span class="navigation-link navigation-link--unavailable navigation-link--optional" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 9h.01M16 9h.01M8 15c1 1.2 2.3 2 4 2s3-.8 4-2" /></svg><span>{{ copy.games }}</span></span>
       <p class="navigation-note">{{ copy.navigationNote }}</p>
     </nav>
 
     <div class="product-header-actions">
-      <button class="icon-button" type="button" disabled [attr.aria-label]="copy.searchUnavailable">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2" /><path d="m16.2 16.2 4.3 4.3" /></svg>
-      </button>
       <button
         class="icon-button notification-button"
         type="button"
-        disabled
+        aria-disabled="true"
         [attr.aria-label]="shellState.hasUnreadNotifications() ? copy.notificationsUnread : copy.notifications"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
@@ -65,7 +65,6 @@
           } @else {
             <span class="header-viewer-initial" aria-hidden="true">{{ (viewer.name || viewer.username || '?').charAt(0).toLocaleUpperCase('pt-BR') }}</span>
           }
-          <span>{{ viewer.name || viewer.username }}</span>
         </span>
       }
     </div>
@@ -79,20 +78,20 @@
   </div>
 
   <nav class="mobile-bottom-navigation" [attr.aria-label]="copy.mainNavigation">
-    <a class="bottom-nav-link bottom-nav-link--active" routerLink="/home" routerLinkActive="bottom-nav-link--active">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg>
+    <a class="bottom-nav-link bottom-nav-link--active" routerLink="/home" aria-current="page">
+      <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7.5 9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg></span>
       <span>{{ copy.home }}</span>
     </a>
     <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg>
+      <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg></span>
       <span>{{ copy.social }}</span>
     </span>
     <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg>
+      <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5C4 18.119 5.119 17 6.5 17H20V3H6.5C5.119 3 4 4.119 4 5.5v14Zm0 0C4 20.881 5.119 22 6.5 22H20v-5" /></svg></span>
       <span>{{ copy.diary }}</span>
     </span>
     <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg>
+      <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></span>
       <span>{{ copy.watchlist }}</span>
     </span>
   </nav>
