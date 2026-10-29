@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, HostListener, OnInit, computed, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { AuthSessionService } from '../../../../core/session/session.service';
@@ -38,6 +38,20 @@ interface UpcomingDateGroup {
   releases: UpcomingRelease[];
 }
 
+interface WatchLogTarget {
+  title: string;
+  subtitle: string;
+}
+
+interface WatchCalendarDay {
+  date: string;
+  day: number;
+  inMonth: boolean;
+  selected: boolean;
+  disabled: boolean;
+  ariaLabel: string;
+}
+
 type HomeStatus = 'loading' | 'ready' | 'error';
 const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
@@ -53,7 +67,29 @@ export class HomeComponent implements OnInit {
   protected readonly summary = signal<HomeSummary | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly openEpisodeMenuId = signal<string | null>(null);
+  protected readonly openContentMenuId = signal<string | null>(null);
+  protected readonly watchLogTarget = signal<WatchLogTarget | null>(null);
+  protected readonly watchLogDate = signal(this.toDateKey(new Date()));
+  protected readonly watchLogRewatch = signal(false);
+  protected readonly watchLogRating = signal<number | null>(null);
+  protected readonly watchLogReview = signal('');
+  protected readonly watchCalendarOpen = signal(false);
+  protected readonly watchCalendarMonth = signal(this.firstOfMonth(new Date()));
+  protected readonly ratingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
+  protected readonly calendarWeekdays = this.copy.calendarWeekdays.split(' ');
+  protected readonly watchCalendarDays = computed(() =>
+    this.createWatchCalendarDays(this.watchCalendarMonth(), this.watchLogDate()),
+  );
+  protected readonly watchCalendarMonthLabel = computed(() =>
+    new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(
+      this.watchCalendarMonth(),
+    ),
+  );
+  protected readonly canAdvanceWatchCalendar = computed(() => {
+    const month = this.watchCalendarMonth();
+    const today = new Date();
+    return month.getFullYear() * 12 + month.getMonth() < today.getFullYear() * 12 + today.getMonth();
+  });
   protected readonly upcomingView = signal<'calendar' | 'next'>('calendar');
   protected readonly chartDays = computed(() =>
     this.createChartDays(this.summary()?.watchCountByDayLast30Days ?? []),
@@ -70,6 +106,14 @@ export class HomeComponent implements OnInit {
   protected readonly upcomingGroups = computed(() =>
     this.groupUpcoming(this.summary()?.upcomingReleases ?? []),
   );
+  private watchLogOpener: HTMLElement | null = null;
+
+  @ViewChild('watchLogCloseButton')
+  protected set watchLogCloseButton(button: ElementRef<HTMLButtonElement> | undefined) {
+    if (button && this.watchLogTarget()) {
+      button.nativeElement.focus();
+    }
+  }
 
   constructor(
     private readonly api: HomeApiService,
@@ -119,21 +163,182 @@ export class HomeComponent implements OnInit {
     }).format(value);
   }
 
-  protected toggleEpisodeMenu(event: MouseEvent, seriesTmdbId: string): void {
+  protected toggleContentMenu(event: MouseEvent, menuId: string): void {
     event.stopPropagation();
-    this.openEpisodeMenuId.update((openId) =>
-      openId === seriesTmdbId ? null : seriesTmdbId,
+    this.openContentMenuId.update((openId) =>
+      openId === menuId ? null : menuId,
     );
   }
 
-  @HostListener('document:click')
-  protected closeEpisodeMenuOnDocumentClick(): void {
-    this.openEpisodeMenuId.set(null);
+  protected openWatchLogForEpisode(episode: NextEpisode): void {
+    this.openContentMenuId.set(null);
+    this.showWatchLog(
+      episode.seriesTitle || this.copy.titleUnavailable,
+      `${this.episodeLabel(episode)} · ${episode.episodeTitle || this.copy.episode}`,
+      false,
+    );
   }
 
-  @HostListener('document:keydown.escape')
-  protected closeEpisodeMenuOnEscape(): void {
-    this.openEpisodeMenuId.set(null);
+  protected openWatchLogForRecentEntry(entry: HomeRecentlyWatched): void {
+    this.openContentMenuId.set(null);
+    const title = entry.content.type === 'EPISODE'
+      ? this.recentEpisodeSeriesTitle(entry)
+      : entry.card?.title || this.copy.titleUnavailable;
+    const subtitle = entry.content.type === 'EPISODE'
+      ? `${this.episodeLabelForEntry(entry)} · ${this.recentEpisodeTitle(entry)}`
+      : this.copy.movie;
+    this.showWatchLog(title, subtitle, true);
+  }
+
+  protected toggleWatchCalendar(): void {
+    this.watchCalendarOpen.update((open) => !open);
+  }
+
+  protected changeWatchCalendarMonth(offset: number): void {
+    const current = this.watchCalendarMonth();
+    const candidate = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+    const today = new Date();
+    if (candidate.getFullYear() * 12 + candidate.getMonth() > today.getFullYear() * 12 + today.getMonth()) {
+      return;
+    }
+    this.watchCalendarMonth.set(candidate);
+  }
+
+  protected selectWatchLogDate(date: string): void {
+    this.watchLogDate.set(date);
+    this.watchCalendarOpen.set(false);
+  }
+
+  protected watchLogDateLabel(): string {
+    const date = this.parseDate(this.watchLogDate());
+    return date
+      ? new Intl.DateTimeFormat('pt-BR', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          timeZone: 'UTC',
+        }).format(date)
+      : this.copy.dateUnavailable;
+  }
+
+  protected setWatchLogRewatch(event: Event): void {
+    this.watchLogRewatch.set((event.currentTarget as HTMLInputElement).checked);
+  }
+
+  protected setWatchLogRating(rating: number): void {
+    this.watchLogRating.set(this.watchLogRating() === rating ? null : rating);
+  }
+
+  protected updateWatchLogReview(event: Event): void {
+    this.watchLogReview.set((event.currentTarget as HTMLTextAreaElement).value);
+  }
+
+  protected closeWatchLog(): void {
+    const opener = this.watchLogOpener;
+    this.watchLogOpener = null;
+    this.watchLogTarget.set(null);
+    this.watchCalendarOpen.set(false);
+    if (opener) {
+      window.setTimeout(() => {
+        if (opener.isConnected) {
+          opener.focus();
+        }
+      });
+    }
+  }
+
+  @HostListener('document:click')
+  protected closeContentMenuOnDocumentClick(): void {
+    this.openContentMenuId.set(null);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  protected handleDocumentKeydown(event: KeyboardEvent): void {
+    if (this.watchLogTarget()) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.closeWatchLog();
+        return;
+      }
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const dialog = document.querySelector<HTMLElement>('.watch-log-dialog');
+      if (!dialog) {
+        return;
+      }
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      this.openContentMenuId.set(null);
+    }
+  }
+
+  private showWatchLog(title: string, subtitle: string, isRewatch: boolean): void {
+    this.watchLogOpener = document.querySelector<HTMLElement>(
+      '.content-menu-trigger[aria-expanded="true"]',
+    );
+    this.watchLogTarget.set({ title, subtitle });
+    this.watchLogDate.set(this.toDateKey(new Date()));
+    this.watchLogRewatch.set(isRewatch);
+    this.watchLogRating.set(null);
+    this.watchLogReview.set('');
+    this.watchCalendarMonth.set(this.firstOfMonth(new Date()));
+    this.watchCalendarOpen.set(false);
+  }
+
+  private createWatchCalendarDays(month: Date, selectedDate: string): WatchCalendarDay[] {
+    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+    const gridStart = new Date(month.getFullYear(), month.getMonth(), 1 - firstDay.getDay());
+    const todayKey = this.toDateKey(new Date());
+    return Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
+      const dateKey = this.toDateKey(date);
+      return {
+        date: dateKey,
+        day: date.getDate(),
+        inMonth: date.getMonth() === month.getMonth(),
+        selected: dateKey === selectedDate,
+        disabled: dateKey > todayKey,
+        ariaLabel: new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'full',
+          timeZone: 'UTC',
+        }).format(new Date(`${dateKey}T00:00:00Z`)),
+      };
+    });
+  }
+
+  private firstOfMonth(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  private toDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   protected formatDuration(minutes: number | null | undefined): string {

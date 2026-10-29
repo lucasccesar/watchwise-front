@@ -103,14 +103,14 @@
                     <span>{{ formatScore(episode.communityAverageScore) }}</span>
                   </span>
                 }
-                <div class="episode-menu-anchor">
+                <div class="content-menu-anchor">
                   <button
-                    class="episode-menu-trigger"
+                    class="content-menu-trigger"
                     type="button"
-                    [attr.aria-label]="copy.episodeOptions"
+                    [attr.aria-label]="copy.contentOptions"
                     aria-haspopup="menu"
-                    [attr.aria-expanded]="openEpisodeMenuId() === episode.seriesTmdbId"
-                    (click)="toggleEpisodeMenu($event, episode.seriesTmdbId)"
+                    [attr.aria-expanded]="openContentMenuId() === 'continue:' + episode.seriesTmdbId"
+                    (click)="toggleContentMenu($event, 'continue:' + episode.seriesTmdbId)"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="5" cy="12" r="2" />
@@ -118,19 +118,17 @@
                       <circle cx="19" cy="12" r="2" />
                     </svg>
                   </button>
-                  @if (openEpisodeMenuId() === episode.seriesTmdbId) {
+                  @if (openContentMenuId() === 'continue:' + episode.seriesTmdbId) {
                     <div
-                      class="episode-dropdown-menu"
+                      class="content-dropdown-menu"
                       role="menu"
-                      [attr.aria-label]="copy.episodeOptions"
+                      [attr.aria-label]="copy.contentOptions"
                     >
                       <button
-                        class="episode-dropdown-item"
+                        class="content-dropdown-item"
                         type="button"
                         role="menuitem"
-                        disabled
-                        [attr.aria-label]="copy.markWatched + '. ' + copy.markWatchedUnavailable"
-                        [title]="copy.markWatchedUnavailable"
+                        (click)="openWatchLogForEpisode(episode)"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <path d="m5 12 4 4L19 6" />
@@ -342,6 +340,41 @@
                 @if (entry.card?.previewStatus === 'PARTIAL') {
                   <span class="preview-status">{{ copy.partialPreview }}</span>
                 }
+                <div class="content-menu-anchor">
+                  <button
+                    class="content-menu-trigger"
+                    type="button"
+                    [attr.aria-label]="copy.contentOptions"
+                    aria-haspopup="menu"
+                    [attr.aria-expanded]="openContentMenuId() === 'recent:' + entry.id"
+                    (click)="toggleContentMenu($event, 'recent:' + entry.id)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="5" cy="12" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="19" cy="12" r="2" />
+                    </svg>
+                  </button>
+                  @if (openContentMenuId() === 'recent:' + entry.id) {
+                    <div
+                      class="content-dropdown-menu"
+                      role="menu"
+                      [attr.aria-label]="copy.contentOptions"
+                    >
+                      <button
+                        class="content-dropdown-item"
+                        type="button"
+                        role="menuitem"
+                        (click)="openWatchLogForRecentEntry(entry)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="m5 12 4 4L19 6" />
+                        </svg>
+                        <span>{{ copy.markWatched }}</span>
+                      </button>
+                    </div>
+                  }
+                </div>
                 @if (entry.companionProfilePictures.length > 0) {
                   <div class="companion-avatars" [attr.aria-label]="copy.watchedWithCompanions">
                     @for (avatar of entry.companionProfilePictures; track $index; let index = $index) {
@@ -355,12 +388,24 @@
                   </div>
                 }
                 <span class="recent-date">{{ formatLongDate(entry.watchedDate) }}</span>
-                @if (entry.score !== null) {
-                  <span class="recent-score" [attr.aria-label]="copy.score + ': ' + formatScore(entry.score)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>
+                <span
+                  class="recent-score"
+                  [class.recent-score--unrated]="entry.score === null"
+                  [attr.aria-label]="
+                    entry.score === null
+                      ? copy.rate
+                      : copy.score + ': ' + formatScore(entry.score)
+                  "
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
+                  </svg>
+                  @if (entry.score === null) {
+                    {{ copy.rate }}
+                  } @else {
                     {{ formatScore(entry.score) }}
-                  </span>
-                }
+                  }
+                </span>
               </div>
               <div class="recent-card-copy">
                 <div
@@ -494,5 +539,145 @@
         </div>
       </div>
     </footer>
+
+    @if (watchLogTarget(); as target) {
+      <div class="watch-log-backdrop" (click)="closeWatchLog()">
+        <section
+          class="watch-log-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="watch-log-title"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="watch-log-header">
+            <div>
+              <h2 id="watch-log-title">{{ copy.markWatched }}</h2>
+              <span>{{ target.title }}<span aria-hidden="true"> · </span>{{ target.subtitle }}</span>
+            </div>
+            <button
+              class="watch-log-close"
+              type="button"
+              #watchLogCloseButton
+              [attr.aria-label]="copy.closeDialog"
+              autofocus
+              (click)="closeWatchLog()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </header>
+
+          <div class="watch-log-controls">
+            <div class="watch-date-picker">
+              <button
+                class="watch-date-trigger"
+                type="button"
+                aria-haspopup="dialog"
+                [attr.aria-expanded]="watchCalendarOpen()"
+                (click)="toggleWatchCalendar()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+                <span><span>{{ copy.watchedOn }}</span> {{ watchLogDateLabel() }}</span>
+                <svg class="watch-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              @if (watchCalendarOpen()) {
+                <div class="watch-calendar" role="dialog" [attr.aria-label]="copy.chooseWatchDate">
+                  <div class="watch-calendar-header">
+                    <button type="button" [attr.aria-label]="copy.previousMonth" (click)="changeWatchCalendarMonth(-1)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                    </button>
+                    <span>{{ watchCalendarMonthLabel() }}</span>
+                    <button
+                      type="button"
+                      [attr.aria-label]="copy.nextMonth"
+                      [disabled]="!canAdvanceWatchCalendar()"
+                      (click)="changeWatchCalendarMonth(1)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                    </button>
+                  </div>
+                  <div class="watch-calendar-grid watch-calendar-weekdays" aria-hidden="true">
+                    @for (weekday of calendarWeekdays; track $index) {
+                      <span>{{ weekday }}</span>
+                    }
+                  </div>
+                  <div class="watch-calendar-grid">
+                    @for (day of watchCalendarDays(); track day.date) {
+                      @if (day.inMonth) {
+                        <button
+                          type="button"
+                          [attr.aria-label]="day.ariaLabel"
+                          [attr.aria-pressed]="day.selected"
+                          [disabled]="day.disabled"
+                          [class.watch-calendar-day--selected]="day.selected"
+                          (click)="selectWatchLogDate(day.date)"
+                        >{{ day.day }}</button>
+                      } @else {
+                        <span aria-hidden="true"></span>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <label class="watch-rewatch-option">
+              <input type="checkbox" [checked]="watchLogRewatch()" (change)="setWatchLogRewatch($event)" />
+              {{ copy.watchedBefore }}
+            </label>
+          </div>
+
+          <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
+            <span>{{ copy.watchedWith }}</span>
+            <div>
+              <span class="watch-log-just-you">{{ copy.justYou }}</span>
+              <button type="button" disabled [title]="copy.actionUnavailableShort">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                {{ copy.addPerson }}
+              </button>
+            </div>
+          </div>
+
+          <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
+            <span>{{ copy.yourRating }}</span>
+            <div>
+              @for (rating of ratingOptions; track rating) {
+                <button
+                  type="button"
+                  [attr.aria-label]="copy.rateWith + ' ' + rating + ' ' + copy.outOfTen"
+                  [attr.aria-pressed]="watchLogRating() === rating"
+                  (click)="setWatchLogRating(rating)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="watchLogRating() !== null && rating <= watchLogRating()!">
+                    <path d="m11.283 3.453.933-1.89.933 1.89 2.187 4.43c.068.138.102.207.152.26.044.048.097.086.155.113.067.031.143.042.295.065l4.891.714c.515.075.772.113.891.239.103.109.152.259.132.408-.022.171-.209.353-.581.716l-3.539 3.45c-.11.107-.165.161-.2.225a.48.48 0 0 0-.055.187c-.007.073.006.148.032.3l.835 4.872c.088.513.132.77.05.922a.5.5 0 0 1-.36.261c-.17.028-.4-.093-.86-.335l-4.375-2.3c-.136-.072-.204-.108-.276-.122a.5.5 0 0 0-.198 0c-.072.014-.14.05-.276.122l-4.375 2.3c-.46.242-.69.363-.86.335a.5.5 0 0 1-.36-.261c-.082-.153-.038-.409.05-.922l.835-4.873c.026-.151.039-.226.032-.299a.5.5 0 0 0-.055-.187c-.035-.064-.09-.118-.2-.225l-3.539-3.45c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.164.891-.239l4.891-.714c.152-.023.228-.034.295-.065a.5.5 0 0 0 .155-.113c.05-.053.084-.122.152-.26l2.187-4.43Z" />
+                  </svg>
+                  <span>{{ rating }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <label class="watch-review">
+            <span>{{ copy.yourReview }} <span>{{ copy.optional }}</span></span>
+            <textarea
+              rows="5"
+              [placeholder]="copy.reviewPlaceholder"
+              [value]="watchLogReview()"
+              (input)="updateWatchLogReview($event)"
+            ></textarea>
+          </label>
+
+          <footer class="watch-log-actions">
+            <span class="watch-log-save-note">{{ copy.actionUnavailableShort }}</span>
+            <button class="watch-log-cancel" type="button" (click)="closeWatchLog()">{{ copy.cancel }}</button>
+            <button
+              class="watch-log-save"
+              type="button"
+              disabled
+              [attr.aria-label]="copy.markWatched + '. ' + copy.markWatchedUnavailable"
+              [title]="copy.markWatchedUnavailable"
+            >{{ copy.save }}</button>
+          </footer>
+        </section>
+      </div>
+    }
   }
 </div>
