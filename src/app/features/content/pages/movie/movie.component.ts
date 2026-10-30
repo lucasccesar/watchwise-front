@@ -76,6 +76,32 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly reviewCount = computed(() => this.page()?.visibleReviewsCount ?? 0);
   protected readonly dialog = signal<DialogState>(null);
   protected readonly watchMode = signal<WatchMode>('new');
+  protected readonly watchCalendarOpen = signal(false);
+  protected readonly watchCalendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  protected readonly watchDate = signal(this.localDate(new Date()));
+  protected readonly calendarWeekdays = this.copy.calendarWeekdays.split(' ');
+  protected readonly watchCalendarMonthLabel = computed(() => new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(this.watchCalendarMonth()));
+  protected readonly canAdvanceWatchCalendar = computed(() => {
+    const month = this.watchCalendarMonth();
+    const today = new Date();
+    return month.getFullYear() * 12 + month.getMonth() < today.getFullYear() * 12 + today.getMonth();
+  });
+  protected readonly watchCalendarDays = computed(() => {
+    const month = this.watchCalendarMonth();
+    const start = new Date(month.getFullYear(), month.getMonth(), 1 - new Date(month.getFullYear(), month.getMonth(), 1).getDay());
+    return Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+      const key = this.localDate(date);
+      return {
+        date: key,
+        day: date.getDate(),
+        inMonth: date.getMonth() === month.getMonth(),
+        selected: key === this.watchDate(),
+        disabled: key > this.maxWatchedDate,
+        ariaLabel: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${key}T12:00:00Z`)),
+      };
+    });
+  });
   protected readonly actionPending = signal(false);
   protected readonly commentPending = signal(false);
   protected readonly commentDraft = signal('');
@@ -313,6 +339,10 @@ export class MovieComponent implements OnInit, OnDestroy {
       isRewatch: mode === 'again' || Boolean(viewer?.playsCount),
       watchedWith: [],
     });
+    this.watchDate.set(this.watchForm.controls.watchedDate.value);
+    const selected = new Date(`${this.watchDate()}T12:00:00Z`);
+    this.watchCalendarMonth.set(new Date(selected.getUTCFullYear(), selected.getUTCMonth(), 1));
+    this.watchCalendarOpen.set(false);
     this.watchDetailsLoading.set(editing);
     this.watchDetailsReady.set(!editing);
     this.watchDetailsError.set('');
@@ -334,6 +364,31 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected retryDiaryEntryLoad(): void {
     const diaryEntryId = this.page()?.viewerState.latestDiaryEntryId;
     if (diaryEntryId) this.loadDiaryEntryForEdit(diaryEntryId);
+  }
+
+  protected toggleWatchCalendar(): void {
+    this.watchCalendarOpen.update((open) => !open);
+  }
+
+  protected changeWatchCalendarMonth(offset: number): void {
+    const current = this.watchCalendarMonth();
+    const next = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+    if (next > new Date(new Date().getFullYear(), new Date().getMonth(), 1)) return;
+    this.watchCalendarMonth.set(next);
+  }
+
+  protected selectWatchDate(date: string): void {
+    this.watchForm.controls.watchedDate.setValue(date);
+    this.watchDate.set(date);
+    this.watchCalendarOpen.set(false);
+  }
+
+  protected watchDateLabel(): string {
+    return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${this.watchDate()}T12:00:00Z`));
+  }
+
+  protected setWatchScore(score: number): void {
+    this.watchForm.controls.score.setValue(this.watchForm.controls.score.value === score && !(this.watchMode() === 'edit' && this.editingDiaryEntry()?.score != null) ? 0 : score);
   }
 
   protected loadFollowing(pageNumber: number): void {
@@ -591,6 +646,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   protected closeDialog(): void {
+    this.watchCalendarOpen.set(false);
     this.videoPlaying.set(false);
     this.watchHydrationSubscription.unsubscribe();
     this.watchDetailsLoading.set(false);
@@ -981,6 +1037,9 @@ export class MovieComponent implements OnInit, OnDestroy {
       isRewatch: Boolean(this.page()?.viewerState.playsCount),
       watchedWith: entry.watchedWith?.map((user) => user.id) ?? [],
     });
+    this.watchDate.set(this.watchForm.controls.watchedDate.value);
+    const selected = new Date(`${this.watchDate()}T12:00:00Z`);
+    this.watchCalendarMonth.set(new Date(selected.getUTCFullYear(), selected.getUTCMonth(), 1));
   }
 
   private loadDiaryEntryForEdit(diaryEntryId: string): void {
