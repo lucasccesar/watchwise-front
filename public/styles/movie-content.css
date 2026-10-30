@@ -318,7 +318,7 @@
 .movie-following{display:flex;flex-direction:column;gap:var(--space-3)}
 .movie-following-heading{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4)}
 .movie-following-heading h2{margin:0;color:var(--color-text);font-size:var(--font-size-lg);font-weight:600;line-height:var(--line-height-lg)}
-.movie-following-unavailable{color:var(--color-tertiary);font-size:var(--font-size-xs)}
+.movie-following-count{color:var(--color-tertiary);font-size:var(--font-size-sm);font-weight:600}
 .movie-actions-column{grid-column:3;grid-row:2;min-width:0;align-self:start;display:flex;flex-direction:column;gap:var(--space-3)}
 .movie-action-rating{min-height:52px;padding:0 var(--space-4);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600;text-align:left}
 .movie-action-rating strong{display:flex;align-items:center;gap:var(--space-1);font-size:var(--font-size-md)}
@@ -386,10 +386,11 @@
 .movie-cast-section,.movie-comments{background:var(--color-surface-secondary)}
 .movie-reviews{background:var(--color-surface)}
 .movie-cast-heading{display:flex;align-items:center;justify-content:space-between}
-.movie-people-tabs{width:max-content;padding:var(--space-1);display:flex;gap:var(--space-1);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
+.movie-people-tabs{width:max-content;margin-bottom:0;padding:var(--space-1);display:flex;gap:var(--space-1);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
 .movie-people-tab{min-height:32px;padding:0 var(--space-3);display:inline-flex;align-items:center;gap:var(--space-2);border:0;border-radius:var(--radius-sm);background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600}
 .movie-people-tab span{color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400}
-.movie-people-tab[aria-selected=true]{background:var(--color-secondary)}
+.movie-people-tab[aria-selected=true]{background:var(--color-primary)}
+.movie-people-tab[aria-selected=true] span{color:var(--color-text)}
 .movie-people-tab:focus-visible,.movie-video-card:focus-visible,.movie-video-feature-play:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .movie-people-scroll{min-width:0;padding-bottom:var(--space-3);display:flex;gap:var(--space-4);overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--color-border) transparent}
 .movie-person-card{width:112px;flex:0 0 112px;display:flex;flex-direction:column;gap:var(--space-2);color:var(--color-text)}
@@ -548,16 +549,20 @@
 .movie-ratings-heading span{max-width:50%;overflow:hidden;text-overflow:ellipsis}
 .movie-reviews .movie-section-heading{justify-content:flex-start;gap:var(--space-6)}
 .movie-review-list{gap:var(--space-4)}
-.movie-review-card{padding:var(--space-6);grid-template-columns:44px minmax(0,1fr);gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary)}
+.movie-review-card{padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary)}
+.movie-review-header{display:flex;align-items:center;gap:var(--space-3)}
+.movie-review-body{flex:1;min-width:0}
 .movie-review-card .movie-review-avatar{width:44px;height:44px}
 .movie-review-topline h3{font-size:var(--font-size-md);line-height:var(--line-height-md)}
 .movie-review-topline p{margin:0;color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .movie-review-score{padding:4px 10px;border-radius:var(--radius-sm);background:var(--color-secondary)}
 .movie-review-score>span{color:var(--color-accent)}
-.movie-review-text{margin:var(--space-4) 0;font-size:var(--font-size-md);line-height:26px}
-.movie-review-actions{gap:var(--space-2)}
+.movie-review-text{margin:0;font-size:var(--font-size-md);line-height:26px}
+.movie-review-actions{margin-top:0;gap:var(--space-2)}
 .movie-review-card .movie-review-actions button{min-height:36px;padding:0 var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
 .movie-review-actions button>span:first-child{color:var(--color-error);font-size:18px}
+.movie-review-comments{min-height:36px;padding:0 var(--space-3);display:inline-flex;align-items:center;gap:var(--space-2);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
+.movie-review-comments svg{color:var(--color-primary)}
 .movie-comments .movie-review-actions{margin-top:var(--space-1);gap:var(--space-4)}
 .movie-comments .movie-review-actions button{min-height:18px;padding:0;border:0;background:transparent;color:var(--color-text);font-size:var(--font-size-xs);font-weight:600}
 .movie-comment{padding:var(--space-5) 0;column-gap:var(--space-4);border-top:1px solid var(--color-border);border-bottom:0}
@@ -571,7 +576,7 @@
 .movie-comment-form-footer{justify-content:flex-end}
 @media(max-width:800px){
   .movie-reviews .movie-section-heading{align-items:flex-start;gap:var(--space-3)}
-  .movie-review-card{padding:var(--space-4);grid-template-columns:36px minmax(0,1fr)}
+  .movie-review-card{padding:var(--space-4)}
   .movie-review-card .movie-review-avatar{width:36px;height:36px}
   .movie-review-text{font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
 }

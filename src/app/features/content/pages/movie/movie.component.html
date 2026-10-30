@@ -276,7 +276,7 @@
           <section class="movie-following" aria-labelledby="movie-following-title">
             <div class="movie-following-heading">
               <h2 id="movie-following-title">{{ copy.peopleYouFollow }}</h2>
-              <span class="movie-following-unavailable">{{ copy.peopleYouFollowUnavailable }}</span>
+              <span class="movie-following-count">{{ copy.peopleYouFollowCount.replace('{count}', '0') }}</span>
             </div>
           </section>
         </div>
@@ -527,34 +527,36 @@
         <div class="movie-review-list">
           @for (review of reviews(); track review.id) {
             <article class="movie-review-card">
-              <div class="movie-review-avatar">
-                @if (review.reviewer.profilePicture; as avatar) {
-                  <img [src]="avatar" alt="" loading="lazy" />
-                } @else {
-                  <span aria-hidden="true">{{ reviewerName(review).slice(0, 1) }}</span>
-                }
-              </div>
-              <div class="movie-review-body">
-                <div class="movie-review-topline">
-                  <div>
-                    <h3>{{ reviewerName(review) }}</h3>
-                    <p>{{ dateLabel(review.watchedDate, copy.watchedOn) }}</p>
-                  </div>
-                  @if (review.score) {
-                    <span class="movie-review-score"><span aria-hidden="true">&#9733;</span>{{ review.score }}/10</span>
+              <div class="movie-review-header">
+                <div class="movie-review-avatar">
+                  @if (review.reviewer.profilePicture; as avatar) {
+                    <img [src]="avatar" alt="" loading="lazy" />
+                  } @else {
+                    <span aria-hidden="true">{{ reviewerName(review).slice(0, 1) }}</span>
                   }
                 </div>
-                @if (review.comment) {
-                  <p class="movie-review-text">{{ review.comment }}</p>
-                }
-                <div class="movie-review-actions">
-                  <button type="button" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
-                    <span aria-hidden="true">{{ review.likedByMe ? '♥' : '♡' }}</span>{{ review.likedByMe ? copy.unlike : copy.like }}
-                    <span>{{ formatNumber(review.likesCount, 0) }}</span>
-                  </button>
-                  <span>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
-                  @if (review.watchedInTheater) { <span>{{ copy.theater }}</span> }
+                <div class="movie-review-body">
+                  <div class="movie-review-topline">
+                    <div>
+                      <h3>{{ reviewerName(review) }}</h3>
+                      <p>{{ dateLabel(review.watchedDate, copy.watchedOn) }}</p>
+                    </div>
+                    @if (review.score) {
+                      <span class="movie-review-score"><span aria-hidden="true">&#9733;</span>{{ review.score }}/10</span>
+                    }
+                  </div>
                 </div>
+              </div>
+              @if (review.comment) {
+                <p class="movie-review-text">{{ review.comment }}</p>
+              }
+              <div class="movie-review-actions">
+                <button type="button" [attr.aria-label]="review.likedByMe ? copy.unlike : copy.like" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
+                  <span aria-hidden="true">{{ review.likedByMe ? '♥' : '♡' }}</span>
+                  <span>{{ formatNumber(review.likesCount, 0) }}</span>
+                </button>
+                <span class="movie-review-comments"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5C21 16.2 17.2 20 12.5 20c-1.1 0-2.1-.2-3.1-.6L3 20l1.4-5.4A8.5 8.5 0 1 1 21 11.5Z" /></svg>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
+                @if (review.watchedInTheater) { <span>{{ copy.theater }}</span> }
               </div>
             </article>
           }
