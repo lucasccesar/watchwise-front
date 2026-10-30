@@ -94,11 +94,14 @@ input.input-invalid,
   border-color: var(--color-error);
 }
 
-.password-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+.password-group {
+  position: relative;
+}
+
+.password-forgot-link {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .text-link {

@@ -47,10 +47,9 @@
         }
       </div>
 
-      <div class="field-group">
+      <div class="field-group password-group">
         <div class="password-label-row">
           <label for="login-password">{{ copy.passwordLabel }}</label>
-          <a class="text-link" routerLink="/forgot-password">{{ copy.forgotPassword }}</a>
         </div>
         <div class="password-field" [class.input-invalid]="passwordError()">
           <input
@@ -103,6 +102,9 @@
             }
           </button>
         </div>
+        <a class="text-link password-forgot-link" routerLink="/forgot-password">
+          {{ copy.forgotPassword }}
+        </a>
         @if (passwordError(); as error) {
           <p class="field-error" id="login-password-error">
             <svg
