@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authenticatedGuard } from './core/session/authenticated.guard';
+import { movieMessages } from './features/content/i18n/movie.messages';
 
 export const routes: Routes = [
   {
@@ -108,6 +109,24 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/trending/pages/trending/trending.component').then(
             (module) => module.TrendingComponent,
+          ),
+      },
+    ],
+  },
+  {
+    path: 'content/movie/:tmdbId',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./layout/authenticated-layout.component').then(
+        (module) => module.AuthenticatedLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        title: movieMessages['pt-BR'].pageTitle,
+        loadComponent: () =>
+          import('./features/content/pages/movie/movie.component').then(
+            (module) => module.MovieComponent,
           ),
       },
     ],

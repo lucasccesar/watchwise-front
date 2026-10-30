@@ -28,6 +28,7 @@ type SearchSuggestionKind = 'content' | 'person' | 'list' | 'template' | 'user';
 interface SearchSuggestion {
   kind: SearchSuggestionKind;
   scope: SearchScope;
+  tmdbId?: string;
   title: string;
   meta: string;
   imageUrl: string | null;
@@ -256,6 +257,7 @@ export class HeaderSearchComponent {
     return {
       kind: 'content',
       scope: content.type,
+      tmdbId: content.tmdbId,
       title: content.title || this.copy.searchTitleUnavailable,
       meta: `${label}${year}`,
       imageUrl: content.posterUrl ?? null,
