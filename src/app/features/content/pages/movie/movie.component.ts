@@ -327,7 +327,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected openWatchDialog(mode: WatchMode, event?: Event): void {
     this.watchHydrationSubscription.unsubscribe();
     this.watchHydrationSubscription = new Subscription();
-    this.modalOpener = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    this.captureDialogOpener(event);
     this.watchMode.set(mode);
     const viewer = this.page()?.viewerState;
     const editing = mode === 'edit';
@@ -485,7 +485,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   protected openShareDialog(event?: Event): void {
-    this.modalOpener = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    this.captureDialogOpener(event);
     this.releaseShareImage();
     this.shareZoom.set(100);
     this.shareShowReview.set(true);
@@ -656,6 +656,17 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.releaseShareImage();
     this.modalOpener?.focus();
     this.modalOpener = null;
+  }
+
+  private captureDialogOpener(event?: Event): void {
+    const target = event?.currentTarget;
+    if (!(target instanceof HTMLElement)) {
+      this.modalOpener = null;
+      return;
+    }
+    const menu = target.closest<HTMLDetailsElement>('.movie-mobile-more-actions');
+    this.modalOpener = menu?.querySelector<HTMLElement>('summary') ?? target;
+    if (menu) menu.open = false;
   }
 
   protected saveWatch(): void {
@@ -961,6 +972,15 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   protected onDocumentKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      const menu = this.document.querySelector<HTMLDetailsElement>('.movie-mobile-more-actions[open]');
+      if (menu) {
+        menu.open = false;
+        menu.querySelector<HTMLElement>('summary')?.focus();
+        event.preventDefault();
+        return;
+      }
+    }
     if (!this.dialog()) return;
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -983,6 +1003,12 @@ export class MovieComponent implements OnInit, OnDestroy {
       event.preventDefault();
       first.focus();
     }
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: MouseEvent): void {
+    const menu = this.document.querySelector<HTMLDetailsElement>('.movie-mobile-more-actions[open]');
+    if (menu && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
   }
 
   private runAction<T>(request: Observable<T>, success: () => void): void {

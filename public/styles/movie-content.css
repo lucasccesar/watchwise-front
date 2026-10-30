@@ -597,16 +597,21 @@
 .movie-action-watch-row{padding-right:44px}
 .movie-action-watch{min-width:0;flex:1}
 .movie-mobile-more-actions{position:absolute;top:0;right:0;z-index:5;display:block}
-.movie-mobile-more-actions summary{width:44px;height:64px;display:grid;place-items:center;border:0;border-radius:0 var(--radius-md) var(--radius-md) 0;background:var(--color-primary);color:var(--color-text);cursor:pointer;font-size:24px;line-height:1;list-style:none}
+.movie-mobile-more-actions summary{width:44px;height:64px;display:grid;place-items:center;border:0;border-radius:0 var(--radius-md) var(--radius-md) 0;background:var(--color-primary);color:var(--color-text);cursor:pointer;list-style:none}
+.movie-mobile-more-actions summary svg{width:20px;height:20px;fill:currentColor}
 .movie-mobile-more-actions summary::-webkit-details-marker{display:none}
-.movie-mobile-more-menu{position:absolute;top:calc(100% + var(--space-2));right:0;width:240px;padding:var(--space-2);display:flex;flex-direction:column;gap:2px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);box-shadow:var(--shadow-lg)}
-.movie-mobile-more-menu button{min-height:44px;padding:0 var(--space-2);border:0;border-radius:var(--radius-sm);background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);text-align:left}
-.movie-mobile-more-menu button:hover{background:var(--color-secondary)}
+.movie-mobile-more-menu{position:absolute;top:100%;right:0;width:100%;min-width:260px;padding:var(--space-2);display:flex;flex-direction:column;gap:0;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);box-shadow:var(--shadow-lg)}
+.movie-mobile-more-menu button{min-height:44px;padding:0 var(--space-2);display:flex;align-items:center;gap:var(--space-3);border:0;border-radius:var(--radius-sm);background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:500;text-align:left;white-space:nowrap}
+.movie-mobile-more-menu button:hover:not(:disabled),.movie-mobile-more-menu button:focus-visible{background:var(--color-secondary)}
+.movie-mobile-more-menu button:disabled{cursor:not-allowed;opacity:.5}
+.movie-mobile-more-menu button svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--color-primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.movie-mobile-more-menu button span{flex:1}
+.movie-mobile-more-menu button small{color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400}
 @media(max-width:800px){
   .movie-action-watch-row{padding:var(--space-2)}
   .movie-mobile-more-actions{top:50%;right:0;transform:translateY(-50%)}
   .movie-mobile-more-actions summary{width:36px;height:44px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary)}
-  .movie-mobile-more-menu{width:min(240px,calc(100vw - 32px))}
+  .movie-mobile-more-menu{width:min(260px,calc(100vw - 32px));min-width:0}
   .movie-actions-column--unwatched .movie-action-lists,.movie-actions-column--unwatched .movie-action-secondary{display:flex}
   .movie-actions-column--unwatched{gap:var(--space-3)}
 }

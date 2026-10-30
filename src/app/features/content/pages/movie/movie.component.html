@@ -328,14 +328,12 @@
             </button>
             </div>
             <details class="movie-mobile-more-actions">
-              <summary [attr.aria-label]="copy.moreActions">&#8942;</summary>
-              <div class="movie-mobile-more-menu">
-                <button type="button" (click)="openWatchDialog('edit', $event)">{{ copy.editWatch }}</button>
-                <button type="button" (click)="openWatchDialog('again', $event)">{{ copy.watchAgain }}</button>
-                <button type="button" (click)="openLists($event)">{{ copy.addToList }}</button>
-                @if (moviePage.viewerState.myReview) {
-                  <button type="button" (click)="openShareDialog($event)">{{ copy.shareReview }}</button>
-                }
+              <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg></summary>
+              <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions">
+                <button type="button" (click)="openWatchDialog('again', $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.watchAgain }}</span><small>{{ copy.playsCount.replace('{count}', formatNumber(moviePage.viewerState.playsCount, 0)) }}</small></button>
+                <button type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
+                <button type="button" [disabled]="!moviePage.viewerState.myReview" (click)="openShareDialog($event)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button>
+                <button type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg><span>{{ copy.changePoster }}</span></button>
               </div>
             </details>
           </div>
