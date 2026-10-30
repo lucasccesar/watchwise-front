@@ -20,7 +20,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DomSanitizer } from '@angular/platform-browser';
+import { DomSanitizer, Title } from '@angular/platform-browser';
 import { combineLatest, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import {
@@ -128,6 +128,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly title = inject(Title);
 
   @ViewChild('movieDialog')
   private movieDialog?: ElementRef<HTMLElement>;
@@ -220,6 +221,7 @@ export class MovieComponent implements OnInit, OnDestroy {
               return;
             }
             this.page.set(page);
+            this.title.setTitle(`${page.details.title?.trim() || this.copy.untitled} | Watchwise`);
             this.tmdbId.set(page.details.tmdbId || tmdbId);
             this.pageStatus.set('ready');
             this.loadReviews(1);
