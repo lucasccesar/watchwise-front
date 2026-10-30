@@ -299,16 +299,36 @@
                     } @else {
                       <span class="image-placeholder" aria-hidden="true"></span>
                     }
-                    <span class="next-release-date">{{ formatDate(release.date) }}</span>
+                    <span class="next-release-type">
+                      <span
+                        class="next-release-type-dot"
+                        [class.next-release-type-dot--movie]="release.eventType === 'MOVIE'"
+                        [class.next-release-type-dot--episode]="release.eventType === 'EPISODE'"
+                        [class.next-release-type-dot--season]="release.eventType === 'SEASON'"
+                        [class.next-release-type-dot--series]="release.eventType === 'SERIES'"
+                        aria-hidden="true"
+                      ></span>
+                      {{ releaseTypeLabel(release) }}
+                    </span>
+                    <span class="next-release-date">
+                      <svg class="next-release-date-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M21 10H3M16 2V6M8 2V6M7.8 22H16.2C17.88 22 18.72 22 19.362 21.673C19.927 21.385 20.385 20.927 20.673 20.362C21 19.72 21 18.88 21 17.2V8.8C21 7.12 21 6.28 20.673 5.638C20.385 5.074 19.927 4.615 19.362 4.327C18.72 4 17.88 4 16.2 4H7.8C6.12 4 5.28 4 4.638 4.327C4.074 4.615 3.615 5.074 3.327 5.638C3 6.28 3 7.12 3 8.8V17.2C3 18.88 3 19.72 3.327 20.362C3.615 20.927 4.074 21.385 4.638 21.673C5.28 22 6.12 22 7.8 22Z" />
+                      </svg>
+                      {{ formatReleaseShortDate(release.date) }}
+                    </span>
+                    @if (releaseCountdown(release); as countdown) {
+                      <span class="next-release-countdown next-release-countdown--badge">{{ countdown }}</span>
+                    }
                   </div>
                   <div class="next-release-info">
-                    <span class="next-release-type">{{ releaseTypeLabel(release) }}</span>
-                    <strong>{{ releaseTitle(release) }}</strong>
-                    @if (releaseSubtitle(release); as subtitle) {
-                      <span>{{ subtitle }}</span>
+                    <strong>
+                      {{ releaseTitle(release) }}
+                    </strong>
+                    @if (releaseDetail(release); as detail) {
+                      <span class="next-release-detail">{{ detail }}</span>
                     }
-                    @if (release.releaseContext?.network) {
-                      <span>{{ release.releaseContext?.network }}</span>
+                    @if (releaseCountdown(release); as countdown) {
+                      <span class="next-release-countdown next-release-countdown--caption">{{ countdown }}</span>
                     }
                   </div>
                 </article>
@@ -340,10 +360,13 @@
                 [style.--chart-bar-height]="day.height + '%'"
                 role="img"
                 [attr.aria-label]="day.description + ': ' + chartDayCountLabel(day)"
-                (mouseenter)="setHoveredChartDay(index)"
+                (mouseenter)="setHoveredChartDay(index, day.count)"
               >
                 <span class="chart-bar" aria-hidden="true" [style.height.%]="day.height"></span>
-                <span class="chart-tooltip" aria-hidden="true">{{ chartDayCountLabel(day) }}</span>
+                <span class="chart-tooltip" aria-hidden="true">
+                  <strong>{{ copy.watchChartCategory }}</strong>
+                  <span>{{ chartDayCountValue(day) }}</span>
+                </span>
               </div>
             }
           </div>
@@ -362,10 +385,23 @@
       <div class="genre-section">
         <h3>{{ copy.byGenre }}</h3>
         @if (genreBreakdown().length > 0) {
-          <ol class="genre-breakdown">
+          <ol
+            class="genre-breakdown"
+            [class.genre-breakdown--hovered]="hoveredGenreIndex() !== null"
+            (mouseleave)="clearGenreHover()"
+          >
             @for (genre of genreBreakdown(); track genre.genre; let index = $index) {
-              <li class="genre-item" [class.genre-item--lower]="index % 2 === 1" [style.--genre-weight]="genre.weight" [style.--genre-color]="genreColorToken(index)">
-                <div class="genre-item-label">
+              <li
+                class="genre-item"
+                [class.genre-item--lower]="index % 2 === 1"
+                [class.genre-item--active]="hoveredGenreIndex() === index"
+                [class.genre-item--muted]="hoveredGenreIndex() !== null && hoveredGenreIndex() !== index"
+                [style.--genre-weight]="genre.weight"
+                [style.--genre-color]="genreColorToken(index)"
+                [style.min-width.px]="genreMinimumWidths()[index] ?? null"
+                (mouseenter)="setHoveredGenre(index)"
+              >
+                <div class="genre-item-label" #genreItemLabel>
                   <strong>{{ genre.genre }}</strong>
                   @if (genre.episodes > 0) {
                     <span>{{ quantityLabel(genre.episodes, copy.episodeSingular, copy.episodesShortLabel) }}</span>
@@ -375,6 +411,10 @@
                   }
                 </div>
                 <span class="genre-color-bar" aria-hidden="true"></span>
+                <span
+                  class="genre-percentage"
+                  [attr.aria-hidden]="hoveredGenreIndex() === null ? 'true' : null"
+                >{{ genrePercentage(genre) }}</span>
               </li>
             }
           </ol>
@@ -448,12 +488,12 @@
                         class="content-dropdown-item"
                         type="button"
                         role="menuitem"
-                        (click)="openWatchLogForRecentEntry(entry)"
+                        (click)="openRatingModal(entry, $event)"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="m5 12 4 4L19 6" />
+                          <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
                         </svg>
-                        <span>{{ copy.markWatched }}</span>
+                        <span>{{ copy.rate }}</span>
                       </button>
                     </div>
                   }
@@ -486,12 +526,12 @@
                 } @else {
                   <span
                     class="recent-score"
-                    [attr.aria-label]="copy.score + ': ' + formatScore(entry.score)"
+                    [attr.aria-label]="copy.score + ': ' + formatUserScore(entry.score)"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
                     </svg>
-                    {{ formatScore(entry.score) }}
+                    {{ formatUserScore(entry.score) }}
                   </span>
                 }
               </div>
@@ -645,7 +685,7 @@
     </footer>
 
     @if (watchLogTarget(); as target) {
-      <div class="watch-log-backdrop" (click)="closeWatchLog()">
+      <div class="watch-log-backdrop" (click)="closeDialog()">
         <section
           class="watch-log-dialog"
           role="dialog"
@@ -655,23 +695,22 @@
         >
           <header class="watch-log-header">
             <div>
-              <h2 id="watch-log-title">{{ target.kind === 'rating' ? copy.rate : copy.markWatched }}</h2>
+              <h2 id="watch-log-title">{{ copy.markWatched }}</h2>
               <span>{{ target.title }}<span aria-hidden="true"> · </span>{{ target.subtitle }}</span>
             </div>
             <button
               class="watch-log-close"
               type="button"
-              #watchLogCloseButton
+              #dialogCloseButton
               [attr.aria-label]="copy.closeDialog"
               autofocus
-              (click)="closeWatchLog()"
+              (click)="closeDialog()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
             </button>
           </header>
 
-          @if (target.kind === 'watch') {
-            <div class="watch-log-controls">
+          <div class="watch-log-controls">
             <div class="watch-date-picker">
               <button
                 class="watch-date-trigger"
@@ -728,19 +767,18 @@
               <input type="checkbox" [checked]="watchLogRewatch()" (change)="setWatchLogRewatch($event)" />
               {{ copy.watchedBefore }}
             </label>
-            </div>
+          </div>
 
-            <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
-              <span>{{ copy.watchedWith }}</span>
-              <div>
-                <span class="watch-log-just-you">{{ copy.justYou }}</span>
-                <button type="button" disabled [title]="copy.actionUnavailableShort">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                  {{ copy.addPerson }}
-                </button>
-              </div>
+          <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
+            <span>{{ copy.watchedWith }}</span>
+            <div>
+              <span class="watch-log-just-you">{{ copy.justYou }}</span>
+              <button type="button" disabled [title]="copy.actionUnavailableShort">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                {{ copy.addPerson }}
+              </button>
             </div>
-          }
+          </div>
 
           <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
             <span>{{ copy.yourRating }}</span>
@@ -772,15 +810,87 @@
           </label>
 
           <footer class="watch-log-actions">
-            <span class="watch-log-save-note">{{ copy.actionUnavailableShort }}</span>
-            <button class="watch-log-cancel" type="button" (click)="closeWatchLog()">{{ copy.cancel }}</button>
+            @if (dialogErrorMessage(); as error) {
+              <p class="watch-log-save-error" role="alert">{{ error }}</p>
+            }
+            <button class="watch-log-cancel" type="button" [disabled]="isSaving()" (click)="closeDialog()">{{ copy.cancel }}</button>
             <button
               class="watch-log-save"
               type="button"
-              disabled
-              [attr.aria-label]="(target.kind === 'rating' ? copy.rate : copy.markWatched) + '. ' + (target.kind === 'rating' ? copy.actionUnavailable : copy.markWatchedUnavailable)"
-              [title]="target.kind === 'rating' ? copy.actionUnavailable : copy.markWatchedUnavailable"
-            >{{ copy.save }}</button>
+              [disabled]="isSaving() || !canSaveWatchLog()"
+              (click)="saveWatchLog()"
+            >{{ isSaving() ? copy.saving : copy.save }}</button>
+          </footer>
+        </section>
+      </div>
+    }
+
+    @if (ratingTarget(); as target) {
+      <div class="rating-modal-backdrop" (click)="closeDialog()">
+        <section
+          class="rating-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rating-dialog-title"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="watch-log-header">
+            <div>
+              <h2 id="rating-dialog-title">{{ copy.rate }}</h2>
+              <span>{{ target.title }}<span aria-hidden="true"> · </span>{{ target.subtitle }}</span>
+            </div>
+            <button
+              class="watch-log-close"
+              type="button"
+              #dialogCloseButton
+              [attr.aria-label]="copy.closeDialog"
+              autofocus
+              (click)="closeDialog()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </header>
+
+          <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
+            <span>{{ copy.yourRating }}</span>
+            <div>
+              @for (rating of ratingOptions; track rating) {
+                <button
+                  type="button"
+                  [attr.aria-label]="copy.rateWith + ' ' + rating + ' ' + copy.outOfTen"
+                  [attr.aria-pressed]="ratingModalScore() === rating"
+                  (click)="setRatingModalScore(rating)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="ratingModalScore() !== null && rating <= ratingModalScore()!">
+                    <path d="m11.283 3.453.933-1.89.933 1.89 2.187 4.43c.068.138.102.207.152.26.044.048.097.086.155.113.067.031.143.042.295.065l4.891.714c.515.075.772.113.891.239.103.109.152.259.132.408-.022.171-.209.353-.581.716l-3.539 3.45c-.11.107-.165.161-.2.225a.48.48 0 0 0-.055.187c-.007.073.006.148.032.3l.835 4.872c.088.513.132.77.05.922a.5.5 0 0 1-.36.261c-.17.028-.4-.093-.86-.335l-4.375-2.3c-.136-.072-.204-.108-.276-.122a.5.5 0 0 0-.198 0c-.072.014-.14.05-.276.122l-4.375 2.3c-.46.242-.69.363-.86.335a.5.5 0 0 1-.36-.261c-.082-.153-.038-.409.05-.922l.835-4.873c.026-.151.039-.226.032-.299a.5.5 0 0 0-.055-.187c-.035-.064-.09-.118-.2-.225l-3.539-3.45c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.164.891-.239l4.891-.714c.152-.023.228-.034.295-.065a.5.5 0 0 0 .155-.113c.05-.053.084-.122.152-.26l2.187-4.43Z" />
+                  </svg>
+                  <span>{{ rating }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <label class="watch-review">
+            <span>{{ copy.yourReview }} <span>{{ copy.optional }}</span></span>
+            <textarea
+              rows="5"
+              [placeholder]="copy.reviewPlaceholder"
+              [value]="ratingModalReview()"
+              (input)="updateRatingModalReview($event)"
+            ></textarea>
+          </label>
+
+          <footer class="watch-log-actions">
+            @if (dialogErrorMessage(); as error) {
+              <p class="watch-log-save-error" role="alert">{{ error }}</p>
+            }
+            <button class="watch-log-cancel" type="button" [disabled]="isSaving()" (click)="closeDialog()">{{ copy.cancel }}</button>
+            <button
+              class="watch-log-save"
+              type="button"
+              [disabled]="isSaving() || !canSaveRating()"
+              (click)="saveRating()"
+            >{{ isSaving() ? copy.saving : copy.save }}</button>
           </footer>
         </section>
       </div>

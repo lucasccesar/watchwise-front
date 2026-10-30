@@ -153,6 +153,26 @@ export interface HomeSummary {
   socialActivities: HomeSocialActivity[];
 }
 
+export interface DiaryEpisodeReference {
+  type: 'EPISODE';
+  seriesTmdbId: string;
+  seasonNumber: number;
+  episodeNumber: number;
+}
+
+export interface DiaryEntryCreationRequest {
+  content: DiaryEpisodeReference;
+  watchedDate: string;
+  isRewatch: boolean;
+  score?: number;
+  comment?: string;
+}
+
+export interface DiaryEntryUpdateRequest {
+  score?: number;
+  comment?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class HomeApiService {
   constructor(private readonly http: HttpClient) {}
@@ -160,6 +180,20 @@ export class HomeApiService {
   getHomeSummary(userId: string): Observable<HomeSummary> {
     return this.http.get<HomeSummary>(
       `/api/v1/users/${encodeURIComponent(userId)}/summary/home`,
+    );
+  }
+
+  createDiaryEntry(request: DiaryEntryCreationRequest): Observable<unknown> {
+    return this.http.post<unknown>('/api/v1/diary', request);
+  }
+
+  updateDiaryEntry(
+    diaryEntryId: string,
+    request: DiaryEntryUpdateRequest,
+  ): Observable<unknown> {
+    return this.http.patch<unknown>(
+      `/api/v1/diary/${encodeURIComponent(diaryEntryId)}`,
+      request,
     );
   }
 }
