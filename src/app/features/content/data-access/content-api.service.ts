@@ -117,6 +117,7 @@ export interface ContentPage {
 export interface UserPreview {
   id: string;
   username: string;
+  name: string;
   profilePicture: string | null;
 }
 

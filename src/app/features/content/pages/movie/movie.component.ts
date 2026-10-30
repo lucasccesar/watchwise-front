@@ -909,7 +909,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   protected reviewerName(review: ContentReview): string {
-    return `@${review.reviewer.username}`;
+    return review.reviewer.name?.trim() || `@${review.reviewer.username}`;
   }
 
   protected commentAuthorName(comment: ContentComment): string {
