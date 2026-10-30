@@ -126,7 +126,7 @@
               <span class="movie-head-star" aria-hidden="true">&#9733;</span>
               <span class="movie-head-rating-value">
                 <span class="movie-head-rating-number">
-                  <strong>{{ formatNumber(moviePage.stats.averageScore) }}</strong>
+                  <strong>{{ formatRating(moviePage.stats.averageScore) }}</strong>
                   <span>/10</span>
                 </span>
                 <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
@@ -440,7 +440,7 @@
                 <div class="movie-rating-average">
                   <span class="movie-rating-average-value">
                     <span class="movie-rating-average-star" aria-hidden="true">&#9733;</span>
-                    <strong>{{ formatNumber(moviePage.stats.averageScore) }}</strong>
+                    <strong>{{ formatRating(moviePage.stats.averageScore) }}</strong>
                   </span>
                   <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
                 </div>

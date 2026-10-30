@@ -754,6 +754,14 @@ export class MovieComponent implements OnInit, OnDestroy {
     return new Intl.NumberFormat('pt-BR', { maximumFractionDigits }).format(value);
   }
 
+  protected formatRating(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '—';
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(value);
+  }
+
   protected ratingBarHeight(score: number): number {
     const distribution = this.page()?.stats.ratingsDistribution ?? [];
     const count = distribution.find((item) => item.score === score)?.count ?? 0;
