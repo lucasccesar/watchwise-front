@@ -1,10 +1,55 @@
 <div class="home-page">
   @if (status() === 'loading') {
-    <section class="page-state" role="status" aria-live="polite">
-      <span class="loading-spinner" aria-hidden="true"></span>
-      <h1>{{ copy.loadingTitle }}</h1>
-      <p>{{ copy.loadingDescription }}</p>
-    </section>
+    <div class="home-loading" role="status" aria-live="polite" [attr.aria-label]="copy.loadingTitle">
+      <section class="home-hero home-loading-hero" aria-hidden="true">
+        <div class="home-loading-shimmer home-loading-hero-backdrop"></div>
+        <div class="home-hero-content">
+          <h1>{{ copy.homeTitle }}</h1>
+          <span class="home-loading-shimmer home-loading-date"></span>
+          <p class="home-hero-description">{{ copy.homeSubtitle }}</p>
+        </div>
+      </section>
+      <section class="stats-section" aria-hidden="true">
+        <div class="stats-track">
+          @for (card of [1, 2]; track card) {
+            <div class="stats-card home-loading-stats-card">
+              @for (item of [1, 2]; track item) {
+                <div class="home-loading-stat">
+                  <span class="home-loading-shimmer home-loading-stat-label"></span>
+                  <span class="home-loading-shimmer home-loading-stat-value"></span>
+                  <span class="home-loading-shimmer home-loading-stat-detail"></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+      <section class="home-section" aria-hidden="true">
+        <div class="home-loading-shimmer home-loading-heading"></div>
+        <div class="episode-list">
+          @for (card of [1, 2, 3, 4]; track card) {
+            <div class="episode-card">
+              <div class="episode-visual home-loading-shimmer"></div>
+              <span class="home-loading-shimmer home-loading-card-title"></span>
+              <span class="home-loading-shimmer home-loading-card-meta"></span>
+            </div>
+          }
+        </div>
+      </section>
+      <section class="home-section upcoming-section" aria-hidden="true">
+        <div class="home-loading-shimmer home-loading-heading"></div>
+        <div class="next-release-list">
+          @for (card of [1, 2, 3, 4, 5, 6]; track card) {
+            <div class="next-release-card">
+              <div class="next-release-image home-loading-shimmer"></div>
+              <span class="home-loading-shimmer home-loading-card-title"></span>
+              <span class="home-loading-shimmer home-loading-card-meta"></span>
+            </div>
+          }
+        </div>
+      </section>
+      <span class="visually-hidden">{{ copy.loadingDescription }}</span>
+    </div>
   } @else if (status() === 'error') {
     <section class="page-state page-state--error" role="alert">
       <h1>{{ copy.errorTitle }}</h1>
