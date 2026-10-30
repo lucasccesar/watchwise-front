@@ -571,8 +571,8 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected shareDragMove(event: PointerEvent): void {
     if (!this.shareDrag) return;
     const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.shareX.set(Math.min(100, Math.max(0, this.shareDrag.startX + (event.clientX - this.shareDrag.x) / bounds.width * 100)));
-    this.shareY.set(Math.min(100, Math.max(0, this.shareDrag.startY + (event.clientY - this.shareDrag.y) / bounds.height * 100)));
+    this.shareX.set(Math.min(100, Math.max(0, this.shareDrag.startX - (event.clientX - this.shareDrag.x) / bounds.width * 100)));
+    this.shareY.set(Math.min(100, Math.max(0, this.shareDrag.startY - (event.clientY - this.shareDrag.y) / bounds.height * 100)));
   }
 
   protected shareDragEnd(): void {
