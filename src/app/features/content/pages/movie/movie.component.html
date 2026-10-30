@@ -841,7 +841,7 @@
         } @else if (currentDialog === 'share') {
           @if (page(); as moviePage) {
             <div class="movie-share-layout">
-              <div class="movie-share-preview" role="img" [attr.aria-label]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)" (pointerdown)="shareDragStart($event)" (pointermove)="shareDragMove($event)" (pointerup)="shareDragEnd()" (pointercancel)="shareDragEnd()">
+              <div class="movie-share-preview" role="img" [attr.aria-label]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)" (wheel)="shareWheel($event)" (pointerdown)="shareDragStart($event)" (pointermove)="shareDragMove($event)" (pointerup)="shareDragEnd()" (pointercancel)="shareDragEnd()">
                 <div class="movie-share-canvas">
                   <div class="movie-share-backdrop" [style.background-image]="'url(' + (shareImageUrl() || backdropUrl() || posterUrl() || '') + ')'" [style.background-size]="'auto ' + shareZoom() + '%'" [style.background-position]="shareX() + '% ' + shareY() + '%'" aria-hidden="true"></div>
                   <div class="movie-share-scrim" aria-hidden="true"></div>

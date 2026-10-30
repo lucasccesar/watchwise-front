@@ -10,6 +10,7 @@ import {
   Renderer2,
   ViewChild,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -169,6 +170,19 @@ export class MovieComponent implements OnInit, OnDestroy {
     protected readonly session: AuthSessionService,
     formBuilder: FormBuilder,
   ) {
+    effect((onCleanup) => {
+      if (!this.dialog()) return;
+      const root = this.document.documentElement;
+      const body = this.document.body;
+      const previousRootOverflow = root.style.overflow;
+      const previousBodyOverflow = body.style.overflow;
+      root.style.overflow = 'hidden';
+      body.style.overflow = 'hidden';
+      onCleanup(() => {
+        root.style.overflow = previousRootOverflow;
+        body.style.overflow = previousBodyOverflow;
+      });
+    });
     this.maxWatchedDate = this.localDate(new Date());
     this.watchForm = formBuilder.nonNullable.group({
       watchedDate: [this.maxWatchedDate, Validators.required],
@@ -529,6 +543,12 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   protected changeShareZoom(delta: number): void {
     this.shareZoom.update((zoom) => Math.min(250, Math.max(100, zoom + delta)));
+  }
+
+  protected shareWheel(event: WheelEvent): void {
+    event.preventDefault();
+    if (event.deltaY === 0) return;
+    this.changeShareZoom(event.deltaY < 0 ? 10 : -10);
   }
 
   protected resetShareBackground(): void {
