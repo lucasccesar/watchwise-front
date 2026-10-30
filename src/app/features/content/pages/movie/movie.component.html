@@ -282,6 +282,7 @@
         </div>
 
         <aside class="movie-actions-column" [class.movie-actions-column--unwatched]="moviePage.viewerState.watchStatus !== 'WATCHED'" [attr.aria-label]="copy.actions">
+          @if (moviePage.viewerState.watchStatus === 'WATCHED') {
           <button
             class="movie-action-rating"
             type="button"
@@ -291,6 +292,12 @@
             <span>{{ copy.yourRating }}</span>
             <strong><span aria-hidden="true">&#9733;</span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
           </button>
+          } @else {
+            <button class="movie-action-mark-watched" type="button" [disabled]="actionPending()" (click)="openWatchDialog('new', $event)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17L4 12" /></svg>
+              <span>{{ copy.markWatched }}</span>
+            </button>
+          }
 
           @if (moviePage.viewerState.watchStatus === 'WATCHED') {
           <div class="movie-action-primary-row">
@@ -334,16 +341,53 @@
           </div>
           }
 
-          <button
-            class="movie-action-lists"
-            type="button"
-            [disabled]="actionPending()"
-            (click)="openLists($event)"
-          >
-            <span aria-hidden="true">&#9776;</span>
-            <span>{{ moviePage.viewerState.lists.length ? copy.inLists.replace('{count}', formatNumber(moviePage.viewerState.lists.length, 0)) : copy.addToList }}</span>
-            <span aria-hidden="true">&#9734;</span>
-          </button>
+          <div class="movie-lists-control">
+            <button
+              class="movie-action-lists"
+              type="button"
+              [disabled]="actionPending()"
+              [attr.aria-expanded]="listsExpanded() || dialog() === 'lists'"
+              aria-controls="movie-lists-panel"
+              (click)="toggleListsPanel($event)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12H9M21 6H9M21 18H9M5 12C5 12.552 4.552 13 4 13C3.448 13 3 12.552 3 12C3 11.448 3.448 11 4 11C4.552 11 5 11.448 5 12ZM5 6C5 6.552 4.552 7 4 7C3.448 7 3 6.552 3 6C3 5.448 3.448 5 4 5C4.552 5 5 5.448 5 6ZM5 18C5 18.552 4.552 19 4 19C3.448 19 3 18.552 3 18C3 17.448 3.448 17 4 17C4.552 17 5 17.448 5 18Z" /></svg>
+              <span>{{ moviePage.viewerState.lists.length ? copy.inLists.replace('{count}', formatNumber(moviePage.viewerState.lists.length, 0)) : copy.addToList }}</span>
+              <svg class="movie-lists-chevron" [class.movie-lists-chevron--open]="listsExpanded()" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9L12 15L18 9" /></svg>
+            </button>
+            @if (listsExpanded()) {
+              <div id="movie-lists-panel" class="movie-lists-panel" [attr.aria-label]="copy.listSelectTitle">
+                <strong class="movie-lists-panel-title">{{ copy.yourLists }}</strong>
+                @if (userListsStatus() === 'loading') {
+                  <p class="movie-empty-inline" role="status">{{ copy.loading }}</p>
+                } @else if (userListsStatus() === 'error') {
+                  <p class="movie-field-error" role="alert">{{ userListsError() || copy.listLoadError }}</p>
+                  <button class="movie-text-button" type="button" (click)="loadUserLists(1)">{{ copy.retry }}</button>
+                } @else if (userLists().length) {
+                  @for (list of userLists(); track list.id) {
+                    <button class="movie-lists-panel-item" type="button" [disabled]="actionPending() || (list.containsContent !== true && (list.itemScope === 'LIST' || list.itemScope === 'MIXED'))" [attr.aria-pressed]="list.containsContent === true" (click)="toggleMovieInList(list)">
+                      <span class="movie-lists-panel-check" aria-hidden="true">@if (list.containsContent) {&#10003;}</span>
+                      <span class="movie-lists-panel-name">{{ list.name }}</span>
+                      @if (list.itemsCount !== undefined) {<span class="movie-lists-panel-count">{{ formatNumber(list.itemsCount, 0) }}</span>}
+                    </button>
+                  }
+                  @if (userListsPage()?.hasNext) {
+                    <button class="movie-text-button movie-lists-panel-more" type="button" (click)="loadMoreLists()">{{ copy.moreLists }}</button>
+                  }
+                } @else {
+                  <p class="movie-empty-inline">{{ copy.listEmpty }}</p>
+                }
+                @if (listCreateOpen()) {
+                  <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createMovieList()">
+                    <label class="visually-hidden" for="movie-new-list-name">{{ copy.newListName }}</label>
+                    <input id="movie-new-list-name" type="text" maxlength="255" [value]="newListName()" [placeholder]="copy.newListName" (input)="newListName.set($any($event.target).value)" />
+                    <button type="submit" [disabled]="!newListName().trim() || actionPending()">{{ copy.createNewList }}</button>
+                  </form>
+                } @else {
+                  <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)"><span aria-hidden="true">+</span>{{ copy.createNewList }}</button>
+                }
+              </div>
+            }
+          </div>
           @if (moviePage.viewerState.watchStatus !== 'WATCHED') {
             <button
               class="movie-action-secondary movie-action-secondary--watchlist"
@@ -828,6 +872,15 @@
             }
           } @else {
             <p class="movie-empty-inline">{{ copy.listEmpty }}</p>
+          }
+          @if (listCreateOpen()) {
+            <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createMovieList()">
+              <label for="movie-new-list-name-dialog">{{ copy.newListName }}</label>
+              <input id="movie-new-list-name-dialog" type="text" maxlength="255" [value]="newListName()" (input)="newListName.set($any($event.target).value)" />
+              <button type="submit" [disabled]="!newListName().trim() || actionPending()">{{ copy.createNewList }}</button>
+            </form>
+          } @else {
+            <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)"><span aria-hidden="true">+</span>{{ copy.createNewList }}</button>
           }
         }
       </section>

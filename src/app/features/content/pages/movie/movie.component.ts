@@ -80,6 +80,9 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly commentHasSpoiler = signal(false);
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly userLists = signal<UserListSummary[]>([]);
+  protected readonly listsExpanded = signal(false);
+  protected readonly listCreateOpen = signal(false);
+  protected readonly newListName = signal('');
   protected readonly userListsPage = signal<ContentPageResult<UserListSummary> | null>(null);
   protected readonly userListsStatus = signal<PageStatus>('loading');
   protected readonly userListsError = signal('');
@@ -162,6 +165,11 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.pageError.set('');
     this.contentId.set('');
     this.tmdbId.set(tmdbId);
+    this.listsExpanded.set(false);
+    this.listCreateOpen.set(false);
+    this.newListName.set('');
+    this.userListsPage.set(null);
+    this.userLists.set([]);
     this.reviews.set([]);
     this.comments.set([]);
     this.reviewPage.set(null);
@@ -421,9 +429,35 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   protected openLists(event?: Event): void {
     this.modalOpener = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    this.listCreateOpen.set(false);
     this.dialog.set('lists');
     this.loadUserLists(1);
     queueMicrotask(() => this.movieDialog?.nativeElement.focus());
+  }
+
+  protected toggleListsPanel(event: Event): void {
+    if (window.matchMedia('(max-width: 800px)').matches) {
+      this.openLists(event);
+      return;
+    }
+    const expanded = !this.listsExpanded();
+    this.listsExpanded.set(expanded);
+    if (expanded && !this.userListsPage()) this.loadUserLists(1);
+  }
+
+  protected createMovieList(): void {
+    const name = this.newListName().trim();
+    if (!name || name.length > 255 || this.actionPending()) return;
+    this.runAction(
+      this.api.createMovieList(name, this.tmdbId()),
+      () => {
+        this.listCreateOpen.set(false);
+        this.newListName.set('');
+        this.showToast(this.copy.listAdded);
+        this.loadUserLists(1);
+        this.refreshPageStats();
+      },
+    );
   }
 
   protected loadUserLists(pageNumber: number): void {
