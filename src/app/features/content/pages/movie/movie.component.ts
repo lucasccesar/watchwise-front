@@ -669,6 +669,11 @@ export class MovieComponent implements OnInit, OnDestroy {
     }
     const details = this.page()?.details;
     if (!details) return;
+    const movieTmdbId = this.tmdbId().trim();
+    if (!movieTmdbId) {
+      this.showToast(this.copy.invalid);
+      return;
+    }
 
     const value = this.watchForm.getRawValue();
     const releaseDate = this.page()?.details.releaseDate;
@@ -692,7 +697,7 @@ export class MovieComponent implements OnInit, OnDestroy {
       ? this.api.updateDiaryEntry(diaryEntryId, request)
       : this.api.createDiaryEntry({
           ...request,
-          content: { type: 'MOVIE', tmdbId: details.tmdbId },
+          content: { type: 'MOVIE', tmdbId: movieTmdbId },
         });
 
     this.runAction(saving, () => {
