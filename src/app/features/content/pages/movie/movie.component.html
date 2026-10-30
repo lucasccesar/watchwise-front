@@ -256,7 +256,7 @@
               </section>
               @if (moviePage.details.videos.length) {
                 <button class="movie-side-video" type="button" (click)="openVideos($event)">
-                  <span aria-hidden="true">?</span><span>{{ copy.videos }}</span><span class="movie-video-count">{{ formatNumber(moviePage.details.videos.length, 0) }}</span>
+                  <span aria-hidden="true">&#9654;</span><span>{{ copy.videos }}</span><span class="movie-video-count">{{ formatNumber(moviePage.details.videos.length, 0) }}</span>
                 </button>
               }
               <nav class="movie-external-links" [attr.aria-label]="copy.movieLinks">
@@ -471,12 +471,12 @@
                 @if (imageUrl(person.profilePath, 'w185'); as portrait) {
                   <img [src]="portrait" alt="" loading="lazy" />
                 } @else {
-                  <span class="movie-person-fallback" aria-hidden="true">{{ person.name.slice(0, 1) }}</span>
+                  <span class="movie-person-fallback" aria-hidden="true">{{ personInitials(person.name) }}</span>
                 }
                 <div>
                   <strong>{{ person.name }}</strong>
                   @if (person.character) {
-                    <span>{{ copy.castCharacter.replace('{character}', person.character) }}</span>
+                    <span>{{ person.character }}</span>
                   }
                 </div>
               </article>
@@ -492,9 +492,9 @@
               @if (imageUrl(person.profilePath, 'w185'); as portrait) {
                 <img [src]="portrait" alt="" loading="lazy" />
               } @else {
-                <span class="movie-person-fallback" aria-hidden="true">{{ person.name.slice(0, 1) }}</span>
+                <span class="movie-person-fallback" aria-hidden="true">{{ personInitials(person.name) }}</span>
               }
-              <div><strong>{{ person.name }}</strong><span>{{ person.jobs.join(' ? ') }}</span></div>
+              <div><strong>{{ person.name }}</strong><span>{{ person.jobs.join(', ') }}</span></div>
             </article>
           }
         </div>
@@ -699,6 +699,10 @@
           <button class="movie-icon-button" type="button" [attr.aria-label]="copy.closeDialog" (click)="closeDialog()">×</button>
         </header>
 
+        @if (currentDialog === 'videos' && page(); as videoPage) {
+          <p class="movie-videos-subtitle">{{ videoPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(videoPage.details.videos.length, 0)) }}</p>
+        }
+
         @if (currentDialog === 'watch') {
           @if (page(); as moviePage) {
             <p class="movie-watch-subtitle">
@@ -812,40 +816,90 @@
             </div>
           </form>
         } @else if (currentDialog === 'share') {
-          <p class="movie-field-hint">{{ copy.shareDescription }}</p>
+          <p class="movie-share-description">{{ copy.shareDescription }}</p>
           @if (page(); as moviePage) {
-            <article class="movie-share-card">
-              @if (shareImageUrl() || backdropUrl(); as shareBackground) {
-                <img class="movie-share-background" [src]="shareBackground" alt="" />
-              }
-              @if (posterUrl(); as poster) {
-                <img [src]="poster" [alt]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)" />
-              }
-              <h3>{{ moviePage.details.title || copy.untitled }}</h3>
-              @if (moviePage.viewerState.myRating) {
-                <strong class="movie-review-score">★ {{ moviePage.viewerState.myRating }}/10</strong>
-              }
-              <p>{{ moviePage.viewerState.myReview }}</p>
-            </article>
+            <div class="movie-share-layout">
+              <article class="movie-share-card" [attr.aria-label]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)">
+                @if (shareImageUrl() || backdropUrl(); as shareBackground) {
+                  <img class="movie-share-background" [src]="shareBackground" alt="" [style.transform]="'scale(' + shareZoom() / 100 + ')'" />
+                }
+                <div class="movie-share-card-content">
+                  @if (sharePosterUrl() || posterUrl(); as poster) {
+                    <img class="movie-share-poster" [src]="poster" alt="" />
+                  }
+                  <h3>{{ moviePage.details.title || copy.untitled }} @if (moviePage.details.releaseDate) { <small>{{ moviePage.details.releaseDate.slice(0, 4) }}</small> }</h3>
+                  @if (moviePage.viewerState.myRating) {
+                    <strong class="movie-share-rating"><span aria-hidden="true">★</span> {{ moviePage.viewerState.myRating }}<small>/10</small></strong>
+                  }
+                  @if (shareShowReview()) { <p>{{ moviePage.viewerState.myReview }}</p> }
+                  <span class="movie-share-brand">ON <strong>WATCHWISE</strong></span>
+                </div>
+              </article>
+              <div class="movie-share-side-controls">
+                <div class="movie-share-control-group">
+                  <strong>{{ copy.shareImages }}</strong>
+                  <div class="movie-share-image-actions">
+                    <label class="movie-button movie-button--secondary movie-share-image-picker">
+                      {{ copy.shareChangeImage }}
+                      <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangeImage" (change)="onShareImageChanged($event)" />
+                    </label>
+                    <label class="movie-button movie-button--secondary movie-share-image-picker">
+                      {{ copy.shareChangePoster }}
+                      <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangePoster" (change)="onSharePosterChanged($event)" />
+                    </label>
+                  </div>
+                </div>
+                <div class="movie-share-control-group">
+                  <label for="movie-share-zoom">{{ copy.shareZoom }}</label>
+                  <div class="movie-share-zoom">
+                    <button type="button" [attr.aria-label]="copy.zoomOut" (click)="changeShareZoom(-5)">−</button>
+                    <input id="movie-share-zoom" type="range" min="100" max="250" step="5" [value]="shareZoom()" (input)="shareZoom.set(+$any($event.target).value)" />
+                    <button type="button" [attr.aria-label]="copy.zoomIn" (click)="changeShareZoom(5)">+</button>
+                    <span>{{ shareZoom() }}%</span>
+                  </div>
+                </div>
+                <label class="movie-share-review-toggle"><input type="checkbox" [checked]="shareShowReview()" (change)="shareShowReview.set($any($event.target).checked)" /> {{ copy.shareShowReview }}</label>
+                <div class="movie-share-controls"><button class="movie-button movie-button--primary" type="button" (click)="shareMovieReview()">{{ copy.shareAction }}</button></div>
+              </div>
+            </div>
           }
-          <div class="movie-share-controls">
-            <label class="movie-button movie-button--secondary movie-share-image-picker">
-              {{ copy.shareChangeImage }}
-              <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangeImage" (change)="onShareImageChanged($event)" />
-            </label>
-            <button class="movie-button movie-button--primary" type="button" (click)="shareMovieReview()">{{ copy.shareAction }}</button>
-          </div>
         } @else if (currentDialog === 'videos') {
-          @if (page()?.details?.videos?.length) {
-            <ul class="movie-video-list">
-              @for (video of page()?.details?.videos; track video.key) {
-                <li>
-                  <span class="movie-video-play" aria-hidden="true">▶</span>
-                  <div><strong>{{ video.name }}</strong><span>{{ video.type }}@if (video.official) { · {{ copy.official }} }</span></div>
-                  <a [href]="video.url" target="_blank" rel="noopener noreferrer" [attr.aria-label]="copy.playVideo.replace('{video}', video.name)">{{ copy.playVideo.replace('{video}', video.name) }}</a>
-                </li>
+          @if (selectedVideo(); as video) {
+            <div class="movie-video-feature">
+              <div class="movie-video-player">
+                @if (videoPlaying() && videoEmbedUrl(); as embedUrl) {
+                  <iframe [src]="embedUrl" [title]="copy.playVideo.replace('{video}', video.name)" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                } @else {
+                  @if (videoThumbnail(video); as thumbnail) { <img [src]="thumbnail" alt="" /> }
+                  @if (videoEmbedUrl()) {
+                    <button type="button" class="movie-video-feature-play" [attr.aria-label]="copy.playVideo.replace('{video}', video.name)" (click)="playVideo()">&#9654;</button>
+                  } @else {
+                    <a class="movie-video-feature-play" [href]="video.url" target="_blank" rel="noopener noreferrer" [attr.aria-label]="copy.playVideo.replace('{video}', video.name)">&#9654;</a>
+                  }
+                }
+              </div>
+              <div class="movie-video-feature-caption"><h3>{{ video.name }}</h3><span>{{ video.type }}@if (video.official) { · {{ copy.official }} }</span></div>
+            </div>
+            @if (page()?.details?.videos; as videos) {
+              @if (videos.length > 1) {
+                <section class="movie-video-more" [attr.aria-label]="copy.moreVideos">
+                  <h3>{{ copy.moreVideos }}</h3>
+                  <div class="movie-video-thumbnails" role="group" [attr.aria-label]="copy.moreVideos" tabindex="0">
+                    @for (otherVideo of videos; track otherVideo.key) {
+                      @if (otherVideo.key !== video.key) {
+                        <button type="button" class="movie-video-card" [attr.aria-label]="copy.playVideo.replace('{video}', otherVideo.name)" (click)="selectVideo(otherVideo)">
+                          <span class="movie-video-card-image">
+                            @if (videoThumbnail(otherVideo); as thumbnail) { <img [src]="thumbnail" alt="" loading="lazy" /> }
+                            <span aria-hidden="true">&#9654;</span>
+                          </span>
+                          <strong>{{ otherVideo.name }}</strong><small>{{ otherVideo.type }}</small>
+                        </button>
+                      }
+                    }
+                  </div>
+                </section>
               }
-            </ul>
+            }
           } @else {
             <p class="movie-empty-inline">{{ copy.videosEmpty }}</p>
           }

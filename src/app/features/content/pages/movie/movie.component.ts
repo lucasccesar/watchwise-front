@@ -20,6 +20,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer } from '@angular/platform-browser';
 import { combineLatest, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import {
@@ -31,6 +32,7 @@ import {
   ContentPage,
   ContentPageResult,
   ContentReview,
+  MovieVideo,
   ReviewSort,
   UserListSummary,
 } from '../../data-access/content-api.service';
@@ -95,9 +97,23 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly watchDetailsError = signal('');
   protected readonly editingDiaryEntry = signal<DiaryEntryRecord | null>(null);
   protected readonly peopleTab = signal<'cast' | 'crew'>('cast');
+  protected readonly selectedVideoKey = signal<string | null>(null);
+  protected readonly videoPlaying = signal(false);
+  protected readonly selectedVideo = computed(() => {
+    const videos = this.page()?.details.videos ?? [];
+    return videos.find((video) => video.key === this.selectedVideoKey()) ?? videos[0] ?? null;
+  });
+  protected readonly videoEmbedUrl = computed(() => {
+    const video = this.selectedVideo();
+    if (!video || !this.isYoutubeVideo(video)) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1`);
+  });
   protected readonly detailsExpanded = signal(false);
   protected readonly shareImageUrl = signal<string | null>(null);
   protected readonly shareImageFile = signal<File | null>(null);
+  protected readonly sharePosterUrl = signal<string | null>(null);
+  protected readonly shareZoom = signal(100);
+  protected readonly shareShowReview = signal(true);
   protected readonly toast = signal('');
   protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly maxWatchedDate: string;
@@ -111,6 +127,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   private movieStylesheet: HTMLLinkElement | null = null;
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
+  private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('movieDialog')
   private movieDialog?: ElementRef<HTMLElement>;
@@ -367,6 +384,10 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.peopleTab.set(tab);
   }
 
+  protected personInitials(name: string): string {
+    return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0] ?? '').join('').toUpperCase();
+  }
+
   protected peopleTabKeydown(event: KeyboardEvent): void {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
@@ -377,13 +398,40 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   protected openVideos(event?: Event): void {
     this.modalOpener = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    this.selectedVideoKey.set(this.page()?.details.videos[0]?.key ?? null);
+    this.videoPlaying.set(false);
     this.dialog.set('videos');
     queueMicrotask(() => this.movieDialog?.nativeElement.focus());
+  }
+
+  protected selectVideo(video: MovieVideo): void {
+    this.videoPlaying.set(false);
+    this.selectedVideoKey.set(video.key);
+  }
+
+  protected playVideo(): void {
+    if (this.videoEmbedUrl()) this.videoPlaying.set(true);
+  }
+
+  protected videoThumbnail(video: MovieVideo): string | null {
+    return this.isYoutubeVideo(video) ? `https://i.ytimg.com/vi/${video.key}/hqdefault.jpg` : null;
+  }
+
+  private isYoutubeVideo(video: MovieVideo): boolean {
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(video.key)) return false;
+    try {
+      const hostname = new URL(video.url).hostname.toLowerCase();
+      return hostname === 'youtube.com' || hostname === 'www.youtube.com' || hostname === 'youtu.be';
+    } catch {
+      return false;
+    }
   }
 
   protected openShareDialog(event?: Event): void {
     this.modalOpener = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     this.releaseShareImage();
+    this.shareZoom.set(100);
+    this.shareShowReview.set(true);
     this.dialog.set('share');
     queueMicrotask(() => this.movieDialog?.nativeElement.focus());
   }
@@ -397,9 +445,28 @@ export class MovieComponent implements OnInit, OnDestroy {
       input.value = '';
       return;
     }
-    this.releaseShareImage();
+    const current = this.shareImageUrl();
+    if (current?.startsWith('blob:')) URL.revokeObjectURL(current);
     this.shareImageFile.set(file);
     this.shareImageUrl.set(URL.createObjectURL(file));
+  }
+
+  protected onSharePosterChanged(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.showToast(this.copy.shareImageTypeError);
+      input.value = '';
+      return;
+    }
+    const current = this.sharePosterUrl();
+    if (current) URL.revokeObjectURL(current);
+    this.sharePosterUrl.set(URL.createObjectURL(file));
+  }
+
+  protected changeShareZoom(delta: number): void {
+    this.shareZoom.update((zoom) => Math.min(250, Math.max(100, zoom + delta)));
   }
 
   protected async shareMovieReview(): Promise<void> {
@@ -522,6 +589,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   protected closeDialog(): void {
+    this.videoPlaying.set(false);
     this.watchHydrationSubscription.unsubscribe();
     this.watchDetailsLoading.set(false);
     this.watchDetailsReady.set(true);
@@ -938,6 +1006,9 @@ export class MovieComponent implements OnInit, OnDestroy {
     if (imageUrl?.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
     this.shareImageUrl.set(null);
     this.shareImageFile.set(null);
+    const posterUrl = this.sharePosterUrl();
+    if (posterUrl) URL.revokeObjectURL(posterUrl);
+    this.sharePosterUrl.set(null);
   }
 
   private handleSessionError(error: unknown): boolean {
