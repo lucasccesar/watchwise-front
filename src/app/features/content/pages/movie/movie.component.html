@@ -696,6 +696,7 @@
           @if (currentDialog === 'watch' && page(); as moviePage) {
             <span class="movie-watch-subtitle">{{ moviePage.details.title || copy.untitled }}@if (moviePage.details.releaseDate) { · {{ moviePage.details.releaseDate.slice(0, 4) }} }@if (moviePage.details.runtimeMinutes) { · {{ formatRuntime(moviePage.details.runtimeMinutes) }} }</span>
           }
+          @if (currentDialog === 'share') { <p class="movie-share-description">{{ copy.shareDescription }}</p> }
           </div>
           <button class="movie-icon-button" type="button" [attr.aria-label]="copy.closeDialog" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
         </header>
@@ -817,12 +818,6 @@
                 }
               </div>
             </div>
-            @if (watchMode() === 'edit' && editingDiaryEntry()?.score != null) {
-              <p class="movie-field-hint">{{ copy.scoreClearUnavailable }}</p>
-            }
-            @if (isScoreClearUnsupported()) {
-              <p class="movie-field-error" role="alert">{{ copy.scoreClearUnavailable }}</p>
-            }
 
             <label for="movie-watch-review">{{ copy.reviewLabel }} <span>{{ copy.optional }}</span></label>
             <textarea id="movie-watch-review" rows="5" formControlName="comment" [placeholder]="copy.reviewPlaceholder"></textarea>
@@ -844,50 +839,57 @@
             </div>
           </form>
         } @else if (currentDialog === 'share') {
-          <p class="movie-share-description">{{ copy.shareDescription }}</p>
           @if (page(); as moviePage) {
             <div class="movie-share-layout">
-              <article class="movie-share-card" [attr.aria-label]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)">
-                @if (shareImageUrl() || backdropUrl(); as shareBackground) {
-                  <img class="movie-share-background" [src]="shareBackground" alt="" [style.transform]="'scale(' + shareZoom() / 100 + ')'" />
-                }
-                <div class="movie-share-card-content">
-                  @if (sharePosterUrl() || posterUrl(); as poster) {
-                    <img class="movie-share-poster" [src]="poster" alt="" />
-                  }
-                  <h3>{{ moviePage.details.title || copy.untitled }} @if (moviePage.details.releaseDate) { <small>{{ moviePage.details.releaseDate.slice(0, 4) }}</small> }</h3>
-                  @if (moviePage.viewerState.myRating) {
-                    <strong class="movie-share-rating"><span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span> {{ moviePage.viewerState.myRating }}<small>/10</small></strong>
-                  }
-                  @if (shareShowReview()) { <p>{{ moviePage.viewerState.myReview }}</p> }
-                  <span class="movie-share-brand">ON <strong>WATCHWISE</strong></span>
+              <div class="movie-share-preview" role="img" [attr.aria-label]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)" (pointerdown)="shareDragStart($event)" (pointermove)="shareDragMove($event)" (pointerup)="shareDragEnd()" (pointercancel)="shareDragEnd()">
+                <div class="movie-share-canvas">
+                  <div class="movie-share-backdrop" [style.background-image]="'url(' + (shareImageUrl() || backdropUrl() || posterUrl() || '') + ')'" [style.background-size]="'auto ' + shareZoom() + '%'" [style.background-position]="shareX() + '% ' + shareY() + '%'" aria-hidden="true"></div>
+                  <div class="movie-share-scrim" aria-hidden="true"></div>
+                  <div class="movie-share-card-content">
+                    <div class="movie-share-author"><img [src]="session.user()?.profilePicture || '/default-user-avatar.png'" alt="" /><span>{{ '@' + (session.user()?.username || '') }}</span></div>
+                    @if (sharePosterUrl() || posterUrl(); as poster) { <img class="movie-share-poster" [src]="poster" alt="" /> }
+                    <h3>{{ moviePage.details.title || copy.untitled }} @if (moviePage.details.releaseDate) { <small>{{ moviePage.details.releaseDate.slice(0, 4) }}</small> }</h3>
+                    @if (moviePage.viewerState.myRating) { <strong class="movie-share-rating"><span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span> {{ moviePage.viewerState.myRating }}<small>/10</small></strong> }
+                    @if (shareShowReview() && moviePage.viewerState.myReview) { <p>“{{ moviePage.viewerState.myReview }}”</p> }
+                    <span class="movie-share-brand">ON <img src="/watchwise-logo.svg" alt="Watchwise" /></span>
+                  </div>
                 </div>
-              </article>
+              </div>
               <div class="movie-share-side-controls">
                 <div class="movie-share-control-group">
                   <strong>{{ copy.shareImages }}</strong>
                   <div class="movie-share-image-actions">
                     <label class="movie-button movie-button--secondary movie-share-image-picker">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
                       {{ copy.shareChangeImage }}
                       <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangeImage" (change)="onShareImageChanged($event)" />
                     </label>
                     <label class="movie-button movie-button--secondary movie-share-image-picker">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
                       {{ copy.shareChangePoster }}
                       <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangePoster" (change)="onSharePosterChanged($event)" />
                     </label>
                   </div>
+                  @if (shareImageUrl() || sharePosterUrl()) { <button class="movie-share-reset-link" type="button" (click)="resetShareImages()">{{ copy.shareOriginalImages }}</button> }
                 </div>
                 <div class="movie-share-control-group">
                   <label for="movie-share-zoom">{{ copy.shareZoom }}</label>
                   <div class="movie-share-zoom">
-                    <button type="button" [attr.aria-label]="copy.zoomOut" (click)="changeShareZoom(-5)">−</button>
+                    <button type="button" [attr.aria-label]="copy.zoomOut" (click)="changeShareZoom(-10)">−</button>
                     <input id="movie-share-zoom" type="range" min="100" max="250" step="5" [value]="shareZoom()" (input)="shareZoom.set(+$any($event.target).value)" />
-                    <button type="button" [attr.aria-label]="copy.zoomIn" (click)="changeShareZoom(5)">+</button>
+                    <button type="button" [attr.aria-label]="copy.zoomIn" (click)="changeShareZoom(10)">+</button>
                     <span>{{ shareZoom() }}%</span>
                   </div>
                 </div>
-                <label class="movie-share-review-toggle"><input type="checkbox" [checked]="shareShowReview()" (change)="shareShowReview.set($any($event.target).checked)" /> {{ copy.shareShowReview }}</label>
-                <div class="movie-share-controls"><button class="movie-button movie-button--primary" type="button" (click)="shareMovieReview()">{{ copy.shareAction }}</button></div>
+                <div class="movie-share-control-group">
+                  <strong>{{ copy.sharePosition }}</strong>
+                  <label class="movie-share-position">{{ copy.shareHorizontal }}<input type="range" min="0" max="100" step="1" [value]="shareX()" (input)="shareX.set(+$any($event.target).value)" /></label>
+                  <label class="movie-share-position">{{ copy.shareVertical }}<input type="range" min="0" max="100" step="1" [value]="shareY()" (input)="shareY.set(+$any($event.target).value)" /></label>
+                  @if (shareZoom() === 100) { <small>{{ copy.sharePositionHint }}</small> }
+                  <button class="movie-button movie-button--secondary movie-share-reset" type="button" (click)="resetShareBackground()">{{ copy.shareResetBackground }}</button>
+                </div>
+                <div class="movie-share-review-toggle"><span><strong>{{ copy.shareShowReview }}</strong><small>{{ shareShowReview() ? copy.shareReviewVisible : copy.shareReviewHidden }}</small></span><button type="button" role="switch" [attr.aria-checked]="shareShowReview()" [attr.aria-label]="copy.shareShowReview" [class.movie-share-switch--on]="shareShowReview()" (click)="shareShowReview.set(!shareShowReview())"><span></span></button></div>
+                <div class="movie-share-controls"><button class="movie-button movie-button--secondary" type="button" (click)="closeDialog()">{{ copy.cancel }}</button><button class="movie-button movie-button--primary" type="button" (click)="downloadShareImage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v2a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-2m14-5-5 5-5-5m5 5V3" /></svg>{{ copy.shareDownload }}</button></div>
               </div>
             </div>
           }
