@@ -538,6 +538,14 @@
         <p class="movie-field-error" role="alert">{{ commentError() }}</p>
       }
       <form class="movie-comment-form" (submit)="$event.preventDefault(); submitComment()">
+        <div class="movie-comment-composer-avatar" aria-hidden="true">
+          @if (session.user()?.profilePicture; as avatar) {
+            <img [src]="avatar" alt="" />
+          } @else {
+            <span>{{ (session.user()?.name || session.user()?.username || 'W').slice(0, 1) }}</span>
+          }
+        </div>
+        <div class="movie-comment-composer-body">
         @if (replyTo(); as reply) {
           <div class="movie-reply-context">
             <span>{{ copy.replyTo.replace('{name}', commentAuthorName(reply)) }}</span>
@@ -562,6 +570,7 @@
           <button class="movie-button movie-button--primary" type="submit" [disabled]="!canSubmitComment()">
             {{ commentPending() ? copy.commentsLoading : copy.commentSubmit }}
           </button>
+        </div>
         </div>
       </form>
       @if (commentStatus() === 'loading') {

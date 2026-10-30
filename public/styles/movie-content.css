@@ -401,6 +401,11 @@
 .movie-comment-heading{justify-content:flex-start;align-items:baseline;gap:var(--space-2)}
 .movie-comment-body>p{margin:0;font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
 .movie-comment-form textarea{min-height:72px;resize:none;font-size:var(--font-size-md);line-height:var(--line-height-md)}
+.movie-comment-form{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:start;column-gap:var(--space-4)}
+.movie-comment-composer-avatar{width:40px;height:40px;overflow:hidden;display:grid;place-items:center;border:2px solid var(--color-primary);border-radius:var(--radius-full);background:var(--color-secondary);font-size:var(--font-size-md);font-weight:600}
+.movie-comment-composer-avatar img{width:100%;height:100%;object-fit:cover}
+.movie-comment-composer-body{min-width:0;display:flex;flex-direction:column;gap:var(--space-3)}
+.movie-comment-form-footer{justify-content:flex-end}
 @media(max-width:800px){
   .movie-reviews .movie-section-heading{align-items:flex-start;gap:var(--space-3)}
   .movie-review-card{padding:var(--space-4);grid-template-columns:36px minmax(0,1fr)}

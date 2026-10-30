@@ -116,7 +116,7 @@ export class MovieComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly api: ContentApiService,
-    private readonly session: AuthSessionService,
+    protected readonly session: AuthSessionService,
     formBuilder: FormBuilder,
   ) {
     this.maxWatchedDate = this.localDate(new Date());
