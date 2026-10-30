@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   ElementRef,
@@ -53,7 +54,7 @@ type WatchForm = FormGroup<{
 @Component({
   selector: 'app-movie-content',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, NgTemplateOutlet],
   templateUrl: './movie.component.html',
   styleUrl: './movie.component.css',
 })

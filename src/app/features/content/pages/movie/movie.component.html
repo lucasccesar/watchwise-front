@@ -1,3 +1,4 @@
+<ng-template #ratingStar><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.283 3.453c.23-.467.345-.7.502-.775a.5.5 0 0 1 .431 0c.156.075.271.308.501.775l2.187 4.43c.068.138.102.207.152.26a.7.7 0 0 0 .45.178l4.891.714c.515.076.772.113.891.239a.5.5 0 0 1 .132.408c-.022.171-.209.353-.581.716L17.3 13.844c-.11.107-.165.161-.2.225a.7.7 0 0 0-.03.482l.835 4.866c.088.513.132.77.049.922a.5.5 0 0 1-.358.253c-.17.031-.4-.09-.861-.332l-4.373-2.3a.7.7 0 0 0-.467-.134.7.7 0 0 0-.276.134l-4.373 2.3c-.461.242-.691.363-.861.332a.5.5 0 0 1-.348-.253c-.083-.152-.039-.409.049-.922l.835-4.866a.7.7 0 0 0-.03-.482c-.035-.064-.09-.118-.2-.225l-3.539-3.446c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.163.891-.239l4.891-.714a.7.7 0 0 0 .45-.178c.05-.053.084-.122.152-.26l2.186-4.43Z" /></svg></ng-template>
 <main class="movie-page">
   @if (pageStatus() === 'loading') {
     <div class="movie-state movie-state--loading" role="status">
@@ -123,7 +124,7 @@
 
           <div class="movie-head-stats" [attr.aria-label]="copy.movieRatingSummary">
             <div class="movie-head-rating">
-              <span class="movie-head-star" aria-hidden="true">&#9733;</span>
+              <span class="movie-head-star" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span>
               <span class="movie-head-rating-value">
                 <span class="movie-head-rating-number">
                   <strong>{{ formatRating(moviePage.stats.averageScore) }}</strong>
@@ -290,7 +291,7 @@
             (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
           >
             <span>{{ copy.yourRating }}</span>
-            <strong><span aria-hidden="true">&#9733;</span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
+            <strong><span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
           </button>
           } @else {
             <button class="movie-action-mark-watched" type="button" [disabled]="actionPending()" (click)="openWatchDialog('new', $event)">
@@ -323,12 +324,12 @@
               [attr.aria-label]="copy.yourRating"
               (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
             >
-              <span aria-hidden="true">&#9733;</span>
+              <span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span>
               {{ moviePage.viewerState.myRating ?? copy.noRating }}
             </button>
             </div>
             <details class="movie-mobile-more-actions">
-              <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg></summary>
+              <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></summary>
               <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions">
                 <button type="button" (click)="openWatchDialog('again', $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.watchAgain }}</span><small>{{ copy.playsCount.replace('{count}', formatNumber(moviePage.viewerState.playsCount, 0)) }}</small></button>
                 <button type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
@@ -431,13 +432,13 @@
                     }
                   </div>
                   <div class="movie-rating-chart-labels" aria-hidden="true">
-                    <span>&#9733; 1</span>
-                    <span>&#9733; 10</span>
+                    <span><ng-container [ngTemplateOutlet]="ratingStar" /> 1</span>
+                    <span><ng-container [ngTemplateOutlet]="ratingStar" /> 10</span>
                   </div>
                 </div>
                 <div class="movie-rating-average">
                   <span class="movie-rating-average-value">
-                    <span class="movie-rating-average-star" aria-hidden="true">&#9733;</span>
+                    <span class="movie-rating-average-star" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span>
                     <strong>{{ formatRating(moviePage.stats.averageScore) }}</strong>
                   </span>
                   <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
@@ -536,7 +537,7 @@
                       <p>{{ '@' + review.reviewer.username }} @if (review.watchedDate) { <span aria-hidden="true">·</span> {{ formatDate(review.watchedDate) }} }</p>
                     </div>
                     @if (review.score) {
-                      <span class="movie-review-score"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.283 3.453c.23-.467.345-.7.502-.775a.5.5 0 0 1 .431 0c.156.075.271.308.501.775l2.187 4.43c.068.138.102.207.152.26a.7.7 0 0 0 .45.178l4.891.714c.515.076.772.113.891.239a.5.5 0 0 1 .132.408c-.022.171-.209.353-.581.716L17.3 13.844c-.11.107-.165.161-.2.225a.7.7 0 0 0-.03.482l.835 4.866c.088.513.132.77.049.922a.5.5 0 0 1-.358.253c-.17.031-.4-.09-.861-.332l-4.373-2.3a.7.7 0 0 0-.467-.134.7.7 0 0 0-.276.134l-4.373 2.3c-.461.242-.691.363-.861.332a.5.5 0 0 1-.348-.253c-.083-.152-.039-.409.049-.922l.835-4.866a.7.7 0 0 0-.03-.482c-.035-.064-.09-.118-.2-.225l-3.539-3.446c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.163.891-.239l4.891-.714a.7.7 0 0 0 .45-.178c.05-.053.084-.122.152-.26l2.186-4.43Z" /></svg>{{ review.score }}<span>/10</span></span>
+                      <span class="movie-review-score"><ng-container [ngTemplateOutlet]="ratingStar" />{{ review.score }}<span>/10</span></span>
                     }
                   </div>
                 </div>
@@ -811,7 +812,7 @@
               <div class="movie-watch-stars">
                 @for (score of ratingOptions; track score) {
                   <button type="button" class="movie-watch-star" [class.movie-watch-star--selected]="watchForm.controls.score.value >= score" [attr.aria-label]="score + '/10'" [attr.aria-pressed]="watchForm.controls.score.value === score" [disabled]="watchDetailsLoading() || !watchDetailsReady()" (click)="setWatchScore(score)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11.283 3.453.933-1.89.933 1.89 2.187 4.43c.068.138.102.207.152.26.044.048.097.086.155.113.067.031.143.042.295.065l4.891.714c.515.075.772.113.891.239.103.109.152.259.132.408-.022.171-.209.353-.581.716l-3.539 3.45c-.11.107-.165.161-.2.225a.48.48 0 0 0-.055.187c-.007.073.006.148.032.3l.835 4.872c.088.513.132.77.05.922a.5.5 0 0 1-.36.261c-.17.028-.4-.093-.86-.335l-4.375-2.3c-.136-.072-.204-.108-.276-.122a.5.5 0 0 0-.198 0c-.072.014-.14.05-.276.122l-4.375 2.3c-.46.242-.69.363-.86.335a.5.5 0 0 1-.36-.261c-.082-.153-.038-.409.05-.922l.835-4.873c.026-.151.039-.226.032-.299a.5.5 0 0 0-.055-.187c-.035-.064-.09-.118-.2-.225l-3.539-3.45c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.164.891-.239l4.891-.714c.152-.023.228-.034.295-.065a.5.5 0 0 0 .155-.113c.05-.053.084-.122.152-.26l2.187-4.43Z" /></svg><small>{{ score }}</small>
+                    <ng-container [ngTemplateOutlet]="ratingStar" /><small>{{ score }}</small>
                   </button>
                 }
               </div>
@@ -856,7 +857,7 @@
                   }
                   <h3>{{ moviePage.details.title || copy.untitled }} @if (moviePage.details.releaseDate) { <small>{{ moviePage.details.releaseDate.slice(0, 4) }}</small> }</h3>
                   @if (moviePage.viewerState.myRating) {
-                    <strong class="movie-share-rating"><span aria-hidden="true">★</span> {{ moviePage.viewerState.myRating }}<small>/10</small></strong>
+                    <strong class="movie-share-rating"><span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span> {{ moviePage.viewerState.myRating }}<small>/10</small></strong>
                   }
                   @if (shareShowReview()) { <p>{{ moviePage.viewerState.myReview }}</p> }
                   <span class="movie-share-brand">ON <strong>WATCHWISE</strong></span>

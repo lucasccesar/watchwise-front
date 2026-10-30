@@ -294,6 +294,7 @@
 .movie-head-stats{display:flex;align-items:center;gap:var(--space-6)}
 .movie-head-rating{min-height:42px;padding-right:var(--space-6);display:flex;align-items:center;gap:var(--space-3);border-right:1px solid var(--color-border)}
 .movie-head-star{color:var(--color-accent);font-size:32px;line-height:1}
+.movie-head-star svg{width:32px;height:32px;display:block}
 .movie-head-rating-value{display:flex;align-items:baseline;gap:2px;color:var(--color-text)}
 .movie-head-rating-value strong{font-size:var(--font-size-display-xs);font-weight:700;line-height:var(--line-height-display-xs)}
 .movie-head-rating-value>span{font-size:var(--font-size-sm)}
@@ -323,6 +324,7 @@
 .movie-action-rating{min-height:52px;padding:0 var(--space-4);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600;text-align:left}
 .movie-action-rating strong{display:flex;align-items:center;gap:var(--space-1);font-size:var(--font-size-md)}
 .movie-action-rating strong>span,.movie-action-rating-compact>span{color:var(--color-accent)}
+.movie-action-rating strong svg{width:20px;height:20px;display:block}
 .movie-action-rating small{color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400}
 .movie-action-mark-watched{width:100%;min-height:52px;padding:0 var(--space-4);display:flex;align-items:center;gap:var(--space-3);border:1px solid var(--color-primary);border-radius:var(--radius-md);background:transparent;color:var(--color-primary);cursor:pointer;font-family:inherit;font-size:var(--font-size-md);font-weight:600;line-height:var(--line-height-md);text-align:left}
 .movie-action-mark-watched svg{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -330,6 +332,8 @@
 .movie-action-mark-watched:disabled{cursor:wait;opacity:.65}
 .movie-action-watch-row{position:relative;display:flex}
 .movie-action-watch{width:100%;min-height:64px;padding:var(--space-3);display:flex;align-items:center;gap:var(--space-3);border:1px solid var(--color-primary);border-radius:var(--radius-md);background:var(--color-primary);color:var(--color-text);cursor:pointer;text-align:left}
+.movie-action-primary-row{border-radius:var(--radius-md);background:var(--color-primary)}
+.movie-action-watch{border-top-right-radius:0;border-bottom-right-radius:0}
 .movie-watch-check{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;border-radius:var(--radius-full);background:var(--color-text);color:var(--color-primary);font-size:var(--font-size-md);font-weight:700}
 .movie-watch-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
 .movie-watch-copy strong{font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
@@ -379,8 +383,10 @@
 .movie-rating-chart-bars{height:56px;min-width:0;display:flex;align-items:flex-end;gap:3px;border-bottom:1px solid var(--color-border)}
 .movie-rating-chart-bar{min-width:0;flex:1 1 0;border-radius:3px 3px 0 0;background:var(--color-primary)}
 .movie-rating-chart-labels{display:flex;justify-content:space-between;color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
+.movie-rating-chart-labels svg{width:12px;height:12px;vertical-align:-1px;color:var(--color-accent)}
 .movie-rating-average{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;color:var(--color-tertiary);font-size:var(--font-size-xs)}
 .movie-rating-average-star{color:var(--color-accent)}
+.movie-rating-average-star svg{width:20px;height:20px;display:block}
 .movie-rating-average strong{color:var(--color-text);font-size:var(--font-size-display-xs);font-weight:600;line-height:var(--line-height-display-xs)}
 .movie-page-section{padding:var(--space-12) 15%;display:flex;flex-direction:column;gap:var(--space-6)}
 .movie-cast-section,.movie-comments{background:var(--color-surface-secondary)}
@@ -415,6 +421,7 @@
 .movie-share-layout .movie-share-card h3 small{color:var(--color-tertiary);font-size:var(--font-size-sm);font-weight:400}
 .movie-share-rating{color:var(--color-text);font-size:var(--font-size-xl)}
 .movie-share-rating span{color:var(--color-accent)}
+.movie-share-rating svg{width:20px;height:20px;vertical-align:-2px}
 .movie-share-rating small{color:var(--color-tertiary);font-size:var(--font-size-sm);font-weight:400}
 .movie-share-layout .movie-share-card p{max-height:120px;overflow:hidden;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-lg);background:color-mix(in srgb,var(--color-surface-secondary) 75%,transparent);font-size:var(--font-size-sm);text-align:left}
 .movie-share-brand{margin-top:var(--space-4);font-size:var(--font-size-xs);font-weight:600;letter-spacing:.12em}
@@ -488,7 +495,7 @@
   .movie-title-year{display:none}
   .movie-head-stats{gap:var(--space-2)}
   .movie-head-rating{min-height:28px;padding:0;border:0;gap:var(--space-2)}
-  .movie-head-star{font-size:20px}
+  .movie-head-star svg{width:20px;height:20px}
   .movie-head-rating-value{gap:var(--space-1)}
   .movie-head-rating-value strong{font-size:var(--font-size-md);line-height:var(--line-height-md)}
   .movie-head-rating-number>span,.movie-head-rating-value small{display:none}
@@ -515,6 +522,7 @@
   .movie-action-watch{min-width:0;min-height:60px;flex:1;padding:var(--space-2);border-radius:var(--radius-md)}
   .movie-watch-check{width:32px;height:32px;flex-basis:32px}
   .movie-action-rating-compact{min-width:52px;padding:0 var(--space-2);display:flex;align-items:center;justify-content:center;gap:var(--space-1);border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600}
+  .movie-action-rating-compact svg{width:16px;height:16px;display:block}
   .movie-action-lists,.movie-action-secondary,.movie-action-quiet{display:none}
   .movie-ratings-divider{margin-top:var(--space-4);padding-top:var(--space-5)}
   .movie-ratings-card{gap:var(--space-4)}
@@ -545,7 +553,6 @@
 .movie-title-line h1{flex:0 1 auto}
 .movie-title-year{margin-left:0}
 .movie-rating-chart-labels{font-weight:600}
-.movie-rating-chart-labels span::first-letter{color:var(--color-accent)}
 .movie-ratings-heading span{max-width:50%;overflow:hidden;text-overflow:ellipsis}
 .movie-reviews .movie-section-heading{justify-content:flex-start;gap:var(--space-6)}
 .movie-review-list{gap:var(--space-4)}
@@ -556,7 +563,7 @@
 .movie-review-topline h3{font-size:var(--font-size-md);line-height:var(--line-height-md)}
 .movie-review-topline p{margin:0;color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .movie-review-score{padding:4px 10px;border-radius:var(--radius-sm);background:var(--color-secondary)}
-.movie-review-score svg{flex:none;color:var(--color-accent)}
+.movie-review-score svg{width:14px;height:14px;flex:none;color:var(--color-accent)}
 .movie-review-score>span{color:var(--color-text);font-weight:400}
 .movie-review-text{margin:0;font-size:var(--font-size-md);line-height:26px}
 .movie-review-actions{margin-top:0;gap:var(--space-2)}
@@ -598,20 +605,21 @@
 .movie-action-watch{min-width:0;flex:1}
 .movie-mobile-more-actions{position:absolute;top:0;right:0;z-index:5;display:block}
 .movie-mobile-more-actions summary{width:44px;height:64px;display:grid;place-items:center;border:0;border-radius:0 var(--radius-md) var(--radius-md) 0;background:var(--color-primary);color:var(--color-text);cursor:pointer;list-style:none}
-.movie-mobile-more-actions summary svg{width:20px;height:20px;fill:currentColor}
+.movie-mobile-more-actions summary svg{width:20px;height:20px;fill:currentColor;stroke:currentColor;stroke-width:1.5}
 .movie-mobile-more-actions summary::-webkit-details-marker{display:none}
-.movie-mobile-more-menu{position:absolute;top:100%;right:0;width:100%;min-width:260px;padding:var(--space-2);display:flex;flex-direction:column;gap:0;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);box-shadow:var(--shadow-lg)}
+.movie-mobile-more-menu{position:absolute;top:100%;right:0;box-sizing:border-box;width:300px;max-width:calc(100vw - 32px);padding:var(--space-2);display:flex;flex-direction:column;gap:0;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);box-shadow:var(--shadow-lg)}
 .movie-mobile-more-menu button{min-height:44px;padding:0 var(--space-2);display:flex;align-items:center;gap:var(--space-3);border:0;border-radius:var(--radius-sm);background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:500;text-align:left;white-space:nowrap}
 .movie-mobile-more-menu button:hover:not(:disabled),.movie-mobile-more-menu button:focus-visible{background:var(--color-secondary)}
 .movie-mobile-more-menu button:disabled{cursor:not-allowed;opacity:.5}
 .movie-mobile-more-menu button svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--color-primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.movie-mobile-more-menu button span{flex:1}
-.movie-mobile-more-menu button small{color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400}
+.movie-mobile-more-menu button span{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis}
+.movie-mobile-more-menu button small{max-width:82px;flex:none;overflow:hidden;color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400;text-overflow:ellipsis}
 @media(max-width:800px){
+  .movie-action-primary-row{background:transparent}
   .movie-action-watch-row{padding:var(--space-2)}
   .movie-mobile-more-actions{top:50%;right:0;transform:translateY(-50%)}
   .movie-mobile-more-actions summary{width:36px;height:44px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary)}
-  .movie-mobile-more-menu{width:min(260px,calc(100vw - 32px));min-width:0}
+  .movie-mobile-more-menu{width:min(300px,calc(100vw - 32px))}
   .movie-actions-column--unwatched .movie-action-lists,.movie-actions-column--unwatched .movie-action-secondary{display:flex}
   .movie-actions-column--unwatched{gap:var(--space-3)}
 }
