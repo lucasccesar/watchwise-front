@@ -92,6 +92,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly watchDetailsError = signal('');
   protected readonly editingDiaryEntry = signal<DiaryEntryRecord | null>(null);
   protected readonly peopleTab = signal<'cast' | 'crew'>('cast');
+  protected readonly detailsExpanded = signal(false);
   protected readonly shareImageUrl = signal<string | null>(null);
   protected readonly shareImageFile = signal<File | null>(null);
   protected readonly toast = signal('');
@@ -657,6 +658,45 @@ export class MovieComponent implements OnInit, OnDestroy {
     return this.imageUrl(this.page()?.details.backdropPath, 'w1280');
   }
 
+  protected toggleDetails(): void {
+    this.detailsExpanded.update((expanded) => !expanded);
+  }
+
+  protected crewNamesForRole(movie: ContentPage, role: 'director' | 'writer' | 'producer'): string {
+    const keywords: Record<typeof role, string[]> = {
+      director: ['director'],
+      writer: ['writer', 'screenplay', 'story'],
+      producer: ['producer'],
+    };
+    const names = movie.details.crew
+      .filter((person) => person.jobs.some((job) => keywords[role].some((keyword) => job.toLowerCase().includes(keyword))))
+      .map((person) => person.name)
+      .filter((name, index, allNames) => allNames.indexOf(name) === index);
+    if (names.length <= 3) return names.join(', ');
+    return `${names.slice(0, 3).join(', ')} + ${names.length - 3}`;
+  }
+
+  protected languageName(language: string): string {
+    const names: Record<string, string> = {
+      de: 'Alemão',
+      en: 'Inglês',
+      es: 'Espanhol',
+      fr: 'Francês',
+      it: 'Italiano',
+      ja: 'Japonês',
+      ko: 'Coreano',
+      pt: 'Português',
+      zh: 'Chinês',
+    };
+    const normalized = language.toLowerCase().split('-')[0];
+    return names[normalized] ?? language;
+  }
+
+  protected providerInitials(name: string): string {
+    const first = name.trim().split(/\s+/)[0] ?? '';
+    return first.endsWith('+') ? `${first.charAt(0)}+` : first.charAt(0).toUpperCase();
+  }
+
   protected formatDate(value: string | null | undefined): string {
     if (!value) return '';
     const [year, month, day] = value.slice(0, 10).split('-').map(Number);
@@ -680,11 +720,11 @@ export class MovieComponent implements OnInit, OnDestroy {
     return new Intl.NumberFormat('pt-BR', { maximumFractionDigits }).format(value);
   }
 
-  protected ratingBarWidth(score: number): number {
+  protected ratingBarHeight(score: number): number {
     const distribution = this.page()?.stats.ratingsDistribution ?? [];
     const count = distribution.find((item) => item.score === score)?.count ?? 0;
     const largest = Math.max(...distribution.map((item) => item.count), 0);
-    return largest ? (count / largest) * 100 : 0;
+    return largest ? Math.max(2, (count / largest) * 56) : 2;
   }
 
   protected ratingCount(score: number): number {

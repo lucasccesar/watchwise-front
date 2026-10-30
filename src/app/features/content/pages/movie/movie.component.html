@@ -13,261 +13,52 @@
     </section>
   } @else if (page(); as moviePage) {
     <section class="movie-overview" aria-labelledby="movie-title">
-      @if (backdropUrl(); as backdrop) {
-        <img class="movie-backdrop" [src]="backdrop" alt="" fetchpriority="high" />
-      }
-      <div class="movie-backdrop-shade" aria-hidden="true"></div>
-
-      <div class="movie-overview-content">
-        <div class="movie-poster-wrap">
-          @if (posterUrl(); as poster) {
-            <img
-              class="movie-poster"
-              [src]="poster"
-              [alt]="copy.posterAlt.replace('{title}', moviePage.details.title || copy.untitled)"
-              fetchpriority="high"
-            />
-          } @else {
-            <div class="movie-poster movie-poster--empty" role="img" [attr.aria-label]="copy.noPoster">
-              <span aria-hidden="true">WW</span>
-            </div>
-          }
-        </div>
-
-        <div class="movie-heading">
-          <div class="movie-heading-eyebrow">
-            @if (moviePage.details.genres.length) {
-              <span>{{ moviePage.details.genres.slice(0, 3).join(' · ') }}</span>
-            }
-            @if (moviePage.metadata.certification) {
-              <span class="movie-certification">{{ moviePage.metadata.certification }}</span>
-            }
-          </div>
-          <h1 id="movie-title">{{ moviePage.details.title || copy.untitled }}</h1>
-          <p class="movie-subtitle">
-            @if (moviePage.details.releaseDate) {
-              <span>{{ moviePage.details.releaseDate.slice(0, 4) }}</span>
-            }
-            @if (formatRuntime(moviePage.details.runtimeMinutes); as runtime) {
-              <span>{{ runtime }}</span>
-            }
-            @if (moviePage.details.countries.length) {
-              <span>{{ moviePage.details.countries.join(' · ') }}</span>
-            }
-          </p>
-          <p class="movie-overview-copy">
-            {{ moviePage.details.overview || copy.synopsisEmpty }}
-          </p>
-
-          <div class="movie-links">
-            @if (moviePage.metadata.tmdbUrl; as tmdbUrl) {
-              <a [href]="tmdbUrl" target="_blank" rel="noopener noreferrer">{{ copy.openTmdb }}</a>
-            }
-            @if (moviePage.metadata.imdbUrl; as imdbUrl) {
-              <a [href]="imdbUrl" target="_blank" rel="noopener noreferrer">{{ copy.openImdb }}</a>
-            }
-            @if (moviePage.metadata.homepageUrl; as homepageUrl) {
-              <a [href]="homepageUrl" target="_blank" rel="noopener noreferrer">{{ copy.homepage }}</a>
-            }
-          </div>
-
-          <div class="movie-actions" [attr.aria-label]="copy.actions">
-            @if (moviePage.viewerState.watchStatus === 'WATCHED') {
-              <button
-                class="movie-button movie-button--primary"
-                type="button"
-                [disabled]="actionPending()"
-                (click)="openWatchDialog('edit', $event)"
-              >
-                <span aria-hidden="true">✓</span>{{ copy.watched }}
-              </button>
-              <button
-                class="movie-button movie-button--secondary"
-                type="button"
-                [disabled]="actionPending()"
-                (click)="openWatchDialog('again', $event)"
-              >
-                {{ copy.watchAgain }}
-              </button>
-            } @else {
-              <button
-                class="movie-button movie-button--primary"
-                type="button"
-                [disabled]="actionPending()"
-                (click)="openWatchDialog('new', $event)"
-              >
-                {{ copy.markWatched }}
-              </button>
-            }
-            <button
-              class="movie-button movie-button--secondary"
-              type="button"
-              [attr.aria-pressed]="moviePage.viewerState.inWatchlist"
-              [disabled]="actionPending()"
-              (click)="toggleWatchlist()"
-            >
-              {{ moviePage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}
-            </button>
-            <button
-              class="movie-button movie-button--quiet"
-              type="button"
-              (click)="openLists($event)"
-            >
-              {{ copy.addToList }}
-            </button>
-            <button
-              class="movie-button movie-button--quiet"
-              type="button"
-              [attr.aria-pressed]="moviePage.viewerState.dropped"
-              [disabled]="actionPending()"
-              (click)="toggleDropped()"
-            >
-              {{ moviePage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}
-            </button>
-            @if (moviePage.details.videos.length) {
-              <button class="movie-button movie-button--quiet" type="button" (click)="openVideos($event)">
-                <span aria-hidden="true">▶</span>{{ copy.videos }}
-              </button>
-            }
-            @if (moviePage.viewerState.myReview) {
-              <button class="movie-button movie-button--quiet" type="button" (click)="openShareDialog($event)">
-                {{ copy.shareReview }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <aside class="movie-summary-card" [attr.aria-label]="copy.movieRatingSummary">
-          <div class="movie-score-block">
-            <span class="movie-score-star" aria-hidden="true">★</span>
-            <div>
-              <p class="movie-score-label">{{ copy.averageRating }}</p>
-              <p class="movie-score-value">
-                {{ formatNumber(moviePage.stats.averageScore) }}
-                <span>/10</span>
-              </p>
-            </div>
-          </div>
-          <p class="movie-score-count">{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</p>
-          <div class="movie-rating-distribution" [attr.aria-label]="copy.ratingDistribution">
-            @for (score of ratingOptions; track score) {
-              <div class="movie-rating-row" [attr.aria-label]="copy.ratingBar.replace('{score}', score.toString()).replace('{count}', formatNumber(ratingCount(score), 0))">
-                <span>{{ score }}</span>
-                <span class="movie-rating-track" aria-hidden="true">
-                  <span class="movie-rating-fill" [style.width.%]="ratingBarWidth(score)"></span>
-                </span>
-                <span class="movie-rating-count">{{ formatNumber(ratingCount(score), 0) }}</span>
-              </div>
-            }
-          </div>
-          <div class="movie-stat-list">
-            <p><span>{{ copy.plays }}</span><strong>{{ formatNumber(moviePage.stats.playsCount, 0) }}</strong></p>
-            <p><span>{{ copy.comments }}</span><strong>{{ formatNumber(moviePage.stats.commentsCount, 0) }}</strong></p>
-            @if (moviePage.viewerState.myRating; as rating) {
-              <p><span>{{ copy.yourRating }}</span><strong>{{ rating }}/10</strong></p>
-            }
-          </div>
-        </aside>
+      <div class="movie-backdrop-frame" aria-hidden="true">
+        @if (backdropUrl(); as backdrop) {
+          <img class="movie-backdrop" [src]="backdrop" alt="" fetchpriority="high" />
+        }
+        <div class="movie-backdrop-shade"></div>
       </div>
-    </section>
 
-    <div class="movie-content">
-      @if (!moviePage.details.overview) {
-        <p class="movie-partial-note" role="status">{{ copy.partialData }}</p>
-      }
-
-      <section class="movie-following panel" aria-labelledby="movie-following-title">
-        <div class="movie-section-heading">
-          <div>
-            <h2 id="movie-following-title">{{ copy.peopleYouFollow }}</h2>
-          </div>
-        </div>
-        <p class="movie-unavailable-note" role="status">{{ copy.peopleYouFollowUnavailable }}</p>
-      </section>
-
-      <div class="movie-detail-grid">
-        <section class="movie-cast panel" aria-labelledby="movie-cast-title">
-          <div class="movie-section-heading">
-            <h2 id="movie-cast-title">{{ copy.castAndCrew }}</h2>
-          </div>
-          <div class="movie-people-tabs" role="tablist" [attr.aria-label]="copy.castAndCrew" (keydown)="peopleTabKeydown($event)">
-            <button id="movie-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'cast'" [attr.tabindex]="peopleTab() === 'cast' ? 0 : -1" (click)="setPeopleTab('cast')">
-              {{ copy.castTab }} ({{ moviePage.details.cast.length }})
-            </button>
-            <button id="movie-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'crew'" [attr.tabindex]="peopleTab() === 'crew' ? 0 : -1" (click)="setPeopleTab('crew')">
-              {{ copy.crewTab }} ({{ moviePage.details.crew.length }})
-            </button>
-          </div>
-          @if (peopleTab() === 'cast') {
-            @if (moviePage.details.cast.length) {
-              <div id="movie-cast-panel" class="movie-cast-grid" role="tabpanel" aria-labelledby="movie-cast-tab">
-                @for (person of moviePage.details.cast.slice(0, 12); track person.id) {
-                  <article class="movie-person-card">
-                    @if (imageUrl(person.profilePath, 'w185'); as portrait) {
-                      <img [src]="portrait" alt="" loading="lazy" />
-                    } @else {
-                      <span class="movie-person-fallback" aria-hidden="true">{{ person.name.slice(0, 1) }}</span>
-                    }
-                    <div>
-                      <strong>{{ person.name }}</strong>
-                      @if (person.character) {
-                        <span>{{ copy.castCharacter.replace('{character}', person.character) }}</span>
-                      }
-                    </div>
-                  </article>
-                }
-              </div>
+      <div class="movie-overview-grid">
+        <aside class="movie-sidebar">
+          <div class="movie-poster-wrap">
+            @if (posterUrl(); as poster) {
+              <img
+                class="movie-poster"
+                [src]="poster"
+                [alt]="copy.posterAlt.replace('{title}', moviePage.details.title || copy.untitled)"
+                fetchpriority="high"
+              />
             } @else {
-              <p id="movie-cast-panel" class="movie-empty-inline" role="tabpanel" aria-labelledby="movie-cast-tab">{{ copy.unavailable }}</p>
+              <div class="movie-poster movie-poster--empty" role="img" [attr.aria-label]="copy.noPoster">
+                <span aria-hidden="true">WW</span>
+              </div>
             }
-          } @else if (moviePage.details.crew.length) {
-            <div id="movie-crew-panel" class="movie-crew-grid" role="tabpanel" aria-labelledby="movie-crew-tab">
-              @for (person of moviePage.details.crew.slice(0, 12); track person.id) {
-                <article class="movie-person-card">
-                  @if (imageUrl(person.profilePath, 'w185'); as portrait) {
-                    <img [src]="portrait" alt="" loading="lazy" />
-                  } @else {
-                    <span class="movie-person-fallback" aria-hidden="true">{{ person.name.slice(0, 1) }}</span>
-                  }
-                  <div><strong>{{ person.name }}</strong><span>{{ person.jobs.join(' · ') }}</span></div>
-                </article>
-              }
-            </div>
-          } @else {
-            <p id="movie-crew-panel" class="movie-empty-inline" role="tabpanel" aria-labelledby="movie-crew-tab">{{ copy.unavailable }}</p>
-          }
-          @if (moviePage.details.productionCompanies.length) {
-            <div class="movie-production">
-              <h3>{{ copy.productionCompanies }}</h3>
-              <p>{{ moviePage.details.productionCompanies.map(company => company.name).join(' · ') }}</p>
-            </div>
-          }
-        </section>
+          </div>
 
-        <aside class="movie-side-column">
-          <section class="movie-providers panel" aria-labelledby="movie-providers-title">
-            <div class="movie-section-heading">
-              <h2 id="movie-providers-title">{{ copy.whereToWatch }}</h2>
-            </div>
+          <section class="movie-providers" aria-labelledby="movie-providers-title">
+            <h2 id="movie-providers-title">{{ copy.whereToWatch }}</h2>
             @if (moviePage.metadata.watchProviders.length) {
               <ul class="movie-provider-list">
-                @for (provider of moviePage.metadata.watchProviders; track provider.providerId + ':' + provider.type) {
+                @for (provider of moviePage.metadata.watchProviders.slice(0, 4); track $index) {
                   <li>
                     @if (provider.watchUrl) {
                       <a [href]="provider.watchUrl" target="_blank" rel="noopener noreferrer" [attr.aria-label]="copy.watchProvider.replace('{provider}', provider.providerName)">
-                        @if (imageUrl(provider.logoPath, 'w92'); as logo) {
-                          <img [src]="logo" alt="" loading="lazy" />
-                        }
-                        <span>{{ provider.providerName }}</span>
-                        <small>{{ providerLabel(provider.type) }}</small>
+                        <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        <span class="movie-provider-copy">
+                          <strong>{{ provider.providerName }}</strong>
+                          <small>{{ providerLabel(provider.type) }}</small>
+                        </span>
+        <span class="movie-external-icon" aria-hidden="true">&#8599;</span>
                       </a>
                     } @else {
                       <div class="movie-provider-item">
-                        @if (imageUrl(provider.logoPath, 'w92'); as logo) {
-                          <img [src]="logo" alt="" loading="lazy" />
-                        }
-                        <span>{{ provider.providerName }}</span>
-                        <small>{{ providerLabel(provider.type) }}</small>
+                        <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        <span class="movie-provider-copy">
+                          <strong>{{ provider.providerName }}</strong>
+                          <small>{{ providerLabel(provider.type) }}</small>
+                        </span>
                       </div>
                     }
                   </li>
@@ -278,185 +69,541 @@
             }
           </section>
 
-          <section class="movie-facts panel" aria-labelledby="movie-facts-title">
-            <div class="movie-section-heading"><h2 id="movie-facts-title">{{ copy.details }}</h2></div>
-            <dl>
-              @if (moviePage.details.releaseDate) {
-                <div><dt>{{ copy.releaseDate }}</dt><dd>{{ formatDate(moviePage.details.releaseDate) }}</dd></div>
+          @if (moviePage.details.videos.length) {
+            <button class="movie-side-video" type="button" (click)="openVideos($event)">
+              <span aria-hidden="true">&#9654;</span>
+              <span>{{ copy.videos }}</span>
+              <span class="movie-video-count">{{ formatNumber(moviePage.details.videos.length, 0) }}</span>
+            </button>
+          }
+
+          <nav class="movie-external-links" [attr.aria-label]="copy.movieLinks">
+            @if (moviePage.metadata.imdbUrl; as imdbUrl) {
+              <a [href]="imdbUrl" target="_blank" rel="noopener noreferrer">{{ copy.imdbChip }}</a>
+            }
+            @if (moviePage.metadata.tmdbUrl; as tmdbUrl) {
+              <a [href]="tmdbUrl" target="_blank" rel="noopener noreferrer">{{ copy.tmdbChip }}</a>
+            }
+            @if (moviePage.metadata.homepageUrl; as homepageUrl) {
+              <a [href]="homepageUrl" target="_blank" rel="noopener noreferrer">{{ copy.officialSite }}</a>
+            }
+          </nav>
+        </aside>
+
+        <header class="movie-title-block">
+          <div class="movie-title-line">
+            <h1 id="movie-title">{{ moviePage.details.title || copy.untitled }}</h1>
+            @if (moviePage.details.releaseDate) {
+              <span class="movie-title-year">{{ moviePage.details.releaseDate.slice(0, 4) }}</span>
+            }
+            @if (moviePage.metadata.certification) {
+              <span class="movie-certification">{{ moviePage.metadata.certification }}</span>
+            }
+          </div>
+
+          <p class="movie-mobile-subtitle">
+            @if (crewNamesForRole(moviePage, 'director'); as directors) {
+              <span>{{ directors }}</span>
+            }
+            @if (moviePage.details.runtimeMinutes) {
+              <span>{{ formatRuntime(moviePage.details.runtimeMinutes) }}</span>
+            }
+            @if (moviePage.details.releaseDate) {
+              <span>{{ formatDate(moviePage.details.releaseDate) }}</span>
+            }
+          </p>
+
+          <div class="movie-head-stats" [attr.aria-label]="copy.movieRatingSummary">
+            <div class="movie-head-rating">
+              <span class="movie-head-star" aria-hidden="true">&#9733;</span>
+              <span class="movie-head-rating-value">
+                <span class="movie-head-rating-number">
+                  <strong>{{ formatNumber(moviePage.stats.averageScore) }}</strong>
+                  <span>/10</span>
+                </span>
+                <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
+              </span>
+            </div>
+            <a href="#movie-reviews" class="movie-head-stat">
+              <strong>{{ formatNumber(moviePage.stats.playsCount, 0) }}</strong>
+              <span>{{ copy.plays }}</span>
+            </a>
+            <a href="#movie-reviews" class="movie-head-stat">
+              <strong>{{ formatNumber(reviewCount(), 0) }}</strong>
+              <span>{{ copy.reviews }}</span>
+            </a>
+            <a href="#movie-comments" class="movie-head-stat">
+              <strong>{{ formatNumber(moviePage.stats.commentsCount, 0) }}</strong>
+              <span>{{ copy.comments }}</span>
+            </a>
+          </div>
+        </header>
+
+        <div class="movie-main-details">
+          <dl class="movie-metadata movie-metadata--desktop">
+            @if (moviePage.details.releaseDate) {
+              <div><dt>{{ copy.releaseDate }}</dt><dd>{{ formatDate(moviePage.details.releaseDate) }}</dd></div>
+            }
+            @if (moviePage.details.runtimeMinutes) {
+              <div><dt>{{ copy.duration }}</dt><dd>{{ formatRuntime(moviePage.details.runtimeMinutes) }}</dd></div>
+            }
+            @if (crewNamesForRole(moviePage, 'director'); as directors) {
+              <div><dt>{{ copy.director }}</dt><dd>{{ directors }}</dd></div>
+            }
+            @if (crewNamesForRole(moviePage, 'writer'); as writers) {
+              <div><dt>{{ copy.writer }}</dt><dd>{{ writers }}</dd></div>
+            }
+            @if (crewNamesForRole(moviePage, 'producer'); as producers) {
+              <div><dt>{{ copy.producers }}</dt><dd>{{ producers }}</dd></div>
+            }
+            @if (moviePage.details.countries.length) {
+              <div><dt>{{ copy.country }}</dt><dd>{{ moviePage.details.countries.join(', ') }}</dd></div>
+            }
+            @if (moviePage.metadata.originalLanguage) {
+              <div><dt>{{ copy.language }}</dt><dd>{{ languageName(moviePage.metadata.originalLanguage) }}</dd></div>
+            }
+            @if (moviePage.details.genres.length) {
+              <div><dt>{{ copy.genres }}</dt><dd>{{ moviePage.details.genres.join(', ') }}</dd></div>
+            }
+            @if (moviePage.details.productionCompanies.length) {
+              <div class="movie-metadata-wide"><dt>{{ copy.productionCompanies }}</dt><dd>{{ moviePage.details.productionCompanies.map(company => company.name).join(', ') }}</dd></div>
+            }
+            @if (moviePage.details.budget) {
+              <div><dt>{{ copy.budget }}</dt><dd>{{ copy.currency.replace('{amount}', formatNumber(moviePage.details.budget, 0)) }}</dd></div>
+            }
+            @if (moviePage.details.revenue) {
+              <div><dt>{{ copy.revenue }}</dt><dd>{{ copy.currency.replace('{amount}', formatNumber(moviePage.details.revenue, 0)) }}</dd></div>
+            }
+          </dl>
+
+          <section class="movie-synopsis-section" aria-labelledby="movie-synopsis-title">
+            <h2 id="movie-synopsis-title" class="movie-desktop-synopsis-title">{{ copy.synopsis }}</h2>
+            <h2 class="movie-mobile-details-title">{{ copy.details }}</h2>
+            @if (!moviePage.details.overview) {
+              <p class="movie-partial-note" role="status">{{ copy.partialData }}</p>
+            }
+            <p class="movie-synopsis-copy" [class.movie-synopsis-copy--collapsed]="!detailsExpanded()">
+              {{ moviePage.details.overview || copy.synopsisEmpty }}
+            </p>
+            <button class="movie-details-toggle" type="button" [attr.aria-expanded]="detailsExpanded()" (click)="toggleDetails()">
+              {{ detailsExpanded() ? copy.hideDetails : copy.showDetails }}
+              <span aria-hidden="true">{{ detailsExpanded() ? '-' : '+' }}</span>
+            </button>
+
+            @if (detailsExpanded()) {
+              <dl class="movie-metadata movie-metadata--mobile">
+                @if (moviePage.details.releaseDate) {
+                  <div><dt>{{ copy.releaseDate }}</dt><dd>{{ formatDate(moviePage.details.releaseDate) }}</dd></div>
+                }
+                @if (moviePage.details.runtimeMinutes) {
+                  <div><dt>{{ copy.duration }}</dt><dd>{{ formatRuntime(moviePage.details.runtimeMinutes) }}</dd></div>
+                }
+                @if (crewNamesForRole(moviePage, 'director'); as directors) {
+                  <div><dt>{{ copy.director }}</dt><dd>{{ directors }}</dd></div>
+                }
+                @if (crewNamesForRole(moviePage, 'writer'); as writers) {
+                  <div><dt>{{ copy.writer }}</dt><dd>{{ writers }}</dd></div>
+                }
+                @if (crewNamesForRole(moviePage, 'producer'); as producers) {
+                  <div><dt>{{ copy.producers }}</dt><dd>{{ producers }}</dd></div>
+                }
+                @if (moviePage.details.countries.length) {
+                  <div><dt>{{ copy.country }}</dt><dd>{{ moviePage.details.countries.join(', ') }}</dd></div>
+                }
+                @if (moviePage.metadata.originalLanguage) {
+                  <div><dt>{{ copy.language }}</dt><dd>{{ languageName(moviePage.metadata.originalLanguage) }}</dd></div>
+                }
+                @if (moviePage.details.genres.length) {
+                  <div><dt>{{ copy.genres }}</dt><dd>{{ moviePage.details.genres.join(', ') }}</dd></div>
+                }
+                @if (moviePage.details.productionCompanies.length) {
+                  <div class="movie-metadata-wide"><dt>{{ copy.productionCompanies }}</dt><dd>{{ moviePage.details.productionCompanies.map(company => company.name).join(', ') }}</dd></div>
+                }
+                @if (moviePage.details.budget) {
+                  <div><dt>{{ copy.budget }}</dt><dd>{{ copy.currency.replace('{amount}', formatNumber(moviePage.details.budget, 0)) }}</dd></div>
+                }
+                @if (moviePage.details.revenue) {
+                  <div><dt>{{ copy.revenue }}</dt><dd>{{ copy.currency.replace('{amount}', formatNumber(moviePage.details.revenue, 0)) }}</dd></div>
+                }
+              </dl>
+
+              <section class="movie-mobile-providers" aria-labelledby="movie-mobile-providers-title">
+                <h3 id="movie-mobile-providers-title">{{ copy.whereToWatch }}</h3>
+                @if (moviePage.metadata.watchProviders.length) {
+                  <ul class="movie-provider-list">
+                    @for (provider of moviePage.metadata.watchProviders.slice(0, 4); track $index) {
+                      <li>
+                <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        <span class="movie-provider-copy"><strong>{{ provider.providerName }}</strong><small>{{ providerLabel(provider.type) }}</small></span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="movie-empty-inline">{{ copy.providersEmpty }}</p>
+                }
+              </section>
+              @if (moviePage.details.videos.length) {
+                <button class="movie-side-video" type="button" (click)="openVideos($event)">
+                  <span aria-hidden="true">?</span><span>{{ copy.videos }}</span><span class="movie-video-count">{{ formatNumber(moviePage.details.videos.length, 0) }}</span>
+                </button>
               }
-              @if (moviePage.details.runtimeMinutes) {
-                <div><dt>{{ copy.duration }}</dt><dd>{{ formatRuntime(moviePage.details.runtimeMinutes) }}</dd></div>
-              }
-              @if (moviePage.details.budget) {
-                <div><dt>{{ copy.budget }}</dt><dd>{{ copy.currency.replace('{amount}', formatNumber(moviePage.details.budget, 0)) }}</dd></div>
-              }
-              @if (moviePage.details.revenue) {
-                <div><dt>{{ copy.revenue }}</dt><dd>{{ copy.currency.replace('{amount}', formatNumber(moviePage.details.revenue, 0)) }}</dd></div>
-              }
-            </dl>
+              <nav class="movie-external-links" [attr.aria-label]="copy.movieLinks">
+                @if (moviePage.metadata.imdbUrl; as imdbUrl) {
+                  <a [href]="imdbUrl" target="_blank" rel="noopener noreferrer">{{ copy.imdbChip }}</a>
+                }
+                @if (moviePage.metadata.tmdbUrl; as tmdbUrl) {
+                  <a [href]="tmdbUrl" target="_blank" rel="noopener noreferrer">{{ copy.tmdbChip }}</a>
+                }
+                @if (moviePage.metadata.homepageUrl; as homepageUrl) {
+                  <a [href]="homepageUrl" target="_blank" rel="noopener noreferrer">{{ copy.officialSite }}</a>
+                }
+              </nav>
+            }
           </section>
+
+          <section class="movie-following" aria-labelledby="movie-following-title">
+            <div class="movie-following-heading">
+              <h2 id="movie-following-title">{{ copy.peopleYouFollow }}</h2>
+              <span class="movie-following-unavailable">{{ copy.peopleYouFollowUnavailable }}</span>
+            </div>
+          </section>
+        </div>
+
+        <aside class="movie-actions-column" [attr.aria-label]="copy.actions">
+          <button
+            class="movie-action-rating"
+            type="button"
+            [disabled]="actionPending()"
+            (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
+          >
+            <span>{{ copy.yourRating }}</span>
+            <strong><span aria-hidden="true">&#9733;</span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
+          </button>
+
+          <div class="movie-action-primary-row">
+            <div class="movie-action-watch-row">
+            <button
+              class="movie-action-watch"
+              type="button"
+              [disabled]="actionPending()"
+              (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
+            >
+              @if (moviePage.viewerState.watchStatus === 'WATCHED') {
+                <span class="movie-watch-check" aria-hidden="true">&#10003;</span>
+              } @else {
+                <span class="movie-watch-check" aria-hidden="true">+</span>
+              }
+              <span class="movie-watch-copy">
+                <strong>{{ moviePage.viewerState.watchStatus === 'WATCHED' ? copy.watched : copy.markWatched }}</strong>
+                @if (moviePage.viewerState.lastWatchedDate) {
+                  <small>{{ formatDate(moviePage.viewerState.lastWatchedDate) }}</small>
+                }
+              </span>
+            </button>
+            <button
+              class="movie-action-rating-compact"
+              type="button"
+              [disabled]="actionPending()"
+              [attr.aria-label]="copy.yourRating"
+              (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
+            >
+              <span aria-hidden="true">&#9733;</span>
+              {{ moviePage.viewerState.myRating ?? copy.noRating }}
+            </button>
+            </div>
+            <details class="movie-mobile-more-actions">
+              <summary [attr.aria-label]="copy.moreActions">&#8942;</summary>
+              <div class="movie-mobile-more-menu">
+                <button type="button" (click)="openWatchDialog('edit', $event)">{{ copy.editWatch }}</button>
+                @if (moviePage.viewerState.watchStatus === 'WATCHED') {
+                  <button type="button" (click)="openWatchDialog('again', $event)">{{ copy.watchAgain }}</button>
+                }
+                <button type="button" (click)="openLists($event)">{{ copy.addToList }}</button>
+                @if (moviePage.viewerState.watchStatus !== 'WATCHED') {
+                  <button type="button" (click)="toggleWatchlist()">{{ moviePage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}</button>
+                  <button type="button" (click)="toggleDropped()">{{ moviePage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}</button>
+                }
+                @if (moviePage.viewerState.myReview) {
+                  <button type="button" (click)="openShareDialog($event)">{{ copy.shareReview }}</button>
+                }
+              </div>
+            </details>
+          </div>
+
+          <button
+            class="movie-action-lists"
+            type="button"
+            [disabled]="actionPending()"
+            (click)="openLists($event)"
+          >
+            <span aria-hidden="true">&#9776;</span>
+            <span>{{ moviePage.viewerState.lists.length ? copy.inLists.replace('{count}', formatNumber(moviePage.viewerState.lists.length, 0)) : copy.addToList }}</span>
+            <span aria-hidden="true">&#9734;</span>
+          </button>
+          @if (moviePage.viewerState.watchStatus !== 'WATCHED') {
+            <button
+              class="movie-action-secondary"
+              type="button"
+              [attr.aria-pressed]="moviePage.viewerState.inWatchlist"
+              [disabled]="actionPending()"
+              (click)="toggleWatchlist()"
+            >
+              <span aria-hidden="true">&#9734;</span>
+              {{ moviePage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}
+            </button>
+            <button
+              class="movie-action-secondary"
+              type="button"
+              [attr.aria-pressed]="moviePage.viewerState.dropped"
+              [disabled]="actionPending()"
+              (click)="toggleDropped()"
+            >
+              <span aria-hidden="true">&#8856;</span>
+              {{ moviePage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}
+            </button>
+          }
+
+          <div class="movie-ratings-divider">
+            <section class="movie-ratings-card" aria-labelledby="movie-ratings-title">
+              <div class="movie-ratings-heading">
+                <h2 id="movie-ratings-title">{{ copy.ratings }}</h2>
+                <span>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</span>
+              </div>
+              <div class="movie-rating-chart">
+                <div class="movie-rating-chart-bars" role="img" [attr.aria-label]="copy.ratingDistribution">
+                  @for (score of ratingOptions; track score) {
+                    <span
+                      class="movie-rating-chart-bar"
+                      [attr.title]="copy.ratingBar.replace('{score}', score.toString()).replace('{count}', formatNumber(ratingCount(score), 0))"
+                      [style.height.px]="ratingBarHeight(score)"
+                    ></span>
+                  }
+                </div>
+                <div class="movie-rating-chart-labels" aria-hidden="true">
+                  <span>&#9733; 1</span>
+                  <span>&#9733; 10</span>
+                </div>
+              </div>
+              <div class="movie-rating-average">
+                <span class="movie-rating-average-value">
+                  <span class="movie-rating-average-star" aria-hidden="true">&#9733;</span>
+                  <strong>{{ formatNumber(moviePage.stats.averageScore) }}</strong>
+                </span>
+                <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
+              </div>
+            </section>
+          </div>
         </aside>
       </div>
+    </section>
 
-      <section class="movie-reviews" aria-labelledby="movie-reviews-title">
-        <div class="movie-section-heading movie-section-heading--split">
-          <div class="movie-heading-count">
-            <h2 id="movie-reviews-title">{{ copy.reviews }}</h2>
-            <span>{{ copy.reviewsCount.replace('{count}', formatNumber(reviewCount(), 0)) }}</span>
+    <section class="movie-page-section movie-cast-section" aria-labelledby="movie-cast-title">
+      <h2 id="movie-cast-title" class="visually-hidden">{{ copy.castAndCrew }}</h2>
+      <div class="movie-cast-heading">
+        <div class="movie-people-tabs" role="tablist" [attr.aria-label]="copy.castAndCrew" (keydown)="peopleTabKeydown($event)">
+          <button id="movie-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'cast'" [attr.tabindex]="peopleTab() === 'cast' ? 0 : -1" (click)="setPeopleTab('cast')">
+            {{ copy.castTab }} <span>{{ formatNumber(moviePage.details.cast.length, 0) }}</span>
+          </button>
+          <button id="movie-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'crew'" [attr.tabindex]="peopleTab() === 'crew' ? 0 : -1" (click)="setPeopleTab('crew')">
+            {{ copy.crewTab }} <span>{{ formatNumber(moviePage.details.crew.length, 0) }}</span>
+          </button>
+        </div>
+      </div>
+      @if (peopleTab() === 'cast') {
+        @if (moviePage.details.cast.length) {
+          <div id="movie-cast-panel" class="movie-people-scroll" role="tabpanel" aria-labelledby="movie-cast-tab" tabindex="0">
+            @for (person of moviePage.details.cast.slice(0, 24); track person.id) {
+              <article class="movie-person-card">
+                @if (imageUrl(person.profilePath, 'w185'); as portrait) {
+                  <img [src]="portrait" alt="" loading="lazy" />
+                } @else {
+                  <span class="movie-person-fallback" aria-hidden="true">{{ person.name.slice(0, 1) }}</span>
+                }
+                <div>
+                  <strong>{{ person.name }}</strong>
+                  @if (person.character) {
+                    <span>{{ copy.castCharacter.replace('{character}', person.character) }}</span>
+                  }
+                </div>
+              </article>
+            }
           </div>
-          <label class="movie-sort-label" for="movie-review-sort">
-            <span>{{ copy.reviewSort }}</span>
-            <select id="movie-review-sort" [value]="reviewSort()" (change)="reviewSortChanged($event)">
-              <option value="POPULAR">{{ copy.popular }}</option>
-              <option value="RECENT">{{ copy.recent }}</option>
-              <option value="FOLLOWING">{{ copy.following }}</option>
-            </select>
+        } @else {
+          <p class="movie-empty-inline" role="tabpanel" aria-labelledby="movie-cast-tab">{{ copy.unavailable }}</p>
+        }
+      } @else if (moviePage.details.crew.length) {
+        <div id="movie-crew-panel" class="movie-people-scroll" role="tabpanel" aria-labelledby="movie-crew-tab" tabindex="0">
+          @for (person of moviePage.details.crew.slice(0, 24); track person.id) {
+            <article class="movie-person-card movie-person-card--crew">
+              @if (imageUrl(person.profilePath, 'w185'); as portrait) {
+                <img [src]="portrait" alt="" loading="lazy" />
+              } @else {
+                <span class="movie-person-fallback" aria-hidden="true">{{ person.name.slice(0, 1) }}</span>
+              }
+              <div><strong>{{ person.name }}</strong><span>{{ person.jobs.join(' ? ') }}</span></div>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="movie-empty-inline" role="tabpanel" aria-labelledby="movie-crew-tab">{{ copy.unavailable }}</p>
+      }
+    </section>
+
+    <section id="movie-reviews" class="movie-page-section movie-reviews" aria-labelledby="movie-reviews-title">
+      <div class="movie-section-heading movie-section-heading--split">
+        <div class="movie-heading-count">
+          <h2 id="movie-reviews-title">{{ copy.reviews }}</h2>
+          <span>{{ formatNumber(reviewCount(), 0) }}</span>
+        </div>
+        <div class="movie-review-sort" role="group" [attr.aria-label]="copy.reviewSort">
+          <button type="button" [attr.aria-pressed]="reviewSort() === 'POPULAR'" (click)="changeReviewSort('POPULAR')">{{ copy.popular }}</button>
+          <button type="button" [attr.aria-pressed]="reviewSort() === 'RECENT'" (click)="changeReviewSort('RECENT')">{{ copy.recent }}</button>
+          <button type="button" [attr.aria-pressed]="reviewSort() === 'FOLLOWING'" (click)="changeReviewSort('FOLLOWING')">{{ copy.following }}</button>
+        </div>
+      </div>
+
+      @if (reviewStatus() === 'loading') {
+        <p class="movie-section-state" role="status">{{ copy.reviewLoading }}</p>
+      } @else if (reviewStatus() === 'error') {
+        <div class="movie-section-state" role="alert">
+          <p>{{ reviewError() }}</p>
+          <button class="movie-text-button" type="button" (click)="retriesReviews()">{{ copy.retrySection }}</button>
+        </div>
+      } @else if (reviews().length) {
+        <div class="movie-review-list">
+          @for (review of reviews(); track review.id) {
+            <article class="movie-review-card">
+              <div class="movie-review-avatar">
+                @if (review.reviewer.profilePicture; as avatar) {
+                  <img [src]="avatar" alt="" loading="lazy" />
+                } @else {
+                  <span aria-hidden="true">{{ reviewerName(review).slice(0, 1) }}</span>
+                }
+              </div>
+              <div class="movie-review-body">
+                <div class="movie-review-topline">
+                  <div>
+                    <h3>{{ reviewerName(review) }}</h3>
+                    <p>{{ dateLabel(review.watchedDate, copy.watchedOn) }}</p>
+                  </div>
+                  @if (review.score) {
+                    <span class="movie-review-score"><span aria-hidden="true">?</span>{{ review.score }}/10</span>
+                  }
+                </div>
+                @if (review.comment) {
+                  <p class="movie-review-text">{{ review.comment }}</p>
+                }
+                <div class="movie-review-actions">
+                  <button type="button" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
+                    <span aria-hidden="true">?</span>{{ review.likedByMe ? copy.unlike : copy.like }}
+                    <span>{{ formatNumber(review.likesCount, 0) }}</span>
+                  </button>
+                  <span>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
+                  @if (review.watchedInTheater) { <span>{{ copy.theater }}</span> }
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+        @if (reviewPage()?.hasNext) {
+          <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="nextReviews()">
+            {{ copy.moreReviews }}
+          </button>
+        }
+      } @else {
+        <p class="movie-section-state">{{ copy.reviewsEmpty }}</p>
+      }
+    </section>
+
+    <section id="movie-comments" class="movie-page-section movie-comments" aria-labelledby="movie-comments-title">
+      <div class="movie-section-heading movie-heading-count">
+        <h2 id="movie-comments-title">{{ copy.comments }}</h2>
+        <span>{{ copy.commentsCount.replace('{count}', formatNumber(moviePage.stats.commentsCount, 0)) }}</span>
+      </div>
+      @if (commentError()) {
+        <p class="movie-field-error" role="alert">{{ commentError() }}</p>
+      }
+      <form class="movie-comment-form" (submit)="$event.preventDefault(); submitComment()">
+        @if (replyTo(); as reply) {
+          <div class="movie-reply-context">
+            <span>{{ copy.replyTo.replace('{name}', commentAuthorName(reply)) }}</span>
+            <button type="button" class="movie-text-button" (click)="clearReply()">{{ copy.close }}</button>
+          </div>
+        }
+        <label class="visually-hidden" for="movie-comment-input">{{ copy.commentPlaceholder }}</label>
+        <textarea
+          id="movie-comment-input"
+          maxlength="280"
+          rows="3"
+          [value]="commentDraft()"
+          [placeholder]="copy.commentPlaceholder"
+          (input)="onCommentInput($event)"
+        ></textarea>
+        <div class="movie-comment-form-footer">
+          <label class="movie-checkbox-label">
+            <input type="checkbox" [checked]="commentHasSpoiler()" (change)="setCommentSpoiler($event)" />
+            <span>{{ copy.commentSpoiler }}</span>
           </label>
+          <span class="movie-character-count">{{ commentDraft().length }}/280</span>
+          <button class="movie-button movie-button--primary" type="submit" [disabled]="!canSubmitComment()">
+            {{ commentPending() ? copy.commentsLoading : copy.commentSubmit }}
+          </button>
         </div>
-
-        @if (reviewStatus() === 'loading') {
-          <p class="movie-section-state" role="status">{{ copy.reviewLoading }}</p>
-        } @else if (reviewStatus() === 'error') {
-          <div class="movie-section-state" role="alert">
-            <p>{{ reviewError() }}</p>
-            <button class="movie-text-button" type="button" (click)="retriesReviews()">{{ copy.retrySection }}</button>
-          </div>
-        } @else if (reviews().length) {
-          <div class="movie-review-list">
-            @for (review of reviews(); track review.id) {
-              <article class="movie-review-card">
-                <div class="movie-review-avatar">
-                  @if (review.reviewer.profilePicture; as avatar) {
-                    <img [src]="avatar" alt="" loading="lazy" />
-                  } @else {
-                    <span aria-hidden="true">{{ reviewerName(review).slice(0, 1) }}</span>
-                  }
-                </div>
-                <div class="movie-review-body">
-                  <div class="movie-review-topline">
-                    <div>
-                      <h3>{{ reviewerName(review) }}</h3>
-                      <p>{{ dateLabel(review.watchedDate, copy.watchedOn) }}</p>
-                    </div>
-                    @if (review.score) {
-                      <span class="movie-review-score"><span aria-hidden="true">★</span>{{ review.score }}/10</span>
-                    }
-                  </div>
-                  @if (review.comment) {
-                    <p class="movie-review-text">{{ review.comment }}</p>
-                  }
-                  <div class="movie-review-actions">
-                    <button type="button" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
-                      <span aria-hidden="true">♥</span>{{ review.likedByMe ? copy.unlike : copy.like }}
-                      <span>{{ formatNumber(review.likesCount, 0) }}</span>
-                    </button>
-                    <span>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
-                    @if (review.watchedInTheater) { <span>{{ copy.theater }}</span> }
-                  </div>
-                </div>
-              </article>
-            }
-          </div>
-          @if (reviewPage()?.hasNext) {
-            <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="nextReviews()">
-              {{ copy.moreReviews }}
-            </button>
-          }
-        } @else {
-          <p class="movie-section-state">{{ copy.reviewsEmpty }}</p>
-        }
-      </section>
-
-      <section class="movie-comments panel" aria-labelledby="movie-comments-title">
-        <div class="movie-section-heading movie-heading-count">
-          <h2 id="movie-comments-title">{{ copy.comments }}</h2>
-          <span>{{ copy.commentsCount.replace('{count}', formatNumber(moviePage.stats.commentsCount, 0)) }}</span>
+      </form>
+      @if (commentStatus() === 'loading') {
+        <p class="movie-section-state" role="status">{{ copy.commentsLoading }}</p>
+      } @else if (commentStatus() === 'error') {
+        <div class="movie-section-state" role="alert">
+          <p>{{ commentError() }}</p>
+          <button class="movie-text-button" type="button" (click)="retriesComments()">{{ copy.retrySection }}</button>
         </div>
-        @if (commentError()) {
-          <p class="movie-field-error" role="alert">{{ commentError() }}</p>
-        }
-        <form class="movie-comment-form" (submit)="$event.preventDefault(); submitComment()">
-          @if (replyTo(); as reply) {
-            <div class="movie-reply-context">
-              <span>{{ copy.replyTo.replace('{name}', commentAuthorName(reply)) }}</span>
-              <button type="button" class="movie-text-button" (click)="clearReply()">{{ copy.close }}</button>
-            </div>
-          }
-          <label class="visually-hidden" for="movie-comment-input">{{ copy.commentPlaceholder }}</label>
-          <textarea
-            id="movie-comment-input"
-            maxlength="280"
-            rows="3"
-            [value]="commentDraft()"
-            [placeholder]="copy.commentPlaceholder"
-            (input)="onCommentInput($event)"
-          ></textarea>
-          <div class="movie-comment-form-footer">
-            <label class="movie-checkbox-label">
-              <input type="checkbox" [checked]="commentHasSpoiler()" (change)="setCommentSpoiler($event)" />
-              <span>{{ copy.commentSpoiler }}</span>
-            </label>
-            <span class="movie-character-count">{{ commentDraft().length }}/280</span>
-            <button class="movie-button movie-button--primary" type="submit" [disabled]="!canSubmitComment()">
-              {{ commentPending() ? copy.commentsLoading : copy.commentSubmit }}
-            </button>
-          </div>
-        </form>
-        @if (commentStatus() === 'loading') {
-          <p class="movie-section-state" role="status">{{ copy.commentsLoading }}</p>
-        } @else if (commentStatus() === 'error') {
-          <div class="movie-section-state" role="alert">
-            <p>{{ commentError() }}</p>
-            <button class="movie-text-button" type="button" (click)="retriesComments()">{{ copy.retrySection }}</button>
-          </div>
-        } @else if (comments().length) {
-          <div class="movie-comment-list">
-            @for (comment of comments(); track comment.id) {
-              <article class="movie-comment" [class.movie-comment--reply]="comment.parentCommentId">
-                <div class="movie-review-avatar movie-comment-avatar">
-                  @if (comment.user.profilePicture; as avatar) {
-                    <img [src]="avatar" alt="" loading="lazy" />
-                  } @else {
-                    <span aria-hidden="true">{{ commentAuthorName(comment).slice(0, 1) }}</span>
-                  }
+      } @else if (comments().length) {
+        <div class="movie-comment-list">
+          @for (comment of comments(); track comment.id) {
+            <article class="movie-comment" [class.movie-comment--reply]="comment.parentCommentId">
+              <div class="movie-review-avatar movie-comment-avatar">
+                @if (comment.user.profilePicture; as avatar) {
+                  <img [src]="avatar" alt="" loading="lazy" />
+                } @else {
+                  <span aria-hidden="true">{{ commentAuthorName(comment).slice(0, 1) }}</span>
+                }
+              </div>
+              <div class="movie-comment-body">
+                <div class="movie-comment-heading">
+                  <strong>{{ commentAuthorName(comment) }}</strong>
+                  <time [attr.datetime]="comment.createdAt">{{ formatDate(comment.createdAt) }}</time>
                 </div>
-                <div class="movie-comment-body">
-                  <div class="movie-comment-heading">
-                    <strong>{{ commentAuthorName(comment) }}</strong>
-                    <time [attr.datetime]="comment.createdAt">{{ formatDate(comment.createdAt) }}</time>
-                  </div>
-                  @if (comment.containsSpoiler) {
-                    <details class="movie-spoiler">
-                      <summary>{{ copy.commentSpoiler }}</summary>
-                      <p>{{ comment.text }}</p>
-                    </details>
-                  } @else {
+                @if (comment.containsSpoiler) {
+                  <details class="movie-spoiler">
+                    <summary>{{ copy.commentSpoiler }}</summary>
                     <p>{{ comment.text }}</p>
+                  </details>
+                } @else {
+                  <p>{{ comment.text }}</p>
+                }
+                <div class="movie-review-actions">
+                  <button type="button" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)">
+                    <span aria-hidden="true">?</span>{{ comment.likedByMe ? copy.unlike : copy.like }}
+                    <span>{{ formatNumber(comment.likesCount, 0) }}</span>
+                  </button>
+                  <button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>
+                  @if (isOwnComment(comment)) {
+                    <button type="button" (click)="deleteComment(comment)">{{ copy.commentDelete }}</button>
                   }
-                  <div class="movie-review-actions">
-                    <button type="button" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)">
-                      <span aria-hidden="true">♥</span>{{ comment.likedByMe ? copy.unlike : copy.like }}
-                      <span>{{ formatNumber(comment.likesCount, 0) }}</span>
-                    </button>
-                    <button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>
-                    @if (isOwnComment(comment)) {
-                      <button type="button" (click)="deleteComment(comment)">{{ copy.commentDelete }}</button>
-                    }
-                  </div>
                 </div>
-              </article>
-            }
-          </div>
-          @if (commentPage()?.hasNext) {
-            <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="nextComments()">
-              {{ copy.moreComments }}
-            </button>
+              </div>
+            </article>
           }
-        } @else {
-          <p class="movie-section-state">{{ copy.commentsEmpty }}</p>
+        </div>
+        @if (commentPage()?.hasNext) {
+          <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="nextComments()">
+            {{ copy.moreComments }}
+          </button>
         }
-      </section>
-    </div>
+      } @else {
+        <p class="movie-section-state">{{ copy.commentsEmpty }}</p>
+      }
+    </section>
   }
 
   @if (toast(); as message) {
