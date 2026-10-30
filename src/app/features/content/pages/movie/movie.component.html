@@ -45,7 +45,11 @@
                   <li>
                     @if (provider.watchUrl) {
                       <a [href]="provider.watchUrl" target="_blank" rel="noopener noreferrer" [attr.aria-label]="copy.watchProvider.replace('{provider}', provider.providerName)">
-                        <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        @if (imageUrl(provider.logoPath, 'w92'); as logo) {
+                          <img [src]="logo" alt="" loading="lazy" />
+                        } @else {
+                          <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        }
                         <span class="movie-provider-copy">
                           <strong>{{ provider.providerName }}</strong>
                           <small>{{ providerLabel(provider.type) }}</small>
@@ -54,7 +58,11 @@
                       </a>
                     } @else {
                       <div class="movie-provider-item">
-                        <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        @if (imageUrl(provider.logoPath, 'w92'); as logo) {
+                          <img [src]="logo" alt="" loading="lazy" />
+                        } @else {
+                          <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                        }
                         <span class="movie-provider-copy">
                           <strong>{{ provider.providerName }}</strong>
                           <small>{{ providerLabel(provider.type) }}</small>
@@ -233,7 +241,11 @@
                   <ul class="movie-provider-list">
                     @for (provider of moviePage.metadata.watchProviders.slice(0, 4); track $index) {
                       <li>
-                <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                @if (imageUrl(provider.logoPath, 'w92'); as logo) {
+                  <img [src]="logo" alt="" loading="lazy" />
+                } @else {
+                  <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                }
                         <span class="movie-provider-copy"><strong>{{ provider.providerName }}</strong><small>{{ providerLabel(provider.type) }}</small></span>
                       </li>
                     }

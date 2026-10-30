@@ -393,8 +393,14 @@
 .movie-review-score>span{color:var(--color-accent)}
 .movie-review-text{margin:var(--space-4) 0;font-size:var(--font-size-md);line-height:26px}
 .movie-review-actions{gap:var(--space-2)}
-.movie-review-actions button{min-height:36px;padding:0 var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
+.movie-review-card .movie-review-actions button{min-height:36px;padding:0 var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
 .movie-review-actions button>span:first-child{color:var(--color-error);font-size:18px}
+.movie-comments .movie-review-actions{margin-top:var(--space-1);gap:var(--space-4)}
+.movie-comments .movie-review-actions button{min-height:18px;padding:0;border:0;background:transparent;color:var(--color-text);font-size:var(--font-size-xs);font-weight:600}
+.movie-comment{padding:var(--space-5) 0;column-gap:var(--space-4);border-top:1px solid var(--color-border);border-bottom:0}
+.movie-comment-heading{justify-content:flex-start;align-items:baseline;gap:var(--space-2)}
+.movie-comment-body>p{margin:0;font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
+.movie-comment-form textarea{min-height:72px;resize:none;font-size:var(--font-size-md);line-height:var(--line-height-md)}
 @media(max-width:800px){
   .movie-reviews .movie-section-heading{align-items:flex-start;gap:var(--space-3)}
   .movie-review-card{padding:var(--space-4);grid-template-columns:36px minmax(0,1fr)}
