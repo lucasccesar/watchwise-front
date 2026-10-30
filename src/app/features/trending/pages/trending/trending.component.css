@@ -179,12 +179,24 @@ app-trending {
   aspect-ratio: 2 / 3;
 }
 .tr-poster > img,
+.tr-poster-link > img,
 .tr-poster-empty {
   display: block;
   width: 100%;
   height: 100%;
   border-radius: var(--radius-md);
   object-fit: cover;
+}
+.tr-poster-link {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: var(--radius-md);
+}
+.tr-poster-link:focus-visible,
+.tr-title-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 .tr-poster-empty {
   display: grid;
@@ -379,6 +391,13 @@ app-trending {
   line-height: var(--line-height-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.tr-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.tr-title-link:hover {
+  text-decoration: underline;
 }
 .tr-card-main > span {
   flex-shrink: 0;

@@ -689,6 +689,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.calendar-event-heading strong a {
+  color: inherit;
+  text-decoration: none;
+}
 
 .calendar-event-heading > span,
 .calendar-event-meta {
@@ -765,6 +769,15 @@
   height: 100%;
   object-fit: cover;
 }
+.next-release-movie-link {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}
+.next-release-movie-link img {
+  border-radius: var(--radius-md);
+}
 
 .next-release-date {
   position: absolute;
@@ -794,6 +807,22 @@
   line-height: var(--line-height-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.home-content-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.home-content-title-link:hover,
+.calendar-event-heading strong a:hover {
+  text-decoration: underline;
+}
+.home-content-title-link:focus-visible,
+.calendar-event-heading strong a:focus-visible,
+.next-release-movie-link:focus-visible,
+.recent-movie-link:focus-visible,
+.social-movie-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .next-release-info > span {
@@ -1016,11 +1045,20 @@
 }
 
 .recent-visual > img,
-.recent-visual > .image-placeholder {
+.recent-visual > .image-placeholder,
+.recent-visual > .recent-movie-link > img,
+.recent-visual > .recent-movie-link > .image-placeholder {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: var(--radius-md);
+}
+.recent-movie-link {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
   border-radius: var(--radius-md);
 }
 
@@ -1247,6 +1285,16 @@
   border-radius: var(--radius-md);
   object-fit: cover;
 }
+.social-movie-link {
+  text-decoration: none;
+}
+.social-movie-link > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
 
 .social-poster--placeholder {
   display: grid;
@@ -1274,6 +1322,13 @@
   line-height: var(--line-height-lg);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.social-content-copy h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+.social-content-copy h3 a:hover {
+  text-decoration: underline;
 }
 
 .social-content-copy > div > span,

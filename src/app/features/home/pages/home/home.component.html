@@ -204,7 +204,13 @@
                           {{ releaseTypeLabel(release) }}
                         </span>
                         <div class="calendar-event-heading">
-                          <strong>{{ releaseTitle(release) }}</strong>
+                          <strong>
+                            @if (release.eventType === 'MOVIE' && release.content.tmdbId) {
+                              <a class="home-content-title-link" [routerLink]="['/content/movie', release.content.tmdbId]">{{ releaseTitle(release) }}</a>
+                            } @else {
+                              {{ releaseTitle(release) }}
+                            }
+                          </strong>
                           @if (release.releaseContext?.releaseTime) {
                             <span>{{ formatReleaseTime(release.releaseContext?.releaseTime) }}</span>
                           }
@@ -240,7 +246,11 @@
                 <article class="next-release-card">
                   <div class="next-release-image">
                     @if (imageUrl(release.content.posterPath || release.content.stillPath); as poster) {
-                      <img [src]="poster" alt="" loading="lazy" />
+                      @if (release.eventType === 'MOVIE' && release.content.tmdbId) {
+                        <a class="next-release-movie-link" [routerLink]="['/content/movie', release.content.tmdbId]" [attr.aria-label]="copy.movieSingular + ': ' + releaseTitle(release)"><img [src]="poster" alt="" loading="lazy" /></a>
+                      } @else {
+                        <img [src]="poster" alt="" loading="lazy" />
+                      }
                     } @else {
                       <span class="image-placeholder" aria-hidden="true"></span>
                     }
@@ -344,7 +354,11 @@
             <article class="recent-card">
               <div class="recent-visual">
                 @if (recentPoster(entry); as poster) {
-                  <img [src]="poster" alt="" loading="lazy" />
+                  @if (entry.content.type === 'MOVIE' && entry.content.tmdbId) {
+                    <a class="recent-movie-link" [routerLink]="['/content/movie', entry.content.tmdbId]" [attr.aria-label]="copy.movieSingular + ': ' + (entry.card?.title || copy.titleUnavailable)"><img [src]="poster" alt="" loading="lazy" /></a>
+                  } @else {
+                    <img [src]="poster" alt="" loading="lazy" />
+                  }
                 } @else {
                   @if (entry.card?.previewStatus === 'UNAVAILABLE') {
                     <span class="image-placeholder image-placeholder--labeled">{{ copy.unavailablePreview }}</span>
@@ -445,7 +459,13 @@
                     <strong>{{ recentEpisodeSeriesTitle(entry) }}</strong>
                     <span>{{ episodeLabelForEntry(entry) }}</span>
                   } @else {
-                    <strong>{{ entry.card?.title || copy.titleUnavailable }}</strong>
+                    <strong>
+                      @if (entry.content.type === 'MOVIE' && entry.content.tmdbId) {
+                        <a class="home-content-title-link" [routerLink]="['/content/movie', entry.content.tmdbId]">{{ entry.card?.title || copy.titleUnavailable }}</a>
+                      } @else {
+                        {{ entry.card?.title || copy.titleUnavailable }}
+                      }
+                    </strong>
                     @if (recentRuntime(entry); as runtime) {
                       <span>{{ formatRuntime(runtime) }}</span>
                     }
@@ -502,13 +522,23 @@
               </div>
               <div class="social-content">
                 @if (posterFor(activity.card); as poster) {
-                  <img class="social-poster" [src]="poster" alt="" loading="lazy" />
+                  @if (activity.content?.type === 'MOVIE' && activity.content.tmdbId) {
+                    <a class="social-poster social-movie-link" [routerLink]="['/content/movie', activity.content.tmdbId]" [attr.aria-label]="copy.movieSingular + ': ' + (activity.card?.title || activity.targetLabel || copy.titleUnavailable)"><img [src]="poster" alt="" loading="lazy" /></a>
+                  } @else {
+                    <img class="social-poster" [src]="poster" alt="" loading="lazy" />
+                  }
                 } @else if (activity.card?.previewStatus === 'PARTIAL' || activity.card?.previewStatus === 'UNAVAILABLE') {
                   <span class="social-poster social-poster--placeholder">{{ activity.card?.previewStatus === 'PARTIAL' ? copy.partialPreview : copy.unavailablePreview }}</span>
                 }
                 <div class="social-content-copy">
                   <div>
-                    <h3>{{ activity.card?.title || activity.targetLabel || copy.titleUnavailable }}</h3>
+                    <h3>
+                      @if (activity.content?.type === 'MOVIE' && activity.content.tmdbId) {
+                        <a class="home-content-title-link" [routerLink]="['/content/movie', activity.content.tmdbId]">{{ activity.card?.title || activity.targetLabel || copy.titleUnavailable }}</a>
+                      } @else {
+                        {{ activity.card?.title || activity.targetLabel || copy.titleUnavailable }}
+                      }
+                    </h3>
                     <span>{{ socialSubtitle(activity) }}</span>
                   </div>
                   @if (activity.card?.previewStatus === 'PARTIAL') {

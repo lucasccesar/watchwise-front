@@ -88,11 +88,26 @@
                   <article [attr.aria-label]="cardTitle(card)">
                     <div class="tr-poster">
                       @if (card.posterUrl) {
-                        <img [src]="card.posterUrl" alt="" loading="lazy" />
+                        @if (card.type === 'MOVIE') {
+                          <a
+                            class="tr-poster-link"
+                            [routerLink]="['/content/movie', card.tmdbId]"
+                            [attr.aria-label]="footerCopy.movieSingular + ': ' + cardTitle(card)"
+                          ><img [src]="card.posterUrl" alt="" loading="lazy" /></a>
+                        } @else {
+                          <img [src]="card.posterUrl" alt="" loading="lazy" />
+                        }
                       } @else {
-                        <span class="tr-poster-empty" aria-hidden="true">{{
-                          copy.noPoster
-                        }}</span>
+                        @if (card.type === 'MOVIE') {
+                          <a
+                            class="tr-poster-link tr-poster-empty"
+                            [routerLink]="['/content/movie', card.tmdbId]"
+                            [attr.aria-label]="footerCopy.movieSingular + ': ' + cardTitle(card)"
+                            >{{ copy.noPoster }}</a
+                          >
+                        } @else {
+                          <span class="tr-poster-empty" aria-hidden="true">{{ copy.noPoster }}</span>
+                        }
                       }
                       @if (cardRating(card); as rating) {
                         <span
@@ -180,8 +195,13 @@
                     </div>
                     <div class="tr-card-text">
                       <div class="tr-card-main">
-                        <strong>{{ cardTitle(card) }}</strong
-                        ><span>{{ cardLength(card) }}</span>
+                        <strong>
+                          @if (card.type === 'MOVIE') {
+                            <a class="tr-title-link" [routerLink]="['/content/movie', card.tmdbId]">{{ cardTitle(card) }}</a>
+                          } @else {
+                            {{ cardTitle(card) }}
+                          }
+                        </strong><span>{{ cardLength(card) }}</span>
                       </div>
                       <p>{{ cardMeta(card) }}</p>
                       @if (card.previewStatus === 'UNAVAILABLE') {
