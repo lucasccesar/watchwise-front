@@ -556,7 +556,8 @@
 .movie-review-topline h3{font-size:var(--font-size-md);line-height:var(--line-height-md)}
 .movie-review-topline p{margin:0;color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .movie-review-score{padding:4px 10px;border-radius:var(--radius-sm);background:var(--color-secondary)}
-.movie-review-score>span{color:var(--color-accent)}
+.movie-review-score svg{flex:none;color:var(--color-accent)}
+.movie-review-score>span{color:var(--color-text);font-weight:400}
 .movie-review-text{margin:0;font-size:var(--font-size-md);line-height:26px}
 .movie-review-actions{margin-top:0;gap:var(--space-2)}
 .movie-review-card .movie-review-actions button{min-height:36px;padding:0 var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}

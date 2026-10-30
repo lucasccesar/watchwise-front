@@ -538,7 +538,7 @@
                       <p>{{ '@' + review.reviewer.username }} @if (review.watchedDate) { <span aria-hidden="true">·</span> {{ formatDate(review.watchedDate) }} }</p>
                     </div>
                     @if (review.score) {
-                      <span class="movie-review-score"><span aria-hidden="true">&#9733;</span>{{ review.score }}/10</span>
+                      <span class="movie-review-score"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.283 3.453c.23-.467.345-.7.502-.775a.5.5 0 0 1 .431 0c.156.075.271.308.501.775l2.187 4.43c.068.138.102.207.152.26a.7.7 0 0 0 .45.178l4.891.714c.515.076.772.113.891.239a.5.5 0 0 1 .132.408c-.022.171-.209.353-.581.716L17.3 13.844c-.11.107-.165.161-.2.225a.7.7 0 0 0-.03.482l.835 4.866c.088.513.132.77.049.922a.5.5 0 0 1-.358.253c-.17.031-.4-.09-.861-.332l-4.373-2.3a.7.7 0 0 0-.467-.134.7.7 0 0 0-.276.134l-4.373 2.3c-.461.242-.691.363-.861.332a.5.5 0 0 1-.348-.253c-.083-.152-.039-.409.049-.922l.835-4.866a.7.7 0 0 0-.03-.482c-.035-.064-.09-.118-.2-.225l-3.539-3.446c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.163.891-.239l4.891-.714a.7.7 0 0 0 .45-.178c.05-.053.084-.122.152-.26l2.186-4.43Z" /></svg>{{ review.score }}<span>/10</span></span>
                     }
                   </div>
                 </div>
@@ -552,7 +552,6 @@
                   <span>{{ formatNumber(review.likesCount, 0) }}</span>
                 </button>
                 <span class="movie-review-comments"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5C21 16.2 17.2 20 12.5 20c-1.1 0-2.1-.2-3.1-.6L3 20l1.4-5.4A8.5 8.5 0 1 1 21 11.5Z" /></svg>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
-                @if (review.watchedInTheater) { <span>{{ copy.theater }}</span> }
               </div>
             </article>
           }
