@@ -281,7 +281,7 @@
           </section>
         </div>
 
-        <aside class="movie-actions-column" [attr.aria-label]="copy.actions">
+        <aside class="movie-actions-column" [class.movie-actions-column--unwatched]="moviePage.viewerState.watchStatus !== 'WATCHED'" [attr.aria-label]="copy.actions">
           <button
             class="movie-action-rating"
             type="button"
@@ -292,6 +292,7 @@
             <strong><span aria-hidden="true">&#9733;</span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
           </button>
 
+          @if (moviePage.viewerState.watchStatus === 'WATCHED') {
           <div class="movie-action-primary-row">
             <div class="movie-action-watch-row">
             <button
@@ -300,13 +301,9 @@
               [disabled]="actionPending()"
               (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
             >
-              @if (moviePage.viewerState.watchStatus === 'WATCHED') {
-                <span class="movie-watch-check" aria-hidden="true">&#10003;</span>
-              } @else {
-                <span class="movie-watch-check" aria-hidden="true">+</span>
-              }
+              <span class="movie-watch-check" aria-hidden="true">&#10003;</span>
               <span class="movie-watch-copy">
-                <strong>{{ moviePage.viewerState.watchStatus === 'WATCHED' ? copy.watched : copy.markWatched }}</strong>
+                <strong>{{ copy.watched }}</strong>
                 @if (moviePage.viewerState.lastWatchedDate) {
                   <small>{{ formatDate(moviePage.viewerState.lastWatchedDate) }}</small>
                 }
@@ -327,20 +324,15 @@
               <summary [attr.aria-label]="copy.moreActions">&#8942;</summary>
               <div class="movie-mobile-more-menu">
                 <button type="button" (click)="openWatchDialog('edit', $event)">{{ copy.editWatch }}</button>
-                @if (moviePage.viewerState.watchStatus === 'WATCHED') {
-                  <button type="button" (click)="openWatchDialog('again', $event)">{{ copy.watchAgain }}</button>
-                }
+                <button type="button" (click)="openWatchDialog('again', $event)">{{ copy.watchAgain }}</button>
                 <button type="button" (click)="openLists($event)">{{ copy.addToList }}</button>
-                @if (moviePage.viewerState.watchStatus !== 'WATCHED') {
-                  <button type="button" (click)="toggleWatchlist()">{{ moviePage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}</button>
-                  <button type="button" (click)="toggleDropped()">{{ moviePage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}</button>
-                }
                 @if (moviePage.viewerState.myReview) {
                   <button type="button" (click)="openShareDialog($event)">{{ copy.shareReview }}</button>
                 }
               </div>
             </details>
           </div>
+          }
 
           <button
             class="movie-action-lists"
@@ -354,24 +346,28 @@
           </button>
           @if (moviePage.viewerState.watchStatus !== 'WATCHED') {
             <button
-              class="movie-action-secondary"
+              class="movie-action-secondary movie-action-secondary--watchlist"
               type="button"
               [attr.aria-pressed]="moviePage.viewerState.inWatchlist"
               [disabled]="actionPending()"
               (click)="toggleWatchlist()"
             >
-              <span aria-hidden="true">&#9734;</span>
-              {{ moviePage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}
+              <svg class="movie-action-status-icon movie-action-status-icon--watchlist" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 7.8C5 6.12 5 5.28 5.327 4.638C5.615 4.074 6.074 3.615 6.638 3.327C7.28 3 8.12 3 9.8 3H14.2C15.88 3 16.72 3 17.362 3.327C17.927 3.615 18.385 4.074 18.673 4.638C19 5.28 19 6.12 19 7.8V21L12 17L5 21V7.8Z" />
+              </svg>
+              <span>{{ moviePage.viewerState.inWatchlist ? copy.inWatchlist : copy.watchlist }}</span>
             </button>
             <button
-              class="movie-action-secondary"
+              class="movie-action-secondary movie-action-secondary--dropped"
               type="button"
               [attr.aria-pressed]="moviePage.viewerState.dropped"
               [disabled]="actionPending()"
               (click)="toggleDropped()"
             >
-              <span aria-hidden="true">&#8856;</span>
-              {{ moviePage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}
+              <svg class="movie-action-status-icon movie-action-status-icon--dropped" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4.93 4.93L19.07 19.07M22 12C22 17.523 17.523 22 12 22C6.477 22 2 17.523 2 12C2 6.477 6.477 2 12 2C17.523 2 22 6.477 22 12Z" />
+              </svg>
+              <span>{{ moviePage.viewerState.dropped ? copy.dropped : copy.markDropped }}</span>
             </button>
           }
 
