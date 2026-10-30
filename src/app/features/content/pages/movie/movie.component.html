@@ -370,26 +370,28 @@
                 <span>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</span>
               </div>
               <div class="movie-rating-chart">
-                <div class="movie-rating-chart-bars" role="img" [attr.aria-label]="copy.ratingDistribution">
-                  @for (score of ratingOptions; track score) {
-                    <span
-                      class="movie-rating-chart-bar"
-                      [attr.title]="copy.ratingBar.replace('{score}', score.toString()).replace('{count}', formatNumber(ratingCount(score), 0))"
-                      [style.height.px]="ratingBarHeight(score)"
-                    ></span>
-                  }
+                <div class="movie-rating-chart-distribution">
+                  <div class="movie-rating-chart-bars" role="img" [attr.aria-label]="copy.ratingDistribution">
+                    @for (score of ratingOptions; track score) {
+                      <span
+                        class="movie-rating-chart-bar"
+                        [attr.title]="copy.ratingBar.replace('{score}', score.toString()).replace('{count}', formatNumber(ratingCount(score), 0))"
+                        [style.height.px]="ratingBarHeight(score)"
+                      ></span>
+                    }
+                  </div>
+                  <div class="movie-rating-chart-labels" aria-hidden="true">
+                    <span>&#9733; 1</span>
+                    <span>&#9733; 10</span>
+                  </div>
                 </div>
-                <div class="movie-rating-chart-labels" aria-hidden="true">
-                  <span>&#9733; 1</span>
-                  <span>&#9733; 10</span>
+                <div class="movie-rating-average">
+                  <span class="movie-rating-average-value">
+                    <span class="movie-rating-average-star" aria-hidden="true">&#9733;</span>
+                    <strong>{{ formatNumber(moviePage.stats.averageScore) }}</strong>
+                  </span>
+                  <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
                 </div>
-              </div>
-              <div class="movie-rating-average">
-                <span class="movie-rating-average-value">
-                  <span class="movie-rating-average-star" aria-hidden="true">&#9733;</span>
-                  <strong>{{ formatNumber(moviePage.stats.averageScore) }}</strong>
-                </span>
-                <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
               </div>
             </section>
           </div>
@@ -487,7 +489,7 @@
                     <p>{{ dateLabel(review.watchedDate, copy.watchedOn) }}</p>
                   </div>
                   @if (review.score) {
-                    <span class="movie-review-score"><span aria-hidden="true">?</span>{{ review.score }}/10</span>
+                    <span class="movie-review-score"><span aria-hidden="true">&#9733;</span>{{ review.score }}/10</span>
                   }
                 </div>
                 @if (review.comment) {
@@ -495,7 +497,7 @@
                 }
                 <div class="movie-review-actions">
                   <button type="button" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
-                    <span aria-hidden="true">?</span>{{ review.likedByMe ? copy.unlike : copy.like }}
+                    <span aria-hidden="true">{{ review.likedByMe ? '♥' : '♡' }}</span>{{ review.likedByMe ? copy.unlike : copy.like }}
                     <span>{{ formatNumber(review.likesCount, 0) }}</span>
                   </button>
                   <span>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
@@ -583,7 +585,7 @@
                 }
                 <div class="movie-review-actions">
                   <button type="button" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)">
-                    <span aria-hidden="true">?</span>{{ comment.likedByMe ? copy.unlike : copy.like }}
+                    <span aria-hidden="true">{{ comment.likedByMe ? '♥' : '♡' }}</span>{{ comment.likedByMe ? copy.unlike : copy.like }}
                     <span>{{ formatNumber(comment.likesCount, 0) }}</span>
                   </button>
                   <button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>
