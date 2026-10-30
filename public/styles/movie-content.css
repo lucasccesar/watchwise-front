@@ -179,6 +179,47 @@
 .movie-share-card::before{position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--color-surface) 8%,transparent),color-mix(in srgb,var(--color-surface) 96%,transparent));content:''}
 @media(max-width:560px){.movie-share-card{min-height:280px;padding:var(--space-4)}.movie-share-card img{top:var(--space-4);left:var(--space-4);width:80px;height:120px}.movie-share-controls{flex-direction:column}.movie-share-controls .movie-button{width:100%}}
 
+/* Watch dialog follows the Movie prototype composition. */
+.movie-dialog:has(.movie-watch-form){width:min(100%,640px)}
+.movie-dialog:has(.movie-watch-form) .movie-dialog-header{margin-bottom:0;align-items:flex-start}
+.movie-dialog:has(.movie-watch-form) .movie-icon-button{width:40px;height:40px;flex:0 0 40px;border:0;background:transparent}
+.movie-watch-subtitle{margin:0 0 var(--space-5);color:var(--color-tertiary);font-size:var(--font-size-sm)}
+.movie-watch-form{gap:var(--space-5)}
+.movie-watch-fields{gap:var(--space-5)}
+.movie-watch-top-row{display:flex;flex-wrap:wrap;align-items:end;gap:var(--space-4)}
+.movie-watch-date-field{display:flex;flex-direction:column;gap:var(--space-2)}
+.movie-watch-date-field label,.movie-watch-section-label{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
+.movie-watch-date-field label span{color:var(--color-tertiary);font-weight:400}
+.movie-watch-date-field input[type=date]{width:auto;min-height:40px;background:var(--color-surface)}
+.movie-watch-rewatch{min-height:40px;display:flex;align-items:center;gap:var(--space-2);color:var(--color-text);font-size:var(--font-size-sm)}
+.movie-watch-rewatch input{width:18px;height:18px;accent-color:var(--color-primary)}
+.movie-watch-theater{min-height:68px;padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer}
+.movie-watch-theater-icon{width:20px;height:20px;flex:0 0 20px;color:var(--color-text)}
+.movie-watch-theater-copy{flex:1;color:var(--color-text);font-size:var(--font-size-sm)}
+.movie-watch-theater input{appearance:none;position:relative;width:44px;height:24px;margin:0;border-radius:var(--radius-full);background:var(--color-border);cursor:pointer}
+.movie-watch-theater input:checked{background:var(--color-primary)}
+.movie-watch-theater input::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--color-text);box-shadow:var(--shadow-sm);transition:transform .15s ease}
+.movie-watch-theater input:checked::after{transform:translateX(20px)}
+.movie-watch-rating{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-2)}
+.movie-watch-stars{display:flex;flex-wrap:wrap;gap:var(--space-1)}
+.movie-watch-star{width:44px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-tertiary);cursor:pointer}
+.movie-watch-star span{font-size:32px;line-height:32px}
+.movie-watch-star small{font-size:var(--font-size-xs);font-weight:600}
+.movie-watch-star--selected{color:var(--color-accent)}
+.movie-watch-star:hover{background:var(--color-surface)}
+.movie-watch-clear-score{padding:0}
+.movie-watch-fields>label[for=movie-watch-review]{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
+.movie-watch-form textarea{background:var(--color-surface)}
+.movie-watch-form .movie-watched-with{margin:0;padding:0;border:0}
+.movie-watch-form .movie-following-options{max-height:180px;flex-direction:row;flex-wrap:wrap;gap:var(--space-2)}
+.movie-watch-form .movie-following-option{min-height:32px;padding:4px var(--space-2);gap:var(--space-2);border-radius:var(--radius-full);background:var(--color-border);font-size:var(--font-size-sm);cursor:pointer}
+.movie-watch-form .movie-following-option img,.movie-watch-form .movie-following-avatar{width:24px;height:24px}
+.movie-watch-form .movie-following-option:has(input:checked){outline:2px solid var(--color-primary)}
+.movie-watch-form .movie-dialog-actions{margin-top:0}
+.movie-watch-form :is(button,input,textarea):focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+@media(max-width:560px){.movie-modal-backdrop{place-items:start center;overflow-y:auto}.movie-dialog:has(.movie-watch-form){max-height:none}.movie-watch-stars{gap:0}.movie-watch-star{width:10%;min-width:30px}.movie-watch-star span{font-size:26px}.movie-watch-form .movie-dialog-actions{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.movie-watch-theater input::after{transition:none}}
+
 /* Layout aligned to the approved Movie prototype. */
 .movie-overview{position:relative;overflow:hidden;padding-bottom:var(--space-16);background:var(--color-surface)}
 .movie-backdrop-frame{position:relative;height:460px;overflow:hidden}
