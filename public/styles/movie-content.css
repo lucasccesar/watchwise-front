@@ -116,7 +116,7 @@
 .movie-spoiler summary{padding:var(--space-2) 0}
 .movie-modal-backdrop{position:fixed;z-index:100;inset:0;padding:var(--space-4);display:grid;place-items:center;background:color-mix(in srgb,var(--color-surface) 78%,transparent)}
 .movie-dialog{width:min(100%,560px);max-height:min(90vh,860px);overflow-y:auto;padding:var(--space-6);border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface-secondary);box-shadow:var(--shadow-xl)}
-.movie-dialog:focus{outline:2px solid var(--color-primary);outline-offset:2px}
+.movie-page .movie-dialog:focus{outline:none}
 .movie-dialog-header{margin-bottom:var(--space-5);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)}
 .movie-dialog-header h2{margin:0;color:var(--color-text);font-size:var(--font-size-lg);font-weight:600}
 .movie-icon-button{width:48px;height:48px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:pointer;font-size:24px}
