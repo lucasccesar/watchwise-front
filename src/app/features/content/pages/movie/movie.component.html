@@ -765,44 +765,50 @@
 
             <fieldset class="movie-watched-with">
               <legend>{{ copy.watchedWith }}</legend>
-              @if (!watchForm.controls.watchedWith.value.length) { <span class="movie-watch-just-you">{{ copy.justYou }}</span> }
+              <div class="movie-watch-companion-row">
+                @if (!watchForm.controls.watchedWith.value.length) {
+                  <span class="movie-watch-just-you">{{ copy.justYou }}</span>
+                } @else {
+                  <div class="movie-watch-selected-people">
+                    @for (friend of following(); track friend.id) {
+                      @if (isWatchedWithSelected(friend.id)) {
+                        <span class="movie-watch-selected-person">{{ friend.name || '@' + friend.username }}</span>
+                      }
+                    }
+                  </div>
+                }
+                @if (following().length) {
+                  <details class="movie-watch-people-picker">
+                    <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.addPerson }}</summary>
+                    <div class="movie-following-options">
+                      @for (friend of following(); track friend.id) {
+                        <label class="movie-following-option">
+                          <input type="checkbox" [checked]="isWatchedWithSelected(friend.id)" [disabled]="!isWatchedWithSelected(friend.id) && watchForm.controls.watchedWith.value.length >= 20" (change)="toggleWatchedWith(friend.id, $event)" />
+                          @if (friend.profilePicture) {
+                            <img [src]="friend.profilePicture" alt="" />
+                          } @else {
+                            <span class="movie-following-avatar" aria-hidden="true">{{ (friend.name || friend.username).slice(0, 1) }}</span>
+                          }
+                          <span>{{ friend.name || '@' + friend.username }}</span>
+                        </label>
+                      }
+                    </div>
+                    @if (watchForm.controls.watchedWith.value.length >= 20) {
+                      <p class="movie-field-hint">{{ copy.watchedWithLimit }}</p>
+                    }
+                    @if (followingPage()?.hasNext) {
+                      <button class="movie-text-button" type="button" [disabled]="followingStatus() === 'loading'" (click)="loadMoreFollowing()">{{ copy.moreFollowing }}</button>
+                    }
+                  </details>
+                } @else {
+                  <button class="movie-watch-add-person" type="button" disabled [title]="copy.followingEmpty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.addPerson }}</button>
+                }
+              </div>
               @if (followingStatus() === 'loading') {
                 <p class="movie-field-hint" role="status">{{ copy.followingLoading }}</p>
               } @else if (followingStatus() === 'error') {
                 <p class="movie-field-error" role="alert">{{ followingError() }}</p>
                 <button class="movie-text-button" type="button" (click)="loadFollowing(1)">{{ copy.retrySection }}</button>
-              } @else if (following().length) {
-                <div class="movie-watch-selected-people">
-                  @for (friend of following(); track friend.id) {
-                    @if (isWatchedWithSelected(friend.id)) {
-                      <span class="movie-watch-selected-person">{{ friend.name || '@' + friend.username }}</span>
-                    }
-                  }
-                </div>
-                <details class="movie-watch-people-picker">
-                  <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.addPerson }}</summary>
-                  <div class="movie-following-options">
-                  @for (friend of following(); track friend.id) {
-                    <label class="movie-following-option">
-                      <input type="checkbox" [checked]="isWatchedWithSelected(friend.id)" [disabled]="!isWatchedWithSelected(friend.id) && watchForm.controls.watchedWith.value.length >= 20" (change)="toggleWatchedWith(friend.id, $event)" />
-                      @if (friend.profilePicture) {
-                        <img [src]="friend.profilePicture" alt="" />
-                      } @else {
-                        <span class="movie-following-avatar" aria-hidden="true">{{ (friend.name || friend.username).slice(0, 1) }}</span>
-                      }
-                      <span>{{ friend.name || '@' + friend.username }}</span>
-                    </label>
-                  }
-                  </div>
-                @if (watchForm.controls.watchedWith.value.length >= 20) {
-                  <p class="movie-field-hint">{{ copy.watchedWithLimit }}</p>
-                }
-                @if (followingPage()?.hasNext) {
-                  <button class="movie-text-button" type="button" [disabled]="followingStatus() === 'loading'" (click)="loadMoreFollowing()">{{ copy.moreFollowing }}</button>
-                }
-                </details>
-              } @else {
-                <p class="movie-field-hint">{{ copy.followingEmpty }}</p>
               }
             </fieldset>
             <div class="movie-watch-rating" role="group" [attr.aria-label]="copy.scoreLabel">
@@ -814,9 +820,6 @@
                   </button>
                 }
               </div>
-              @if (!(watchMode() === 'edit' && editingDiaryEntry()?.score != null)) {
-                <button class="movie-text-button movie-watch-clear-score" type="button" [disabled]="watchForm.controls.score.value === 0" (click)="watchForm.controls.score.setValue(0)">{{ copy.scoreNone }}</button>
-              }
             </div>
             @if (watchMode() === 'edit' && editingDiaryEntry()?.score != null) {
               <p class="movie-field-hint">{{ copy.scoreClearUnavailable }}</p>

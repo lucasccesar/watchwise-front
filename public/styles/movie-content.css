@@ -226,17 +226,18 @@
 .movie-watch-star small{font-size:var(--font-size-xs);font-weight:600}
 .movie-watch-star--selected{color:var(--color-accent)}
 .movie-watch-star:hover{background:var(--color-surface)}
-.movie-watch-clear-score{padding:0}
 .movie-watch-fields>label[for=movie-watch-review]{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
 .movie-watch-form textarea{background:var(--color-surface)}
 .movie-watch-form .movie-watched-with{margin:0;padding:0;border:0}
-.movie-watch-just-you{display:inline-block;margin-right:var(--space-2);color:var(--color-tertiary);font-size:var(--font-size-xs)}
+.movie-watch-companion-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+.movie-watch-just-you{color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .movie-watch-selected-people{display:flex;flex-wrap:wrap;gap:var(--space-2)}
 .movie-watch-selected-person{padding:4px var(--space-2);border-radius:var(--radius-full);background:var(--color-secondary);color:var(--color-text);font-size:var(--font-size-sm)}
-.movie-watch-people-picker{position:relative;margin-top:var(--space-2)}
-.movie-watch-people-picker summary{width:max-content;height:32px;padding:0 var(--space-3);display:inline-flex;align-items:center;gap:var(--space-2);border:1px dashed var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:pointer;font-size:var(--font-size-sm);list-style:none}
+.movie-watch-people-picker{position:relative}
+.movie-watch-people-picker summary,.movie-watch-add-person{width:max-content;height:32px;padding:0 var(--space-3);display:inline-flex;align-items:center;gap:var(--space-2);border:1px dashed var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);line-height:var(--line-height-sm);list-style:none}
 .movie-watch-people-picker summary::-webkit-details-marker{display:none}
-.movie-watch-people-picker summary svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.movie-watch-people-picker summary svg,.movie-watch-add-person svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.movie-watch-add-person:disabled{cursor:not-allowed;opacity:.55}
 .movie-watch-people-picker .movie-following-options{position:absolute;z-index:10;top:calc(100% + var(--space-2));left:0;width:min(300px,calc(100vw - 72px));max-height:240px;padding:var(--space-2);display:flex;flex-direction:column;flex-wrap:nowrap;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);box-shadow:var(--shadow-md)}
 .movie-watch-people-picker .movie-following-option{width:100%;border-radius:var(--radius-md);background:transparent}
 .movie-watch-people-picker .movie-following-option:hover{background:var(--color-secondary)}

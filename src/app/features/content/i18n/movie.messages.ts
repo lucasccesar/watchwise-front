@@ -93,7 +93,7 @@ export const movieMessages = {
     genres: 'Gêneros',
     showDetails: 'Ver detalhes',
     hideDetails: 'Ocultar detalhes',
-    watchedWith: 'Com quem assistiu',
+    watchedWith: 'Assistiu com',
     diaryLoadError: 'Não foi possível carregar este registro para editar.',
     followingLoading: 'Carregando pessoas que você segue…',
     followingEmpty: 'Você ainda não segue ninguém.',
