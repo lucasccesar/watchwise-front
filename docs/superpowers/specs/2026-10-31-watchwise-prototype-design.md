@@ -23,6 +23,8 @@ Implement screens as lazy-loaded standalone Angular route components grouped by 
 
 Every screen must use the exact Home footer: the existing `HomeFooterComponent`, its logo and links, TMDB credit, copyright, dimensions, spacing, colors, and responsive behavior. Replace duplicated or alternate footer markup (including Trending and the public shell) with that shared component. Do not change the Home footer's appearance to accommodate other pages; verify its rendered geometry against Home at each supported viewport.
 
+Every content poster/photo that displays a community rating inside the image must match the Home rating overlay in position, icon, type, color, size, padding, background, and responsive behavior. On hover and keyboard focus, replace that rating with the same three-dot content menu trigger used by Home; reuse its dropdown actions and interaction behavior where applicable. This is the content-card menu behavior, separate from the control for marking content as watched.
+
 Keep route-level page rendering separate from data access. Reuse the existing Home, Trending, Content, and Auth API services where their contracts fit. Add typed frontend data-access methods only for backend operations already supported by the project/API contract. Where a screen has no data endpoint, render its reference-matching screen state without pretending that a write succeeded. Keep modal and dropdown behavior local to the owning feature and preserve keyboard/focus behavior present in the current app.
 
 ## Delivery phases
@@ -50,6 +52,7 @@ Build the frontend after each delivery phase and verify every changed route open
 - Every unique user-facing prototype page and artboard variant has a route or a correctly modeled overlay/state.
 - Interface copy is in Portuguese and maintains the reference's layout density.
 - Every route uses the exact shared Home footer, including public and authenticated screens.
+- Every community-rating overlay on a content image matches Home; hover/focus swaps it for the Home three-dot menu trigger.
 - Existing routes remain functional and no user-specific data is changed to force a visual match.
 - The four reference viewport sizes have been visually checked for each screen group.
 - Prototype interactions in scope have matching local controls and states.
