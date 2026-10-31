@@ -19,7 +19,9 @@ All interface text must be Brazilian Portuguese. Preserve the prototype's hierar
 
 ## Architecture
 
-Implement screens as lazy-loaded standalone Angular route components grouped by feature. Reuse the authenticated and public shells, and extract only visual/behavioral elements that are genuinely shared across references (navigation, headers, footers, cards, filters, tabs, menus, modals, and empty/loading/error states). Keep page-specific responsive styles scoped to their feature. Validate existing design tokens against the prototype measurements before reusing them; update shared tokens only when the comparison shows a system-wide mismatch.
+Implement screens as lazy-loaded standalone Angular route components grouped by feature. Before adding a screen, inspect and follow the patterns already used by Home, Trending, Movie, Series, the authenticated/public shells, API services, and message catalog. Reuse the existing routes, typed API contracts, signal-based UI state, and shared components where they fit; extract only visual/behavioral elements that are genuinely shared across references (navigation, headers, cards, filters, tabs, menus, modals, and empty/loading/error states). Keep page-specific responsive styles scoped to their feature. Validate existing design tokens against the prototype measurements before reusing them; update shared tokens only when the comparison shows a system-wide mismatch.
+
+Every screen must use the exact Home footer: the existing `HomeFooterComponent`, its logo and links, TMDB credit, copyright, dimensions, spacing, colors, and responsive behavior. Replace duplicated or alternate footer markup (including Trending and the public shell) with that shared component. Do not change the Home footer's appearance to accommodate other pages; verify its rendered geometry against Home at each supported viewport.
 
 Keep route-level page rendering separate from data access. Reuse the existing Home, Trending, Content, and Auth API services where their contracts fit. Add typed frontend data-access methods only for backend operations already supported by the project/API contract. Where a screen has no data endpoint, render its reference-matching screen state without pretending that a write succeeded. Keep modal and dropdown behavior local to the owning feature and preserve keyboard/focus behavior present in the current app.
 
@@ -47,6 +49,7 @@ Build the frontend after each delivery phase and verify every changed route open
 
 - Every unique user-facing prototype page and artboard variant has a route or a correctly modeled overlay/state.
 - Interface copy is in Portuguese and maintains the reference's layout density.
+- Every route uses the exact shared Home footer, including public and authenticated screens.
 - Existing routes remain functional and no user-specific data is changed to force a visual match.
 - The four reference viewport sizes have been visually checked for each screen group.
 - Prototype interactions in scope have matching local controls and states.
