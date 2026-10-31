@@ -1,0 +1,68 @@
+<div class="content-menu-anchor" [class.menu-expanded]="menuExpanded()">
+  @if (ratingValue !== null) {
+    <span class="home-item-rating" [attr.aria-label]="ratingLabel">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        <path d="m19 3 1.2 2.4 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z" />
+      </svg>
+      {{ ratingValue }}
+    </span>
+  }
+
+  <button
+    #trigger
+    class="content-menu-trigger"
+    type="button"
+    [attr.aria-label]="optionsLabel"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="menuExpanded()"
+    (click)="toggleMenu($event)"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="5" cy="12" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="19" cy="12" r="2" />
+    </svg>
+  </button>
+
+  @if (menuExpanded()) {
+    <div
+      class="content-dropdown-menu"
+      role="menu"
+      [attr.aria-label]="optionsLabel"
+      [style.position]="menuPosition ? 'fixed' : null"
+      [style.top.px]="menuPosition?.top ?? null"
+      [style.left.px]="menuPosition?.left ?? null"
+      [style.right]="menuPosition ? 'auto' : null"
+    >
+      @for (action of actions; track action.id) {
+        <button
+          class="content-dropdown-item"
+          type="button"
+          role="menuitem"
+          [disabled]="action.disabled"
+          (click)="selectAction(action, $event)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            @switch (action.icon) {
+              @case ('check') {
+                <path d="m5 12 4 4L19 6" />
+              }
+              @case ('star') {
+                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
+              }
+              @case ('eye') {
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              }
+              @case ('trash') {
+                <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" />
+              }
+            }
+          </svg>
+          <span>{{ action.label }}</span>
+        </button>
+      }
+    </div>
+  }
+</div>

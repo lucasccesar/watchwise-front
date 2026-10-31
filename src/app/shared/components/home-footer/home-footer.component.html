@@ -1,0 +1,30 @@
+<footer class="home-footer">
+  <div class="home-footer-content">
+    <div class="home-footer-primary">
+      <img class="home-footer-brand" src="/watchwise-logo.svg" alt="Watchwise" width="105" height="20" />
+      <nav class="home-footer-nav" aria-label="{{ copy.footerNavigation }}">
+        <a routerLink="/terms">{{ copy.terms }}</a>
+        <a routerLink="/privacy">{{ copy.privacy }}</a>
+        <a routerLink="/community-guidelines">{{ copy.communityGuidelines }}</a>
+        <a routerLink="/help-contact">{{ copy.helpContact }}</a>
+      </nav>
+      <nav class="home-footer-social" aria-label="{{ copy.socialLinks }}">
+        <a href="#" [attr.aria-label]="copy.instagramLabel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><path d="M17.5 6.5h.01"></path></svg>
+        </a>
+        <a href="#" [attr.aria-label]="copy.xLabel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+        </a>
+      </nav>
+    </div>
+    <div class="home-footer-secondary">
+      <div class="home-footer-tmdb-credit">
+        <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" aria-label="The Movie Database (TMDB)">
+          <img src="/tmdb-logo.svg" alt="TMDB" width="69" height="9" />
+        </a>
+        <p>{{ copy.tmdbAttribution }}</p>
+      </div>
+      <span class="home-footer-copyright">© {{ copyrightYear }} Watchwise</span>
+    </div>
+  </div>
+</footer>

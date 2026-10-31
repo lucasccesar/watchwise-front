@@ -1,0 +1,61 @@
+:host { position: fixed; z-index: 1400; inset: 0; }
+.share-layer { display: grid; width: 100%; height: 100%; overflow-y: auto; padding: 24px; place-items: center; background: rgba(0,0,0,.76); }
+.share-dialog { display: grid; width: min(100%, 620px); max-height: calc(100vh - 48px); grid-template-rows: auto minmax(0,1fr) auto auto; gap: 16px; padding: 20px; border: 1px solid #34343b; border-radius: 14px; background: #18181b; box-shadow: 0 24px 90px rgba(0,0,0,.55); color: #f3f4f6; }
+.share-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.share-dialog > header span { color: #f5b12a; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.share-dialog > header h2 { margin: 5px 0 0; font-size: 19px; }
+.share-dialog > header button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: #29292f; color: #eee; font-size: 24px; cursor: pointer; }
+.share-card { display: flex; width: auto; height: min(70vh, 600px); max-width: 100%; min-height: 0; aspect-ratio: 9 / 16; flex-direction: column; justify-self: center; overflow-y: auto; padding: 24px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background-color: #14151a; background-position: center; background-size: cover; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+.share-card-user { display: flex; align-items: center; gap: 10px; }
+.share-card-avatar { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; overflow: hidden; border: 1px solid #454650; border-radius: 50%; background: #292a32; color: #fff; font-size: 15px; font-weight: 700; }
+.share-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.share-card-user > span:last-child { display: grid; gap: 3px; }
+.share-card-user strong { font-size: 13px; }
+.share-card-user small,.share-card-title small { color: #b9bbc4; font-size: 11px; }
+.share-card-title { margin-top: auto; padding-top: 30px; }
+.share-card-title h3 { margin: 6px 0 10px; font-size: 25px; line-height: 1.16; }
+.share-card-rating { color: #ffd25a; font-size: 15px; font-weight: 700; }
+.share-card-still { width: 100%; max-height: 190px; margin-top: 26px; border-radius: 8px; object-fit: cover; }
+.share-card blockquote { margin: 16px 0 4px; color: #dedfe4; font-size: 14px; line-height: 1.5; }
+.share-card-profile-bio,.share-card-description { margin: 18px 0 0; color: #d4d5dc; font-size: 13px; line-height: 1.5; }
+.share-card-items { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; margin-top: 18px; }
+.share-card-items--list { grid-template-columns: repeat(5,minmax(0,1fr)); }
+.share-card-items--profile { grid-template-columns: repeat(5,minmax(0,1fr)); }
+.share-card-item { position: relative; min-width: 0; }
+.share-card-item img,.share-card-placeholder { display: grid; width: 100%; aspect-ratio: 2 / 3; place-items: center; overflow: hidden; border-radius: 4px; background: #292a32; color: #d9d9df; font-size: 12px; object-fit: cover; }
+.share-card-item strong { display: block; overflow: hidden; margin-top: 5px; color: #e9eaf0; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.share-card-more { align-self: flex-start; margin-top: 12px; padding: 5px 8px; border-radius: 4px; background: rgba(255,255,255,.12); font-size: 10px; }
+.share-card-scores { display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 4px; margin-top: 24px; }
+.share-card-scores span { display: grid; aspect-ratio: 1.1; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 3px; background: rgba(20,21,26,.8); color: #ffd25a; font-size: 10px; font-weight: 700; }
+.share-card-score-groups { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+.share-card-score-group { display: grid; grid-template-columns: 42px minmax(0,1fr) 38px; align-items: center; gap: 6px; }
+.share-card-score-group > strong { color: #e1e2e7; font-size: 10px; }
+.share-card-score-group > div { display: grid; grid-auto-columns: minmax(24px,1fr); grid-auto-flow: column; gap: 3px; }
+.share-card-score-group span { display: grid; min-height: 25px; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 3px; background: rgba(20,21,26,.8); color: #ffd25a; font-size: 9px; font-weight: 700; }
+.share-card-score-group > b { color: #ffd25a; font-size: 10px; text-align: right; }
+.share-card-ratings-map { overflow-x: auto; margin-top: 18px; }
+.share-card-ratings-map table { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
+.share-card-ratings-map th { color: #d9dbe2; font-size: 9px; font-weight: 650; }
+.share-card-ratings-map td { height: 25px; border: 1px solid rgba(255,255,255,.1); border-radius: 3px; background: rgba(20,21,26,.78); color: #ffd25a; font-size: 9px; font-weight: 700; text-align: center; }
+.share-card-ratings-map tbody th { color: #aeb1bc; text-align: center; }
+.share-card-ratings-map tfoot th,.share-card-ratings-map tfoot td { padding-top: 5px; border-top: 1px solid rgba(255,255,255,.18); color: #ffd25a; }
+.share-card footer { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 18px; color: rgba(255,255,255,.7); }
+.share-card footer span { font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.share-card footer small { font-size: 9px; }
+.share-card-user--profile { justify-content: center; }
+.share-card-user--profile .share-card-avatar { width: 54px; height: 54px; flex-basis: 54px; }
+.share-card-profile-heading { margin-top: 10px; text-align: center; }
+.share-card-profile-heading h3 { margin: 0; color: #fff; font-size: 19px; line-height: 1.2; }
+.share-card-profile-heading small { display: block; margin-top: 3px; color: #b9bbc4; font-size: 10px; }
+.share-card-profile-heading p { display: -webkit-box; overflow: hidden; margin: 10px 0 0; color: #d4d5dc; font-size: 10px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.share-card-profile-section { margin-top: 18px; }
+.share-card-profile-section h4 { margin: 0 0 8px; color: #f0f1f5; font-size: 11px; font-weight: 700; }
+.share-card-profile-section .share-card-items { gap: 6px; margin-top: 0; }
+.share-card-recent { margin-top: 15px; }
+.share-card-recent .share-card-item small { position: absolute; right: 3px; bottom: 4px; padding: 2px 4px; border-radius: 3px; background: rgba(8,9,12,.82); color: #ffd25a; font-size: 8px; font-weight: 700; }
+.share-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.share-actions button { min-height: 40px; padding: 0 15px; border: 1px solid #3d3d45; border-radius: 7px; background: #25252b; color: #f3f4f6; cursor: pointer; font: inherit; font-size: 12px; font-weight: 650; }
+.share-actions .share-download { border-color: #2f66e8; background: #2f66e8; }
+.share-actions button:disabled { opacity: .45; cursor: default; }
+.share-copy-error { margin: -8px 0 0; color: #ef9b9b; font-size: 12px; }
+@media (max-width: 600px) { .share-layer { align-items: end; padding: 8px; } .share-dialog { width: 100%; max-height: 96vh; gap: 12px; padding: 16px; border-radius: 16px 16px 10px 10px; } .share-card { height: min(70vh, 600px); padding: 18px; } .share-card-items { gap: 6px; } .share-card-items--list { grid-template-columns: repeat(4,minmax(0,1fr)); } .share-card-title h3 { font-size: 22px; } .share-actions button { flex: 1; padding-inline: 8px; } }
