@@ -26,7 +26,7 @@
 
 .login-heading p {
   margin: 0;
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-md);
   line-height: var(--line-height-md);
 }
@@ -76,7 +76,7 @@ input:not([type='checkbox']) {
 }
 
 input::placeholder {
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   opacity: 1;
 }
 
@@ -157,7 +157,7 @@ input.input-invalid,
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   cursor: pointer;
 }
 
@@ -230,7 +230,7 @@ input.input-invalid,
 
 .sign-up-prompt {
   margin: 0;
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   text-align: center;

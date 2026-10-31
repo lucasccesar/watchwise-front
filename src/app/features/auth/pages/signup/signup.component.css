@@ -26,7 +26,7 @@
 
 .signup-heading p {
   margin: 0;
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-md);
   line-height: var(--line-height-md);
 }

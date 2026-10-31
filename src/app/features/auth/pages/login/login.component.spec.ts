@@ -80,7 +80,7 @@ describe('LoginComponent API errors', () => {
     };
 
     expect(login.form.contains('rememberMe')).toBe(true);
-    expect(login.form.get('rememberMe')?.value).toBe(false);
+    expect(login.form.get('rememberMe')?.value).toBe(true);
     login.form.setValue({
       identifier: 'lucas',
       password: 'valid-password',
