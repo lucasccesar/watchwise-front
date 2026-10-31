@@ -1,0 +1,24 @@
+<main class="ranking-page" aria-labelledby="ranking-title">
+  <nav class="ranking-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/games">{{ gamesCopy.title }}</a><span>/</span><span>{{ copy.title }}</span></nav>
+  <header class="ranking-header"><div><div class="ranking-title-line"><h1 id="ranking-title">{{ copy.title }}</h1><span>{{ copy.topPlayers }}</span></div><p>{{ copy.description }}</p></div></header>
+  <div class="ranking-toolbar"><label for="ranking-game">{{ copy.game }}</label><select id="ranking-game" [value]="gameType() ?? ''" (change)="selectGame($event)"><option value="">{{ copy.allGames }}</option>@for (option of gameOptions; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select><span class="ranking-total">{{ number(view()?.totalElements ?? 0) }} {{ copy.playersRanked }} <i>·</i> {{ copy.updatedDaily }}</span></div>
+  @if (status() === 'loading') { <section class="ranking-state"><span class="ranking-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section> }
+  @else if (status() === 'error') { <section class="ranking-state"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section> }
+  @else {
+    @if (view()?.viewer; as viewer) {
+      <section class="ranking-viewer" aria-labelledby="ranking-viewer-title">
+        <div class="ranking-viewer-top"><div><span>{{ copy.yourRanking }}</span><h2 id="ranking-viewer-title">{{ copy.position }}</h2></div><strong>{{ rankLabel(viewer.rank) }}</strong></div>
+        <a class="ranking-user" [routerLink]="viewerRoute()"><span class="ranking-avatar">@if (viewer.profilePicture) { <img [src]="viewer.profilePicture" alt="" /> } @else { {{ initials(viewer.name) }} }</span><span><strong>{{ viewer.name }}</strong><small>{{ copy.you }} · @{{ viewer.username }}</small></span></a>
+        <dl><div><dt>{{ copy.daysPlayed }}</dt><dd>{{ number(viewer.daysPlayed) }}</dd></div><div><dt>{{ copy.solved }}</dt><dd>{{ percent(viewer.solvedPercentage) }}</dd></div><div><dt>{{ copy.points }}</dt><dd>{{ number(viewer.score) }}</dd></div></dl>
+        @if (!viewer.inTop200 && viewer.pointsToTop200 !== null && viewer.top200CutoffScore !== null) { <p class="ranking-cutoff">{{ copy.pointsToTop.replace('{points}', number(viewer.pointsToTop200)).replace('{cutoff}', number(viewer.top200CutoffScore)) }}</p> }
+      </section>
+    }
+    <section class="ranking-table-section"><header><h2>{{ copy.topHeading.replace('{game}', gameType() ? (gameOptions.find((option) => option.value === gameType())?.label ?? '') : copy.allGames) }}</h2><span>{{ rangeLabel() }}</span></header>
+      <div class="ranking-table-wrap"><table><thead><tr><th scope="col">{{ copy.rank }}</th><th scope="col">{{ copy.player }}</th><th scope="col">{{ copy.daysPlayed }}</th><th scope="col">{{ copy.solved }}</th><th scope="col">{{ copy.points }}</th></tr></thead>
+        <tbody>@for (row of view()?.content ?? []; track row.userId) { <tr><td><span class="rank-medal" [class.gold]="row.rank === 1" [class.silver]="row.rank === 2" [class.bronze]="row.rank === 3">{{ row.rank }}</span></td><td><a class="ranking-table-user" [routerLink]="profileRoute(row.username)"><span class="ranking-avatar">@if (row.profilePicture) { <img [src]="row.profilePicture" alt="" /> } @else { {{ initials(row.name) }} }</span><span><strong>{{ row.name }}</strong><small>@{{ row.username }}</small></span></a></td><td>{{ number(row.daysPlayed) }}</td><td>{{ percent(row.solvedPercentage) }}</td><td><strong>{{ number(row.score) }}</strong></td></tr> }</tbody>
+      </table></div>
+      @if (!view()?.content?.length) { <p class="ranking-empty">{{ copy.noRows }}</p> }
+      @if (totalPages() > 1) { <nav class="ranking-pagination" aria-label="{{ copy.pagination }}"><button type="button" [disabled]="page() <= 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)">‹</button>@for (numberPage of pageNumbers(); track numberPage) { <button type="button" [class.active]="numberPage === page()" [attr.aria-current]="numberPage === page() ? 'page' : null" (click)="goToPage(numberPage)">{{ numberPage }}</button> }<button type="button" [disabled]="page() >= totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)">›</button></nav> }
+    </section>
+  }
+</main>
