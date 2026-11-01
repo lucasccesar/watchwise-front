@@ -1,0 +1,68 @@
+<main class="calendar-page" aria-labelledby="calendar-title">
+  <header class="calendar-heading" [style.background-image]="heroBackground()">
+    <div class="calendar-heading-copy">
+      <h1 id="calendar-title">{{ copy.title }}</h1>
+      <p class="calendar-heading-month">{{ monthTitle() }}</p>
+      <p class="calendar-heading-description">{{ copy.description }}</p>
+    </div>
+  </header>
+
+  <section class="calendar-controls" aria-label="{{ copy.controls }}">
+    <div class="calendar-month-control">
+      <button type="button" [attr.aria-label]="copy.previousMonth" (click)="changeMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+      <h2>{{ monthTitle() }}</h2>
+      <button type="button" [attr.aria-label]="copy.nextMonth" (click)="changeMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+      <button class="calendar-today" type="button" (click)="goToToday()">{{ copy.todayButton }}</button>
+    </div>
+    <div class="calendar-type-filter" role="group" aria-label="{{ copy.filterByType }}">
+      <button type="button" [class.calendar-filter-active]="filter() === 'ALL'" [attr.aria-pressed]="filter() === 'ALL'" (click)="setFilter('ALL')">{{ copy.all }}</button>
+      <button type="button" [class.calendar-filter-active]="filter() === 'EPISODE'" [attr.aria-pressed]="filter() === 'EPISODE'" (click)="setFilter('EPISODE')"><span class="calendar-filter-dot calendar-filter-dot--episode" aria-hidden="true"></span>{{ copy.episodes }}</button>
+      <button type="button" [class.calendar-filter-active]="filter() === 'SEASON'" [attr.aria-pressed]="filter() === 'SEASON'" (click)="setFilter('SEASON')"><span class="calendar-filter-dot calendar-filter-dot--season" aria-hidden="true"></span>{{ copy.seasons }}</button>
+      <button type="button" [class.calendar-filter-active]="filter() === 'MOVIE'" [attr.aria-pressed]="filter() === 'MOVIE'" (click)="setFilter('MOVIE')"><span class="calendar-filter-dot calendar-filter-dot--movie" aria-hidden="true"></span>{{ copy.movies }}</button>
+    </div>
+  </section>
+
+  @if (status() === 'loading') {
+    <div class="calendar-state" role="status">{{ copy.loading }}</div>
+  } @else if (status() === 'error') {
+    <section class="calendar-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="loadMonth()">{{ copy.retry }}</button></section>
+  } @else {
+    <section class="calendar-releases" aria-labelledby="calendar-releases-title">
+      <header class="calendar-releases-heading">
+        <div>
+          <div class="calendar-releases-title">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            <h2 id="calendar-releases-title">{{ copy.releasesIn }} {{ monthName() }}</h2>
+          </div>
+          <p>{{ eventCounts().all }} {{ copy.releases }} <span>·</span> {{ eventCounts().episodes }} {{ copy.episodes.toLowerCase() }} <span>·</span> {{ eventCounts().seasons }} {{ copy.seasons.toLowerCase() }} <span>·</span> {{ eventCounts().movies }} {{ copy.movies.toLowerCase() }}</p>
+        </div>
+      </header>
+      <div class="calendar-day-list">
+        @for (day of days(); track day.date) {
+          <section class="calendar-day" [class.calendar-day--today]="day.isToday" [attr.aria-label]="day.weekday + ', ' + day.shortDate + ', ' + (day.events.length ? day.events.length + ' ' + copy.releases : copy.nothingScheduled)">
+            <header class="calendar-day-label">
+              <span class="calendar-day-weekday">{{ dayLabel(day) }}</span>
+              <strong>{{ day.shortDate }}</strong>
+            </header>
+            <div class="calendar-day-events">
+              @for (event of day.events; track $index) {
+                <button class="calendar-event" [class.calendar-event--watched]="event.watchStatus === 'WATCHED'" type="button" (click)="openEvent(event)">
+                  <span class="calendar-event-kind" [class.calendar-event-kind--episode]="event.eventType === 'EPISODE'" [class.calendar-event-kind--season]="event.eventType === 'SEASON' || event.eventType === 'SERIES'" [class.calendar-event-kind--movie]="event.eventType === 'MOVIE'"><i aria-hidden="true"></i>{{ eventTypeLabel(event.eventType) }}</span>
+                  <span class="calendar-event-main"><strong>{{ eventTitle(event) }}</strong><small>{{ eventSubtitle(event) }}</small></span>
+                  <span class="calendar-event-meta">
+                    @if (releaseTime(event); as time) { <small>{{ time }}</small> }
+                    @if (event.releaseContext?.network; as network) { <small>{{ network }}</small> }
+                    @if (event.watchStatus === 'WATCHED') { <small>{{ copy.watched }}</small> }
+                  </span>
+                  <svg class="calendar-event-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                </button>
+              } @empty {
+                <p class="calendar-no-events">{{ copy.nothingScheduled }}</p>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    </section>
+  }
+</main>
