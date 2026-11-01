@@ -1,0 +1,86 @@
+<main class="list-progress-page" aria-labelledby="list-progress-title">
+  @if (data(); as list) {
+    <header class="list-progress-heading">
+      <nav class="list-progress-breadcrumb" aria-label="Navegação estrutural"><a routerLink="/lists">{{ list.name }}</a><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg><a [routerLink]="['/lists', listId]">{{ copy.breadcrumb }}</a></nav>
+      <h1 id="list-progress-title">{{ list.name }}</h1>
+      @if (list.description) { <p>{{ list.description }}</p> }
+    </header>
+
+    <section class="list-progress-summary" [attr.aria-label]="copy.summary">
+      <dl>
+        <div><dt>{{ list.seriesProgressAggregate.remainingEpisodeCount | number }}</dt><dd>{{ copy.episodesLeft }}</dd></div>
+        <div><dt>{{ duration(list.seriesProgressAggregate.remainingRuntimeMinutes) }}</dt><dd>{{ copy.timeRemaining }}</dd></div>
+        <div><dt>{{ list.seriesProgressAggregate.totalSeriesCount | number }}</dt><dd>{{ copy.shows }}</dd></div>
+        <div><dt>{{ list.movieProgress.watchedItems }}/{{ list.movieProgress.totalItems }}</dt><dd>{{ copy.moviesWatched }}</dd></div>
+      </dl>
+    </section>
+  }
+
+  @if (status() === 'loading') {
+    <div class="list-progress-state" role="status"><span class="list-progress-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></div>
+  } @else if (status() === 'error') {
+    <section class="list-progress-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
+  } @else if (data(); as list) {
+    @if (list.movieProgress.totalItems > 0) {
+      <section class="list-progress-movies" aria-labelledby="list-progress-movies-title">
+        <header><h2 id="list-progress-movies-title">{{ copy.movies }}</h2><span>{{ list.movieProgress.totalItems }}</span></header>
+        <article class="list-progress-movie-summary" [attr.aria-label]="copy.movies + ', ' + list.movieProgress.watchedItems + ' ' + copy.of + ' ' + list.movieProgress.totalItems + ' ' + copy.watched">
+          <div class="list-progress-movie-main"><span class="list-progress-movie-count">{{ movieProgressPercent() }}%</span><div class="list-progress-track" role="progressbar" [attr.aria-label]="copy.movies" [attr.aria-valuenow]="movieProgressPercent()" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="movieProgressPercent()"></span></div><p><strong>{{ list.movieProgress.watchedItems | number }}</strong> {{ copy.of }} {{ list.movieProgress.totalItems | number }} {{ copy.movies | lowercase }} · <strong>{{ list.movieProgress.remainingItems | number }} {{ copy.remaining }}</strong> ({{ duration(list.movieProgress.remainingRuntimeMinutes) }})</p></div>
+          <p class="list-progress-movie-time">{{ duration(list.movieProgress.watchedRuntimeMinutes) }} {{ copy.watchedSoFar }}</p>
+        </article>
+      </section>
+    }
+
+    @if (seriesItems().length) {
+      <section class="list-progress-series" aria-labelledby="list-progress-series-title">
+        <header class="list-progress-section-heading"><h2 id="list-progress-series-title">{{ copy.series }}</h2><span>{{ seriesItems().length }}</span></header>
+        <div class="list-progress-controls" aria-label="Ordenação do progresso">
+          <span>{{ copy.sort }}:</span>
+          <button type="button" [class.active]="sort() === 'watched'" (click)="chooseSort('watched')">{{ copy.sortWatched }}</button>
+          <button type="button" [class.active]="sort() === 'remaining'" (click)="chooseSort('remaining')">{{ copy.sortRemaining }}</button>
+          <button type="button" [class.active]="sort() === 'title'" (click)="chooseSort('title')">{{ copy.sortTitle }}</button>
+          <button class="list-progress-direction" type="button" [attr.aria-label]="descending() ? copy.descending : copy.ascending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="descending() ? 'm7 10 5 5 5-5' : 'm7 14 5-5 5 5'" /></svg></button>
+        </div>
+        @for (item of seriesItems(); track item.id) {
+          @if (item.seriesProgress; as progress) {
+            @let image = seriesPoster(item);
+            @let next = progress.nextEpisode;
+            <article class="list-progress-series-card">
+              <a class="list-progress-poster content-image-card" [routerLink]="seriesRoute(item)" [attr.aria-label]="seriesTitle(item)">
+                @if (image) { <img [src]="image" alt="" loading="lazy" /> } @else { <span>{{ seriesTitle(item) }}</span> }
+                <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="openSeries(item)" />
+              </a>
+              <div class="list-progress-series-info">
+                <div class="list-progress-title-row"><h3><a [routerLink]="seriesRoute(item)">{{ seriesTitle(item) }}</a></h3><span>{{ progressPercent(progress) | number:'1.0-0' }}%</span></div>
+                <div class="list-progress-track" role="progressbar" [attr.aria-label]="copy.progress.replace('{title}', seriesTitle(item))" [attr.aria-valuenow]="progressPercent(progress)" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="progressPercent(progress)"></span></div>
+                <p class="list-progress-counts"><strong>{{ watchedCount(progress) | number }}</strong> {{ copy.of }} {{ totalCount(progress) | number }} {{ copy.episodes }} · <strong>{{ remainingLabel(progress) }}</strong>@if (progress.remainingRuntimeMinutes !== null) { <span>({{ duration(progress.remainingRuntimeMinutes) }})</span> }</p>
+                <p class="list-progress-last-watched">{{ copy.lastWatched }} @if (progress.lastWatchedDate) { <a [routerLink]="seriesRoute(item)">{{ lastEpisodeLabel(progress) }}</a> · {{ lastWatched(progress) }} } @else { <span>{{ copy.notStarted }}</span> }</p>
+                <button class="list-progress-expand" type="button" [attr.aria-expanded]="seasonsExpanded(item.id)" (click)="toggleSeasons(item.id)"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="seasonsExpanded(item.id) ? 'm6 14 6-6 6 6' : 'm6 10 6 6 6-6'" /></svg>{{ seasonsExpanded(item.id) ? copy.hideSeasons : copy.viewSeasons }}</button>
+                @if (seasonsExpanded(item.id)) {
+                  <div class="list-progress-season-list" [attr.aria-label]="copy.seasons">
+                    @for (season of progress.seasonProgress; track season.seasonNumber) {
+                      <div class="list-progress-season"><span>{{ copy.season }} {{ season.seasonNumber }}</span><span>{{ season.watchedEpisodeCount | number }}/{{ season.totalEpisodeCount | number }} {{ copy.episodes }}</span><div class="list-progress-season-track" role="progressbar" [attr.aria-valuenow]="season.watchedPercentage" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="season.watchedPercentage"></span></div><strong>{{ season.watchedPercentage | number:'1.0-0' }}%</strong></div>
+                    } @empty { <p>{{ copy.seasons }} indisponíveis.</p> }
+                  </div>
+                }
+                @if (next) {
+                  <div class="list-progress-next-row">
+                    <a class="list-progress-next" [routerLink]="episodeRoute(item) ?? seriesRoute(item)">
+                      <span class="list-progress-next-image">@if (episodeImage(item)) { <img [src]="episodeImage(item)" alt="" loading="lazy" /> } @else { <span>{{ seriesTitle(item) }}</span> }</span>
+                      <span class="list-progress-next-copy"><strong>{{ next.title || copy.episodeUnavailable }}</strong><small>T{{ next.seasonNumber }} · E{{ next.episodeNumber }}</small><small>{{ episodeDate(next.releaseDate) }} · {{ duration(next.runtimeMinutes) }}</small></span>
+                    </a>
+                    <button class="list-progress-mark" type="button" [disabled]="savingSeriesId() === item.id || next.availableToWatch === false" (click)="markWatched(item)">{{ savingSeriesId() === item.id ? copy.saving : copy.markWatched }}</button>
+                  </div>
+                } @else if (progress.watchedPercentage === 100) {
+                  <p class="list-progress-caught-up">{{ copy.allCaughtUp }} · {{ copy.finished.replace('{date}', progress.lastWatchedDate ? date(progress.lastWatchedDate) : copy.releaseUnknown) }}</p>
+                }
+              </div>
+            </article>
+          }
+        }
+      </section>
+    }
+    @if (!progressHasRows()) { <section class="list-progress-state list-progress-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section> }
+  }
+  @if (actionError()) { <p class="list-progress-action-error" role="alert">{{ actionError() }}</p> }
+</main>

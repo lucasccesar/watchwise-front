@@ -1,0 +1,100 @@
+.list-progress-page { min-height: 100%; padding-bottom: var(--space-16); background: var(--color-surface); color: var(--color-text); }
+.list-progress-heading { display: flex; min-height: 214px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 38px var(--content-margin); text-align: center; }
+.list-progress-breadcrumb { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.list-progress-breadcrumb a { color: var(--color-text-secondary); text-decoration: none; }
+.list-progress-breadcrumb a:hover { color: var(--color-text); }
+.list-progress-breadcrumb svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.list-progress-heading h1 { margin: 0; font-size: var(--font-size-display-2xl); line-height: var(--line-height-display-2xl); font-weight: 600; letter-spacing: -.02em; }
+.list-progress-heading p { max-width: 680px; margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-md); line-height: var(--line-height-md); }
+.list-progress-summary { width: min(960px, 70%); box-sizing: border-box; margin: 0 auto 24px; }
+.list-progress-summary dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 16px 0; border-block: 1px solid var(--color-border); }
+.list-progress-summary dl > div { display: flex; flex-direction: column; align-items: center; gap: 4px; border-right: 1px solid var(--color-border); }
+.list-progress-summary dl > div:last-child { border: 0; }
+.list-progress-summary dt { font-size: var(--font-size-lg); line-height: var(--line-height-lg); font-weight: 600; }
+.list-progress-summary dd { margin: 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); text-align: center; }
+.list-progress-movies, .list-progress-series { width: min(1120px, 70%); margin: 0 auto 35px; }
+.list-progress-movies > header, .list-progress-section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.list-progress-movies > header h2, .list-progress-section-heading h2 { margin: 0; font-size: var(--font-size-xl); line-height: var(--line-height-xl); font-weight: 650; }
+.list-progress-movies > header > span, .list-progress-section-heading > span { color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
+.list-progress-movie-summary { padding: 18px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); }
+.list-progress-movie-main { display: grid; grid-template-columns: 50px minmax(100px, 1fr); align-items: center; gap: 12px; }
+.list-progress-movie-count { color: var(--color-text); font-size: var(--font-size-lg); font-weight: 650; }
+.list-progress-track, .list-progress-season-track { height: 6px; overflow: hidden; border-radius: var(--radius-full); background: var(--color-surface); }
+.list-progress-track > span, .list-progress-season-track > span { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); }
+.list-progress-movie-main p { grid-column: 1 / -1; margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.list-progress-movie-main strong { color: var(--color-text); }
+.list-progress-movie-time { margin: 10px 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.list-progress-controls { display: flex; min-height: 50px; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
+.list-progress-controls > button { min-height: 34px; padding: 0 11px; border: 1px solid transparent; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary); font: inherit; cursor: pointer; }
+.list-progress-controls > button:hover, .list-progress-controls > button.active { border-color: var(--color-border); background: var(--color-surface-secondary); color: var(--color-text); }
+.list-progress-controls .list-progress-direction { display: grid; width: 36px; place-items: center; padding: 0; }
+.list-progress-direction svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.list-progress-series-card { display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: start; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--color-border); }
+.list-progress-poster { position: relative; display: block; width: 128px; aspect-ratio: 2 / 3; overflow: visible; border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.list-progress-poster > img { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.list-progress-poster > span { display: grid; height: 100%; place-items: center; padding: 10px; border-radius: inherit; color: var(--color-text-secondary); text-align: center; }
+.list-progress-series-info { min-width: 0; }
+.list-progress-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.list-progress-title-row h3 { overflow: hidden; margin: 0; font-size: var(--font-size-lg); line-height: var(--line-height-lg); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.list-progress-title-row h3 a { color: var(--color-text); text-decoration: none; }
+.list-progress-title-row h3 a:hover { text-decoration: underline; }
+.list-progress-title-row > span { flex: 0 0 auto; color: var(--color-text); font-size: var(--font-size-md); font-weight: 650; }
+.list-progress-series-info > .list-progress-track { margin-top: 11px; }
+.list-progress-counts, .list-progress-last-watched { margin: 10px 0 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
+.list-progress-counts strong { color: var(--color-text); font-weight: 650; }
+.list-progress-last-watched a { color: var(--color-text); text-decoration: none; }
+.list-progress-last-watched a:hover { text-decoration: underline; }
+.list-progress-expand { display: inline-flex; min-height: 32px; align-items: center; gap: 6px; margin-top: 8px; padding: 0; border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: var(--font-size-sm); cursor: pointer; }
+.list-progress-expand svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.list-progress-season-list { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 13px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.list-progress-season { display: grid; grid-template-columns: minmax(90px, 1fr) auto minmax(90px, .9fr) 38px; align-items: center; gap: 12px; color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.list-progress-season > strong { color: var(--color-text); text-align: right; font-weight: 600; }
+.list-progress-season > p { grid-column: 1 / -1; margin: 0; color: var(--color-text-tertiary); }
+.list-progress-next-row { display: flex; align-items: stretch; gap: 10px; margin-top: 13px; }
+.list-progress-next { display: flex; min-width: 0; flex: 1; align-items: center; gap: 11px; overflow: hidden; padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); text-decoration: none; }
+.list-progress-next:hover { border-color: var(--color-primary); }
+.list-progress-next-image { display: grid; width: 78px; height: 52px; flex: 0 0 78px; place-items: center; overflow: hidden; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-tertiary); font-size: 10px; text-align: center; }
+.list-progress-next-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.list-progress-next-copy { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.list-progress-next-copy strong { overflow: hidden; font-size: var(--font-size-sm); text-overflow: ellipsis; white-space: nowrap; }
+.list-progress-next-copy small { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.list-progress-mark { min-height: 68px; padding: 0 14px; border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); font-weight: 600; white-space: nowrap; cursor: pointer; }
+.list-progress-mark:disabled { opacity: .5; cursor: default; }
+.list-progress-caught-up { margin: 14px 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
+.list-progress-state { display: flex; min-height: 290px; flex-direction: column; align-items: center; justify-content: center; padding: 34px 20px; color: var(--color-text-secondary); text-align: center; }
+.list-progress-state h2 { margin: 0; color: var(--color-text); font-size: var(--font-size-lg); }
+.list-progress-state p { max-width: 460px; margin: 10px 0 0; }
+.list-progress-state > button { min-height: 40px; margin-top: 14px; padding: 0 15px; border: 0; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text); font: inherit; cursor: pointer; }
+.list-progress-spinner { width: 27px; height: 27px; border: 3px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: list-progress-spin .75s linear infinite; }
+@keyframes list-progress-spin { to { transform: rotate(360deg); } }
+.list-progress-action-error { position: fixed; right: 20px; bottom: 20px; z-index: 1100; max-width: calc(100vw - 40px); padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: #ff8585; box-shadow: 0 10px 24px rgb(0 0 0 / 35%); }
+
+@media (max-width: 900px) {
+  .list-progress-summary, .list-progress-movies, .list-progress-series { width: min(1120px, calc(100% - 48px)); }
+}
+@media (max-width: 600px) {
+  .list-progress-heading { min-height: 176px; gap: 8px; padding: 28px 18px; }
+  .list-progress-heading h1 { font-size: var(--font-size-display-lg); line-height: var(--line-height-display-lg); }
+  .list-progress-heading p { font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
+  .list-progress-summary, .list-progress-movies, .list-progress-series { width: calc(100% - 32px); }
+  .list-progress-summary dl { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; }
+  .list-progress-summary dl > div:nth-child(2) { border-right: 0; }
+  .list-progress-summary dl > div:nth-child(3), .list-progress-summary dl > div:nth-child(4) { padding-top: 12px; border-top: 1px solid var(--color-border); }
+  .list-progress-summary dt { font-size: var(--font-size-md); line-height: var(--line-height-md); }
+  .list-progress-summary dd { font-size: var(--font-size-xs); }
+  .list-progress-series-card { grid-template-columns: 82px minmax(0, 1fr); gap: 12px; padding: 14px 0; }
+  .list-progress-poster { width: 82px; }
+  .list-progress-title-row h3 { font-size: var(--font-size-md); line-height: var(--line-height-md); }
+  .list-progress-title-row > span { font-size: var(--font-size-sm); }
+  .list-progress-counts, .list-progress-last-watched { margin-top: 7px; font-size: var(--font-size-xs); }
+  .list-progress-season { grid-template-columns: minmax(70px, 1fr) auto 35px; gap: 7px; font-size: 10px; }
+  .list-progress-season-track { grid-column: 1 / 3; grid-row: 2; }
+  .list-progress-season > strong { grid-column: 3; grid-row: 2; font-size: 10px; }
+  .list-progress-next-row { flex-direction: column; }
+  .list-progress-next { min-height: 67px; box-sizing: border-box; }
+  .list-progress-mark { min-height: 38px; }
+  .list-progress-controls { gap: 4px; font-size: var(--font-size-xs); }
+  .list-progress-controls > button { min-height: 31px; padding-inline: 7px; font-size: var(--font-size-xs); }
+  .list-progress-controls .list-progress-direction { width: 31px; }
+}
+@media (prefers-reduced-motion: reduce) { .list-progress-spinner { animation: none; } }
