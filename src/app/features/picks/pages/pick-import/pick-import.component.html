@@ -1,0 +1,39 @@
+<main class="pick-import-page">
+  <nav class="pick-import-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/picks">{{ picksCopy.title }}</a><span>/</span><a routerLink="/picks/create">{{ copy.title }}</a><span>/</span><span>{{ copy.title }}</span></nav>
+  <header class="pick-import-heading"><div><h1>{{ copy.title }}</h1><p>{{ copy.intro }}</p></div></header>
+
+  <div class="pick-import-layout">
+    <section class="pick-import-editor" aria-labelledby="pick-import-json-title">
+      <header class="pick-import-editor-heading"><div><h2 id="pick-import-json-title">{{ copy.jsonLabel }}</h2><p>{{ copy.filePrompt }}</p></div>@if (validation(); as result) { <span class="pick-import-status" [class.valid]="result.valid"><i aria-hidden="true"></i>@if (result.valid) { {{ copy.validJson.replace('{categories}', result.categoryCount.toString()).replace('{nominees}', result.nomineeCount.toString()) }} } @else { {{ copy.invalidJson }} }</span> }</header>
+      <label class="pick-import-drop" [class.dragging]="dragging()" (dragover)="dragOver($event)" (dragleave)="dragLeave($event)" (drop)="dropFile($event)"><input type="file" accept=".json,application/json" (change)="handleFile($event)" /><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0 4 4m-4-4L8 8M5 14v5h14v-5" /></svg><strong>{{ copy.dropFile }}</strong><span>{{ copy.onlyJson }}</span><b>{{ copy.chooseFile }}</b></label>
+      <div class="pick-import-json-toolbar"><label for="pick-import-json-text">{{ copy.pasteJson }}</label><span>{{ copy.lineCount.replace('{count}', lineCount().toString()) }} · {{ jsonText().length }} {{ 'caracteres' }}</span></div>
+      <textarea id="pick-import-json-text" spellcheck="false" [value]="jsonText()" (input)="updateJson($event)" [attr.aria-label]="copy.jsonLabel"></textarea>
+      @if (fileError()) { <p class="pick-import-error" role="alert">{{ fileError() }}</p> }
+      @if (validation().errors.length) { <ul class="pick-import-errors">@for (error of validation().errors; track error) { <li>{{ error }}</li> }</ul> }
+      <div class="pick-import-tools"><button type="button" (click)="resetExample()">{{ copy.resetExample }}</button><button type="button" (click)="downloadExample()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 18v2h14v-2" /></svg>{{ copy.downloadExample }}</button></div>
+    </section>
+
+    <aside class="pick-import-reference">
+      <section class="pick-import-schema"><header><h2>{{ copy.expectedFormat }}</h2></header><dl>
+        <div><dt><code>{{ copy.titleField }}</code><span>{{ copy.titleDescription }}</span></dt><dd>{{ copy.titleHelp }}</dd></div>
+        <div><dt><code>{{ copy.descriptionField }}</code><span>{{ copy.optional }}</span></dt><dd>{{ copy.descriptionHelp }}</dd></div>
+        <div><dt><code>{{ copy.coverField }}</code><span>{{ copy.optional }}</span></dt><dd>{{ copy.coverHelp }}</dd></div>
+        <div><dt><code>{{ copy.eligibilityField }}</code><span>{{ copy.dateType }}</span></dt><dd>{{ copy.eligibilityHelp }}</dd></div>
+        <div><dt><code>{{ copy.categoriesField }}</code><span>{{ copy.categoriesHelp }}</span></dt><dd><code>{{ copy.categoryNameField }}</code> — {{ copy.categoryNameHelp }} <code>{{ copy.categoryTypeField }}</code> — {{ copy.categoryTypeHelp }} <code>{{ copy.nomineeField }}</code> — {{ copy.nomineeHelp }}</dd></div>
+      </dl></section>
+
+      @if (validation().data; as data) {
+        <section class="pick-import-preview"><header><div><h2>{{ copy.preview }}</h2><p>{{ copy.updatesPreview }}</p></div></header><article class="pick-import-preview-card">
+          <div class="pick-import-cover">@if (data.coverImage) { <img [src]="data.coverImage" alt="" /> } @else { <span>{{ copy.noCover }}</span> }<b>{{ copy.community }}</b></div>
+          <div class="pick-import-card-body"><h3>{{ data.title }}</h3><div class="pick-import-meta"><span>{{ picksCopy.unknownCreator }}</span><span>·</span><time>{{ copy.today }}</time></div>@if (data.description) { <p>{{ data.description }}</p> }@if (dateRange()) { <small class="pick-import-period">{{ dateRange() }}</small> }
+            <div class="pick-import-card-stats"><span>{{ copy.categoriesCount.replace('{count}', data.categories.length.toString()) }}</span><span>{{ copy.nomineesCount.replace('{count}', validation().nomineeCount.toString()) }}</span></div>
+          </div>
+        </article>
+        <div class="pick-import-category-preview"><h3>{{ copy.categories }}</h3>@for (category of data.categories; track $index) { <article><div><span>{{ typeLabel(category.allowedType) }}</span><strong>{{ category.name }}</strong></div>@if (category.nominees.length) { <p>{{ category.nominees.join(' · ') }}</p><small>{{ nomineeLabel(category.nominees.length) }}</small> } @else { <p>{{ copy.openCategory.replace('{type}', typeLabel(category.allowedType).toLocaleLowerCase('pt-BR')) }}</p><small>{{ copy.noNominees }}</small> }</article> }</div>
+        </section>
+      }
+    </aside>
+  </div>
+
+  <footer class="pick-import-actions"><a routerLink="/picks/create">{{ copy.cancel }}</a><span>{{ copy.draftNotice }}</span><button type="button" [disabled]="!validation().valid" (click)="importTemplate()">{{ copy.import }}<span aria-hidden="true">→</span></button></footer>
+</main>
