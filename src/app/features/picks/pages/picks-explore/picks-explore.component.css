@@ -1,0 +1,115 @@
+.picks-page { min-height: 100%; padding: 36px 0 var(--space-16); background: var(--color-surface); }
+.picks-header, .picks-tabs, .picks-toolbar, .picks-feed { width: min(1280px, calc(100% - 64px)); box-sizing: border-box; margin-inline: auto; }
+.picks-header { display: flex; min-height: 180px; align-items: center; justify-content: space-between; gap: 24px; }
+.picks-title-line { display: flex; align-items: baseline; gap: 14px; }
+.picks-title-line h1 { margin: 0; font-size: var(--font-size-display-xl); line-height: var(--line-height-display-xl); font-weight: 650; letter-spacing: -.025em; }
+.picks-title-line > span { color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
+.picks-heading-copy p { max-width: 720px; margin: 12px 0 0; color: var(--color-text-secondary); font-size: var(--font-size-md); line-height: var(--line-height-md); }
+.picks-create, .picks-secondary-create { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text); font-size: var(--font-size-sm); font-weight: 650; text-decoration: none; white-space: nowrap; }
+.picks-create > span { font-size: 20px; line-height: 1; }
+.picks-create:hover, .picks-secondary-create:hover { filter: brightness(1.1); }
+.picks-tabs { display: flex; height: 49px; gap: 24px; border-bottom: 1px solid var(--color-border); }
+.picks-tabs button { position: relative; padding: 0 8px; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-sm); font-weight: 650; cursor: pointer; }
+.picks-tabs button.active { color: var(--color-text); }
+.picks-tabs button.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--color-primary); content: ''; }
+.picks-catalog-back a { display: inline-flex; height: 100%; align-items: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 650; text-decoration: none; }
+.picks-catalog-back a:hover { color: var(--color-text); }
+.picks-toolbar { display: flex; min-height: 72px; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; margin-bottom: 12px; }
+.picks-toolbar.picks-mine-toolbar { justify-content: space-between; }
+.picks-sort-label { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.picks-sort-label select { min-height: 40px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; }
+.picks-catalog-pagination { display: flex; min-height: 60px; align-items: center; justify-content: center; gap: 16px; border-top: 1px solid var(--color-border); }
+.picks-catalog-pagination button { min-height: 38px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; cursor: pointer; }
+.picks-catalog-pagination button:disabled { cursor: default; opacity: .45; }
+.picks-catalog-pagination span { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.picks-mine-toolbar h2 { margin: 0; font-size: var(--font-size-lg); }
+.picks-mine-toolbar p { margin: 4px 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.picks-search { display: flex; min-width: min(360px, 100%); min-height: 40px; align-items: center; gap: 8px; padding-left: 11px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.picks-search svg { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--color-text-tertiary); stroke-linecap: round; stroke-width: 1.8; }
+.picks-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font: inherit; font-size: var(--font-size-sm); }
+.picks-search button { align-self: stretch; padding: 0 13px; border: 0; border-left: 1px solid var(--color-border); border-radius: 0 var(--radius-md) var(--radius-md) 0; background: transparent; color: var(--color-text); font: inherit; font-size: var(--font-size-sm); cursor: pointer; }
+.picks-search button:hover { background: var(--color-secondary); }
+.picks-origins { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.picks-origins button { min-height: 30px; padding: 0 11px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); font-weight: 600; cursor: pointer; }
+.picks-origins button.active { background: var(--color-primary); color: var(--color-text); }
+.picks-results-count { margin-left: auto; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.picks-section { margin-top: 30px; }
+.picks-section-heading { display: flex; min-height: 44px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.picks-section-heading h2 { margin: 0; font-size: var(--font-size-lg); font-weight: 650; }
+.picks-section-heading a { display: inline-flex; align-items: center; gap: 8px; color: var(--color-text-secondary); font-size: var(--font-size-sm); text-decoration: none; }
+.picks-section-heading a:hover { color: var(--color-text); }
+.picks-section-heading a span { font-size: 18px; }
+.picks-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.picks-card { min-width: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); }
+.picks-card-cover { position: relative; display: grid; height: 148px; overflow: hidden; place-items: center; background: linear-gradient(135deg, #211a34, #44305e 48%, #101923); text-decoration: none; }
+.picks-card-cover > img { width: 100%; height: 100%; object-fit: cover; transition: transform .25s ease; }
+.picks-card-cover:hover > img { transform: scale(1.035); }
+.picks-cover-art { display: grid; width: 100%; height: 100%; place-items: center; overflow: hidden; background: radial-gradient(ellipse at 25% 90%, #9566ee 0, transparent 44%), radial-gradient(ellipse at 75% 10%, #207d91 0, transparent 46%), #171522; }
+.picks-cover-art span { position: relative; z-index: 1; color: rgb(255 255 255 / 88%); font-family: Georgia, serif; font-size: 76px; line-height: 1; text-shadow: 0 8px 25px rgb(0 0 0 / 55%); }
+.picks-cover-art i { position: absolute; width: 160px; height: 220px; border: 1px solid rgb(255 255 255 / 12%); border-radius: 50%; transform: rotate(35deg); }
+.picks-cover-art i:last-child { width: 230px; height: 130px; transform: rotate(-28deg); }
+.picks-origin-badge { position: absolute; top: 12px; left: 12px; padding: 4px 9px; border: 1px solid rgb(255 255 255 / 18%); border-radius: var(--radius-full); background: rgb(10 10 14 / 74%); color: var(--color-text); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.picks-origin-badge.official { border-color: rgb(255 195 94 / 40%); color: #ffcf7d; }
+.picks-card-body { display: flex; min-height: 192px; flex-direction: column; padding: 14px 16px 12px; }
+.picks-card-meta { display: flex; align-items: center; gap: 7px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.picks-card-meta a { overflow: hidden; color: var(--color-text-secondary); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.picks-card-meta time { white-space: nowrap; }
+.picks-card-body h3 { overflow: hidden; margin: 8px 0 5px; font-size: var(--font-size-md); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.picks-card-body h3 a { color: var(--color-text); text-decoration: none; }
+.picks-card-body h3 a:hover { color: var(--color-primary); }
+.picks-card-description { display: -webkit-box; overflow: hidden; min-height: 36px; margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: 18px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.picks-categories { display: flex; min-height: 30px; align-items: center; gap: 5px; overflow: hidden; margin-top: 6px; }
+.picks-categories span { overflow: hidden; padding: 4px 7px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-tertiary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.picks-categories span:last-child { flex: 0 0 auto; }
+.picks-card-footer { display: flex; min-height: 38px; align-items: center; gap: 14px; margin-top: auto; padding-top: 7px; border-top: 1px solid var(--color-border); color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.picks-card-count { white-space: nowrap; }
+.picks-card-count strong { color: var(--color-text); }
+.picks-card-footer button, .picks-comment-count { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-decoration: none; cursor: pointer; }
+.picks-card-footer button { margin-left: auto; }
+.picks-card-footer button:hover, .picks-card-footer button.liked { color: #f06c83; }
+.picks-card-footer button svg, .picks-comment-count svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.picks-card-footer button.liked svg { fill: currentColor; }
+.picks-my-answer { display: inline-flex; align-items: center; gap: 4px; color: var(--color-primary); font-weight: 600; text-decoration: none; }
+.picks-my-answer span { font-size: 16px; }
+.picks-section-empty { padding: 24px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); color: var(--color-text-tertiary); text-align: center; }
+.picks-state, .picks-empty { display: flex; min-height: 300px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 24px; color: var(--color-text-secondary); text-align: center; }
+.picks-state h2, .picks-empty h2 { margin: 0; color: var(--color-text); font-size: var(--font-size-lg); }
+.picks-state p, .picks-empty p { max-width: 480px; margin: 0; line-height: 1.6; }
+.picks-state button { min-height: 40px; padding: 0 15px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; cursor: pointer; }
+.picks-spinner { width: 24px; height: 24px; border: 2px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: picks-spin .8s linear infinite; }
+.picks-empty-mark { color: var(--color-primary); font-size: 42px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@keyframes picks-spin { to { transform: rotate(360deg); } }
+@media (max-width: 1100px) { .picks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .picks-page { padding-top: 20px; }
+  .picks-header, .picks-tabs, .picks-toolbar, .picks-feed { width: calc(100% - 32px); }
+  .picks-header { min-height: 184px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 14px; }
+  .picks-title-line h1 { font-size: var(--font-size-display-lg); line-height: var(--line-height-display-lg); }
+  .picks-title-line { gap: 9px; }
+  .picks-heading-copy p { margin-top: 6px; font-size: var(--font-size-sm); }
+  .picks-create { min-height: 38px; }
+  .picks-tabs { height: 44px; gap: 12px; }
+  .picks-toolbar { align-items: stretch; gap: 9px; }
+  .picks-sort-label { width: 100%; justify-content: space-between; }
+  .picks-sort-label select { flex: 1; }
+  .picks-search { min-width: 100%; box-sizing: border-box; }
+  .picks-origins { align-self: flex-start; }
+  .picks-results-count { align-self: center; }
+  .picks-catalog-pagination { width: calc(100% - 32px); margin-inline: auto; justify-content: space-between; gap: 8px; }
+  .picks-grid { grid-template-columns: 1fr; gap: 12px; }
+  .picks-section { margin-top: 22px; }
+  .picks-section-heading h2 { font-size: var(--font-size-md); }
+  .picks-card { display: grid; grid-template-columns: 112px minmax(0, 1fr); }
+  .picks-card-cover { height: 100%; min-height: 178px; }
+  .picks-cover-art span { font-size: 52px; }
+  .picks-origin-badge { top: 7px; left: 6px; padding: 3px 6px; font-size: 8px; }
+  .picks-card-body { min-height: 178px; padding: 10px 10px 8px; }
+  .picks-card-meta { gap: 4px; font-size: 10px; }
+  .picks-card-body h3 { margin-top: 6px; font-size: var(--font-size-sm); }
+  .picks-card-description { min-height: 32px; font-size: var(--font-size-xs); line-height: 16px; }
+  .picks-categories { min-height: 25px; margin-top: 3px; }
+  .picks-categories span { padding: 3px 5px; font-size: 9px; }
+  .picks-card-footer { gap: 8px; min-height: 32px; font-size: 10px; }
+  .picks-card-footer button svg, .picks-comment-count svg { width: 13px; height: 13px; }
+}
