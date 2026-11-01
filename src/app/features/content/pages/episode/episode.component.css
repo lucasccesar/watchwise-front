@@ -1,0 +1,146 @@
+:host { display: block; min-height: 100vh; background: #111113; color: #f5f5f7; }
+.episode-page { position: relative; padding-bottom: 48px; }
+.episode-hero { min-height: 390px; background-color: #19191c; background-position: center 35%; background-size: cover; }
+.episode-hero-inner { display: flex; width: min(1200px, calc(100% - 64px)); min-height: 390px; flex-direction: column; justify-content: space-between; margin: 0 auto; padding: 22px 0 34px; box-sizing: border-box; }
+.episode-back { color: #dedee3; font-size: 13px; text-decoration: none; }
+.episode-back:hover { color: #fff; }
+.episode-hero-copy { max-width: 770px; padding: 30px 0 0; }
+.episode-eyebrow { color: #b2b2b9; font-size: 13px; font-weight: 600; letter-spacing: .025em; }
+.episode-hero h1 { margin: 10px 0 12px; color: #fff; font-size: clamp(38px, 5vw, 60px); font-weight: 720; letter-spacing: -.04em; line-height: 1.04; }
+.episode-hero-meta { display: flex; flex-wrap: wrap; gap: 13px; color: #d0d0d5; font-size: 13px; }
+.episode-hero-copy > p { max-width: 660px; margin: 17px 0 20px; color: #e2e2e6; font-size: 14px; line-height: 1.65; }
+.episode-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
+.episode-actions button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 1px solid #4a4a52; border-radius: 7px; background: rgba(28,28,32,.92); color: #f2f2f5; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.episode-actions .episode-watch-button { border-color: #2e69ef; background: #2d66e8; color: white; }
+.episode-actions .episode-share-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.episode-watch-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.episode-rate-button > span { color: #f4ad26; font-size: 17px; }
+.episode-actions button:disabled { opacity: .6; cursor: default; }
+.episode-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 36px; width: min(1200px, calc(100% - 64px)); margin: -7px auto 0; }
+.episode-sidebar { display: flex; flex-direction: column; gap: 19px; }
+.episode-poster { display: block; overflow: hidden; width: 100%; aspect-ratio: 2 / 3; border: 1px solid #2a2a30; border-radius: 8px; background: #202024; color: #aaa; text-align: center; text-decoration: none; }
+.episode-poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.episode-poster span { display: grid; height: 100%; place-items: center; }
+.episode-score-panel, .episode-series-link { padding: 15px; border: 1px solid #303036; border-radius: 8px; background: #171719; }
+.episode-community-score { display: flex; align-items: baseline; gap: 5px; }
+.episode-community-score > span { color: #f5ad26; font-size: 18px; }
+.episode-community-score strong { color: #f5f5f7; font-size: 25px; }
+.episode-community-score small { color: #85858d; font-size: 11px; }
+.episode-score-panel > span { display: block; margin-top: 4px; color: #92929a; font-size: 11px; }
+.episode-score-bar { overflow: hidden; height: 4px; margin: 12px 0; border-radius: 99px; background: #303036; }
+.episode-score-bar i { display: block; height: 100%; border-radius: inherit; background: #f5ad26; }
+.episode-personal-score { display: flex; align-items: center; justify-content: space-between; color: #a5a5ac; font-size: 11px; }
+.episode-personal-score strong { color: #f3f3f5; font-size: 12px; }
+.episode-series-link { display: grid; gap: 6px; color: inherit; text-decoration: none; }
+.episode-series-link span { color: #9999a1; font-size: 11px; }
+.episode-series-link strong { font-size: 14px; }
+.episode-series-link b { color: #759bff; font-size: 12px; font-weight: 600; }
+.episode-content { min-width: 0; }
+.episode-navigation { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #2d2d32; color: #dddde2; font-size: 13px; }
+.episode-navigation > div { display: flex; gap: 16px; }
+.episode-navigation a { color: #9db7ff; text-decoration: none; }
+.episode-cast, .episode-reviews, .episode-comments { margin-top: 29px; }
+.episode-cast > header, .episode-reviews > header, .episode-comments > header { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.episode-cast h2, .episode-reviews h2, .episode-comments h2 { margin: 0; font-size: 18px; font-weight: 680; }
+.episode-cast > header > span, .episode-reviews > header > span, .episode-comments > header > span { color: #92929a; font-size: 12px; }
+.episode-cast-list { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.episode-cast-list article { display: flex; min-width: 0; align-items: center; gap: 9px; padding: 9px; border: 1px solid #2c2c32; border-radius: 7px; background: #171719; }
+.episode-cast-list img, .episode-cast-fallback { display: grid; width: 40px; height: 48px; flex: 0 0 40px; place-items: center; border-radius: 4px; background: #292930; color: #bfc6da; font-size: 11px; object-fit: cover; }
+.episode-cast-list article > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.episode-cast-list strong { overflow: hidden; color: #ededf0; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.episode-cast-list small { overflow: hidden; color: #919199; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.episode-review-card { padding: 16px 0; border-bottom: 1px solid #2e2e34; }
+.episode-review-head { display: flex; align-items: center; gap: 10px; }
+.episode-avatar { display: grid; overflow: hidden; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid #345db0; border-radius: 50%; background: #262a36; color: #f4f4f6; font-size: 11px; font-weight: 650; text-decoration: none; }
+.episode-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.episode-review-head > div { display: flex; flex-direction: column; gap: 4px; }
+.episode-review-head > div > a { color: #f1f1f4; font-size: 12px; font-weight: 650; text-decoration: none; }
+.episode-review-head time { color: #8b8b93; font-size: 10px; }
+.episode-review-score { margin-left: auto; color: #f5af2d; font-size: 13px; white-space: nowrap; }
+.episode-review-card > p { margin: 12px 0; color: #e1e1e5; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+.episode-review-like, .episode-comment-actions button { padding: 0; border: 0; background: transparent; color: #aaaab2; font: inherit; font-size: 11px; cursor: pointer; }
+.episode-empty { color: #9999a1; font-size: 13px; }
+.episode-comments { padding-top: 23px; border-top: 1px solid #2e2e34; }
+.episode-comments > form { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.episode-comments textarea { width: 100%; min-height: 82px; box-sizing: border-box; padding: 12px; border: 1px solid #36363d; border-radius: 8px; background: #171719; color: #f5f5f7; font: inherit; font-size: 13px; resize: vertical; }
+.episode-comments form > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #aaaab1; font-size: 11px; }
+.episode-comments form > div button[type='submit'] { min-height: 34px; padding: 0 14px; border: 0; border-radius: 6px; background: #3067eb; color: white; font: inherit; font-size: 11px; font-weight: 650; cursor: pointer; }
+.episode-comments form > div button:disabled { opacity: .5; cursor: default; }
+.episode-load-more { display: block; min-height: 38px; margin: 18px auto 0; padding: 0 18px; border: 1px solid #414149; border-radius: 6px; background: #25252a; color: #eee; font: inherit; font-size: 12px; cursor: pointer; }
+.episode-load-more:disabled { opacity: .5; cursor: default; }
+.episode-load-more:focus-visible { outline: 2px solid #f4ad26; outline-offset: 3px; }
+.episode-comment { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 10px; padding: 15px 0; border-bottom: 1px solid #2c2c31; }
+.episode-comment--reply { margin-left: 42px; border-bottom: 0; }
+.episode-comment > div > header { display: flex; align-items: center; gap: 8px; }
+.episode-comment > div > header > a { color: #efeff2; font-size: 12px; font-weight: 650; text-decoration: none; }
+.episode-comment time { color: #8e8e96; font-size: 10px; }
+.episode-comment p { margin: 6px 0 9px; color: #e2e2e6; font-size: 12px; line-height: 1.5; }
+.episode-comment-actions { display: flex; gap: 14px; }
+.episode-state { display: flex; min-height: 55vh; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px; color: #f2f2f5; text-align: center; }
+.episode-state h1 { margin: 0; font-size: 24px; }
+.episode-state p { margin: 0; color: #aaaab1; }
+.episode-state a { color: #94adff; font-size: 13px; }
+.episode-spinner { width: 26px; height: 26px; border: 2px solid #393941; border-top-color: #4678f5; border-radius: 50%; animation: episode-spin .8s linear infinite; }
+@keyframes episode-spin { to { transform: rotate(360deg); } }
+.episode-error { margin: 14px auto; color: #f19b9c; text-align: center; font-size: 12px; }
+.episode-toast { position: fixed; z-index: 100; right: 22px; bottom: 24px; padding: 12px 16px; border: 1px solid #395db1; border-radius: 8px; background: #202943; color: #f4f5fa; box-shadow: 0 10px 30px rgba(0,0,0,.35); font-size: 13px; }
+.episode-modal-backdrop { position: fixed; z-index: 1100; inset: 0; display: grid; overflow-y: auto; padding: 20px; place-items: center; background: rgba(5,5,8,.78); }
+.episode-rating-modal { position: relative; width: min(460px,100%); padding: 24px; border: 1px solid #36363d; border-radius: 12px; background: #19191d; box-shadow: 0 24px 80px rgba(0,0,0,.55); }
+.episode-modal-close { position: absolute; top: 12px; right: 14px; border: 0; background: none; color: #aaaab2; font-size: 24px; cursor: pointer; }
+.episode-modal-kicker { color: #9999a2; font-size: 11px; }
+.episode-rating-modal h2 { margin: 8px 0 18px; font-size: 22px; }
+.episode-rating-options { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-bottom: 20px; }
+.episode-rating-options button { min-height: 40px; border: 1px solid #393940; border-radius: 7px; background: #202024; color: #e6e6ea; font: inherit; cursor: pointer; }
+.episode-rating-options button.selected { border-color: #356df3; background: #2d62d8; color: white; }
+.episode-rating-modal label { display: block; margin-bottom: 7px; color: #c6c6cd; font-size: 12px; }
+.episode-rating-modal textarea { width: 100%; min-height: 100px; box-sizing: border-box; padding: 11px; border: 1px solid #393940; border-radius: 7px; background: #121214; color: #f3f3f5; font: inherit; font-size: 13px; resize: vertical; }
+.episode-rating-modal footer { display: flex; justify-content: flex-end; gap: 9px; margin-top: 17px; }
+.episode-rating-modal footer button { min-height: 37px; padding: 0 14px; border: 1px solid #414149; border-radius: 6px; background: #25252a; color: #eee; font: inherit; font-size: 12px; cursor: pointer; }
+.episode-rating-modal footer .episode-save-rating { border-color: #3268ed; background: #3167e7; }
+.episode-rating-modal footer button:disabled { opacity: .5; cursor: default; }
+
+@media (max-width: 800px) {
+  .episode-hero { min-height: 390px; background-position: 60% center; }
+  .episode-hero-inner { width: calc(100% - 36px); min-height: 390px; padding: 17px 0 24px; }
+  .episode-hero-copy { max-width: 100%; padding-top: 14px; }
+  .episode-hero h1 { font-size: 39px; }
+  .episode-hero-copy > p { font-size: 13px; }
+  .episode-layout { grid-template-columns: 130px minmax(0,1fr); gap: 16px; width: calc(100% - 36px); }
+  .episode-score-panel, .episode-series-link { padding: 11px; }
+  .episode-community-score strong { font-size: 21px; }
+  .episode-sidebar { gap: 12px; }
+  .episode-content section { margin-top: 22px; }
+  .episode-navigation { font-size: 11px; }
+  .episode-navigation > div { gap: 10px; }
+  .episode-cast-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 500px) {
+  .episode-page { padding-bottom: 25px; }
+  .episode-hero { min-height: 360px; }
+  .episode-hero-inner { min-height: 360px; width: calc(100% - 32px); }
+  .episode-back { font-size: 11px; }
+  .episode-eyebrow { font-size: 11px; }
+  .episode-hero h1 { font-size: 34px; }
+  .episode-hero-meta { gap: 8px; font-size: 10px; }
+  .episode-hero-copy > p { margin: 11px 0 15px; font-size: 12px; }
+  .episode-actions { gap: 7px; }
+  .episode-actions button { min-height: 38px; gap: 6px; padding: 0 10px; font-size: 10px; }
+  .episode-layout { grid-template-columns: 1fr; width: calc(100% - 32px); margin-top: 13px; }
+  .episode-sidebar { display: grid; grid-template-columns: 94px minmax(0,1fr); align-items: start; gap: 10px; }
+  .episode-poster { grid-row: span 2; width: 94px; border-radius: 6px; }
+  .episode-score-panel, .episode-series-link { padding: 9px; }
+  .episode-community-score strong { font-size: 18px; }
+  .episode-score-panel > span { font-size: 9px; }
+  .episode-community-score > span { font-size: 14px; }
+  .episode-series-link { gap: 4px; }
+  .episode-series-link strong { font-size: 12px; }
+  .episode-series-link b, .episode-series-link span { font-size: 10px; }
+  .episode-content { margin-top: 2px; }
+  .episode-navigation { min-height: 42px; }
+  .episode-cast-list { grid-template-columns: 1fr 1fr; gap: 7px; }
+  .episode-cast-list article { gap: 7px; padding: 7px; }
+  .episode-cast-list img, .episode-cast-fallback { width: 32px; height: 40px; flex-basis: 32px; }
+  .episode-cast-list strong { font-size: 10px; }
+  .episode-review-card > p { font-size: 12px; }
+  .episode-toast { right: 12px; bottom: 18px; left: 12px; text-align: center; }
+}
