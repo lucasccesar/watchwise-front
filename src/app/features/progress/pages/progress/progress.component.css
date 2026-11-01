@@ -1,0 +1,670 @@
+.progress-page {
+  min-height: 100%;
+  padding-bottom: var(--space-16);
+  background: var(--color-surface);
+}
+
+.profile-subnav {
+  display: flex;
+  width: 70%;
+  min-height: 52px;
+  align-items: center;
+  gap: var(--space-5);
+  box-sizing: border-box;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.profile-subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.profile-subnav a {
+  display: inline-flex;
+  min-height: 50px;
+  flex: 0 0 auto;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.profile-subnav a:hover,
+.profile-subnav .profile-subnav-active {
+  color: var(--color-text);
+}
+
+.profile-subnav .profile-subnav-active {
+  border-bottom-color: var(--color-primary);
+}
+
+.progress-heading {
+  display: flex;
+  min-height: 214px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-10) var(--content-margin);
+  text-align: center;
+}
+
+.progress-heading h1 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: var(--font-size-display-2xl);
+  line-height: var(--line-height-display-2xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.progress-heading h1 span + span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-display-sm);
+  line-height: var(--line-height-display-sm);
+  letter-spacing: 0;
+}
+
+.progress-heading p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+}
+
+.progress-summary {
+  width: 70%;
+  box-sizing: border-box;
+  margin: 0 auto var(--space-6);
+}
+
+.progress-summary dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: var(--space-4) 0;
+  border-block: 1px solid var(--color-border);
+}
+
+.progress-summary dl > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  border-right: 1px solid var(--color-border);
+}
+
+.progress-summary dl > div:last-child {
+  border-right: 0;
+}
+
+.progress-summary dt {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: 600;
+}
+
+.progress-summary dd {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.progress-controls {
+  display: flex;
+  width: 70%;
+  min-height: 72px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  margin: 0 auto var(--space-2);
+}
+
+.progress-sort-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.progress-sort-group button {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.progress-sort-group button:hover {
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.progress-sort-group button.progress-sort-active {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.progress-sort-group .progress-sort-direction {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+}
+
+.progress-sort-direction svg,
+.progress-pagination svg,
+.progress-expand svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.progress-pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress-pagination button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.progress-pagination button:hover:not(:disabled) {
+  background: var(--color-secondary);
+}
+
+.progress-pagination button.progress-page-active {
+  background: var(--color-primary);
+}
+
+.progress-pagination button:disabled {
+  color: var(--color-text-tertiary);
+  cursor: default;
+}
+
+.progress-controls > p {
+  width: 100%;
+  margin: -8px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.progress-list {
+  display: flex;
+  width: 70%;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.progress-item {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.progress-poster {
+  position: relative;
+  display: block;
+  width: 150px;
+  height: 225px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+}
+
+.progress-poster > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.progress-poster-empty {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  padding: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.progress-item-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-item-title-row {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.progress-item-title-row h2 {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-item-title-row h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.progress-item-title-row h2 a:hover {
+  text-decoration: underline;
+}
+
+.progress-percent {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.progress-track,
+.progress-season-track {
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-secondary);
+}
+
+.progress-track {
+  height: 8px;
+}
+
+.progress-track span,
+.progress-season-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width 180ms ease;
+}
+
+.progress-episodes-copy,
+.progress-last-watched {
+  min-height: 20px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.progress-episodes-copy strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.progress-last-watched {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.progress-last-watched a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.progress-last-watched a:hover {
+  text-decoration: underline;
+}
+
+.progress-expand {
+  display: inline-flex;
+  min-height: 28px;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.progress-expand:hover {
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.progress-season-summary {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(100px, auto) 1fr 44px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.progress-season-track {
+  height: 4px;
+}
+
+.progress-season-summary > span:last-child {
+  text-align: right;
+}
+
+.progress-next-episode {
+  display: flex;
+  width: min(100%, 320px);
+  flex-direction: column;
+  gap: 12px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.progress-next-episode:hover .progress-next-copy strong {
+  text-decoration: underline;
+}
+
+.progress-next-image {
+  display: grid;
+  width: 100%;
+  height: 180px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.progress-next-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.progress-next-copy {
+  display: flex;
+  min-height: 38px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progress-next-copy strong {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.progress-next-copy small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.progress-community-score {
+  display: inline-flex;
+  min-height: 24px;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.progress-community-score svg {
+  width: 14px;
+  height: 14px;
+  fill: var(--color-accent);
+  stroke: var(--color-accent);
+  stroke-width: 1.4;
+}
+
+.progress-mark-watched {
+  min-height: 36px;
+  align-self: flex-start;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.progress-mark-watched:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.progress-mark-watched:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.progress-action-error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+}
+
+.progress-state {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  text-align: center;
+}
+
+.progress-state h2,
+.progress-state p {
+  margin: 0;
+}
+
+.progress-state p {
+  color: var(--color-text-tertiary);
+}
+
+.progress-state button {
+  min-height: 40px;
+  padding-inline: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (min-width: 600px) and (max-width: 800px) {
+  .profile-subnav,
+  .progress-summary,
+  .progress-controls,
+  .progress-list {
+    width: calc(100% - 64px);
+  }
+
+  .progress-item {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .progress-poster {
+    width: 112px;
+    height: 168px;
+  }
+}
+
+@media (max-width: 599px) {
+  .progress-page {
+    padding-bottom: var(--space-8);
+  }
+
+  .profile-subnav {
+    width: calc(100% - 32px);
+    min-height: 44px;
+    gap: var(--space-4);
+  }
+
+  .profile-subnav a {
+    min-height: 42px;
+    font-size: var(--font-size-xs);
+  }
+
+  .progress-heading {
+    min-height: 0;
+    padding: 28px var(--space-4) 24px;
+    gap: var(--space-3);
+  }
+
+  .progress-heading h1 {
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-xl);
+  }
+
+  .progress-heading h1 span + span {
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-md);
+  }
+
+  .progress-heading p {
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+  }
+
+  .progress-summary,
+  .progress-controls,
+  .progress-list {
+    width: calc(100% - 32px);
+  }
+
+  .progress-summary dl {
+    padding-block: var(--space-3);
+  }
+
+  .progress-summary dl > div {
+    text-align: center;
+  }
+
+  .progress-summary dt {
+    font-size: var(--font-size-md);
+  }
+
+  .progress-summary dd {
+    font-size: var(--font-size-xs);
+  }
+
+  .progress-controls {
+    min-height: 0;
+    align-items: flex-start;
+    margin-bottom: var(--space-3);
+  }
+
+  .progress-sort-group {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .progress-sort-group button {
+    min-height: 32px;
+    padding-inline: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .progress-sort-group > span {
+    width: 100%;
+  }
+
+  .progress-pagination {
+    margin-inline: auto;
+  }
+
+  .progress-controls > p {
+    margin-top: 0;
+  }
+
+  .progress-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    padding-block: var(--space-4);
+  }
+
+  .progress-poster {
+    display: none;
+  }
+
+  .progress-item-info {
+    gap: var(--space-2);
+  }
+
+  .progress-item-title-row h2 {
+    font-size: var(--font-size-md);
+  }
+
+  .progress-season-summary {
+    grid-template-columns: minmax(70px, 1fr) auto;
+  }
+
+  .progress-season-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .progress-next-episode {
+    width: 100%;
+  }
+
+  .progress-next-image {
+    height: 192px;
+  }
+}
