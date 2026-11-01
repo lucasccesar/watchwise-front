@@ -1,0 +1,83 @@
+<main class="pick-fill-page">
+  @if (loading()) {
+    <section class="pick-fill-state"><span class="pick-fill-spinner" aria-hidden="true"></span><p>{{ templateCopy.loading }}</p></section>
+  } @else if (loadError()) {
+    <section class="pick-fill-state"><h1>{{ templateCopy.errorTitle }}</h1><p>{{ loadError() }}</p><button type="button" (click)="loadTemplate()">{{ picksCopy.retry }}</button></section>
+  } @else if (template(); as template) {
+    <nav class="pick-fill-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/picks">{{ picksCopy.title }}</a><span>/</span><a [routerLink]="categoryRoute()">{{ template.name }}</a><span>/</span><span>{{ copy.title }}</span></nav>
+    <header class="pick-fill-header">
+      <a class="pick-fill-author" [routerLink]="['/users', template.creator?.username ?? '']"><span class="pick-fill-avatar">@if (template.creator?.profilePicture) { <img [src]="template.creator?.profilePicture" alt="" /> } @else { {{ (template.creator?.name || template.creator?.username || picksCopy.unknownCreator).slice(0, 1).toLocaleUpperCase('pt-BR') }} }</span><span>@{{ template.creator?.username || templateCopy.unknownUser }}</span></a>
+      <div class="pick-fill-heading"><div><h1>{{ template.name }}</h1><p>{{ template.description || template.instructions || '' }}</p></div><span class="pick-fill-progress-label">{{ copy.progress.replace('{answered}', answeredCount().toString()).replace('{total}', categoriesCount().toString()) }}</span></div>
+      <div class="pick-fill-progress" role="progressbar" [attr.aria-valuenow]="answeredCount()" [attr.aria-valuemin]="0" [attr.aria-valuemax]="categoriesCount()" aria-label="{{ copy.progress.replace('{answered}', answeredCount().toString()).replace('{total}', categoriesCount().toString()) }}"><span [style.width.%]="categoriesCount() ? answeredCount() / categoriesCount() * 100 : 0"></span></div>
+      <section class="pick-fill-publish" aria-label="{{ copy.whoCanSee }}">
+        <fieldset><legend>{{ copy.whoCanSee }}</legend><label><input type="radio" name="pick-visibility" [checked]="visibility() === 'PUBLIC'" (change)="setVisibility('PUBLIC')" />{{ templateCopy.public }}</label><label><input type="radio" name="pick-visibility" [checked]="visibility() === 'FOLLOWERS'" (change)="setVisibility('FOLLOWERS')" />{{ templateCopy.followers }}</label><label><input type="radio" name="pick-visibility" [checked]="visibility() === 'PRIVATE'" (change)="setVisibility('PRIVATE')" />{{ templateCopy.private }}</label></fieldset>
+        <p>{{ copy.notSaved }}</p><div><button type="button" [disabled]="publishing() || answeredCount() === 0" (click)="publish()">{{ publishing() ? copy.publishing : copy.publish }}</button></div>
+      </section>
+      @if (publishError()) { <p class="pick-fill-error" role="alert">{{ publishError() }}</p> }
+    </header>
+
+    <section class="pick-fill-categories" aria-labelledby="pick-fill-categories-title">
+      <header><div><h2 id="pick-fill-categories-title">{{ copy.categories }}</h2><p>{{ copy.categoryPrompt }}</p></div></header>
+      @for (category of groups().primary; track category.id) {
+        <article class="pick-fill-category" [class.answered]="isAnswered(category.id)">
+          <button type="button" class="pick-fill-category-main" [attr.aria-label]="category.name + ', ' + categoryState(category)" (click)="openCategory(category)">
+            <span class="pick-fill-category-copy"><span class="pick-fill-category-badges"><span class="primary">{{ templateCopy.primary }}</span><span>{{ templateCopy.type[category.allowedType] }}</span></span><strong>{{ category.name }}</strong>@if (category.description) { <small>{{ category.description }}</small> }</span>
+            <span class="pick-fill-category-answer">@if (answerFor(category.id); as answer) { @if (answer.image) { <img [src]="answer.image" alt="" /> } <span><small>{{ copy.answered }}</small><strong>{{ answer.label }}</strong></span> } @else { <span>{{ category.optionMode === 'FIXED' ? copy.chooseFixed : copy.chooseOpen }}</span><span class="pick-fill-chevron" aria-hidden="true">›</span> }</span>
+          </button>
+          @if (answerFor(category.id); as answer) { <button class="pick-fill-clear" type="button" [attr.aria-label]="copy.removeSelection + ': ' + answer.label" (click)="clearAnswer(category.id, $event)">×</button> }
+        </article>
+      }
+      @if (groups().secondary.length) { <h3 class="pick-fill-group-label">{{ templateCopy.secondary }}</h3> }
+      @for (category of groups().secondary; track category.id) {
+        <article class="pick-fill-category" [class.answered]="isAnswered(category.id)">
+          <button type="button" class="pick-fill-category-main" [attr.aria-label]="category.name + ', ' + categoryState(category)" (click)="openCategory(category)">
+            <span class="pick-fill-category-copy"><span class="pick-fill-category-badges"><span class="secondary">{{ templateCopy.secondary }}</span><span>{{ templateCopy.type[category.allowedType] }}</span></span><strong>{{ category.name }}</strong>@if (category.description) { <small>{{ category.description }}</small> }</span>
+            <span class="pick-fill-category-answer">@if (answerFor(category.id); as answer) { @if (answer.image) { <img [src]="answer.image" alt="" /> } <span><small>{{ copy.answered }}</small><strong>{{ answer.label }}</strong></span> } @else { <span>{{ category.optionMode === 'FIXED' ? copy.chooseFixed : copy.chooseOpen }}</span><span class="pick-fill-chevron" aria-hidden="true">›</span> }</span>
+          </button>
+          @if (answerFor(category.id); as answer) { <button class="pick-fill-clear" type="button" [attr.aria-label]="copy.removeSelection + ': ' + answer.label" (click)="clearAnswer(category.id, $event)">×</button> }
+        </article>
+      }
+    </section>
+  }
+</main>
+
+@if (activeCategory(); as category) {
+  <div class="pick-fill-backdrop" (click)="closeOnBackdrop($event)">
+    <section class="pick-fill-dialog" role="dialog" appModalFocus (modalDismiss)="closeCategory()" aria-modal="true" [attr.aria-label]="copy.dialogTitle.replace('{category}', category.name)">
+      <header><div><span>{{ templateCopy.type[category.allowedType] }} · {{ category.group === 'PRIMARY' ? templateCopy.primary : templateCopy.secondary }}</span><h2>{{ category.name }}</h2>@if (category.description) { <p>{{ category.description }}</p> }</div><button type="button" [attr.aria-label]="copy.close" (click)="closeCategory()">×</button></header>
+      <div class="pick-fill-dialog-body">
+        @if (category.optionMode === 'FIXED') {
+          <p class="pick-fill-dialog-hint">{{ copy.chooseFixed }} <span>({{ fixedOptions(category.id).length }})</span></p>
+          @if (fixedOptions(category.id).length) {
+            <div class="pick-fill-fixed-options" role="listbox" [attr.aria-label]="category.name">
+              @for (option of fixedOptions(category.id); track option.id) {
+                <div class="pick-fill-fixed-option" role="option" tabindex="0" [attr.aria-selected]="isAnswered(category.id) && answerName(category.id) === optionLabel(option)" (click)="chooseFixed(option)" (keydown.enter)="chooseFixed(option)" (keydown.space)="pickOption($event, option)">
+                  <span class="pick-fill-fixed-image content-image-card">@if (optionImage(option)) { <img [src]="optionImage(option)" alt="" /> } @else { <span class="pick-fill-person-fallback">{{ optionLabel(option).slice(0, 1).toLocaleUpperCase('pt-BR') }}</span> }
+                    <app-content-image-actions [ratingValue]="optionRating(option)" [ratingLabel]="optionRatingLabel(option)" [optionsLabel]="templateCopy.optionActions.replace('{name}', optionLabel(option))" [expanded]="menuExpanded(option)" [actions]="imageActions" (toggle)="toggleOptionMenu(option, $event)" (actionSelected)="optionAction(option, $event)" />
+                  </span><span><strong>{{ optionLabel(option) }}</strong><small>{{ optionSubtitle(option) }}</small></span><span class="pick-fill-option-check" aria-hidden="true">✓</span>
+                </div>
+              }
+            </div>
+          } @else { <p class="pick-fill-empty">{{ copy.searchEmpty }}</p> }
+        } @else {
+          @if (category.allowedType === 'EPISODE' && selectedSeries(); as series) {
+            @if (seriesSeasons().length; as page) {
+              <div class="pick-fill-series-selected"><img [src]="series.posterUrl || ''" alt="" /><div><small>{{ copy.episodeSeries }}</small><strong>{{ selectedSeriesTitle() }}</strong></div><button type="button" (click)="openCategory(category)">{{ copy.searchLabel }}</button></div>
+              <label class="pick-fill-select-label">{{ copy.season }}<select [value]="episodeSeason() ?? ''" (change)="setSeason($event)"><option value="">{{ copy.chooseSeason }}</option>@for (season of seasonChoices(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name }}</option> }</select></label>
+              @if (episodeSeason() !== null) { @if (currentSeriesEpisodes().length) { <div class="pick-fill-episode-list" role="listbox" [attr.aria-label]="copy.episode">@for (episode of currentSeriesEpisodes(); track episode.episodeNumber) { <button type="button" (click)="chooseEpisode(episode)">@if (episodeImage(episode); as image) { <img [src]="image" alt="" /> }<span><strong>{{ episodeLabel(episode) }}</strong><small>{{ episode.airDate || '' }}</small></span><span aria-hidden="true">›</span></button> }</div> } @else { <p class="pick-fill-empty">{{ copy.noEpisodes }}</p> } }
+            }
+          } @else {
+            <form class="pick-fill-search" (submit)="search($event)"><label for="pick-fill-search-input">{{ copy.searchLabel }}</label><div><input id="pick-fill-search-input" type="search" [value]="searchQuery()" (input)="updateQuery($event)" [placeholder]="copy.searchPlaceholder" /><button type="submit" [disabled]="!searchQuery().trim() || searchBusy()">{{ searchBusy() ? copy.searching : copy.searchLabel }}</button></div></form>
+            @if (searchError()) { <p class="pick-fill-error" role="alert">{{ searchError() }}</p> }
+            @if (searchBusy()) { <p class="pick-fill-dialog-hint">{{ copy.searching }}</p> }
+            @else if (hasOpenSearchResults()) {
+              @if (searchResults().contents.length) { <div class="pick-fill-search-results">@for (item of searchResults().contents; track item.tmdbId) { <button type="button" (click)="chooseContent(item)">@if (item.posterUrl) { <img [src]="item.posterUrl" alt="" /> }<span><strong>{{ item.title || copy.resultMovie }}</strong><small>{{ resultType(item) }} · {{ contentSubtitle(item) }}</small></span><span aria-hidden="true">›</span></button> }</div> }
+              @if (searchResults().people.length) { <div class="pick-fill-search-results">@for (person of searchResults().people; track person.tmdbId) { <button type="button" (click)="choosePerson(person)">@if (person.photoUrl) { <img class="person" [src]="person.photoUrl" alt="" /> }<span><strong>{{ person.name || copy.resultPerson }}</strong><small>{{ person.knownForDepartment || copy.resultPerson }}</small></span><span aria-hidden="true">›</span></button> }</div> }
+            } @else if (searchQuery().trim()) { <p class="pick-fill-empty">{{ copy.searchEmpty }}</p> }
+          }
+        }
+      </div>
+      <footer><button type="button" class="pick-fill-skip" (click)="closeCategory()">{{ copy.skip }}</button><button type="button" class="pick-fill-close" (click)="closeCategory()">{{ copy.close }}</button></footer>
+    </section>
+  </div>
+}
