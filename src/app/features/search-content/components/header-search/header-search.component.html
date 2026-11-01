@@ -108,7 +108,7 @@
             @for (result of results(); track result.kind + ':' + result.title + ':' + $index) {
               <a
                 class="search-result"
-                [routerLink]="result.kind === 'content' && result.scope === 'MOVIE' ? ['/content/movie', result.tmdbId] : ['/search']"
+                [routerLink]="result.kind === 'content' && (result.scope === 'MOVIE' || result.scope === 'SERIES') ? ['/content', result.scope.toLowerCase(), result.tmdbId] : ['/search']"
                 [queryParams]="result.kind === 'content' && result.scope === 'MOVIE' ? null : resultQueryParams()"
                 (click)="closeSearch(false)"
               >

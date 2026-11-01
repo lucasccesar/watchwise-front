@@ -102,7 +102,7 @@ app-header-search.header-search-host--open {
   flex: 0 0 auto;
   align-items: center;
   padding-left: var(--space-3);
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
 }
 
 .search-field-icon svg {
@@ -137,7 +137,7 @@ app-header-search.header-search-host--open {
 }
 
 .search-form input::placeholder {
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   opacity: 1;
 }
 
@@ -390,7 +390,7 @@ app-header-search.header-search-host--open {
 }
 
 .search-result-meta {
-  color: var(--color-tertiary);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-weight: 400;
   line-height: var(--line-height-xs);
