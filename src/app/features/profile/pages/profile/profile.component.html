@@ -1,0 +1,824 @@
+@if (status() === 'loading') {
+  <main class="profile-state" role="status">{{ copy.loading }}</main>
+} @else if (status() === 'private') {
+  <main class="profile-state profile-state--private">
+    <div class="profile-state-icon" aria-hidden="true">◉</div>
+    <h1>{{ copy.privateProfile }}</h1>
+    <p>@{{ username() }}</p>
+  </main>
+} @else if (status() === 'error' || !profile()) {
+  <main class="profile-state profile-state--error">
+    <h1>{{ copy.loadError }}</h1>
+    <button type="button" (click)="retry()">{{ copy.retry }}</button>
+  </main>
+} @else {
+  <main class="profile-page" [class.profile-page--mobile]="false" [class.profile-page--overview]="section() === 'profile'">
+    <nav class="profile-tabs" [attr.aria-label]="copy.tabs.profile">
+      @for (tab of tabEntries; track tab.key) {
+        <a
+          [routerLink]="selectedSectionUrl(tab.path)"
+          [class.profile-tab--active]="section() === tab.section || (tab.section === 'episode-ratings-map' && section() === 'episode-ratings-map-show')"
+          [attr.aria-current]="section() === tab.section || (tab.section === 'episode-ratings-map' && section() === 'episode-ratings-map-show') ? 'page' : null"
+        >{{ copy.tabs[tab.key] }}</a>
+      }
+    </nav>
+
+    @if (section() === 'profile') {
+    <section class="profile-hero" [style.background-image]="profileHeroBackdrop() ? 'url(' + profileHeroBackdrop() + ')' : null">
+      <div class="profile-hero-actions">
+        @if (followState() !== 'SELF') {
+          <button class="profile-follow-button" type="button" [disabled]="followBusy()" (click)="follow()">
+            @if (followBusy()) { <span class="profile-spinner" aria-hidden="true"></span> }
+            {{ followState() === 'PENDING' ? copy.followPending : isFollowing() ? copy.following : copy.follow }}
+          </button>
+        }
+        <div class="profile-options">
+          <button #profileMenuButton class="profile-options-button" type="button" [attr.aria-label]="copy.profileOptions" [attr.aria-expanded]="profileMenuOpen()" (click)="toggleProfileMenu()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+          </button>
+          @if (profileMenuOpen()) {
+            <button class="profile-menu-backdrop" type="button" aria-label="Fechar menu" (click)="toggleProfileMenu()"></button>
+            <div class="profile-options-menu" role="menu">
+              <button type="button" role="menuitem" (click)="openSharePreview()">{{ copy.sharePreview }}</button>
+              <button type="button" role="menuitem" (click)="copyProfileLink()">{{ copy.copyProfileLink }}</button>
+              <button type="button" role="menuitem" (click)="openProfileAction('report')">{{ copy.report }} @{{ profile()!.username }}</button>
+              <button type="button" role="menuitem" (click)="openProfileAction('block')">{{ copy.block }} @{{ profile()!.username }}</button>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="profile-identity">
+        <div class="profile-avatar">
+          @if (profile()!.profilePicture) {
+            <img [src]="profile()!.profilePicture" [alt]="userName()" />
+          } @else {
+            <img src="/default-user-avatar.png" alt="" />
+          }
+        </div>
+        <h1>{{ userName() }}</h1>
+        <div class="profile-handle">
+          <span>@{{ profile()!.username }}</span>
+          @if (followsViewer()) { <span class="profile-follows-you">{{ copy.followsYou }}</span> }
+        </div>
+        <p class="profile-description" [attr.aria-hidden]="profile()!.description ? null : 'true'">{{ profile()!.description || '' }}</p>
+        <div class="profile-follow-counts">
+          <span><strong>{{ profile()!.followersCount ?? 0 | number }}</strong> {{ copy.followers }}</span>
+          <span><strong>{{ profile()!.followingCount ?? 0 | number }}</strong> {{ copy.followingCount }}</span>
+        </div>
+      </div>
+    </section>
+
+    @if (actionMessage()) { <div class="profile-feedback" role="status">{{ actionMessage() }}</div> }
+
+    <div class="profile-type-switch" role="group" [attr.aria-label]="copy.type">
+      <button type="button" [class.profile-type-active]="mode() === 'MOVIE'" [attr.aria-pressed]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16m10-16v16M3 9h4m-4 6h4m10-6h4m-4 6h4"/></svg>
+        {{ copy.movies }}
+      </button>
+      <button type="button" [class.profile-type-active]="mode() === 'EPISODE'" [attr.aria-pressed]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 2v3m8-3v3"/></svg>
+        {{ copy.series }}
+      </button>
+    </div>
+    }
+
+    @switch (section()) {
+      @case ('profile') {
+        <div class="profile-content profile-overview-content">
+          @if (summary(); as data) {
+            <section #summaryGrid class="profile-summary-grid" aria-label="Resumo de {{ modeLabel() }}" (scroll)="updateSummarySlide($event)">
+              <article class="profile-summary-card">
+                <div class="profile-summary-copy">
+                  <span>{{ copy.last30Days }}</span>
+                  <strong>{{ formatDuration(last30DayMinutes()) }}</strong>
+                  <small>{{ data.watchTime.watchedCountLast30Days | number }} {{ mode() === 'MOVIE' ? copy.movies.toLocaleLowerCase() : copy.recentEpisodes.toLocaleLowerCase() }}</small>
+                </div>
+                @if (data.highlights?.rewatch; as highlight) {
+                  <div class="profile-highlight">
+                    @if (imageUrl(highlight.content?.customPosterUrl || highlight.content?.posterPath); as poster) { <img [src]="poster" alt="" /> }
+                    <div><small>{{ copy.mostRewatched }}</small><strong>{{ highlight.content?.title || copy.unavailable }}</strong><span>{{ highlight.count }}×</span></div>
+                  </div>
+                } @else { <div class="profile-highlight profile-highlight--empty" aria-hidden="true"></div> }
+              </article>
+              <article class="profile-summary-card">
+                <div class="profile-summary-copy">
+                  <span>{{ copy.allTime }}</span>
+                  <strong>{{ formatDuration(data.watchTime.totalMinutesWatched) }}</strong>
+                  <small>{{ data.watchTime.totalWatchedCount | number }} {{ copy.watchedCount.replace('{count}', '') }}</small>
+                </div>
+                @if (data.highlights?.longestWatch; as highlight) {
+                  <div class="profile-highlight">
+                    @if (imageUrl(highlight.content?.customPosterUrl || highlight.content?.posterPath); as poster) { <img [src]="poster" alt="" /> }
+                    <div><small>{{ copy.longestWatch }}</small><strong>{{ highlight.content?.title || copy.unavailable }}</strong><span>{{ formatDuration(highlight.totalMinutesWatched) }}</span></div>
+                  </div>
+                } @else { <div class="profile-highlight profile-highlight--empty" aria-hidden="true"></div> }
+              </article>
+            </section>
+            <nav class="profile-summary-pagination" [attr.aria-label]="copy.summaryPagination">
+              <button type="button" [class.profile-summary-page--active]="summarySlide() === 0" [attr.aria-pressed]="summarySlide() === 0" [attr.aria-label]="copy.summaryCard.replace('{current}', '1').replace('{total}', '2')" (click)="selectSummarySlide(0)"></button>
+              <button type="button" [class.profile-summary-page--active]="summarySlide() === 1" [attr.aria-pressed]="summarySlide() === 1" [attr.aria-label]="copy.summaryCard.replace('{current}', '2').replace('{total}', '2')" (click)="selectSummarySlide(1)"></button>
+            </nav>
+
+            @if (topFive().length) {
+              <section class="profile-section profile-top-five">
+                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10l2 5-7 5L5 9l2-5Zm-2 5-3 2 4 4 3-1m10-5 3 2-4 4-3-1" /></svg>{{ mode() === 'MOVIE' ? copy.topFiveMovies : copy.topFiveSeries }}</h2></div>
+                <div class="profile-top-five-grid">
+                  @for (entry of topFive(); track entry.id) {
+                    <article class="profile-top-five-card">
+                      <div class="profile-poster content-image-card">
+                        @if (imageUrl(entry.posterPath); as poster) { <img [src]="poster" [alt]="entry.title" /> } @else { <div class="profile-poster-fallback">{{ entry.title || copy.unavailable }}</div> }
+                        <span class="profile-rank">{{ entry.position }}</span>
+                        <app-content-image-actions
+                          [ratingValue]="entry.averageScore === null ? null : entry.averageScore.toFixed(1)"
+                          [ratingLabel]="entry.averageScore === null ? '' : 'Nota da comunidade ' + entry.averageScore.toFixed(1)"
+                          [optionsLabel]="'Opções para ' + entry.title"
+                          [expanded]="activePosterMenu() === entry.id"
+                          [actions]="profileImageActions"
+                          (toggle)="togglePosterMenu(entry.id, $event)"
+                          (actionSelected)="handlePosterAction(entry, $event.action.id)"
+                        />
+                      </div>
+                      <div class="profile-top-five-meta">
+                        <strong>{{ entry.title || copy.unavailable }}</strong>
+                        <span>{{ entry.releaseYear ?? '—' }}</span>
+                        @if (entry.score !== null) { <span class="profile-own-rating">★ {{ entry.score }}</span> }
+                      </div>
+                    </article>
+                  }
+                </div>
+              </section>
+            }
+
+            <section class="profile-section">
+              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v18H4zM8 3v18m8-18v18M4 8h4m-4 8h4m8-8h4m-4 8h4" /></svg>{{ mode() === 'MOVIE' ? copy.recentMovies : copy.recentEpisodes }}</h2><a [routerLink]="selectedSectionUrl('history')">{{ copy.tabs.history }} <span aria-hidden="true">›</span></a></div>
+              @if (data.recentEpisodes.length) {
+                <div class="profile-recent-grid">
+                  @for (entry of data.recentEpisodes; track entry.id) {
+                    <article class="profile-recent-card">
+                      @if (detailRoute(entry); as route) {
+                        <div class="profile-recent-poster content-image-card">
+                          <a class="profile-recent-poster-link" [routerLink]="route">
+                          @if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || ''" /> }
+                          @else { <span>{{ entry.card?.title || copy.unavailable }}</span> }
+                          </a>
+                          <app-content-image-actions [ratingValue]="entry.card?.stats?.averageScore == null ? null : entry.card!.stats!.averageScore!.toFixed(1)" [ratingLabel]="entry.card?.stats?.averageScore == null ? '' : 'Nota da comunidade ' + entry.card!.stats!.averageScore!.toFixed(1)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [actions]="profileImageActions" (actionSelected)="handleProfileImageAction(entry.content?.type === 'MOVIE' ? 'MOVIE' : 'SERIES', entry.content?.type === 'MOVIE' ? entry.content?.tmdbId ?? null : entry.content?.seriesTmdbId ?? null, $event.action.id)" />
+                          <span class="profile-recent-status" [class.profile-recent-status--rewatch]="(entry.watchNumber ?? 0) > 1" [attr.aria-label]="(entry.watchNumber ?? 0) > 1 ? 'Reassistido ' + entry.watchNumber + ' vezes' : 'Assistido'">{{ (entry.watchNumber ?? 0) > 1 ? '↻ ' + entry.watchNumber : '✓' }}</span>
+                          <span class="profile-recent-date">{{ dateLabel(entry.watchedDate) }}</span>
+                        </div>
+                      }
+                      <div class="profile-recent-info">
+                        <div class="profile-recent-title-row"><strong>{{ entry.card?.title || copy.unavailable }}</strong>@if (runtimeLabel(entry.card?.runtimeMinutes); as runtime) { <span>{{ runtime }}</span> }</div>
+                        <small>{{ entry.card?.releaseYear ?? '—' }}</small>
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else { <p class="profile-empty">{{ copy.noItems }}</p> }
+            </section>
+
+            <section class="profile-two-columns">
+              <article class="profile-section profile-panel">
+                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 16v-5m6 5V4m6 12V8" /></svg>{{ copy.mostWatchedGenres }}</h2></div>
+                <div class="profile-genre-chart" role="list" [attr.aria-label]="copy.mostWatchedGenres">
+                  @for (genre of data.genreCounts; track genre.genre; let i = $index) {
+                    <div class="profile-genre-segment" [class.profile-genre-segment--lower]="i % 2 === 1" [attr.data-color]="i % 6" [style.flex-grow]="genre.count" role="listitem" [attr.aria-label]="genre.genre + ', ' + genre.count">
+                      <span class="profile-genre-label"><strong>{{ genre.genre }}</strong><small>{{ genre.count }} {{ mode() === 'MOVIE' ? copy.movies.toLocaleLowerCase() : copy.series.toLocaleLowerCase() }}</small></span>
+                      <i aria-hidden="true"></i>
+                    </div>
+                  } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+                </div>
+              </article>
+              <article class="profile-section profile-panel">
+                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" /></svg>{{ copy.ratings }}</h2></div>
+                @if (data.ratingsSummary; as ratings) { <p class="profile-rating-summary">{{ copy.ratingCount.replace('{count}', asText(ratings.totalRatings)) }} <span>{{ copy.averageRating.replace('{rating}', ratings.averageScore?.toFixed(1) || '0') }}</span></p> }
+                <div class="profile-rating-bars">
+                  @for (score of data.ratingsDistribution; track score.score) {
+                    <div [attr.aria-label]="score.score + ' de 10: ' + score.count" [title]="score.count + ' avaliações com nota ' + score.score"><i><b [style.height]="ratingBarWidth(score.count)"></b></i><span>{{ score.score }}</span></div>
+                  }
+                </div>
+              </article>
+            </section>
+
+            <section class="profile-section">
+              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" /></svg>{{ copy.recentReviews }}</h2><a [routerLink]="selectedSectionUrl('reviews')">{{ copy.tabs.reviews }} <span aria-hidden="true">›</span></a></div>
+              <div class="profile-overview-reviews">
+                @for (review of data.recentReviews; track review.id) {
+                  <article class="profile-overview-review">
+                    <div class="profile-overview-review-poster">
+                      @if (imageUrl(review.customPosterUrl || review.card?.customPosterUrl || review.card?.posterPath); as poster) { <img [src]="poster" [alt]="review.card?.title || ''" /> }
+                      @else { <span>{{ review.card?.title || copy.unavailable }}</span> }
+                    </div>
+                    <div class="profile-overview-review-body">
+                      <header class="profile-overview-review-header">
+                        <div class="profile-overview-review-copy">
+                          <div class="profile-overview-review-title"><strong>{{ review.card?.title || copy.unavailable }}</strong><span>{{ review.card?.releaseYear ?? '' }}</span></div>
+                          <div class="profile-overview-review-meta">
+                            <span>{{ copy.watchDate.replace('{date}', dateLabel(review.watchedDate)) }}</span>
+                            @if ((review.watchNumber ?? 0) > 1) { <span class="profile-overview-review-rewatch">↻ Reassistido #{{ review.watchNumber }}</span> }
+                            @for (person of review.watchedWith ?? []; track person.id ?? person.username ?? $index) {
+                              <span class="profile-overview-review-companion">
+                                @if (person.profilePicture) { <img [src]="person.profilePicture" alt="" /> }
+                                @else { <b>{{ (person.name || person.username || '?').charAt(0).toUpperCase() }}</b> }
+                                com {{ person.name || person.username }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                        @if (review.score !== null) { <strong class="profile-overview-review-score"><span aria-hidden="true">★</span> {{ review.score }}<small>/10</small></strong> }
+                      </header>
+                      @if (review.comment) { <p>{{ review.comment }}</p> }
+                      <footer><span><b aria-hidden="true">♥</b> {{ review.likesCount ?? 0 }} curtidas</span><span><b aria-hidden="true">◯</b> {{ review.commentsCount ?? 0 }} comentários</span></footer>
+                    </div>
+                  </article>
+                } @empty { <p class="profile-empty">{{ copy.noReviews }}</p> }
+              </div>
+            </section>
+          }
+        </div>
+      }
+
+      @case ('progress') {
+        <section class="profile-content profile-section-page">
+          @if (progress(); as data) {
+            <header class="profile-subpage-hero" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+              <div class="profile-subpage-hero-copy">
+                <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
+                </a>
+                <h1>{{ copy.tabs.progress }}</h1>
+                <p class="profile-subpage-accent">{{ data.aggregate.totalSeriesCount | number }} {{ copy.showsInProgress }}</p>
+                <p>{{ copy.progressDescription }}</p>
+              </div>
+            </header>
+            <section class="profile-progress-summary" aria-label="{{ copy.progressSummary }}">
+              <article><strong>{{ data.aggregate.remainingEpisodeCount | number }}</strong><span>{{ copy.episodesRemaining }}</span></article>
+              <article><strong>{{ formatDuration(data.aggregate.remainingRuntimeMinutes) }}</strong><span>{{ copy.timeRemaining }}</span></article>
+              <article><strong>{{ data.aggregate.totalSeriesCount | number }}</strong><span>{{ copy.showsInProgress }}</span></article>
+              <div class="profile-progress-summary-controls">
+                <label>{{ copy.sortBy }}
+                  <select aria-label="{{ copy.sortBy }}" [value]="progressSort()" (change)="setProgressSort($any($event.target).value)">
+                    <option value="LAST_WATCHED">{{ copy.progressSortWatched }}</option>
+                    <option value="LAST_RELEASED">{{ copy.progressSortRelease }}</option>
+                    <option value="REMAINING_EPISODES">{{ copy.progressSortEpisodesLeft }}</option>
+                    <option value="REMAINING_RUNTIME">{{ copy.progressSortTimeLeft }}</option>
+                  </select>
+                </label>
+                <button type="button" class="profile-sort-direction" [attr.aria-label]="progressDirection() === 'DESC' ? copy.ascending : copy.descending" (click)="toggleProgressDirection()">{{ progressDirection() === 'DESC' ? '↓' : '↑' }}</button>
+              </div>
+            </section>
+            <div class="profile-progress-pagebar">
+              @if (data.totalPages > 1) {
+                <nav class="profile-pagination" aria-label="{{ copy.progressPagination }}">
+                  <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+                  @for (page of pageNumbers(data.totalPages); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                  <button type="button" [disabled]="!data.hasNext" (click)="nextPage()">›</button>
+                </nav>
+              }
+              <p class="profile-pagination-summary">{{ copy.showingRange.replace('{start}', asText(progressRangeStart(data))).replace('{end}', asText(progressRangeEnd(data))).replace('{total}', asText(data.totalElements)) }} {{ copy.showsInProgress }}</p>
+            </div>
+            <div class="profile-progress-grid">
+              @for (item of data.content; track item.seriesTmdbId) {
+                <article class="profile-progress-card">
+                  <div class="profile-progress-poster content-image-card">@if (imageUrl(item.customPosterUrl || item.seriesPosterPath || item.posterPath); as poster) { <a [routerLink]="['/content/series', item.seriesTmdbId]" aria-label="{{ item.seriesTitle || item.title }}"><img [src]="poster" [alt]="item.seriesTitle || item.title || ''" /></a> } @else { <span>{{ item.seriesTitle || item.title || copy.unavailable }}</span> }<app-content-image-actions [optionsLabel]="'Opções para ' + (item.seriesTitle || item.title || '')" [actions]="profileImageActions" [expanded]="activePosterMenu() === item.seriesTmdbId" (toggle)="togglePosterMenu(item.seriesTmdbId, $event)" (actionSelected)="handleProfileImageAction('SERIES', item.seriesTmdbId, $event.action.id)" /></div>
+                  <div><h2>{{ item.seriesTitle || item.title }}</h2><p>{{ item.watchedEpisodeCount }} / {{ item.totalEpisodeCount ?? item.totalReleasedEpisodeCount ?? 0 }} episódios</p><div class="profile-progress-bar"><i [style.width]="(item.watchedPercentage ?? 0) + '%'"></i></div><small>{{ progressPercent(item.watchedPercentage) }}% · {{ item.remainingEpisodeCount ?? 0 }} restantes</small></div>
+                  @if (item.nextEpisode; as next) {
+                    <div class="profile-progress-next-column">
+                      <a class="profile-next-episode" [routerLink]="episodeRoute(item.seriesTmdbId, next.seasonNumber, next.episodeNumber)"><span>{{ copy.nextEpisode }}</span><strong>{{ next.title || ('T' + next.seasonNumber + ' · E' + next.episodeNumber) }}</strong><small>T{{ next.seasonNumber }} · E{{ next.episodeNumber }} · {{ next.runtimeMinutes ? formatDuration(next.runtimeMinutes) : copy.runtimeUnavailable }}</small></a>
+                      @if (followState() === 'SELF') { <button class="profile-progress-mark-watched" type="button" [disabled]="savingProgressSeriesId() === item.seriesTmdbId || next.availableToWatch === false" (click)="markProgressEpisodeWatched(item)">{{ savingProgressSeriesId() === item.seriesTmdbId ? progressCopy.saving : homeCopy.markWatched }}</button> }
+                      @if (progressActionError()) { <p class="profile-progress-action-error" role="alert">{{ progressActionError() }}</p> }
+                    </div>
+                  }
+                  @if (item.lastWatchedDate) { <p class="profile-progress-last-watched">{{ copy.lastWatched }} @if (watchedEpisodeRoute(item); as route) { <a [routerLink]="route">{{ item.lastWatchedEpisodeTitle || ('T' + item.lastWatchedSeasonNumber + ' · E' + item.lastWatchedEpisodeNumber) }}</a> } <span>· {{ dateLabel(item.lastWatchedDate) }}</span></p> }
+                  <button class="profile-progress-seasons-toggle" type="button" [attr.aria-expanded]="progressSeasonsExpanded(item.seriesTmdbId)" (click)="toggleProgressSeasons(item.seriesTmdbId, $event)">{{ progressSeasonsExpanded(item.seriesTmdbId) ? copy.hideSeasons : copy.viewSeasons }}</button>
+                  @if (progressSeasonsExpanded(item.seriesTmdbId)) { <div class="profile-progress-seasons" aria-label="{{ copy.seasons }}">@for (season of item.seasonProgress; track season.seasonNumber) { <div><span>{{ copy.season }} {{ season.seasonNumber }}</span><span>{{ season.watchedEpisodeCount }}/{{ season.totalEpisodeCount }} {{ copy.episodes }} · {{ progressPercent(season.watchedPercentage) }}%</span><div class="profile-progress-bar"><i [style.width]="season.watchedPercentage + '%'" ></i></div></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div> }
+                </article>
+              } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+            </div>
+            @if (data.totalPages > 1) {
+              <nav class="profile-pagination" aria-label="{{ copy.progressPagination }}">
+                <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+                @for (page of pageNumbers(data.totalPages); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                <button type="button" [disabled]="!data.hasNext" (click)="nextPage()">›</button>
+              </nav>
+            }
+          }
+        </section>
+      }
+
+      @case ('history') {
+        <section class="profile-content profile-section-page">
+          @if (diary(); as data) {
+            <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+              <div class="profile-subpage-hero-copy">
+                <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  {{ userName() }}
+                </a>
+                <h1>{{ copy.tabs.history }}</h1>
+                <p class="profile-subpage-accent">{{ formatCount(allTime()?.totalEpisodesWatched ?? 0) }} {{ copy.episodes }} · {{ formatCount(allTime()?.totalMoviesWatched ?? 0) }} {{ copy.movies.toLocaleLowerCase() }}</p>
+                <p>{{ copy.historyDescription }}</p>
+              </div>
+            </header>
+            <section class="profile-history-summary" aria-label="{{ copy.historySummary }}">
+              <div #historySummaryGrid class="profile-history-summary-track" (scroll)="updateHistorySummarySlide($event)">
+                <article>
+                  <div class="profile-history-metric"><span>{{ copy.episodesWatched }}</span><strong>{{ formatCount(allTime()?.totalEpisodesWatched ?? 0) }}</strong><small>assistidos</small></div>
+                  <svg viewBox="0 0 24 24" role="img" [attr.aria-label]="copy.series"><path d="m7 3 5 5 5-5M5 21h14a2 2 0 0 0 2-2v-7a7 7 0 0 0-7-7h-4a7 7 0 0 0-7 7v7a2 2 0 0 0 2 2Z" /></svg>
+                  <div class="profile-history-metric"><span>{{ copy.seriesTimeWatched }}</span><strong>{{ formatDuration(allTime()?.totalMinutesWatchedEpisodes ?? 0) }}</strong><small>tempo assistido</small></div>
+                </article>
+                <article>
+                  <div class="profile-history-metric"><span>{{ copy.moviesWatched }}</span><strong>{{ formatCount(allTime()?.totalMoviesWatched ?? 0) }}</strong><small>assistidos</small></div>
+                  <svg viewBox="0 0 24 24" role="img" [attr.aria-label]="copy.movies"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16m10-16v16M3 9h4m-4 6h4m10-6h4m-4 6h4" /></svg>
+                  <div class="profile-history-metric"><span>{{ copy.movieTimeWatched }}</span><strong>{{ formatDuration(allTime()?.totalMinutesWatchedMovies ?? 0) }}</strong><small>tempo assistido</small></div>
+                </article>
+                <span class="profile-history-summary-spacer" aria-hidden="true"></span>
+              </div>
+              <nav class="profile-summary-pagination profile-history-summary-pagination" aria-label="Resumo do histórico">
+                <button type="button" [class.profile-summary-page--active]="historySummarySlide() === 0" [attr.aria-pressed]="historySummarySlide() === 0" aria-label="Resumo 1 de 2" (click)="selectHistorySummarySlide(0)"></button>
+                <button type="button" [class.profile-summary-page--active]="historySummarySlide() === 1" [attr.aria-pressed]="historySummarySlide() === 1" aria-label="Resumo 2 de 2" (click)="selectHistorySummarySlide(1)"></button>
+              </nav>
+            </section>
+            <div class="profile-history-filters" aria-label="{{ copy.historyFilters }}">
+              <label>{{ copy.type }}<select aria-label="{{ copy.type }}" [value]="historyType()" (change)="setHistoryType($any($event.target).value)"><option value="ALL">{{ copy.filterAll }}</option><option value="MOVIE">{{ copy.movies }}</option><option value="EPISODE">{{ copy.series }}</option></select></label>
+              <label>{{ copy.seriesFilter }}<select aria-label="{{ copy.seriesFilter }}" [value]="historySeries()" (change)="setHistorySeries($any($event.target).value)"><option value="">{{ copy.allSeries }}</option>@for (option of historySeriesOptions(); track option.id) { <option [value]="option.id">{{ option.title }}</option> }</select></label>
+              <label>{{ copy.ratingFilter }}<select aria-label="{{ copy.ratingFilter }}" [value]="historyScore()" (change)="setHistoryScore($any($event.target).value)"><option value="">{{ copy.anyRating }}</option>@for (score of ratingScores; track score) { <option [value]="score">{{ score }}/10</option> }</select></label>
+              <label>{{ copy.dateFrom }}<input type="date" [value]="historyDateFrom()" (change)="setHistoryDate('from', $any($event.target).value)" /></label>
+              <label>{{ copy.dateTo }}<input type="date" [value]="historyDateTo()" (change)="setHistoryDate('to', $any($event.target).value)" /></label>
+              <label>{{ copy.sortBy }}<select aria-label="{{ copy.sortBy }}" [value]="historySort()" (change)="setHistorySort($any($event.target).value)"><option value="NEWEST">{{ copy.newest }}</option><option value="OLDEST">{{ copy.oldest }}</option><option value="RATING_DESC">{{ copy.highestRated }}</option><option value="RATING_ASC">{{ copy.lowestRated }}</option></select></label>
+            </div>
+            <div class="profile-history-results">
+              <div class="profile-history-mobile-summary">
+                <span><strong>{{ data.content.length | number }}</strong> {{ copy.plays }}</span>
+                <span><strong>{{ formatDuration(historyPageRuntime()) }}</strong> assistidos</span>
+                <button class="profile-toolbar-filter-trigger" type="button" [attr.aria-label]="copy.historyFilters" [attr.aria-expanded]="profileFiltersOpen()" aria-haspopup="dialog" (click)="toggleProfileFilters()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.1v5.2l-3.6 1.8v-7L4 5Z" /></svg></button>
+              </div>
+              <nav class="profile-pagination" aria-label="{{ copy.historyPagination }}">
+                <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+                @for (page of pageNumbers(data.totalPages); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                <button type="button" [disabled]="!data.hasNext" (click)="nextPage()">›</button>
+              </nav>
+              <p class="profile-pagination-summary">{{ copy.showingRange.replace('{start}', asText(historyRangeStart())).replace('{end}', asText(historyRangeEnd())).replace('{total}', asText(data.totalElements)) }} {{ copy.plays }}</p>
+              @if (historyGroups().length) { <button class="profile-collapse-days" type="button" (click)="toggleHistoryDayGroups()">{{ allHistoryDaysCollapsed() ? copy.expandDays : copy.collapseDays }}</button> }
+            </div>
+            @if (profileFiltersOpen()) {
+              <div class="profile-toolbar-backdrop" (click)="closeProfileFilters()">
+                <section class="profile-toolbar-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-history-filter-title" (click)="$event.stopPropagation()">
+                  <header><h2 id="profile-history-filter-title">{{ copy.historyFilters }}</h2><button type="button" aria-label="Fechar filtros" (click)="closeProfileFilters()">×</button></header>
+                  <label>{{ copy.type }}<select [value]="historyType()" (change)="setHistoryType($any($event.target).value)"><option value="ALL">{{ copy.filterAll }}</option><option value="MOVIE">{{ copy.movies }}</option><option value="EPISODE">{{ copy.series }}</option></select></label>
+                  <label>{{ copy.seriesFilter }}<select [value]="historySeries()" (change)="setHistorySeries($any($event.target).value)"><option value="">{{ copy.allSeries }}</option>@for (option of historySeriesOptions(); track option.id) { <option [value]="option.id">{{ option.title }}</option> }</select></label>
+                  <label>{{ copy.ratingFilter }}<select [value]="historyScore()" (change)="setHistoryScore($any($event.target).value)"><option value="">{{ copy.anyRating }}</option>@for (score of ratingScores; track score) { <option [value]="score">{{ score }}/10</option> }</select></label>
+                  <label>{{ copy.dateFrom }}<input type="date" [value]="historyDateFrom()" (change)="setHistoryDate('from', $any($event.target).value)" /></label>
+                  <label>{{ copy.dateTo }}<input type="date" [value]="historyDateTo()" (change)="setHistoryDate('to', $any($event.target).value)" /></label>
+                  <label>{{ copy.sortBy }}<select [value]="historySort()" (change)="setHistorySort($any($event.target).value)"><option value="NEWEST">{{ copy.newest }}</option><option value="OLDEST">{{ copy.oldest }}</option><option value="RATING_DESC">{{ copy.highestRated }}</option><option value="RATING_ASC">{{ copy.lowestRated }}</option></select></label>
+                  <button class="profile-toolbar-dialog-done" type="button" (click)="closeProfileFilters()">Concluir</button>
+                </section>
+              </div>
+            }
+            <div class="profile-history-list">
+              @for (group of historyGroups(); track group.date ?? 'undated') {
+                <section class="profile-history-day">
+                  <button class="profile-history-day-toggle" type="button" [attr.aria-expanded]="!historyDayCollapsed(group.date)" (click)="toggleHistoryDay(group.date)">
+                    <span>{{ group.date ? weekdayDateLabel(group.date) : copy.dateUnavailable }}</span>
+                    <strong>{{ group.date ? dateLabel(group.date) : copy.dateUnavailable }}</strong>
+                    <small>{{ group.entries.length }} {{ copy.plays }} · {{ historyGroupRuntime(group.entries) }}</small>
+                  </button>
+                  @if (!historyDayCollapsed(group.date)) { @for (entry of group.entries; track entry.id) {
+                <article class="profile-history-card">
+                  @if (detailRoute(entry); as route) { <a class="profile-history-poster content-image-card" [routerLink]="route">@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || ''" /> }<app-content-image-actions [ratingValue]="entry.card?.stats?.averageScore == null ? null : entry.card!.stats!.averageScore!.toFixed(1)" [ratingLabel]="entry.card?.stats?.averageScore == null ? '' : 'Nota da comunidade ' + entry.card!.stats!.averageScore!.toFixed(1)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [actions]="profileImageActions" (actionSelected)="handleProfileImageAction(entry.content.type === 'MOVIE' ? 'MOVIE' : 'SERIES', entry.content.type === 'MOVIE' ? entry.content.tmdbId : entry.content.seriesTmdbId, $event.action.id)" /></a> }
+                  <div class="profile-history-body"><h3>{{ entry.card?.title || copy.unavailable }}</h3><p>{{ entry.content.type === 'MOVIE' ? copy.movies : copy.series }} @if (entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) { · T{{ entry.content.seasonNumber }} · E{{ entry.content.episodeNumber }} } @if (entry.watchNumber > 1) { · Reassistido {{ entry.watchNumber }}× }</p>@if (entry.comment) { <p class="profile-history-review">{{ entry.comment }}</p> }<small>{{ entry.likesCount }} curtidas · {{ entry.commentsCount }} comentários</small></div>
+                  @if (entry.score !== null) { <span class="profile-score">{{ entry.score }}/10</span> }
+                </article>
+                  } }
+                </section>
+              } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+            </div>
+            @if (data.totalPages > 1) {
+              <nav class="profile-pagination" aria-label="{{ copy.historyPagination }}">
+                <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+                @for (page of pageNumbers(data.totalPages); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                <button type="button" [disabled]="!data.hasNext" (click)="nextPage()">›</button>
+              </nav>
+            }
+          }
+        </section>
+      }
+
+      @case ('reviews') {
+        <section class="profile-content profile-section-page">
+          <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+            <div class="profile-subpage-hero-copy">
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <h1>{{ copy.tabs.reviews }}</h1>
+              <p class="profile-subpage-accent">{{ diary()?.totalElements ?? 0 | number }}{{ copy.ratingCount.replace('{count}', '') }}</p>
+              <p>Avaliações que {{ userName() }} escreveu sobre os filmes e séries que assistiu.</p>
+            </div>
+          </header>
+          <div class="profile-review-grid profile-review-grid--page">
+            @for (entry of diary()?.content ?? []; track entry.id) {
+              <article class="profile-review-card">
+                <div class="profile-review-title"><div class="profile-review-poster content-image-card">@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <a class="profile-review-poster-link" [routerLink]="detailRoute(entry)" [attr.aria-label]="'Abrir conteúdo: ' + (entry.card?.title || copy.unavailable)"><img [src]="poster" alt="" /></a> }<app-content-image-actions [ratingValue]="entry.card?.stats?.averageScore == null ? null : entry.card!.stats!.averageScore!.toFixed(1)" [ratingLabel]="entry.card?.stats?.averageScore == null ? '' : 'Nota da comunidade ' + entry.card!.stats!.averageScore!.toFixed(1)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [actions]="profileImageActions" [expanded]="activePosterMenu() === entry.id" (toggle)="togglePosterMenu(entry.id, $event)" (actionSelected)="handleProfileImageAction(entry.content.type === 'MOVIE' ? 'MOVIE' : 'SERIES', entry.content.type === 'MOVIE' ? entry.content.tmdbId : entry.content.seriesTmdbId, $event.action.id)" /></div><div class="profile-review-copy"><strong><a [routerLink]="['/diary/entry', entry.id]">{{ entry.card?.title || copy.unavailable }}</a></strong><span>{{ copy.watchDate.replace('{date}', dateLabel(entry.watchedDate)) }}</span></div>@if (entry.score !== null) { <b>{{ entry.score }}/10</b> }</div>
+                @if (entry.comment) { <p>{{ entry.comment }}</p> }
+                <small>{{ entry.likesCount }} curtidas · {{ entry.commentsCount }} comentários</small>
+              </article>
+            } @empty { <p class="profile-empty">{{ copy.noReviews }}</p> }
+          </div>
+          @if (diary()?.hasNext) { <button class="profile-load-more" type="button" (click)="nextPage()">{{ copy.loadMore }}</button> }
+        </section>
+      }
+
+      @case ('lists') {
+        <section class="profile-content profile-section-page">
+          <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+            <div class="profile-subpage-hero-copy">
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <h1>{{ copy.tabs.lists }}</h1>
+              <p class="profile-subpage-accent">{{ copy.listCount.replace('{count}', asText(lists()?.totalElements ?? 0)) }}</p>
+              <p>As listas que {{ userName() }} criou e as listas de outras pessoas que marcou com gostei, reunidas em um só lugar.</p>
+            </div>
+          </header>
+          <div class="profile-list-toolbar profile-data-toolbar">
+            <strong class="profile-data-toolbar-count">{{ listsCopy.listCount.replace('{count}', asText(lists()?.totalElements ?? 0)) }}</strong>
+            <div class="profile-toolbar-controls profile-toolbar-controls--desktop">
+              <select class="profile-toolbar-select" aria-label="Origem das listas" [value]="listSource()" (change)="setProfileListSource($any($event.target).value)">
+                <option value="ALL">{{ listsCopy.allLists }}</option>
+                <option value="CREATED">{{ listsCopy.myLists }}</option>
+                <option value="LIKED">{{ listsCopy.likedLists }}</option>
+              </select>
+              <select class="profile-toolbar-select" [attr.aria-label]="listsCopy.allTypes" [value]="listItemType() ?? 'ALL'" (change)="setProfileListType($any($event.target).value)">
+                <option value="ALL">{{ listsCopy.allTypes }}</option>
+                <option value="MOVIE">{{ listsCopy.movies }}</option>
+                <option value="SERIES">{{ listsCopy.series }}</option>
+                <option value="SEASON">{{ listsCopy.seasons }}</option>
+                <option value="EPISODE">{{ listsCopy.episodes }}</option>
+                <option value="LIST">{{ listsCopy.nestedLists }}</option>
+              </select>
+              <select class="profile-toolbar-select" aria-label="Ordenar listas" [value]="listSort()" (change)="setProfileListSort($any($event.target).value)">
+                <option value="none">Sem ordem</option>
+                <option value="updatedAt">{{ listsCopy.sortRecent }}</option>
+                <option value="rank">{{ listsCopy.sortManual }}</option>
+                <option value="name">{{ listsCopy.sortName }}</option>
+                <option value="likesCount">{{ listsCopy.sortLikes }}</option>
+                <option value="itemsCount">{{ listsCopy.sortItems }}</option>
+                <option value="commentsCount">{{ listsCopy.sortComments }}</option>
+              </select>
+              <button class="profile-toolbar-direction" type="button" [disabled]="listSort() === 'none'" [attr.aria-label]="listSortDirection() === 'desc' ? listsCopy.ascending : listsCopy.descending" (click)="toggleProfileListDirection()">{{ listSortDirection() === 'desc' ? '↓' : '↑' }}</button>
+            </div>
+            <button class="profile-toolbar-filter-trigger" type="button" [attr.aria-label]="listsCopy.filters" [attr.aria-expanded]="profileFiltersOpen()" aria-haspopup="dialog" (click)="toggleProfileFilters()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.1v5.2l-3.6 1.8v-7L4 5Z" /></svg>
+            </button>
+          </div>
+          @if (profileFiltersOpen()) {
+            <div class="profile-toolbar-backdrop" (click)="closeProfileFilters()">
+              <section class="profile-toolbar-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-list-filter-title" (click)="$event.stopPropagation()">
+                <header><h2 id="profile-list-filter-title">{{ listsCopy.filters }}</h2><button type="button" aria-label="Fechar filtros" (click)="closeProfileFilters()">×</button></header>
+                <label>{{ listsCopy.allLists }}<select [value]="listSource()" (change)="setProfileListSource($any($event.target).value)"><option value="ALL">{{ listsCopy.allLists }}</option><option value="CREATED">{{ listsCopy.myLists }}</option><option value="LIKED">{{ listsCopy.likedLists }}</option></select></label>
+                <label>{{ listsCopy.allTypes }}<select [value]="listItemType() ?? 'ALL'" (change)="setProfileListType($any($event.target).value)"><option value="ALL">{{ listsCopy.allTypes }}</option><option value="MOVIE">{{ listsCopy.movies }}</option><option value="SERIES">{{ listsCopy.series }}</option><option value="SEASON">{{ listsCopy.seasons }}</option><option value="EPISODE">{{ listsCopy.episodes }}</option><option value="LIST">{{ listsCopy.nestedLists }}</option></select></label>
+                <label>Ordenar por<select [value]="listSort()" (change)="setProfileListSort($any($event.target).value)"><option value="none">Sem ordem</option><option value="updatedAt">{{ listsCopy.sortRecent }}</option><option value="rank">{{ listsCopy.sortManual }}</option><option value="name">{{ listsCopy.sortName }}</option><option value="likesCount">{{ listsCopy.sortLikes }}</option><option value="itemsCount">{{ listsCopy.sortItems }}</option><option value="commentsCount">{{ listsCopy.sortComments }}</option></select></label>
+                <button class="profile-toolbar-dialog-done" type="button" (click)="closeProfileFilters()">Concluir</button>
+              </section>
+            </div>
+          }
+          <div class="profile-list-grid">
+            @for (list of profileListEntries(); track list.id) {
+              <a class="profile-list-card" [routerLink]="['/lists', list.id]">
+                <div class="profile-list-preview">@for (card of list.previewCards.slice(0, 4); track card.contentId || card.title) { @if (imageUrl(card.customPosterUrl || card.posterPath, 'w185'); as poster) { <img [src]="poster" [alt]="card.title || ''" /> } }</div>
+                <div class="profile-list-copy"><h2>{{ list.name }}</h2>@if (list.description) { <p>{{ list.description }}</p> }<small>{{ list.itemsCount }} itens · {{ list.likesCount }} curtidas</small><span>{{ list.visibility === 'PRIVATE' ? copy.privacyPrivate : list.visibility === 'FOLLOWERS' ? copy.privacyFollowers : copy.privacyPublic }}</span></div>
+              </a>
+            } @empty { <p class="profile-empty">{{ copy.noLists }}</p> }
+          </div>
+          @if (pageTotalPages() > 1) {
+            <nav class="profile-pagination" [attr.aria-label]="copy.listPagination">
+              <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+              @for (page of pageNumbers(pageTotalPages()); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+              <button type="button" [disabled]="!pageHasNext()" (click)="nextPage()">›</button>
+            </nav>
+          }
+        </section>
+      }
+
+      @case ('watchlist') {
+        <section class="profile-content profile-section-page">
+          <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+            <div class="profile-subpage-hero-copy">
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <h1>{{ copy.tabs.watchlist }}</h1>
+              <p class="profile-subpage-accent">{{ watchlist()?.aggregate?.totalCount ?? 0 }} títulos · {{ formatDuration(watchlist()?.aggregate?.totalRuntimeMinutes) }}</p>
+              <p>Filmes e séries que {{ userName() }} salvou para assistir depois, incluindo os títulos já lançados.</p>
+            </div>
+          </header>
+          <div class="profile-watchlist-toolbar profile-data-toolbar">
+            <div class="profile-watchlist-stats" aria-label="Resumo da watchlist do perfil">
+              <span [attr.aria-label]="watchlistCopy.totalRuntime + ': ' + formatDuration(watchlist()?.aggregate?.totalRuntimeMinutes)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ formatDuration(watchlist()?.aggregate?.totalRuntimeMinutes) }}</span>
+              <span [attr.aria-label]="(watchlist()?.aggregate?.totalCount ?? 0) + ' ' + watchlistCopy.items"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16m6-16v16"/></svg>{{ watchlist()?.aggregate?.totalCount ?? 0 }}</span>
+              <span [attr.aria-label]="(watchlist()?.aggregate?.upcomingCount ?? 0) + ' ' + watchlistCopy.upcomingReleases"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>{{ watchlist()?.aggregate?.upcomingCount ?? 0 }}</span>
+            </div>
+            <div class="profile-toolbar-controls profile-toolbar-controls--desktop">
+              <div class="profile-watchlist-type" role="group" [attr.aria-label]="watchlistCopy.contentType">
+                <button type="button" [class.profile-toolbar-choice--active]="watchlistType() === null" [attr.aria-pressed]="watchlistType() === null" (click)="setWatchlistType('')">{{ watchlistCopy.all }}</button>
+                <button type="button" [class.profile-toolbar-choice--active]="watchlistType() === 'MOVIE'" [attr.aria-pressed]="watchlistType() === 'MOVIE'" (click)="setWatchlistType('MOVIE')">{{ watchlistCopy.movies }}</button>
+                <button type="button" [class.profile-toolbar-choice--active]="watchlistType() === 'SERIES'" [attr.aria-pressed]="watchlistType() === 'SERIES'" (click)="setWatchlistType('SERIES')">{{ watchlistCopy.series }}</button>
+              </div>
+              <select class="profile-toolbar-select" [attr.aria-label]="watchlistCopy.genre" [value]="watchlistGenre() ?? ''" (change)="setWatchlistGenre($any($event.target).value)"><option value="">{{ watchlistCopy.allGenres }}</option>@for (genre of watchlistGenreOptions(); track genre) { <option [value]="genre">{{ genre }}</option> }</select>
+              <select class="profile-toolbar-select" [attr.aria-label]="watchlistCopy.sortBy" [value]="watchlistSort()" (change)="setWatchlistSort($any($event.target).value)"><option value="DATE_ADDED">{{ watchlistCopy.sortDateAdded }}</option><option value="RELEASE_DATE">{{ watchlistCopy.sortReleaseDate }}</option><option value="RUNTIME">{{ watchlistCopy.sortRuntime }}</option><option value="RATING">{{ watchlistCopy.sortRating }}</option><option value="TITLE">{{ watchlistCopy.sortTitle }}</option></select>
+              <button class="profile-toolbar-direction" type="button" [attr.aria-label]="watchlistDirection() === 'DESC' ? watchlistCopy.ascending : watchlistCopy.descending" (click)="toggleWatchlistDirection()">{{ watchlistDirection() === 'DESC' ? '↓' : '↑' }}</button>
+              <select class="profile-toolbar-select" aria-label="Status da watchlist" [value]="watchlistStatus()" (change)="setWatchlistStatus($any($event.target).value)"><option value="ALL">{{ watchlistCopy.all }}</option><option value="NEW">{{ watchlistCopy.new }}</option><option value="IN_PROGRESS">{{ watchlistCopy.inProgress }}</option><option value="UPCOMING">{{ watchlistCopy.upcoming }}</option></select>
+            </div>
+            <button class="profile-toolbar-filter-trigger" type="button" [attr.aria-label]="watchlistCopy.mobileFilters" [attr.aria-expanded]="profileFiltersOpen()" aria-haspopup="dialog" (click)="toggleProfileFilters()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.1v5.2l-3.6 1.8v-7L4 5Z" /></svg>
+            </button>
+          </div>
+          @if (profileFiltersOpen()) {
+            <div class="profile-toolbar-backdrop" (click)="closeProfileFilters()">
+              <section class="profile-toolbar-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-watchlist-filter-title" (click)="$event.stopPropagation()">
+                <header><h2 id="profile-watchlist-filter-title">{{ watchlistCopy.filters }}</h2><button type="button" aria-label="Fechar filtros" (click)="closeProfileFilters()">×</button></header>
+                <label>{{ watchlistCopy.contentType }}<select [value]="watchlistType() ?? ''" (change)="setWatchlistType($any($event.target).value)"><option value="">{{ watchlistCopy.all }}</option><option value="MOVIE">{{ watchlistCopy.movies }}</option><option value="SERIES">{{ watchlistCopy.series }}</option></select></label>
+                <label>{{ watchlistCopy.genre }}<select [value]="watchlistGenre() ?? ''" (change)="setWatchlistGenre($any($event.target).value)"><option value="">{{ watchlistCopy.allGenres }}</option>@for (genre of watchlistGenreOptions(); track genre) { <option [value]="genre">{{ genre }}</option> }</select></label>
+                <label>{{ watchlistCopy.sortBy }}<select [value]="watchlistSort()" (change)="setWatchlistSort($any($event.target).value)"><option value="DATE_ADDED">{{ watchlistCopy.sortDateAdded }}</option><option value="RELEASE_DATE">{{ watchlistCopy.sortReleaseDate }}</option><option value="RUNTIME">{{ watchlistCopy.sortRuntime }}</option><option value="RATING">{{ watchlistCopy.sortRating }}</option><option value="TITLE">{{ watchlistCopy.sortTitle }}</option></select></label>
+                <label>Status<select [value]="watchlistStatus()" (change)="setWatchlistStatus($any($event.target).value)"><option value="ALL">{{ watchlistCopy.all }}</option><option value="NEW">{{ watchlistCopy.new }}</option><option value="IN_PROGRESS">{{ watchlistCopy.inProgress }}</option><option value="UPCOMING">{{ watchlistCopy.upcoming }}</option></select></label>
+                <button class="profile-toolbar-dialog-done" type="button" (click)="closeProfileFilters()">{{ watchlistCopy.done }}</button>
+              </section>
+            </div>
+          }
+          <div class="profile-poster-grid">
+            @for (item of watchlist()?.content ?? []; track item.id) {
+              <a class="profile-poster-card content-image-card" [routerLink]="contentRoute(item.card.type, item.card.tmdbId, item.card.seriesTmdbId)">
+                <div class="profile-poster content-image-card">@if (imageUrl(item.card.customPosterUrl || item.card.posterPath); as poster) { <img [src]="poster" [alt]="item.card.title || ''" /> } @else { <span>{{ item.card.title || copy.unavailable }}</span> }<app-content-image-actions [ratingValue]="item.card.stats?.averageScore == null ? null : item.card.stats.averageScore.toFixed(1)" [ratingLabel]="item.card.stats?.averageScore == null ? '' : 'Nota da comunidade ' + item.card.stats.averageScore.toFixed(1)" [optionsLabel]="'Opções para ' + (item.card.title || '')" [actions]="profileImageActions" (actionSelected)="handleProfileImageAction(item.card.type === 'MOVIE' ? 'MOVIE' : 'SERIES', item.card.type === 'MOVIE' ? item.card.tmdbId : item.card.seriesTmdbId || item.card.tmdbId, $event.action.id)" /></div>
+                <strong>{{ item.card.title || copy.unavailable }}</strong><small>{{ item.card.releaseYear ?? '—' }}</small>
+              </a>
+            } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+          </div>
+          @if (pageTotalPages() > 1) {
+            <nav class="profile-pagination" [attr.aria-label]="copy.watchlistPagination">
+              <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+              @for (page of pageNumbers(pageTotalPages()); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+              <button type="button" [disabled]="!pageHasNext()" (click)="nextPage()">›</button>
+            </nav>
+          }
+        </section>
+      }
+
+      @case ('picks') {
+        <section class="profile-content profile-section-page">
+          <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+            <div class="profile-subpage-hero-copy">
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <h1>{{ copy.tabs.picks }}</h1>
+              <p class="profile-subpage-accent">{{ copy.pickCount.replace('{count}', asText(picks()?.totalElements ?? 0)) }}</p>
+              <p>As escolhas respondidas por {{ userName() }} e os modelos de indicação que criou para a comunidade.</p>
+            </div>
+          </header>
+          <div class="profile-picks-toolbar profile-data-toolbar">
+            <strong class="profile-data-toolbar-count">{{ copy.pickCount.replace('{count}', asText(picks()?.totalElements ?? 0)) }}</strong>
+            <a class="profile-picks-create" routerLink="/picks/create" [attr.aria-label]="picksCopy.createTemplate" [title]="picksCopy.createTemplate"><span aria-hidden="true">+</span><span class="profile-toolbar-visually-hidden">{{ picksCopy.createTemplate }}</span></a>
+          </div>
+          <div class="profile-picks-grid">
+            @for (pick of picks()?.content ?? []; track pick.id) {
+              <a class="profile-pick-card" [routerLink]="['/picks', pick.id]">
+                <div class="profile-pick-card-head"><span>{{ dateLabel(pick.createdAt) }}</span><span>{{ pick.visibility === 'PRIVATE' ? copy.privacyPrivate : pick.visibility === 'FOLLOWERS' ? copy.privacyFollowers : copy.privacyPublic }}</span></div>
+                <h2>{{ pickPreview(pick) }}</h2>
+                <div class="profile-pick-answers">@for (answer of pick.answeredCategories.slice(0, 3); track answer.categoryId || answer.name) { <div><strong>{{ answer.name }}</strong><span>{{ answer.target?.contentCard?.title || answer.target?.person?.name || '—' }}</span></div> }</div>
+                <small>{{ pick.answeredCategories.length }} respostas · {{ pick.likesCount ?? 0 }} curtidas · {{ pick.commentsCount }} comentários</small>
+              </a>
+            } @empty { <p class="profile-empty">{{ copy.noPicks }}</p> }
+          </div>
+          @if (pageTotalPages() > 1) {
+            <nav class="profile-pagination" [attr.aria-label]="copy.picksPagination">
+              <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+              @for (page of pageNumbers(pageTotalPages()); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+              <button type="button" [disabled]="!pageHasNext()" (click)="nextPage()">›</button>
+            </nav>
+          }
+        </section>
+      }
+
+      @case ('episode-ratings-map') {
+        <section class="profile-content profile-section-page">
+          <header class="profile-subpage-hero profile-subpage-hero--identity" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+            <div class="profile-subpage-hero-copy">
+              <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
+                @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
+              </a>
+              <h1>{{ copy.mapTitle }}</h1>
+              <p class="profile-subpage-accent">{{ episodeMap()?.totalElements ?? 0 | number }} séries · {{ episodeMap()?.totalWatchedEpisodeCount ?? 0 | number }} / {{ episodeMap()?.totalEpisodeCount ?? 0 | number }} episódios</p>
+              <p>Como {{ userName() }} avaliou cada episódio das séries que acompanha, em todos os capítulos assistidos.</p>
+            </div>
+          </header>
+          <section class="profile-map-summary" aria-label="Resumo das notas de episódios">
+            <div class="profile-map-summary-inner">
+              <dl><div><dt>{{ episodeMap()?.totalElements ?? 0 | number }}</dt><dd>séries</dd></div></dl>
+              <dl><div><dt>{{ episodeMap()?.totalWatchedEpisodeCount ?? 0 | number }} / {{ episodeMap()?.totalEpisodeCount ?? 0 | number }}</dt><dd>episódios assistidos</dd></div></dl>
+            </div>
+          </section>
+          <div class="profile-map-grid">
+            @for (item of episodeMap()?.series ?? []; track item.seriesTmdbId) {
+              <a class="profile-map-card" [routerLink]="mapRoute(item.seriesTmdbId)">
+                @if (imageUrl(item.customPosterUrl || item.posterPath); as poster) { <img [src]="poster" [alt]="item.title || ''" /> }
+                <div><h2>{{ item.title || copy.unavailable }}</h2><span>{{ item.releaseYear ?? '—' }}</span><strong>{{ item.watchedEpisodeCount ?? 0 }} / {{ item.totalEpisodeCount ?? 0 }} episódios</strong></div>
+              </a>
+            } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+          </div>
+          @if (pageTotalPages() > 1) {
+            <nav class="profile-pagination" [attr.aria-label]="copy.ratingsMapPagination">
+              <button type="button" [disabled]="currentPage() === 1" (click)="previousPage()">‹</button>
+              @for (page of pageNumbers(pageTotalPages()); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+              <button type="button" [disabled]="!pageHasNext()" (click)="nextPage()">›</button>
+            </nav>
+          }
+        </section>
+      }
+
+      @case ('episode-ratings-map-show') {
+        <section class="profile-content profile-section-page profile-map-detail">
+          <header class="profile-subpage-hero profile-map-detail-hero" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
+            <div class="profile-map-detail-hero-inner">
+              <nav class="profile-map-detail-breadcrumb" aria-label="Navegação estrutural">
+                <a [routerLink]="selectedSectionUrl('episode-ratings-map')">{{ copy.mapTitle }}</a>
+                <span aria-hidden="true">›</span>
+                <span>{{ episodeGrid()?.title || copy.unavailable }}</span>
+              </nav>
+              <div class="profile-map-detail-hero-copy">
+                <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
+                </a>
+                <h1>{{ episodeGrid()?.title || copy.unavailable }} {{ copy.mapTitle }}</h1>
+                <p>Como {{ userName() }} avaliou cada episódio, temporada por temporada.</p>
+              </div>
+            </div>
+          </header>
+          <div class="profile-map-ratings-bar">
+            <div class="profile-map-ratings-bar-inner">
+              <div class="profile-edition-switch profile-map-ratings-switch" role="group" [attr.aria-label]="copy.ratingView">
+                <button type="button" [class.profile-edition-active]="mapRatingMode() === 'PERSONAL'" [attr.aria-pressed]="mapRatingMode() === 'PERSONAL'" (click)="setMapRatingMode('PERSONAL')">{{ copy.myEpisodeRatings.replace('{name}', userName()) }}</button>
+                <button type="button" [class.profile-edition-active]="mapRatingMode() === 'COMMUNITY'" [attr.aria-pressed]="mapRatingMode() === 'COMMUNITY'" (click)="setMapRatingMode('COMMUNITY')">{{ copy.communityEpisodeRatings }}</button>
+              </div>
+              <button class="profile-map-share" type="button" [attr.aria-label]="copy.shareMap" (click)="openSharePreview($event)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
+                <span>{{ copy.shareMap }}</span>
+              </button>
+            </div>
+          </div>
+          <section class="profile-map-show-content">
+            <div class="profile-map-show-layout">
+              <aside class="profile-map-show-summary">
+                @if (imageUrl(episodeGrid()?.customPosterUrl || episodeGrid()?.posterPath); as poster) {
+                  @if (episodeGrid()?.seriesTmdbId; as tmdbId) { <a class="profile-map-show-poster" [routerLink]="['/content/series', tmdbId]" [attr.aria-label]="episodeGrid()?.title"><img [src]="poster" alt="" /></a> }
+                  @else { <span class="profile-map-show-poster"><img [src]="poster" [alt]="episodeGrid()?.title || ''" /></span> }
+                }
+                <div><h2>{{ episodeGrid()?.title || copy.unavailable }}</h2><p>{{ episodeGrid()?.releaseYear ?? '' }}</p><strong>{{ episodeGrid()?.overallAverageScore?.toFixed(1) ?? '0.0' }} <span>({{ episodeGrid()?.overallRatingCount ?? 0 | number }})</span></strong></div>
+              </aside>
+              <div class="profile-map-show-ratings">
+                <ul class="profile-map-rating-legend" aria-label="Notas de episódios">
+                  @for (entry of copy.ratingLegend; track entry.score) { <li><span [attr.data-score]="entry.score === '≤ 2' ? 2 : entry.score"></span>{{ entry.label }} <strong>{{ entry.score }}</strong></li> }
+                </ul>
+                <div class="profile-episode-map" role="grid" aria-label="{{ copy.mapTitle }}">
+                  <div class="profile-map-scroll">
+                    <div class="profile-episode-row profile-episode-row--header" role="row"><strong aria-hidden="true"></strong>@for (season of episodeSeasons(); track season.seasonNumber) { <span role="columnheader">T{{ season.seasonNumber }}</span> }</div>
+                    @for (episodeNumber of episodeNumbers(); track episodeNumber) {
+                      <div class="profile-episode-row" role="row"><strong role="rowheader">E{{ episodeNumber }}</strong>@for (season of episodeSeasons(); track season.seasonNumber) { @if (episodeAt(episodeNumber, season.seasonNumber); as episode) { <a role="gridcell" [routerLink]="episodeRoute(episodeGrid()?.seriesTmdbId || '', season.seasonNumber, episodeNumber)" [title]="mapEpisodeLabel(episode)" [attr.aria-label]="mapEpisodeLabel(episode)" [attr.data-score]="mapEpisodeBucket(episode)">{{ mapEpisodeText(episode) }}</a> } @else { <span class="profile-episode-cell--empty" role="gridcell" aria-hidden="true"></span> } }</div>
+                    }
+                    <div class="profile-episode-row profile-episode-row--average" role="row"><strong role="rowheader">{{ copy.seasonAverage }}</strong>@for (season of episodeSeasons(); track season.seasonNumber) { <span role="gridcell" [attr.aria-label]="copy.seasonAverage + ' ' + season.seasonNumber + ': ' + episodeSeasonAverage(season.episodes)">{{ episodeSeasonAverage(season.episodes) }}</span> }</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+      }
+
+      @case ('month-in-review') {
+        <section class="profile-content profile-section-page profile-stats-page">
+          @if (monthReview(); as data) {
+            <header class="profile-review-hero profile-review-hero--month">
+              <div class="profile-review-hero-posters" aria-hidden="true">
+                @if (mode() === 'EPISODE') {
+                  @for (entry of data.topSeriesByWatchTime.slice(0, 3); track entry.seriesTmdbId) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }
+                } @else {
+                  @for (card of data.topLongestMovieCards.slice(0, 3); track card.contentId || card.tmdbId) { @if (imageUrl(card.customPosterUrl || card.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }
+                }
+              </div>
+              <div class="profile-review-hero-copy">
+                <span class="profile-review-hero-owner">
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span class="profile-review-hero-avatar" aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  {{ userName() }}
+                </span>
+                <h1><span class="profile-review-title-primary">{{ monthLabel(selectedMonth()).split(' de ')[0] }}</span><span class="profile-review-title-secondary">{{ selectedMonth().slice(0, 4) }} · {{ copy.tabs.monthInReview }}</span></h1>
+                <p>Todos os episódios, filmes e avaliações que {{ userName() }} registrou neste mês.</p>
+              </div>
+            </header>
+            <div class="profile-review-controls profile-review-controls--period"><div class="profile-period-nav"><button type="button" aria-label="Mês anterior" (click)="monthChange(-1)">‹</button><span>{{ monthLabel(selectedMonth()) }}</span><button type="button" aria-label="Próximo mês" (click)="monthChange(1)">›</button></div><div class="profile-edition-switch"><button type="button" [class.profile-edition-active]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">{{ copy.editionSeries }}</button><button type="button" [class.profile-edition-active]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">{{ copy.editionMovies }}</button></div></div>
+            <section class="profile-review-overview profile-review-overview--period" [class.profile-review-overview--two]="mode() === 'EPISODE'" aria-label="Resumo do mês"><article><span>{{ mode() === 'MOVIE' ? 'Filmes assistidos' : 'Episódios assistidos' }}</span><strong>{{ data.watchCount | number }}</strong></article><article><span>{{ copy.timeWatched }}</span><strong>{{ formatDuration(data.minutesWatched) }}</strong></article>@if (mode() === 'MOVIE') { <article><span>{{ copy.averagePerDay }}</span><strong>{{ formatDuration(data.minutesWatched / elapsedDaysInMonth(selectedMonth())) }}</strong></article> }</section>
+
+            <section class="profile-section profile-panel profile-review-activity">
+              <div class="profile-section-heading"><h2>{{ mode() === 'MOVIE' ? 'Última atividade em ' : 'Última atividade em ' }}{{ monthLabel(selectedMonth()) }}</h2><a [routerLink]="selectedSectionUrl('history')">{{ copy.watchHistory }} <span aria-hidden="true">›</span></a></div>
+              <div class="profile-review-activity-list">
+                @for (entry of data.recentWatched.slice(0, 6); track entry.id) {
+                  <article class="profile-review-activity-row">
+                    @if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || copy.unavailable" /> } @else { <span class="profile-review-poster-fallback" aria-hidden="true"></span> }
+                    <div><strong>{{ entry.card?.title || copy.unavailable }}</strong><span>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : (entry.card?.releaseYear ?? '') }}</span></div>
+                    <time>{{ dateLabel(entry.watchedDate) }}</time>
+                    @if (entry.score !== null) { <b class="profile-review-score">{{ entry.score }}</b> }
+                  </article>
+                } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+              </div>
+            </section>
+
+            <section class="profile-review-grid profile-review-first-last" aria-label="Primeiro e último conteúdo do mês">
+              @for (entry of [data.firstWatched, data.lastWatched]; track $index; let i = $index) {
+                @if (entry; as watched) {
+                  <article class="profile-section profile-panel profile-review-featured">
+                    @if (imageUrl(watched.customPosterUrl || watched.card?.customPosterUrl || watched.card?.posterPath); as poster) { <img [src]="poster" [alt]="watched.card?.title || copy.unavailable" /> } @else { <span class="profile-review-poster-fallback" aria-hidden="true"></span> }
+                    <div><small>{{ i === 0 ? 'Primeiro registro do mês' : 'Último registro do mês' }}</small><h2>{{ watched.card?.title || copy.unavailable }}</h2><span>{{ watched.card?.seasonNumber !== null && watched.card?.episodeNumber !== null ? 'T' + watched.card?.seasonNumber + ' · E' + watched.card?.episodeNumber : (watched.card?.releaseYear ?? '') }}</span><dl><div><dt>Assistido em</dt><dd>{{ dateLabel(watched.watchedDate) }}</dd></div><div><dt>{{ copy.rating }}</dt><dd>{{ watched.score ?? 0 }}/10</dd></div><div><dt>Duração</dt><dd>{{ formatDuration(watched.card?.runtimeMinutes) }}</dd></div></dl></div>
+                  </article>
+                }
+              }
+            </section>
+
+            <section class="profile-section profile-panel">
+              <div class="profile-section-heading"><div><h2>{{ mode() === 'MOVIE' ? 'Filmes por dia' : 'Episódios por dia' }}</h2><p>{{ formatDuration(data.minutesWatched) }} · {{ data.watchCount | number }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</p></div></div>
+              <div class="profile-review-kpis"><div><span>Média diária</span><strong>{{ formatDuration(data.minutesWatched / elapsedDaysInMonth(selectedMonth())) }}</strong></div><div><span>Dia mais ativo</span><strong>{{ data.minutesPerDay.length ? dateLabel(busiestDay(data.minutesPerDay).watchedDate) : '0' }}</strong></div><div><span>Dias com atividade</span><strong>{{ data.minutesPerDay.length }} de {{ elapsedDaysInMonth(selectedMonth()) }}</strong></div></div>
+              <div class="profile-bars profile-bars--daily">@for (day of data.minutesPerDay; track day.watchedDate) { <div [title]="dateLabel(day.watchedDate) + ' · ' + formatDuration(day.minutesWatched)"><i [style.height]="barHeight(day.minutesWatched, maxMinutes(data.minutesPerDay))"></i><small>{{ day.watchedDate.slice(-2) }}</small></div> }</div>
+            </section>
+
+            <div class="profile-two-columns">
+              <article class="profile-section profile-panel"><h2>{{ mode() === 'MOVIE' ? 'Filmes por dia da semana' : 'Episódios por dia da semana' }}</h2>@for (day of data.watchCountByDayOfWeek; track day.dayOfWeek) { <div class="profile-genre-row"><span>{{ weekdayName(day.dayOfWeek) }}</span><div><i [style.width]="countBarWidth(day.count, data.watchCountByDayOfWeek)"></i></div><strong>{{ day.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article>
+              <article class="profile-section profile-panel"><div class="profile-section-heading"><h2>Avaliações de {{ monthLabel(selectedMonth()) }}</h2><span>{{ ratingTotal(data.ratingsDistribution) }} {{ copy.ratingCount.replace('{count}', '').trim() }}</span></div><div class="profile-rating-bars">@for (score of ratingScores; track score) { <div [attr.aria-label]="copy.rating + ' ' + score + ': ' + ratingCount(data.ratingsDistribution, score)"><span>{{ score }}</span><i><b [style.height]="ratingBarHeight(ratingCount(data.ratingsDistribution, score), data.ratingsDistribution)"></b></i><small>{{ ratingCount(data.ratingsDistribution, score) }}</small></div> }</div></article>
+            </div>
+
+            <app-profile-country-map
+              title="Assistidos por país"
+              [description]="'Países de origem dos conteúdos assistidos em ' + monthLabel(selectedMonth()) + '.'"
+              emptyText="Os dados de países não estão disponíveis nesta retrospectiva."
+            />
+
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.genres }}</h2><p>Gêneros mais assistidos no mês.</p></div></div>@for (genre of data.genreCounts; track genre.genre; let i = $index) { <div class="profile-genre-row"><span>{{ genre.genre }}</span><div><i [style.width]="genreBarWidth(genre.count, data.genreCounts)" [attr.data-color]="i % 4"></i></div><strong>{{ genre.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</section>
+
+            <div class="profile-two-columns">
+              <article class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.topRated }}</h2></div>@for (entry of data.topRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : dateLabel(entry.watchedDate) }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article>
+              <article class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.bottomRated }}</h2></div>@for (entry of data.bottomRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : dateLabel(entry.watchedDate) }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article>
+            </div>
+
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ mode() === 'MOVIE' ? 'Filmes com maior duração' : 'Séries mais assistidas por tempo' }}</h2><p>{{ monthLabel(selectedMonth()) }}</p></div></div>
+              @if (mode() === 'EPISODE') { @for (entry of data.topSeriesByWatchTime; track entry.seriesTmdbId; let i = $index) { <div class="profile-ranked-row"> <span>{{ i + 1 }}</span>@if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ formatDuration(entry.totalMinutesWatched) }}</small></div><b>{{ formatDuration(entry.totalMinutesWatched) }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> } }
+              @else { @for (card of data.topLongestMovieCards; track card.contentId || card.tmdbId; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(card.customPosterUrl || card.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ card.title || copy.unavailable }}</strong><small>{{ card.releaseYear ?? '' }}</small></div><b>{{ formatDuration(card.runtimeMinutes) }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> } }
+            </section>
+
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchedWith }}</h2><p>Pessoas com quem você mais assistiu neste mês.</p></div></div><div class="profile-companion-list">@for (entry of data.topWatchCompanions; track entry.companion.id || entry.companion.username; let i = $index) { <article><span class="profile-rank-pill">{{ i + 1 }}</span>@if (entry.companion.profilePicture) { <img [src]="entry.companion.profilePicture" [alt]="entry.companion.name || entry.companion.username || ''" /> } @else { <span class="profile-companion-avatar">{{ (entry.companion.name || entry.companion.username || '?').charAt(0).toUpperCase() }}</span> }<div><strong>{{ entry.companion.name || entry.companion.username || copy.unavailable }}</strong><small>@{{ entry.companion.username || '' }}</small></div><b>{{ entry.watchCount }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</b></article> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div></section>
+          }
+        </section>
+      }
+
+      @case ('year-in-review') {
+        <section class="profile-content profile-section-page profile-stats-page">
+          @if (yearReview(); as data) {
+            <header class="profile-review-hero profile-review-hero--year"><div class="profile-review-hero-posters" aria-hidden="true">@for (entry of data.longestWatched.slice(0, 3); track entry.contentId || entry.tmdbId || entry.seriesTmdbId) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }</div><div class="profile-review-hero-copy"><span class="profile-review-hero-owner">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span class="profile-review-hero-avatar" aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</span><h1><span class="profile-review-title-primary">{{ selectedYear() }}</span><span class="profile-review-title-secondary">{{ copy.tabs.yearInReview }}</span></h1><p>Todos os episódios, filmes e avaliações que {{ userName() }} registrou neste ano.</p></div></header>
+            <div class="profile-review-controls profile-review-controls--period"><div class="profile-period-nav"><button type="button" aria-label="Ano anterior" (click)="yearChange(-1)">‹</button><span>{{ selectedYear() }}</span><button type="button" aria-label="Próximo ano" (click)="yearChange(1)">›</button></div><div class="profile-edition-switch"><button type="button" [class.profile-edition-active]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">{{ copy.editionSeries }}</button><button type="button" [class.profile-edition-active]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">{{ copy.editionMovies }}</button></div></div>
+            <section class="profile-review-overview profile-review-overview--period" [class.profile-review-overview--two]="mode() === 'EPISODE'" aria-label="Resumo do ano"><article><span>{{ mode() === 'MOVIE' ? 'Filmes assistidos' : 'Episódios assistidos' }}</span><strong>{{ data.watchCount | number }}</strong></article><article><span>{{ copy.timeWatched }}</span><strong>{{ formatDuration(data.minutesWatched) }}</strong></article>@if (mode() === 'MOVIE') { <article><span>{{ copy.averagePerDay }}</span><strong>{{ formatDuration(data.averageMinutesPerDay) }}</strong></article> }</section>
+            <section class="profile-review-averages"><header><h2>Médias de tempo assistido</h2><p>Uma visão da sua frequência ao longo do ano.</p></header><div class="profile-review-average-stack"><article><span>Média por mês</span><strong>{{ formatHours(data.averageMinutesPerMonth) }} h</strong><small>{{ formatCount(data.averageMinutesPerMonth) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por semana</span><strong>{{ formatHours(data.averageMinutesPerWeek) }} h</strong><small>{{ formatCount(data.averageMinutesPerWeek) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por dia</span><strong>{{ formatHours(data.averageMinutesPerDay) }} h</strong><small>{{ formatCount(data.averageMinutesPerDay) }} minutos</small></article></div></section>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchCountByMonth }}</h2><p>{{ mode() === 'MOVIE' ? 'Filmes' : 'Episódios' }} assistidos em {{ selectedYear() }}.</p></div></div><div class="profile-review-kpis"><div><span>Mês mais ativo</span><strong>{{ data.watchCountByMonth.length ? monthName(busiestByCount(data.watchCountByMonth).month) : '0' }} · {{ data.watchCountByMonth.length ? busiestByCount(data.watchCountByMonth).count : 0 }}</strong></div><div><span>Média mensal</span><strong>{{ formatCount(data.watchCount / 12) }}</strong></div><div><span>Menos ativo</span><strong>{{ data.watchCountByMonth.length ? monthName(quietestByCount(data.watchCountByMonth).month) : '0' }} · {{ data.watchCountByMonth.length ? quietestByCount(data.watchCountByMonth).count : 0 }}</strong></div></div><div class="profile-bars profile-bars--months">@for (entry of data.watchCountByMonth; track entry.month) { <div [title]="monthName(entry.month) + ' · ' + entry.count"><i [style.height]="barHeight(entry.count, maxCount(data.watchCountByMonth))"></i><small>{{ monthName(entry.month) }}</small></div> }</div></section>
+            <div class="profile-two-columns">
+              <article class="profile-section profile-panel"><h2>{{ mode() === 'MOVIE' ? 'Filmes por dia da semana' : 'Episódios por dia da semana' }}</h2>@for (day of data.watchCountByDayOfWeek; track day.dayOfWeek) { <div class="profile-genre-row"><span>{{ weekdayName(day.dayOfWeek) }}</span><div><i [style.width]="countBarWidth(day.count, data.watchCountByDayOfWeek)"></i></div><strong>{{ day.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article>
+              <article class="profile-section profile-panel"><h2>Primeiro e último registro do ano</h2><div class="profile-review-first-last-compact">@for (entry of [data.firstWatched, data.lastWatched]; track $index; let i = $index) { @if (entry; as watched) { <div class="profile-ranked-row profile-ranked-row--compact">@if (imageUrl(watched.customPosterUrl || watched.card?.customPosterUrl || watched.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><small>{{ i === 0 ? 'Primeiro assistido' : 'Último assistido' }}</small><strong>{{ watched.card?.title || copy.unavailable }}</strong><span>{{ watched.card?.seasonNumber !== null && watched.card?.episodeNumber !== null ? 'T' + watched.card?.seasonNumber + ' · E' + watched.card?.episodeNumber : dateLabel(watched.watchedDate) }}</span></div><b>{{ watched.score ?? 0 }}</b></div> } }</div></article>
+            </div>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ mode() === 'MOVIE' ? 'Títulos que ocuparam mais tempo' : 'Séries que ocuparam mais tempo' }}</h2><p>Os conteúdos com maior tempo assistido neste ano.</p></div></div>@for (entry of data.longestWatched; track entry.contentId || entry.tmdbId || entry.seriesTmdbId; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ formatDuration(entry.totalMinutesWatched) }}</small></div><b>{{ formatDuration(entry.totalMinutesWatched) }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</section>
+            <app-profile-country-map
+              title="Assistidos por país"
+              [description]="'Países de origem dos conteúdos assistidos em ' + selectedYear() + '.'"
+              emptyText="Os dados de países não estão disponíveis nesta retrospectiva."
+            />
+            <div class="profile-two-columns"><article class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.genres }}</h2><p>Gêneros mais assistidos em {{ selectedYear() }}.</p></div></div>@for (genre of data.genreCounts; track genre.genre; let i = $index) { <div class="profile-genre-row"><span>{{ genre.genre }}</span><div><i [style.width]="genreBarWidth(genre.count, data.genreCounts)" [attr.data-color]="i % 4"></i></div><strong>{{ genre.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article><article class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.ratings }}</h2><span>{{ ratingTotal(data.ratingsDistribution) }} {{ copy.ratingCount.replace('{count}', '').trim() }}</span></div><div class="profile-rating-bars">@for (score of ratingScores; track score) { <div [attr.aria-label]="copy.rating + ' ' + score + ': ' + ratingCount(data.ratingsDistribution, score)"><span>{{ score }}</span><i><b [style.height]="ratingBarHeight(ratingCount(data.ratingsDistribution, score), data.ratingsDistribution)"></b></i><small>{{ ratingCount(data.ratingsDistribution, score) }}</small></div> }</div></article></div>
+            <div class="profile-two-columns"><article class="profile-section profile-panel"><h2>{{ copy.topRated }}</h2>@for (entry of data.topRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : dateLabel(entry.watchedDate) }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article><article class="profile-section profile-panel"><h2>{{ copy.bottomRated }}</h2>@for (entry of data.bottomRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : dateLabel(entry.watchedDate) }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article></div>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchedWith }}</h2><p>Pessoas com quem você mais assistiu neste ano.</p></div></div><div class="profile-companion-list">@for (entry of data.topWatchCompanions; track entry.companion.id || entry.companion.username; let i = $index) { <article><span class="profile-rank-pill">{{ i + 1 }}</span>@if (entry.companion.profilePicture) { <img [src]="entry.companion.profilePicture" [alt]="entry.companion.name || entry.companion.username || ''" /> } @else { <span class="profile-companion-avatar">{{ (entry.companion.name || entry.companion.username || '?').charAt(0).toUpperCase() }}</span> }<div><strong>{{ entry.companion.name || entry.companion.username || copy.unavailable }}</strong><small>@{{ entry.companion.username || '' }}</small></div><b>{{ entry.watchCount }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</b></article> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div></section>
+          }
+        </section>
+      }
+
+      @case ('all-time-stats') {
+        <section class="profile-content profile-section-page profile-stats-page">
+          @if (allTime(); as data) {
+            <header class="profile-review-hero profile-review-hero--all-time"><div class="profile-review-hero-posters" aria-hidden="true">@for (entry of (allTimeEdition()?.mostLoggedContent ?? data.mostLoggedContent).slice(0, 3); track entry.card?.tmdbId || $index) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }</div><div class="profile-review-hero-copy"><span class="profile-review-hero-owner">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span class="profile-review-hero-avatar" aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</span><h1><span class="profile-review-title-primary">Desde o início</span><span class="profile-review-title-secondary">Estatísticas</span></h1><p>Todos os episódios, filmes e avaliações da trajetória de {{ userName() }} no Watchwise.</p></div></header>
+            <div class="profile-review-controls profile-review-controls--all-time"><span></span><div class="profile-edition-switch"><button type="button" [class.profile-edition-active]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">{{ copy.editionSeries }}</button><button type="button" [class.profile-edition-active]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">{{ copy.editionMovies }}</button></div></div>
+            <section class="profile-review-overview profile-review-overview--all-time" [class.profile-review-overview--two]="mode() === 'EPISODE'" aria-label="Totais desde o início"><article><span>{{ copy.timeWatched }}</span><strong>{{ formatHours(allTimeEdition()?.minutesWatched ?? (mode() === 'MOVIE' ? data.totalMinutesWatchedMovies : data.totalMinutesWatchedEpisodes)) }} h</strong><small>{{ formatCount(allTimeEdition()?.minutesWatched ?? (mode() === 'MOVIE' ? data.totalMinutesWatchedMovies : data.totalMinutesWatchedEpisodes)) }} minutos de {{ mode() === 'MOVIE' ? 'filmes' : 'séries' }}</small></article><article><span>{{ mode() === 'MOVIE' ? 'Filmes assistidos' : 'Episódios assistidos' }}</span><strong>{{ allTimeEdition()?.watchedCount ?? (mode() === 'MOVIE' ? data.totalMoviesWatched : data.totalEpisodesWatched) | number }}</strong><small>{{ mode() === 'MOVIE' ? 'Filmes registrados no diário' : 'Episódios registrados no diário' }}</small></article>@if (mode() === 'MOVIE') { <article><span>Idas ao cinema</span><strong>{{ allTimeEdition()?.totalTheaterVisits ?? data.totalTheaterVisits | number }}</strong><small>Visitas registradas</small></article> }</section>
+            <section class="profile-review-averages"><header><h2>Médias de tempo assistido</h2><p>Uma visão da sua frequência ao longo dos anos.</p></header><div class="profile-review-average-stack"><article><span>Média por mês</span><strong>{{ formatHours(allTimeEdition()?.averageMinutesPerMonth ?? data.averageMinutesPerMonth) }} h</strong><small>{{ formatCount(allTimeEdition()?.averageMinutesPerMonth ?? data.averageMinutesPerMonth) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por semana</span><strong>{{ formatHours(allTimeEdition()?.averageMinutesPerWeek ?? data.averageMinutesPerWeek) }} h</strong><small>{{ formatCount(allTimeEdition()?.averageMinutesPerWeek ?? data.averageMinutesPerWeek) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por dia</span><strong>{{ formatHours(allTimeEdition()?.averageMinutesPerDay ?? data.averageMinutesPerDay) }} h</strong><small>{{ formatCount(allTimeEdition()?.averageMinutesPerDay ?? data.averageMinutesPerDay) }} minutos</small></article></div></section>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchCountByYear }}</h2><p>{{ mode() === 'MOVIE' ? 'Filmes' : 'Episódios' }} assistidos em cada ano.</p></div></div><div class="profile-bars profile-bars--months">@for (item of allTimeEdition()?.watchCountByYear ?? (mode() === 'MOVIE' ? data.watchCountByYearMovies : data.watchCountByYearEpisodes); track item.year) { <div [title]="item.year + ' · ' + item.count"><i [style.height]="barHeight(item.count, maxCount(allTimeEdition()?.watchCountByYear ?? (mode() === 'MOVIE' ? data.watchCountByYearMovies : data.watchCountByYearEpisodes)))"></i><small>{{ item.year }}</small></div> }</div></section>
+            <div class="profile-two-columns"><article class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>Assistidos por década</h2><p>Conteúdos agrupados pela década de lançamento.</p></div></div>@for (item of allTimeEdition()?.watchCountByDecade ?? data.watchCountByDecade; track item.decade) { <div class="profile-genre-row"><span>{{ item.decade }}–{{ item.decade + 9 }}</span><div><i [style.width]="countBarWidth(item.count, allTimeEdition()?.watchCountByDecade ?? data.watchCountByDecade)"></i></div><strong>{{ item.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article><article class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.genres }}</h2><p>{{ mode() === 'MOVIE' ? 'Gêneros dos filmes assistidos.' : 'Gêneros das séries assistidas.' }}</p></div></div>@for (genre of allTimeEdition()?.genreCounts ?? (mode() === 'MOVIE' ? data.genreCountsMovies : data.genreCountsSeries); track genre.genre; let i = $index) { <div class="profile-genre-row"><span>{{ genre.genre }}</span><div><i [style.width]="genreBarWidth(genre.count, allTimeEdition()?.genreCounts ?? (mode() === 'MOVIE' ? data.genreCountsMovies : data.genreCountsSeries))" [attr.data-color]="i % 4"></i></div><strong>{{ genre.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article></div>
+            <app-profile-country-map
+              title="Assistidos por país"
+              description="Países de origem dos conteúdos assistidos."
+              [countries]="allTimeEdition()?.watchCountByCountry ?? data.watchCountByCountry"
+              [emptyText]="copy.noItems"
+            />
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ mode() === 'MOVIE' ? 'Filmes mais registrados' : 'Séries mais registradas' }}</h2><p>Os conteúdos que aparecem com maior frequência no diário.</p></div></div>@for (entry of allTimeEdition()?.mostLoggedContent ?? data.mostLoggedContent; track entry.card?.tmdbId || $index; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.count }} registros</small></div><b>{{ entry.count }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</section>
+            <div class="profile-two-columns"><article class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.topRated }}</h2></div>@for (entry of allTimeEdition()?.topRated ?? data.topRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.releaseYear ?? '' }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article><article class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.bottomRated }}</h2></div>@for (entry of allTimeEdition()?.bottomRated ?? data.bottomRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.releaseYear ?? '' }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article></div>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.ratings }}</h2><span>{{ ratingTotal(allTimeEdition()?.ratingsDistribution ?? []) }} {{ copy.ratingCount.replace('{count}', '').trim() }}</span></div><div class="profile-rating-bars">@for (score of ratingScores; track score) { <div [attr.aria-label]="copy.rating + ' ' + score + ': ' + ratingCount(allTimeEdition()?.ratingsDistribution ?? [], score)"><span>{{ score }}</span><i><b [style.height]="ratingBarHeight(ratingCount(allTimeEdition()?.ratingsDistribution ?? [], score), allTimeEdition()?.ratingsDistribution ?? [])"></b></i><small>{{ ratingCount(allTimeEdition()?.ratingsDistribution ?? [], score) }}</small></div> }</div></section>
+          }
+        </section>
+      }
+    }
+  </main>
+  @if (sharePreviewOpen()) {
+    <app-share-preview [returnFocusTarget]="shareReturnFocus()" [model]="activeShareModel()" [shareUrl]="shareUrl()" (closed)="sharePreviewOpen.set(false)" />
+  }
+}
