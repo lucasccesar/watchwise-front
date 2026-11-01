@@ -1,0 +1,110 @@
+<main class="notifications-page" aria-labelledby="notifications-title">
+  <header class="notifications-heading" [style.background-image]="heroBackground()">
+    <div class="notifications-title-row">
+      <h1 id="notifications-title">{{ copy.title }}</h1>
+      @if (unreadCount() > 0) {
+        <span class="notifications-unread-badge">{{ unreadLabel(unreadCount()) }}</span>
+      }
+    </div>
+    <p>{{ copy.subtitle }}</p>
+  </header>
+
+  <section class="notifications-content" aria-label="{{ copy.title }}">
+    <div class="notifications-toolbar">
+      <div class="notifications-tabs" role="tablist" [attr.aria-label]="copy.title">
+        <button type="button" role="tab" [attr.aria-selected]="filter() === 'all'" [class.notifications-tab-active]="filter() === 'all'" (click)="setFilter('all')">{{ copy.all }}</button>
+        <button type="button" role="tab" [attr.aria-selected]="filter() === 'unread'" [class.notifications-tab-active]="filter() === 'unread'" (click)="setFilter('unread')">{{ copy.unread }} <span>{{ unreadCount() }}</span></button>
+        <button type="button" role="tab" [attr.aria-selected]="filter() === 'read'" [class.notifications-tab-active]="filter() === 'read'" (click)="setFilter('read')">{{ copy.read }}</button>
+      </div>
+      <div class="notifications-list-summary">
+        <span class="notifications-total-count"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>{{ summaryLabel(totalCount()) }}</span>
+        <span class="notifications-unread-count">{{ unreadLabel(unreadCount()) }}</span>
+      </div>
+      @if (unreadCount() > 0) {
+        <button class="notifications-mark-all" type="button" [disabled]="markingAllRead()" (click)="markAllRead()">{{ markingAllRead() ? copy.markingRead : copy.markAllRead }}</button>
+      }
+    </div>
+
+    @if (actionError()) { <p class="notifications-error" role="alert">{{ actionError() }}</p> }
+    @if (actionMessage()) { <p class="notifications-feedback" role="status">{{ actionMessage() }}</p> }
+
+    @if (status() === 'loading') {
+      <div class="notifications-empty" role="status">{{ copy.loading }}</div>
+    } @else if (status() === 'error') {
+      <div class="notifications-empty" role="alert">
+        <h2>{{ copy.errorTitle }}</h2>
+        <p>{{ loadError() }}</p>
+        <button class="notifications-load-more" type="button" (click)="retry()">{{ copy.retry }}</button>
+      </div>
+    } @else if (notifications().length > 0) {
+      @for (group of groups(); track group.key) {
+        <section class="notifications-day" [attr.aria-label]="group.label">
+          <h2><strong>{{ group.label }}</strong></h2>
+          <ol class="notification-list">
+            @for (item of group.items; track item.id) {
+              <li class="notification-card" [class.notification-card-unread]="!item.isRead">
+                <span class="notification-avatar" [class.notification-avatar-large]="actorInitial(item).length > 1" aria-hidden="true">
+                  @if (item.latestActor?.profilePicture; as avatar) { <img [src]="avatar" alt="" loading="lazy" /> }
+                  @else { {{ actorInitial(item) }} }
+                </span>
+                <div class="notification-copy">
+                  <p class="notification-message">
+                    @if (itemRoute(item); as route) {
+                      <a [routerLink]="route">{{ actorName(item) }}</a>
+                    } @else {
+                      <strong>{{ actorName(item) }}</strong>
+                    }
+                    {{ message(item) }}
+                  </p>
+                  <span class="notification-time">· {{ relativeTime(item.createdAt) }}</span>
+
+                  @if (title(item); as contentTitle) {
+                    <div class="notification-content-preview">
+                      <span class="notification-content-icon" aria-hidden="true">
+                        @switch (item.type) {
+                          @case ('RELEASE') { <svg viewBox="0 0 24 24"><path d="M2 7h20v14H2zM2 7l3-4h14l3 4M7 7V3m5 4V3m5 4V3" /></svg> }
+                          @case ('FOLLOWED_PERSON_NEW_CREDIT') { <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> }
+                          @default { <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m10 9 5 3-5 3z" /></svg> }
+                        }
+                      </span>
+                      <span class="notification-content-copy">
+                        <strong>{{ contentTitle }}</strong>
+                        @if (contentMetadata(item); as metadata) { <small>{{ metadata }}</small> }
+                        @if (contentScore(item); as score) { <small class="notification-content-rating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>{{ score }} / 10</small> }
+                        @if (item.targetPreview?.excerpt; as excerpt) { <small class="notification-comment-preview">{{ excerpt }}</small> }
+                      </span>
+                    </div>
+                  }
+
+                  @if (item.type === 'FOLLOW_REQUEST' && !followDecision(item.id)) {
+                    <div class="notification-follow-actions">
+                      <button type="button" (click)="decideFollow(item, 'accepted')">{{ copy.accept }}</button>
+                      <button type="button" (click)="decideFollow(item, 'declined')">{{ copy.decline }}</button>
+                    </div>
+                  }
+                  @if (followResult(item.id); as result) { <span class="notification-follow-result">{{ result }}</span> }
+                </div>
+                @if (!item.isRead) {
+                  <button class="notification-mark-read" type="button" [attr.aria-label]="markReadLabel(item)" (click)="markRead(item)">
+                    <span class="notification-unread-dot" aria-hidden="true"></span>
+                  </button>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+      }
+    } @else {
+      <div class="notifications-empty">
+        <span class="notifications-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg></span>
+        <h2>{{ copy.emptyTitle }}</h2>
+        <p>{{ copy.emptyDescription }}</p>
+      </div>
+    }
+
+    @if (hasMore()) {
+      <button class="notifications-load-more" type="button" [disabled]="loadingMore()" (click)="loadMore()">{{ loadingMore() ? copy.loadingMore : copy.loadMore }}</button>
+    }
+    <p class="notifications-showing">{{ shownLabel() }}</p>
+  </section>
+</main>
