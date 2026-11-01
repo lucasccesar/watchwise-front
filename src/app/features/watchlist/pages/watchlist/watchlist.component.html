@@ -1,0 +1,130 @@
+<main class="watchlist-page" aria-labelledby="watchlist-title">
+  <header class="watchlist-heading" [style.background-image]="heroBackground()" aria-labelledby="watchlist-title">
+    <div class="watchlist-heading-copy">
+      <h1 id="watchlist-title">{{ copy.title }}</h1>
+      @if (updatedAt()) { <p class="watchlist-updated">{{ copy.updated }} {{ updatedAt() }}</p> }
+      <p>{{ copy.description }}</p>
+    </div>
+  </header>
+
+  <section class="watchlist-toolbar" aria-label="{{ copy.filters }}">
+    <div class="watchlist-toolbar-left">
+      <div class="watchlist-type-tabs" role="group" aria-label="{{ copy.contentType }}">
+        <button type="button" [class.watchlist-tab-active]="type() === null" [attr.aria-pressed]="type() === null" (click)="selectType(null)">{{ copy.all }}</button>
+        <button type="button" [class.watchlist-tab-active]="type() === 'MOVIE'" [attr.aria-pressed]="type() === 'MOVIE'" (click)="selectType('MOVIE')">{{ copy.movies }}</button>
+        <button type="button" [class.watchlist-tab-active]="type() === 'SERIES'" [attr.aria-pressed]="type() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}</button>
+      </div>
+      <div class="watchlist-control-wrap">
+        <button type="button" class="watchlist-control" [attr.aria-expanded]="activeMenu() === 'genre'" (click)="toggleMenu('genre')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a.6.6 0 0 1 0 .8Z"/><circle cx="8" cy="8" r="1"/></svg>{{ genre() || copy.allGenres }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        @if (activeMenu() === 'genre') {
+          <div class="watchlist-menu" role="menu">
+            <button type="button" role="menuitemradio" [attr.aria-checked]="genre() === null" (click)="selectGenre(null)">{{ copy.allGenres }}</button>
+            @for (option of genreOptions(); track option) { <button type="button" role="menuitemradio" [attr.aria-checked]="genre() === option" (click)="selectGenre(option)">{{ option }}</button> }
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <div class="watchlist-control-row">
+      @if (view(); as data) {
+        <div class="watchlist-summary" aria-label="{{ copy.summary }}">
+          <div><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><strong>{{ runtimeTotal(data.aggregate.totalRuntimeMinutes) }}</strong><span>{{ copy.totalRuntime }}</span></div>
+          <div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg><strong>{{ data.aggregate.totalCount | number }}</strong><span>{{ copy.items }}</span></div>
+          <div><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><strong>{{ data.aggregate.upcomingCount | number }}</strong><span>{{ copy.upcomingReleases }}</span></div>
+          <button class="watchlist-mobile-filter-toggle" type="button" aria-label="{{ copy.mobileFilters }}" (click)="mobileFiltersOpen.set(true)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.5 7.2V19l-3 1v-7.8z"/></svg></button>
+        </div>
+      }
+      <div class="watchlist-control-wrap">
+        <button type="button" class="watchlist-control" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        @if (activeMenu() === 'sort') {
+          <div class="watchlist-menu" role="menu">
+            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'DATE_ADDED'" (click)="selectSort('DATE_ADDED')">{{ copy.sortDateAdded }}</button>
+            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'RELEASE_DATE'" (click)="selectSort('RELEASE_DATE')">{{ copy.sortReleaseDate }}</button>
+            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'RUNTIME'" (click)="selectSort('RUNTIME')">{{ copy.sortRuntime }}</button>
+            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'RATING'" (click)="selectSort('RATING')">{{ copy.sortRating }}</button>
+            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'TITLE'" (click)="selectSort('TITLE')">{{ copy.sortTitle }}</button>
+          </div>
+        }
+      </div>
+      <button type="button" class="watchlist-direction" [attr.aria-label]="direction() === 'DESC' ? copy.descending : copy.ascending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="direction() === 'DESC' ? 'M12 4v16m-7-7 7 7 7-7' : 'M12 20V4m-7 7 7-7 7 7'" /></svg></button>
+
+      <div class="watchlist-control-wrap">
+        <button type="button" class="watchlist-control watchlist-status-control" [attr.aria-expanded]="activeMenu() === 'visibility'" (click)="toggleMenu('visibility')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>{{ upcomingModeLabel() }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        @if (activeMenu() === 'visibility') {
+          <div class="watchlist-menu watchlist-visibility-menu" role="menu">
+            <button type="button" role="menuitemradio" [attr.aria-checked]="upcomingMode() === 'ALL'" (click)="setUpcomingMode('ALL')">{{ copy.all }}</button>
+            <div class="watchlist-visibility-group"><span>{{ copy.fade }}</span><button type="button" role="menuitemradio" [attr.aria-checked]="upcomingMode() === 'FADE'" (click)="setUpcomingMode('FADE')">{{ copy.upcoming }}</button></div>
+            <div class="watchlist-visibility-group"><span>{{ copy.hide }}</span><button type="button" role="menuitemradio" [attr.aria-checked]="upcomingMode() === 'HIDE'" (click)="setUpcomingMode('HIDE')">{{ copy.upcoming }}</button></div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  @if (mobileFiltersOpen()) {
+    <div class="watchlist-mobile-sheet-backdrop" (click)="mobileFiltersOpen.set(false)">
+      <section class="watchlist-mobile-sheet" role="dialog" aria-modal="true" aria-labelledby="watchlist-mobile-sheet-title" (click)="$event.stopPropagation()">
+        <header><span aria-hidden="true"></span><h2 id="watchlist-mobile-sheet-title">{{ copy.mobileFilters }}</h2></header>
+        <div class="watchlist-mobile-options">
+          <label><span>{{ copy.view }}</span><select [value]="viewMode() === 'AUTO' ? 'LIST' : viewMode()" (change)="selectViewMode($event)"><option value="LIST">{{ copy.listView }}</option><option value="GRID">{{ copy.gridView }}</option></select></label>
+          <label><span>{{ copy.contentType }}</span><select [value]="type() ?? 'ALL'" (change)="selectMobileType($event)"><option value="ALL">{{ copy.all }}</option><option value="MOVIE">{{ copy.movies }}</option><option value="SERIES">{{ copy.series }}</option></select></label>
+          <label><span>{{ copy.genre }}</span><select [value]="genre() ?? ''" (change)="selectMobileGenre($event)"><option value="">{{ copy.allGenres }}</option>@for (option of genreOptions(); track option) { <option [value]="option">{{ option }}</option> }</select></label>
+          <label><span>{{ copy.sortBy }}</span><select [value]="sort()" (change)="selectMobileSort($event)"><option value="DATE_ADDED">{{ copy.sortDateAdded }}</option><option value="RELEASE_DATE">{{ copy.sortReleaseDate }}</option><option value="RUNTIME">{{ copy.sortRuntime }}</option><option value="RATING">{{ copy.sortRating }}</option><option value="TITLE">{{ copy.sortTitle }}</option></select></label>
+          <label><span>{{ copy.order }}</span><select [value]="direction()" (change)="selectMobileDirection($event)"><option value="DESC">{{ copy.descending }}</option><option value="ASC">{{ copy.ascending }}</option></select></label>
+          <label><span>{{ copy.upcoming }}</span><select [value]="filterStatus()" (change)="selectMobileStatus($event)"><option value="ALL">{{ copy.all }}</option><option value="NEW">{{ copy.new }}</option><option value="IN_PROGRESS">{{ copy.inProgress }}</option><option value="UPCOMING">{{ copy.upcoming }}</option></select></label>
+          <label><span>{{ copy.upcomingDisplay }}</span><select [value]="upcomingMode()" (change)="selectMobileUpcomingMode($event)"><option value="ALL">{{ copy.all }}</option><option value="FADE">{{ copy.fadeUpcoming }}</option><option value="HIDE">{{ copy.hideUpcoming }}</option></select></label>
+        </div>
+        <button class="watchlist-mobile-sheet-done" type="button" (click)="mobileFiltersOpen.set(false)">{{ copy.done }}</button>
+      </section>
+    </div>
+  }
+
+  @if (status() === 'loading') {
+    <div class="watchlist-loading" role="status" [attr.aria-label]="copy.loading">
+      <span class="visually-hidden">{{ copy.loading }}</span>
+      <section class="watchlist-grid watchlist-skeleton-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-hidden="true">
+        @for (placeholder of loadingPlaceholders; track placeholder) {
+          <div class="watchlist-card watchlist-card--skeleton">
+            <div class="watchlist-poster"><span class="watchlist-skeleton-poster watchlist-loading-shimmer"></span></div>
+            <div class="watchlist-skeleton-copy">
+              <span class="watchlist-skeleton-title watchlist-loading-shimmer"></span>
+              <span class="watchlist-skeleton-meta watchlist-loading-shimmer"></span>
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+  } @else if (status() === 'error') {
+    <section class="watchlist-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
+  } @else if ((view()?.content?.length ?? 0) === 0) {
+    <section class="watchlist-state watchlist-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
+  } @else {
+    <nav class="watchlist-pagination" [attr.aria-label]="copy.pagination">
+      <button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+      @for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.watchlist-page-active]="pageNumber === page()" [attr.aria-current]="pageNumber === page() ? 'page' : null" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }
+      <button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+    </nav>
+    <p class="watchlist-page-label">{{ pageLabel() }}</p>
+
+    <section class="watchlist-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-label="{{ copy.items }}">
+      @for (item of visibleItems(); track item.id) {
+        <article class="watchlist-card" [class.watchlist-card--busy]="busyId() === item.id" [class.watchlist-card--faded]="upcomingMode() === 'FADE' && isUpcoming(item)">
+          <div class="watchlist-poster content-image-card">
+            @if (route(item); as contentRoute) { <a class="watchlist-poster-link" [routerLink]="contentRoute" [attr.aria-label]="title(item)">@if (poster(item)) { <img [src]="poster(item)" alt="" loading="lazy" /> } @else { <span>{{ title(item) }}</span> }</a> }
+            @else if (poster(item)) { <img [src]="poster(item)" alt="" loading="lazy" /> }
+            @else { <span class="watchlist-poster-fallback">{{ title(item) }}</span> }
+            @if (item.status === 'UPCOMING' && item.releaseDate) { <span class="watchlist-release-date">{{ dateLabel(item.releaseDate) }}</span> }
+            @let rating = cardRating(item);
+            <app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating?.label ?? ''" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="handlePosterAction(item, $event)" />
+            @if (item.status === 'IN_PROGRESS' && item.card.type === 'SERIES') { <span class="watchlist-progress-indicator" [attr.aria-label]="copy.progress.replace('{percent}', watchProgress(item).toString())"><span [style.width.%]="watchProgress(item)"></span></span> }
+          </div>
+          <div class="watchlist-card-copy">
+            <div class="watchlist-card-title-row"><a class="watchlist-card-title" [routerLink]="route(item) ?? []">{{ title(item) }}</a><span class="watchlist-card-runtime">{{ runtimeLabel(item) }}</span></div>
+            <p class="watchlist-card-year">{{ item.card.releaseYear ?? '' }}</p>
+          </div>
+        </article>
+      }
+    </section>
+  }
+</main>
