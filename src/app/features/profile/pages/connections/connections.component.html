@@ -1,0 +1,87 @@
+<main class="connections-page">
+  <div class="connections-content">
+    <a class="connections-back" routerLink="/settings">
+      <span aria-hidden="true">←</span> Configurações
+    </a>
+
+    <header class="connections-heading">
+      <div>
+        <p class="connections-eyebrow">Comunidade</p>
+        <h1>{{ title() }}</h1>
+        <p class="connections-description">{{ description() }}</p>
+      </div>
+      @if (page(); as connectionsPage) {
+        <span class="connections-count">
+          {{ connectionsPage.totalElements }} {{ mode() === 'followers' ? 'seguidores' : 'pessoas' }}
+        </span>
+      }
+    </header>
+
+    @if (errorMessage()) {
+      <p class="connections-alert" role="alert">{{ errorMessage() }}</p>
+    }
+
+    @if (status() === 'loading') {
+      <div class="connections-state" role="status">Carregando conexões…</div>
+    } @else if (status() === 'error') {
+      <div class="connections-state connections-state--error">
+        <p>{{ errorMessage() || 'Não foi possível carregar estas conexões.' }}</p>
+        <button type="button" (click)="retry()">Tentar novamente</button>
+      </div>
+    } @else if (page(); as connectionsPage) {
+      @if (connectionsPage.content.length) {
+        <div class="connections-list">
+          @for (user of connectionsPage.content; track user.id) {
+            <article class="connections-card">
+              <a class="connections-user" [routerLink]="['/users', user.username]">
+                <span class="connections-avatar">
+                  @if (user.profilePicture) {
+                    <img [src]="user.profilePicture" alt="" />
+                  } @else {
+                    {{ userInitial(user) }}
+                  }
+                </span>
+                <span class="connections-user-copy">
+                  <strong>{{ user.name || user.username }}</strong>
+                  <small>@{{ user.username }}</small>
+                </span>
+              </a>
+              @if (mode() === 'following') {
+                <button
+                  class="connections-unfollow"
+                  type="button"
+                  [disabled]="!!unfollowingId()"
+                  (click)="unfollow(user)"
+                >
+                  {{ unfollowingId() === user.id ? 'Atualizando…' : 'Deixar de seguir' }}
+                </button>
+              }
+            </article>
+          }
+        </div>
+
+        @if (connectionsPage.totalPages > 1) {
+          <nav class="connections-pagination" aria-label="Paginação das conexões">
+            <button
+              type="button"
+              [disabled]="connectionsPage.page <= 1 || status() === 'loading'"
+              (click)="goToPage(connectionsPage.page - 1)"
+            >Anterior</button>
+            <span>Página {{ connectionsPage.page }} de {{ connectionsPage.totalPages }}</span>
+            <button
+              type="button"
+              [disabled]="!connectionsPage.hasNext || status() === 'loading'"
+              (click)="goToPage(connectionsPage.page + 1)"
+            >Próxima</button>
+          </nav>
+        }
+      } @else {
+        <div class="connections-empty">
+          <span class="connections-empty-icon" aria-hidden="true">◎</span>
+          <h2>{{ mode() === 'followers' ? 'Ainda não há seguidores' : 'Você ainda não segue ninguém' }}</h2>
+          <p>{{ mode() === 'followers' ? 'Quando alguém seguir este perfil, aparecerá aqui.' : 'As pessoas que você seguir aparecerão aqui.' }}</p>
+        </div>
+      }
+    }
+  </div>
+</main>
