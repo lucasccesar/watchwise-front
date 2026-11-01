@@ -10,10 +10,11 @@ import { AuthSessionService } from '../core/session/session.service';
 import { AppShellStateService } from '../core/ui/app-shell-state.service';
 import { AuthApiService } from '../features/auth/data-access/auth-api.service';
 import { HeaderSearchComponent } from '../features/search-content/components/header-search/header-search.component';
+import { HomeFooterComponent } from '../shared/components/home-footer/home-footer.component';
 import { messageCatalog } from '../shared/i18n/messages';
 
 @Component({
-  imports: [HeaderSearchComponent, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [HeaderSearchComponent, HomeFooterComponent, RouterLink, RouterLinkActive, RouterOutlet],
   selector: 'app-authenticated-layout',
   standalone: true,
   templateUrl: './authenticated-layout.component.html',
@@ -28,6 +29,25 @@ export class AuthenticatedLayoutComponent {
 
   protected get currentViewer() {
     return this.shellState.viewer() ?? this.session.user();
+  }
+
+  protected followingCount(): number {
+    return this.shellState.viewer()?.followingCount ?? 0;
+  }
+
+  protected followerCount(): number {
+    return this.shellState.viewer()?.followerCount ?? 0;
+  }
+
+  protected viewerRoute(...segments: string[]): string[] {
+    const username = this.currentViewer?.username;
+    return username
+      ? ['/users', username, ...segments]
+      : ['/home'];
+  }
+
+  protected isNotificationsRoute(): boolean {
+    return this.router.url.startsWith('/notifications');
   }
 
   constructor(

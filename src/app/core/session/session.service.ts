@@ -8,7 +8,12 @@ export interface SessionUser {
   username: string;
   email: string;
   name?: string;
+  description?: string | null;
   profilePicture?: string | null;
+  banner?: string | null;
+  isProfilePublic?: boolean | null;
+  preferredLanguage?: string | null;
+  preferredRegion?: string | null;
 }
 
 interface CurrentUserResponse extends SessionUser {}
@@ -23,6 +28,10 @@ export class AuthSessionService {
   constructor(private readonly http: HttpClient) {}
 
   setUser(user: AuthenticatedUser): void {
+    this.userState.set(user);
+  }
+
+  updateUser(user: SessionUser): void {
     this.userState.set(user);
   }
 

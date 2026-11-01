@@ -1,5 +1,5 @@
 <div class="product-shell">
-  <header class="product-header" [class.product-header--account-menu-open]="isAccountMenuOpen()">
+  <header class="product-header" [class.product-header--account-menu-open]="isAccountMenuOpen()" [class.product-header--mobile-menu-open]="isMenuOpen()">
     <div class="product-header-start">
       <button
         class="icon-button menu-toggle"
@@ -27,35 +27,87 @@
       [class.product-navigation--open]="isMenuOpen()"
       [attr.aria-label]="copy.mainNavigation"
     >
+      <div class="desktop-navigation-content">
       <a class="navigation-link" routerLink="/home" routerLinkActive="navigation-link--active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" (click)="closeMenu()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg>
         <span>{{ copy.home }}</span>
       </a>
       <span class="navigation-section-label">{{ copy.discover }}</span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg><span>{{ copy.social }}</span></span>
+      <a class="navigation-link" routerLink="/social" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg><span>{{ copy.social }}</span></a>
       <a class="navigation-link" routerLink="/trending" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.trending }}</span></a>
       <span class="navigation-section-label">{{ copy.yourSpace }}</span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.diary }}</span></span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.watchlist }}</span></span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></span>
-      <span class="navigation-link navigation-link--unavailable" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.lists }}</span></span>
-      <span class="navigation-link navigation-link--unavailable navigation-link--optional" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.picks }}</span></span>
-      <span class="navigation-link navigation-link--unavailable navigation-link--optional" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 9h.01M16 9h.01M8 15c1 1.2 2.3 2 4 2s3-.8 4-2" /></svg><span>{{ copy.games }}</span></span>
+      <a class="navigation-link" routerLink="/diary" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg><span>{{ copy.diary }}</span></a>
+      <a class="navigation-link" routerLink="/watchlist" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg><span>{{ copy.watchlist }}</span></a>
+      <a class="navigation-link" routerLink="/calendar" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></a>
+      <a class="navigation-link" routerLink="/lists" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.lists }}</span></a>
+      <a class="navigation-link navigation-link--optional" routerLink="/picks" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.picks }}</span></a>
+      <a class="navigation-link navigation-link--optional" routerLink="/games" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 9h.01M16 9h.01M8 15c1 1.2 2.3 2 4 2s3-.8 4-2" /></svg><span>{{ copy.games }}</span></a>
       <p class="navigation-note">{{ copy.navigationNote }}</p>
+      </div>
+
+      @if (currentViewer; as viewer) {
+        <div class="mobile-navigation-content">
+          <div class="mobile-menu-profile">
+            <div class="mobile-menu-profile-row">
+              <span class="mobile-menu-avatar" aria-hidden="true">
+                <img [src]="viewer.profilePicture || '/default-user-avatar.png'" alt="" />
+              </span>
+              <span class="mobile-menu-profile-copy">
+                <strong>{{ viewer.name || viewer.username || copy.welcome }}</strong>
+                @if (viewer.username) {
+                  <small>@{{ viewer.username }}</small>
+                }
+              </span>
+            </div>
+            <p>{{ followingCount() }} {{ copy.followingShort }} <span aria-hidden="true">·</span> {{ followerCount() }} {{ copy.followersShort }}</p>
+          </div>
+
+          <section class="mobile-menu-group" aria-labelledby="mobile-menu-you">
+            <h2 id="mobile-menu-you">{{ copy.mobileYou }}</h2>
+            <div class="mobile-menu-list">
+              <span class="mobile-menu-link">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5H7.5C6.104 15.5 5.407 15.5 4.839 15.672C3.56 16.06 2.56 17.061 2.172 18.339C2 18.907 2 19.604 2 21M19 21V15M16 18H22M14.5 7.5C14.5 9.985 12.485 12 10 12C7.515 12 5.5 9.985 5.5 7.5C5.5 5.015 7.515 3 10 3C12.485 3 14.5 5.015 14.5 7.5Z" /></svg>
+                <span>{{ copy.followerRequests }}</span><span class="mobile-menu-badge">3</span>
+              </span>
+              <a class="mobile-menu-link" [routerLink]="viewerRoute('progress')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M12 20V4M20 20V14" /></svg><span>{{ copy.progress }}</span></a>
+              <a class="mobile-menu-link" [routerLink]="viewerRoute('episode-ratings-map')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3H21V21H3ZM3 9H21M3 15H21M9 3V21M15 3V21" /></svg><span>{{ copy.episodeRatingsMap }}</span></a>
+              <a class="mobile-menu-link" [routerLink]="viewerRoute('month-in-review')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1 4 21 4.9 21 6V20C21 21.1 20.1 22 19 22H5C3.9 22 3 21.1 3 20V6C3 4.9 3.9 4 5 4Z" /></svg><span>{{ copy.monthReview }}</span></a>
+              <a class="mobile-menu-link" [routerLink]="viewerRoute('year-in-review')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg><span>{{ copy.yearReview }}</span></a>
+              <a class="mobile-menu-link" [routerLink]="viewerRoute('all-time-stats')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3V21H21M7 15L11 11L14 14L20 8" /></svg><span>{{ copy.allTimeStats }}</span></a>
+            </div>
+          </section>
+
+          <section class="mobile-menu-group mobile-menu-group--explore" aria-labelledby="mobile-menu-explore">
+            <h2 id="mobile-menu-explore">{{ copy.mobileExplore }}</h2>
+            <div class="mobile-menu-list">
+              <a class="mobile-menu-link" routerLink="/trending" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 7L13.5 15.5L8.5 10.5L2 17M16 7H22V13" /></svg><span>{{ copy.trending }}</span></a>
+              <a class="mobile-menu-link" routerLink="/calendar" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></a>
+              <a class="mobile-menu-link" routerLink="/lists" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12H9M21 6H9M21 18H9M5 12C5 12.552 4.552 13 4 13C3.448 13 3 12.552 3 12C3 11.448 3.448 11 4 11C4.552 11 5 11.448 5 12ZM5 6C5 6.552 4.552 7 4 7C3.448 7 3 6.552 3 6C3 5.448 3.448 5 4 5C4.552 5 5 5.448 5 6ZM5 18C5 18.552 4.552 19 4 19C3.448 19 3 18.552 3 18C3 17.448 3.448 17 4 17C4.552 17 5 17.448 5 18Z" /></svg><span>{{ copy.lists }}</span></a>
+              <a class="mobile-menu-link" routerLink="/picks" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg><span>{{ copy.picks }}</span></a>
+              <a class="mobile-menu-link" routerLink="/games" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11H10M8 9V13M15 12H15.01M18 10H18.01M17.32 5H6.68C4.65 5 2.95 6.53 2.7 8.54L1.8 15.74C1.58 17.48 2.94 19 4.69 19C5.48 19 6.21 18.53 6.54 17.8L7.5 16H16.5L17.46 17.8C17.79 18.53 18.52 19 19.31 19C21.06 19 22.42 17.48 22.2 15.74L21.3 8.54C21.05 6.53 19.35 5 17.32 5Z" /></svg><span>{{ copy.games }}</span></a>
+            </div>
+          </section>
+
+          <div class="mobile-menu-footer">
+            <a class="mobile-menu-link" routerLink="/settings" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6H20M4 12H20M4 18H20M15 4V8M8 10V14M17 16V20" /></svg><span>{{ copy.settings }}</span></a>
+            <button class="mobile-menu-link mobile-menu-link--danger" type="button" [disabled]="isSigningOut()" (click)="signOut()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H9M16 17L21 12L16 7M21 12H9" /></svg><span>{{ isSigningOut() ? copy.signingOut : copy.signOut }}</span></button>
+          </div>
+        </div>
+      }
     </nav>
 
     <div class="product-header-actions">
-      <button
+      <a
         class="icon-button notification-button"
-        type="button"
-        aria-disabled="true"
-        [attr.aria-label]="shellState.hasUnreadNotifications() ? copy.notificationsUnread : copy.notifications"
+        routerLink="/notifications"
+        [attr.aria-current]="isNotificationsRoute() ? 'page' : null"
+        [attr.aria-label]="copy.notificationsUnread"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.354 21C10.059 21.622 10.986 22 12 22C13.014 22 13.941 21.622 14.646 21M18 8C18 6.409 17.368 4.883 16.243 3.757C15.117 2.632 13.591 2 12 2C10.409 2 8.883 2.632 7.757 3.757C6.632 4.883 6 6.409 6 8C6 11.09 5.221 13.206 4.35 14.605C3.615 15.786 3.248 16.376 3.261 16.541C3.276 16.724 3.315 16.793 3.462 16.902C3.594 17 4.192 17 5.389 17H18.611C19.808 17 20.406 17 20.538 16.902C20.685 16.793 20.724 16.724 20.739 16.541C20.752 16.376 20.385 15.786 19.65 14.605C18.779 13.206 18 11.09 18 8Z" /></svg>
         @if (shellState.hasUnreadNotifications()) {
           <span class="notification-dot" aria-hidden="true"></span>
         }
-      </button>
+      </a>
       @if (currentViewer; as viewer) {
         @if (isAccountMenuOpen()) {
           <button
@@ -85,9 +137,9 @@
           </button>
           @if (isAccountMenuOpen()) {
             <div class="account-menu" id="account-menu" role="menu" [attr.aria-label]="copy.accountMenu">
-              <button
+            <a
                 class="account-menu-viewer account-menu-viewer-button"
-                type="button"
+              [routerLink]="viewerRoute()"
                 role="menuitem"
                 (click)="closeAccountMenu()"
               >
@@ -104,37 +156,37 @@
                     <span>@{{ viewer.username }}</span>
                   }
                 </span>
-              </button>
+            </a>
               <div class="account-menu-divider" role="separator"></div>
               <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5H7.5C6.104 15.5 5.407 15.5 4.839 15.672C3.56 16.06 2.56 17.061 2.172 18.339C2 18.907 2 19.604 2 21M19 21V15M16 18H22M14.5 7.5C14.5 9.985 12.485 12 10 12C7.515 12 5.5 9.985 5.5 7.5C5.5 5.015 7.515 3 10 3C12.485 3 14.5 5.015 14.5 7.5Z" /></svg>
                 {{ copy.followerRequests }}
               </button>
-              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+      <a class="account-menu-item" [routerLink]="viewerRoute('progress')" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M12 20V4M20 20V14" /></svg>
                 {{ copy.progress }}
-              </button>
-              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+              </a>
+              <a class="account-menu-item" [routerLink]="viewerRoute('episode-ratings-map')" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3H21V21H3ZM3 9H21M3 15H21M9 3V21M15 3V21" /></svg>
                 {{ copy.episodeRatingsMap }}
-              </button>
-              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+              </a>
+              <a class="account-menu-item" [routerLink]="viewerRoute('month-in-review')" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1 4 21 4.9 21 6V20C21 21.1 20.1 22 19 22H5C3.9 22 3 21.1 3 20V6C3 4.9 3.9 4 5 4Z" /></svg>
                 {{ copy.monthReview }}
-              </button>
-              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+              </a>
+              <a class="account-menu-item" [routerLink]="viewerRoute('year-in-review')" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg>
                 {{ copy.yearReview }}
-              </button>
-              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+              </a>
+              <a class="account-menu-item" [routerLink]="viewerRoute('all-time-stats')" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3V21H21M7 15L11 11L14 14L20 8" /></svg>
                 {{ copy.allTimeStats }}
-              </button>
+              </a>
               <div class="account-menu-divider" role="separator"></div>
-              <button class="account-menu-item" type="button" role="menuitem" (click)="closeAccountMenu()">
+              <a class="account-menu-item" routerLink="/settings" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6H20M4 12H20M4 18H20M15 4V8M8 10V14M17 16V20" /></svg>
                 {{ copy.settings }}
-              </button>
+              </a>
               <div class="account-menu-divider" role="separator"></div>
               <button
                 class="account-menu-item account-menu-item--danger"
@@ -166,22 +218,24 @@
     <main class="product-main"><router-outlet /></main>
   </div>
 
+  <app-home-footer />
+
   <nav class="mobile-bottom-navigation" [attr.aria-label]="copy.mainNavigation">
     <a class="bottom-nav-link" routerLink="/home" routerLinkActive="bottom-nav-link--active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
       <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7.5 9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg></span>
       <span>{{ copy.home }}</span>
     </a>
-    <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
+    <a class="bottom-nav-link" routerLink="/social" routerLinkActive="bottom-nav-link--active" ariaCurrentWhenActive="page">
       <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg></span>
       <span>{{ copy.social }}</span>
-    </span>
-    <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
+    </a>
+    <a class="bottom-nav-link" routerLink="/diary" routerLinkActive="bottom-nav-link--active" ariaCurrentWhenActive="page">
       <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5C4 18.119 5.119 17 6.5 17H20V3H6.5C5.119 3 4 4.119 4 5.5v14Zm0 0C4 20.881 5.119 22 6.5 22H20v-5" /></svg></span>
       <span>{{ copy.diary }}</span>
-    </span>
-    <span class="bottom-nav-link bottom-nav-link--unavailable" aria-disabled="true">
+    </a>
+    <a class="bottom-nav-link" routerLink="/watchlist" routerLinkActive="bottom-nav-link--active" ariaCurrentWhenActive="page">
       <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></span>
       <span>{{ copy.watchlist }}</span>
-    </span>
+    </a>
   </nav>
 </div>

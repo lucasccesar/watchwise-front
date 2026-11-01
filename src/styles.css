@@ -13,6 +13,8 @@
   --color-primary-hover: #1d4ed8;
   --color-secondary: #30343b;
   --color-tertiary: #757575;
+  --color-text-secondary: #b9c0ca;
+  --color-text-tertiary: #92989f;
   --color-accent: #f59e0b;
   --color-warning: #eab308;
   --color-border: var(--color-secondary);
@@ -150,7 +152,7 @@ input:focus-visible {
     position: absolute;
     top: 0;
     bottom: 0;
-    right: calc(6px + 44px + var(--space-1) + 40px + var(--space-1));
+    right: calc(6px + 44px + var(--space-1));
     display: flex;
     align-items: center;
     width: 44px;
@@ -351,5 +353,15 @@ input:focus-visible {
 @media (max-width: 380px) {
   .product-header app-header-search {
     right: calc(6px + 44px + var(--space-1) + 36px + var(--space-1));
+  }
+}
+
+@media (max-width: 800px) {
+  html:has(.series-page) {
+    scrollbar-width: none;
+  }
+
+  html:has(.series-page)::-webkit-scrollbar {
+    display: none;
   }
 }

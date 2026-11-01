@@ -3,20 +3,26 @@
     <a class="brand" routerLink="/login">
       <img src="/watchwise-logo.svg" alt="Watchwise" width="126" height="24" />
     </a>
+    @if (isLegalRoute()) {
+      <nav class="public-document-tabs" aria-label="Documentos legais">
+        <a routerLink="/terms" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Termos de Uso</a>
+        <a routerLink="/privacy" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Privacidade</a>
+        <a routerLink="/community-guidelines" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"><span class="desktop-tab-label">Diretrizes da comunidade</span><span class="mobile-tab-label">Diretrizes</span></a>
+      </nav>
+      <div class="legal-mobile-topbar"><span>{{ legalTitle() }}</span><a routerLink="/login">Concluir</a></div>
+    }
   </header>
 
-  <main class="public-main">
+  <main class="public-main" [class.is-legal-route]="isLegalRoute()" [class.is-help-route]="isHelpRoute()" [class.is-not-found-route]="isNotFoundRoute()">
+    @if (isLegalRoute()) {
+      <nav class="public-mobile-document-tabs" aria-label="Documentos legais">
+        <a routerLink="/terms" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Termos de Uso</a>
+        <a routerLink="/privacy" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Privacidade</a>
+        <a routerLink="/community-guidelines" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"><span class="desktop-tab-label">Diretrizes da comunidade</span><span class="mobile-tab-label">Diretrizes</span></a>
+      </nav>
+    }
     <router-outlet />
   </main>
 
-  <footer class="public-footer">
-    <nav class="public-footer-nav" [attr.aria-label]="footerCopy.navLabel">
-      @for (link of footerLinks; track link.path; let last = $last) {
-        <a class="public-footer-link" [routerLink]="link.path">{{ link.label }}</a>
-        @if (!last) {
-          <span class="public-footer-separator" aria-hidden="true">·</span>
-        }
-      }
-    </nav>
-  </footer>
+  <app-home-footer />
 </div>
