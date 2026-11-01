@@ -1,0 +1,58 @@
+<main class="games-page" aria-labelledby="games-title">
+  @if (status() === 'loading') {
+    <section class="games-state" aria-live="polite"><span class="games-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section>
+  } @else if (status() === 'error') {
+    <section class="games-state"><h1>{{ copy.errorTitle }}</h1><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
+  } @else {
+    <header class="games-header">
+      <div><div class="games-title-line"><h1 id="games-title">{{ copy.title }}</h1><span>{{ copy.challengeCount }}</span></div><p>{{ copy.description }}</p></div>
+      <div class="games-header-actions"><button class="games-calendar-button" type="button" (click)="openCalendar()"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>{{ copy.calendar }}</button><a class="games-ranking-button" routerLink="/games/ranking">{{ copy.ranking }}<span aria-hidden="true">↗</span></a></div>
+    </header>
+    <section class="games-daily-summary" aria-label="{{ copy.todaySummary }}">
+      <div class="games-summary-date"><span>{{ copy.todayChallenges }}</span><strong>{{ dateLabel(date()) }}</strong></div>
+      @if (!historicalDate) { <span class="games-reset"><i aria-hidden="true"></i>{{ copy.newChallenges }}</span> }
+      <strong class="games-score">{{ scoreLabel() }}</strong>
+    </section>
+    @for (group of availableGroups; track group.id) {
+      <section class="games-group" [attr.aria-labelledby]="'games-group-' + group.id">
+        <header><div><h2 [id]="'games-group-' + group.id">{{ group.title }}</h2><p>{{ group.description }}</p></div></header>
+        <div class="games-grid" [class.games-grid-four]="group.id === 'image'">
+          @for (game of definitions(group.id); track game.type) {
+            <article class="game-card" [class.game-card-image]="group.id === 'image'" [class.game-card-actor]="group.id === 'actor'">
+              @if (group.id === 'image') {
+                <a class="game-card-image-preview" [routerLink]="gameRoute(game.type)" [attr.aria-label]="game.title">
+                  @if (imageUrl(card(game.type))) { <img [src]="imageUrl(card(game.type))" alt="" loading="lazy" /> } @else { <span class="game-image-hidden">?</span> }
+                  <span class="game-reveal">{{ copy.revealProgress.replace('{revealed}', number(card(game.type)?.attemptsUsed)).replace('{max}', number(card(game.type)?.maxAttempts)) }}</span>
+                </a>
+              } @else {
+                <div class="game-card-kicker"><span class="game-type-icon" aria-hidden="true">{{ group.id === 'actor' ? '♟' : '↔' }}</span><span>{{ game.subject }}</span></div>
+              }
+              <div class="game-card-body">
+                <div class="game-card-category">{{ game.subject }}</div>
+                <h3><a [routerLink]="gameRoute(game.type)">{{ game.title }}</a></h3>
+                <p>{{ game.description }}</p>
+                <dl><div><dt>{{ copy.attempts }}</dt><dd>{{ copy.upTo.replace('{count}', number(card(game.type)?.maxAttempts)) }}</dd></div><div><dt>{{ copy.maxScore }}</dt><dd>{{ card(game.type)?.maxAttempts ?? 0 }} {{ copy.points }}</dd></div></dl>
+                <div class="game-card-progress"><span class="game-status" [class.status-complete]="card(game.type)?.status === 'COMPLETED'" [class.status-failed]="card(game.type)?.status === 'FAILED'">{{ statusLabel(card(game.type)) }}</span><span>{{ progressLabel(card(game.type)) }}</span></div>
+                <a class="game-continue" [routerLink]="gameRoute(game.type)">{{ gameLinkLabel(game) }}<span aria-hidden="true">→</span></a>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  }
+</main>
+
+@if (calendarOpen()) {
+  <div class="games-dialog-backdrop" (click)="closeCalendar()">
+    <section class="games-calendar-dialog" role="dialog" appModalFocus (modalDismiss)="closeCalendar()" aria-modal="true" [attr.aria-label]="copy.pickDate" (click)="$event.stopPropagation()">
+      <header><h2>{{ copy.pickDate }}</h2><button type="button" [attr.aria-label]="copy.close" (click)="closeCalendar()">×</button></header>
+      <div class="games-calendar-month"><button type="button" [disabled]="previousMonthDisabled()" [attr.aria-label]="copy.previousMonth" (click)="shiftMonth(-1)">‹</button><strong>{{ calendarLabel() }}</strong><button type="button" [disabled]="nextMonthDisabled()" [attr.aria-label]="copy.nextMonth" (click)="shiftMonth(1)">›</button></div>
+      <div class="games-calendar-grid" role="grid" [attr.aria-label]="calendarLabel()">
+        @for (weekday of copy.weekdays; track $index) { <span class="games-weekday" role="columnheader">{{ weekday }}</span> }
+        @for (day of calendarDays(); track day.date) { <button type="button" role="gridcell" [disabled]="day.future" [class.today]="day.today" [class.played]="day.played" [attr.aria-pressed]="day.today" [attr.aria-label]="copy.calendarDate.replace('{date}', day.date).replace('{played}', day.played ? copy.playedThatDay : '')" (click)="chooseDate(day)">{{ day.day }}@if (day.played) { <i aria-hidden="true"></i> }</button> }
+      </div>
+      <footer><span><i aria-hidden="true"></i>{{ loadingHistory() ? copy.loadingHistory : copy.playedThatDay }}</span><button type="button" (click)="goToToday()">{{ copy.today }}</button></footer>
+    </section>
+  </div>
+}
