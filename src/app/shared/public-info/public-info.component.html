@@ -1,0 +1,139 @@
+@if (page === 'help') {
+  <main class="help-page" aria-labelledby="public-info-title">
+    <header class="help-heading">
+      <h1 id="public-info-title">{{ title() }}</h1>
+      <p>Respostas rápidas sobre sua conta, privacidade e comunidade, além dos canais para falar com a equipe Watchwise.</p>
+    </header>
+
+    <aside class="draft-alert" role="note">
+      <svg class="draft-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9V13M12 17H12.01M10.615 3.892L2.39 18.098C1.934 18.886 1.706 19.28 1.74 19.604C1.769 19.886 1.917 20.142 2.146 20.309C2.409 20.5 2.864 20.5 3.775 20.5H20.225C21.135 20.5 21.59 20.5 21.853 20.309C22.083 20.142 22.231 19.886 22.26 19.604C22.294 19.28 22.066 18.886 21.61 18.098L13.385 3.892C12.93 3.107 12.703 2.714 12.406 2.582C12.147 2.467 11.853 2.467 11.594 2.582C11.298 2.714 11.07 3.107 10.615 3.892Z"/></svg>
+      <div><strong>Rascunho — não publicar</strong><p>Preencha antes de publicar os canais de contato destacados em amarelo.</p></div>
+    </aside>
+
+    <nav class="help-category-grid" aria-label="Tópicos de ajuda">
+      @for (category of helpCategories; track category.id) {
+        <a class="help-category-card" [href]="'#' + category.id">
+          <span class="help-category-icon" aria-hidden="true">
+            @switch (category.icon) {
+              @case ('user') { <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> }
+              @case ('lock') { <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
+              @case ('flag') { <svg viewBox="0 0 24 24"><path d="M5 21V4m0 1h13l-2.5 4L18 13H5"/></svg> }
+              @default { <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16m10-16v16M3 9h4m-4 6h4m10-6h4m-4 6h4"/></svg> }
+            }
+          </span>
+          <strong>{{ category.title }}</strong><span>{{ category.description }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="help-sections">
+      @for (category of helpCategories; track category.id) {
+        <section class="help-faq-section" [id]="category.id">
+          <h2><span class="help-heading-icon" aria-hidden="true">
+            @switch (category.icon) {
+              @case ('user') { <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21C4 17 8 15 12 15C16 15 20 17 20 21"/></svg> }
+              @case ('lock') { <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
+              @case ('flag') { <svg viewBox="0 0 24 24"><path d="M5 21V4m0 1h13l-2.5 4L18 13H5"/></svg> }
+              @default { <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16m10-16v16M3 9h4m-4 6h4m10-6h4m-4 6h4"/></svg> }
+            }
+          </span>{{ category.title }}</h2>
+          <div class="help-faq-list">
+            @for (question of category.questions; track question.question) {
+              <div class="help-faq-item">
+                <button type="button" [attr.aria-expanded]="questionOpen(helpQuestionKey(category, question))" (click)="toggleQuestion(helpQuestionKey(category, question))">
+                  <span>{{ question.question }}</span><svg viewBox="0 0 24 24" [class.is-open]="questionOpen(helpQuestionKey(category, question))" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                @if (questionOpen(helpQuestionKey(category, question))) { <p>{{ question.answer }}</p> }
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <section class="help-contact" id="contact-us">
+      <div class="help-contact-intro"><h2><span class="help-contact-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7L12 13L21 7"/></svg></span>Fale conosco</h2><p>Não encontrou sua resposta? Escolha o canal certo para sua dúvida.</p></div>
+      <div class="help-contact-grid">
+        @for (contact of contacts; track contact.title) {
+          <article class="help-contact-card">
+            <span class="help-contact-card-icon" aria-hidden="true">
+              @switch (contact.icon) {
+                @case ('mail') { <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7L12 13L21 7"/></svg> }
+                @case ('shield') { <svg viewBox="0 0 24 24"><path d="M12 3L20 6V12C20 16.5 16.5 20 12 21C7.5 20 4 16.5 4 12V6L12 3Z"/></svg> }
+                @case ('flag') { <svg viewBox="0 0 24 24"><path d="M5 21V4M5 4H17L15 8L17 12H5"/></svg> }
+                @default { <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9.5C14.3 8.6 13.2 8 12 8C9.791 8 8 9.791 8 12C8 14.209 9.791 16 12 16C13.2 16 14.3 15.4 15 14.5"/></svg> }
+              }
+            </span>
+            <div class="help-contact-card-body"><h3>{{ contact.title }}</h3><p>{{ contact.description }}</p><p class="help-contact-channel"><mark>{{ contact.channel }}</mark></p></div>
+          </article>
+        }
+      </div>
+      <p class="help-operator">O Watchwise é operado por: <mark>[A preencher: pessoa ou entidade responsável e país]</mark></p>
+    </section>
+
+    <section class="help-policies">
+      <h2>Políticas</h2>
+      <div class="help-policy-grid">
+        @for (doc of documents; track doc.id) { <a [routerLink]="doc.href"><span class="help-policy-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 3H7C5.895 3 5 3.895 5 5V19C5 20.105 5.895 21 7 21H17C18.105 21 19 20.105 19 19V8L14 3Z"/><path d="M14 3V8H19M9 13H15M9 17H13"/></svg></span><span class="help-policy-copy"><strong>{{ doc.title }}</strong><span>{{ doc.subtitle }}</span></span></a> }
+      </div>
+    </section>
+  </main>
+} @else {
+  <main class="legal-page" aria-labelledby="public-info-title">
+    <div class="legal-layout">
+      <aside class="legal-toc">
+        <strong class="legal-toc-title">Nesta página</strong>
+        <button class="legal-toc-toggle" type="button" [attr.aria-expanded]="tocOpen()" (click)="toggleToc()"><span>Nesta página</span><svg viewBox="0 0 24 24" [class.is-open]="tocOpen()" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <nav aria-label="Seções do documento" [class.is-open]="tocOpen()"><ol>@for (section of sections; track section.id) { <li><a [href]="'#' + section.id">{{ section.title }}</a></li> }<li><a href="#referencias">Referências relevantes</a></li></ol></nav>
+      </aside>
+
+      <article class="legal-document">
+        <div class="legal-document-header">
+          <h1 id="public-info-title">{{ title() }}</h1>
+          <dl class="legal-meta">
+            <div class="legal-meta-entry"><dt>Atualizado em</dt><dd>21 de outubro de 2026</dd></div>
+            <div class="legal-meta-entry"><dt>{{ page === 'privacy' ? 'Controlador dos dados' : page === 'guidelines' ? 'Responsável pela aplicação' : 'Responsável pelo serviço' }}</dt><dd><mark>{{ page === 'privacy' ? '[PREENCHER: nome empresarial ou pessoa controladora, país e endereço de contato]' : page === 'terms' ? '[PREENCHER: nome empresarial ou pessoa responsável e país de estabelecimento]' : page === 'guidelines' ? '[PREENCHER: pessoa ou entidade]' : '[A preencher: nome ou entidade responsável e país de estabelecimento]' }}</mark></dd></div>
+            <div class="legal-meta-entry"><dt>{{ page === 'privacy' ? 'Contato de privacidade' : page === 'guidelines' ? 'Denúncias e recursos' : 'Contato' }}</dt><dd><mark>{{ page === 'privacy' ? '[PREENCHER: e-mail ou canal para pedidos de titulares]' : page === 'terms' ? '[PREENCHER: canal de contato jurídico]' : '[PREENCHER: canal de contato]' }}</mark></dd></div>
+            @if (page === 'privacy') { <div class="legal-meta-entry"><dt>Encarregado ou representante, quando exigido</dt><dd><mark>[PREENCHER: nome e contato, ou fundamento para eventual dispensa]</mark></dd></div> }
+          </dl>
+          <aside class="draft-alert legal-draft" role="note"><svg class="draft-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9V13M12 17H12.01M10.615 3.892L2.39 18.098C1.934 18.886 1.706 19.28 1.74 19.604C1.769 19.886 1.917 20.142 2.146 20.309C2.409 20.5 2.864 20.5 3.775 20.5H20.225C21.135 20.5 21.59 20.5 21.853 20.309C22.083 20.142 22.231 19.886 22.26 19.604C22.294 19.28 22.066 18.886 21.61 18.098L13.385 3.892C12.93 3.107 12.703 2.714 12.406 2.582C12.147 2.467 11.853 2.467 11.594 2.582C11.298 2.714 11.07 3.107 10.615 3.892Z"/></svg><div><strong>Rascunho — não publicar</strong><p>{{ draftMessage() }}</p></div></aside>
+        </div>
+        <div class="legal-inline-toc">
+          <button class="legal-toc-toggle" type="button" [attr.aria-expanded]="tocOpen()" (click)="toggleToc()"><span>Nesta página</span><svg viewBox="0 0 24 24" [class.is-open]="tocOpen()" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <nav aria-label="Seções do documento" [class.is-open]="tocOpen()"><ol>@for (section of sections; track section.id) { <li><a [href]="'#' + section.id">{{ section.title }}</a></li> }<li><a href="#referencias">Referências relevantes</a></li></ol></nav>
+        </div>
+        <section class="legal-introduction">
+          @if (page === 'guidelines') {
+            <p class="legal-intro"><span class="legal-copy-desktop">{{ introduction[0] }}</span><span class="legal-copy-mobile">No Watchwise, converse sobre filmes e séries, registre o que assistiu, crie listas, preencha Picks e interaja com outras pessoas. Esperamos respeito e publicações que não coloquem ninguém em risco.</span></p>
+            <p class="legal-intro">Estas Diretrizes complementam os <a routerLink="/terms">Termos de Uso</a> e a <a routerLink="/privacy">Política de Privacidade</a>. Elas descrevem comportamentos não permitidos e como denúncias podem ser tratadas.</p>
+          } @else {
+            @for (paragraph of introduction; track $index) {
+              <p class="legal-intro">@for (segment of legalParagraphSegments(paragraph); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</p>
+            }
+          }
+        </section>
+
+        @for (section of sections; track section.id) {
+          <section class="legal-section" [id]="section.id">
+            <h2>@if (section.mobileTitle) { <span class="legal-copy-desktop">{{ section.title }}</span><span class="legal-copy-mobile">{{ section.mobileTitle }}</span> } @else { {{ section.title }} }</h2>
+            @for (paragraph of section.paragraphs; track $index) {
+              <p>@for (segment of legalParagraphSegments(paragraph); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</p>
+            }
+            @if (section.bullets?.length) { <ul>@for (bullet of section.bullets; track bullet) { <li>@for (segment of legalParagraphSegments(bullet); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</li> }</ul> }
+            @if (section.table; as table) {
+              <div class="legal-table-scroll"><table><thead><tr>@for (header of table.headers; track header) { <th scope="col">{{ header }}</th> }</tr></thead><tbody>@for (row of table.rows; track $index) { <tr>@for (cell of row; track $index) { <td>{{ cell }}</td> }</tr> }</tbody></table></div>
+              <div class="legal-table-cards">@for (row of table.rows; track $index) { <article class="legal-table-card">@for (cell of row; track $index; let columnIndex = $index) { <div class="legal-table-field"><span>{{ table.headers[columnIndex] }}</span><p>@for (segment of legalTextSegments(cell); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else { {{ segment.text }} } }</p></div> }</article> }</div>
+            }
+            @for (subsection of section.subsections ?? []; track subsection.title) {
+              <div class="legal-subsection"><h3>@if (subsection.mobileTitle) { <span class="legal-copy-desktop">{{ subsection.title }}</span><span class="legal-copy-mobile">{{ subsection.mobileTitle }}</span> } @else { {{ subsection.title }} }</h3>@for (paragraph of subsection.paragraphs; track $index) { <p>@for (segment of legalParagraphSegments(paragraph); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</p> }@if (subsection.quote) { <blockquote>{{ subsection.quote }}</blockquote> }@if (subsection.bullets?.length) { <ul>@for (bullet of subsection.bullets; track bullet) { <li>@for (segment of legalParagraphSegments(bullet); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</li> }</ul> }</div>
+            }
+          </section>
+        }
+
+        <section class="legal-section legal-references" id="referencias"><h2>{{ page === 'privacy' || page === 'guidelines' ? 'Referências oficiais' : 'Referências relevantes' }}</h2><ul>
+          @for (reference of references; track reference.href) { <li><a [href]="reference.href" target="_blank" rel="noopener noreferrer">{{ reference.title }}</a></li> }
+        </ul></section>
+      </article>
+    </div>
+  </main>
+}
