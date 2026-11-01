@@ -47,3 +47,7 @@ watchwise-prototype/
 design-system/
 AGENTS.md
 telas-reqs-definitivo.md
+
+# Local development logs and temporary test cache
+/.dev-server*.log
+/.tmp-vitest/
