@@ -14,9 +14,15 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
+import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
+import {
+  ContentImageAction,
+  ContentImageActionSelection,
+  ContentImageActionsComponent,
+} from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import {
   DailyWatchCount,
   DiaryEntryCreationRequest,
@@ -78,7 +84,7 @@ type HomeStatus = 'loading' | 'ready' | 'error';
 const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, ContentImageActionsComponent],
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
@@ -86,6 +92,16 @@ const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].home;
   protected readonly copyrightYear = new Date().getFullYear();
+  protected readonly contentRoute = homeContentRoute;
+  protected readonly posterContentActions: readonly ContentImageAction[] = [
+    { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
+  ];
+  protected readonly episodeContentActions: readonly ContentImageAction[] = [
+    { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
+  ];
+  protected readonly recentContentActions: readonly ContentImageAction[] = [
+    { id: 'rate', label: this.copy.rate, icon: 'star' },
+  ];
   protected readonly summary = signal<HomeSummary | null>(null);
   protected readonly hoveredChartDayIndex = signal<number | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
@@ -275,6 +291,69 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.openContentMenuId.update((openId) =>
       openId === menuId ? null : menuId,
     );
+  }
+
+  protected handleEpisodeContentAction(
+    episode: NextEpisode,
+    selection: ContentImageActionSelection,
+  ): void {
+    if (selection.action.id === 'open-content') {
+      this.openContentMenuId.set(null);
+      void this.router.navigate(['/content/series', episode.seriesTmdbId]);
+    }
+  }
+
+  protected continueEpisodeRoute(episode: NextEpisode): (string | number)[] | null {
+    return homeContentRoute({
+      type: 'EPISODE',
+      seriesTmdbId: episode.seriesTmdbId,
+      seasonNumber: episode.maxSeasonNumber,
+      episodeNumber: episode.maxEpisodeNumber,
+    });
+  }
+
+  protected handleUpcomingContentAction(
+    release: UpcomingRelease,
+    selection: ContentImageActionSelection,
+  ): void {
+    if (selection.action.id !== 'open-content') return;
+    this.openContentMenuId.set(null);
+    this.navigateToContent(
+      release.eventType,
+      release.content.tmdbId ?? null,
+      release.content.seriesTmdbId ?? null,
+      release.content.seasonNumber ?? null,
+      release.content.episodeNumber ?? null,
+    );
+  }
+
+  protected handleSocialContentAction(
+    activity: HomeSocialActivity,
+    selection: ContentImageActionSelection,
+  ): void {
+    if (selection.action.id !== 'open-content' || !activity.content) return;
+    this.openContentMenuId.set(null);
+    this.navigateToContent(
+      activity.content.type,
+      activity.content.tmdbId,
+      activity.content.seriesTmdbId,
+      activity.content.seasonNumber,
+      activity.content.episodeNumber,
+    );
+  }
+
+  protected markWatchedLabel(episode: NextEpisode): string {
+    const target = [episode.seriesTitle, this.episodeLabel(episode)].filter(Boolean).join(' · ');
+    return `${this.copy.markWatched}: ${target}`;
+  }
+
+  protected handleRecentContentAction(
+    entry: HomeRecentlyWatched,
+    selection: ContentImageActionSelection,
+  ): void {
+    if (selection.action.id === 'rate') {
+      this.openRatingModal(entry, selection.event);
+    }
   }
 
   protected openWatchLogForEpisode(episode: NextEpisode): void {
@@ -629,11 +708,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected heroDate(): string {
-    return this.capitalizeInitial(new Intl.DateTimeFormat('pt-BR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    }).format(new Date()));
+    return formatHomeHeroDate(new Date());
   }
 
   protected formatDate(value: string | null | undefined): string {
@@ -834,6 +909,17 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected releaseTitle(event: UpcomingRelease): string {
     return event.content.seriesTitle || event.content.title || this.copy.titleUnavailable;
+  }
+
+  private navigateToContent(
+    type: string | null,
+    tmdbId: string | null,
+    seriesTmdbId: string | null,
+    seasonNumber: number | null,
+    episodeNumber: number | null,
+  ): void {
+    const route = homeContentRoute({ type, tmdbId, seriesTmdbId, seasonNumber, episodeNumber });
+    if (route) void this.router.navigate(route);
   }
 
   protected releaseSubtitle(event: UpcomingRelease): string | null {

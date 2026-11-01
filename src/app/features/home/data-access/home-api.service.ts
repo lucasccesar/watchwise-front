@@ -82,6 +82,8 @@ export interface HomeViewer {
   name: string | null;
   username: string | null;
   profilePicture: string | null;
+  followingCount?: number;
+  followerCount?: number;
 }
 
 export interface HomeRecentlyWatched {
