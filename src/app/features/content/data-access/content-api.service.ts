@@ -1,14 +1,240 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 export type ReviewSort = 'POPULAR' | 'RECENT' | 'FOLLOWING';
 export type ContentReviewSource = 'DIARY' | 'DROPPED' | 'CONTENT_REVIEW';
 
 export interface ContentReference {
   id: string;
-  type: 'MOVIE';
-  tmdbId: string;
+  type: 'MOVIE' | 'SERIES' | 'EPISODE';
+  tmdbId: string | null;
+  seriesTmdbId?: string | null;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
+}
+
+export interface EpisodeContentPage {
+  details: {
+    contentId: string;
+    type: 'EPISODE';
+    tmdbId: string | null;
+    seriesTmdbId: string;
+    seasonNumber: number;
+    episodeNumber: number;
+    title: string | null;
+    overview: string | null;
+    posterPath: string | null;
+    backdropPath: string | null;
+    releaseDate: string | null;
+    runtimeMinutes: number | null;
+    genres: string[];
+    countries: string[];
+    cast: SeriesCastMember[];
+    guestStars: SeriesCastMember[];
+    parentTitle: string | null;
+    parentReleaseYear: number | null;
+    customPosterUrl: string | null;
+  };
+  metadata: ContentPage['metadata'];
+  stats: ContentPageStats;
+  visibleReviewsCount: number;
+  viewerState: ContentViewerState;
+  navigation: ContentNavigation | null;
+}
+
+export interface ContentNavigation {
+  seriesTmdbId: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  seasonEpisodeCount: number | null;
+  previousEpisode: SeriesChildCard | null;
+  nextEpisode: SeriesChildCard | null;
+}
+
+export interface SeriesCastMember {
+  id: number;
+  name: string;
+  character: string | null;
+  profilePath: string | null;
+  episodeCount?: number | null;
+}
+
+export interface SeriesEpisodeSummary {
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  name: string | null;
+  airDate: string | null;
+  runtime: number | null;
+  stillPath: string | null;
+}
+
+export interface ContentSeasonSelection {
+  seriesTmdbId: string; seasonNumber: number; name: string | null; episodeCount: number | null; posterUrl: string | null; releaseDate: string | null;
+}
+
+export interface ContentEpisodeSelection {
+  seriesTmdbId: string; seasonNumber: number; episodeNumber: number; name: string | null; stillUrl: string | null; airDate: string | null;
+}
+
+export interface SeriesSeasonSummary {
+  seasonNumber: number | null;
+  name: string | null;
+  posterPath: string | null;
+  airDate: string | null;
+  episodeCount: number | null;
+  airedEpisodeCount: number | null;
+}
+
+export interface SeriesChildCard {
+  contentId: string;
+  type: 'SEASON' | 'EPISODE';
+  tmdbId: string | null;
+  seriesTmdbId: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  title: string | null;
+  posterPath: string | null;
+  releaseDate: string | null;
+  runtimeMinutes: number | null;
+  stats: ContentPageStats;
+  viewerState: ContentViewerState & {
+    watchStatus?: string | null;
+    myRating?: number | null;
+    watchedEpisodeCount?: number | null;
+    releasedEpisodeCount?: number | null;
+  };
+}
+
+export interface SeriesPage extends Omit<ContentPage, 'details' | 'viewerState' | 'sections'> {
+  details: {
+    contentId: string;
+    type: 'SERIES';
+    tmdbId: string;
+    title: string | null;
+    overview: string | null;
+    posterPath: string | null;
+    backdropPath: string | null;
+    releaseDate: string | null;
+    runtimeMinutes: number | null;
+    totalRuntimeMinutes: number | null;
+    numberOfSeasons: number | null;
+    numberOfEpisodes: number | null;
+    genres: string[];
+    countries: string[];
+    cast: SeriesCastMember[];
+    guestStars: SeriesCastMember[];
+    creators: Array<{ name: string; profilePath: string | null }>;
+    watchProviders: MovieProvider[];
+    seasons: SeriesSeasonSummary[];
+    episodes: SeriesEpisodeSummary[];
+    recentEpisodes: SeriesEpisodeSummary[];
+    productionCompanies: Array<{ id: number; name: string; logoPath: string | null; originCountry: string | null }>;
+    crew: MovieCrewMember[];
+    videos: MovieVideo[];
+    imdbId: string | null;
+    customPosterUrl: string | null;
+    parentTitle: string | null;
+    parentReleaseYear: number | null;
+  };
+  metadata: ContentPage['metadata'] & {
+    presentationPosterPath?: string | null;
+    presentationCrew?: MovieCrewMember[];
+    crewInherited?: boolean | null;
+  };
+  viewerState: ContentViewerState & {
+    watchedEpisodeCount: number | null;
+    releasedEpisodeCount: number | null;
+    currentRatingVersion?: number | null;
+    reviewsCount?: number | null;
+    reviewIds?: string[];
+  };
+  navigation: unknown;
+  sections: {
+    seasons: SeriesChildCard[];
+    episodes: SeriesChildCard[];
+    recentEpisodes: SeriesChildCard[];
+  };
+}
+
+type NullableCollectionFields<T> = { [K in keyof T]: T[K] | null };
+
+type SeriesDetailsCollections = Pick<
+  SeriesPage['details'],
+  | 'genres'
+  | 'countries'
+  | 'cast'
+  | 'guestStars'
+  | 'creators'
+  | 'watchProviders'
+  | 'seasons'
+  | 'episodes'
+  | 'recentEpisodes'
+  | 'productionCompanies'
+  | 'crew'
+  | 'videos'
+>;
+
+export type SeriesPageResponse = Omit<SeriesPage, 'details' | 'metadata' | 'stats' | 'viewerState' | 'sections'> & {
+  details: Omit<SeriesPage['details'], keyof SeriesDetailsCollections> &
+    NullableCollectionFields<SeriesDetailsCollections>;
+  metadata: Omit<SeriesPage['metadata'], 'watchProviders' | 'presentationCrew'> & {
+    watchProviders: MovieProvider[] | null;
+    presentationCrew?: MovieCrewMember[] | null;
+  };
+  stats: Omit<SeriesPage['stats'], 'ratingsDistribution'> & {
+    ratingsDistribution: Array<{ score: number; count: number }> | null;
+  };
+  viewerState: Omit<SeriesPage['viewerState'], 'lists' | 'reviewIds'> & {
+    lists: ContentViewerState['lists'] | null;
+    reviewIds?: string[] | null;
+  };
+  sections: {
+    seasons: SeriesChildCard[] | null;
+    episodes: SeriesChildCard[] | null;
+    recentEpisodes: SeriesChildCard[] | null;
+  } | null;
+};
+
+export function normalizeSeriesPageResponse(page: SeriesPageResponse): SeriesPage {
+  const crew = page.details.crew ?? [];
+  return {
+    ...page,
+    details: {
+      ...page.details,
+      genres: page.details.genres ?? [],
+      countries: page.details.countries ?? [],
+      cast: page.details.cast ?? [],
+      guestStars: page.details.guestStars ?? [],
+      creators: page.details.creators ?? [],
+      watchProviders: page.details.watchProviders ?? [],
+      seasons: page.details.seasons ?? [],
+      episodes: page.details.episodes ?? [],
+      recentEpisodes: page.details.recentEpisodes ?? [],
+      productionCompanies: page.details.productionCompanies ?? [],
+      crew: crew.map((person) => ({ ...person, jobs: person.jobs ?? [] })),
+      videos: page.details.videos ?? [],
+    },
+    metadata: {
+      ...page.metadata,
+      watchProviders: page.metadata.watchProviders ?? [],
+      presentationCrew: page.metadata.presentationCrew ?? [],
+    },
+    stats: {
+      ...page.stats,
+      ratingsDistribution: page.stats.ratingsDistribution ?? [],
+    },
+    viewerState: {
+      ...page.viewerState,
+      lists: page.viewerState.lists ?? [],
+      reviewIds: page.viewerState.reviewIds ?? [],
+    },
+    sections: {
+      seasons: page.sections?.seasons ?? [],
+      episodes: page.sections?.episodes ?? [],
+      recentEpisodes: page.sections?.recentEpisodes ?? [],
+    },
+  };
 }
 
 export interface MovieCastMember {
@@ -85,6 +311,7 @@ export interface ContentPageStats {
 export interface ContentViewerState {
   watchStatus: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN' | null;
   myRating: number | null;
+  currentRatingVersion?: number | null;
   myReview: string | null;
   lastWatchedDate: string | null;
   lastWatchNumber: number | null;
@@ -139,6 +366,31 @@ export interface DiaryEntryRecord {
   watchedDate: string | null;
   watchedInTheater: boolean | null;
   watchedWith?: UserPreview[] | null;
+  userId?: string;
+  content?: {
+    id: string | null;
+    type: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE' | string;
+    tmdbId: string | null;
+    seriesTmdbId: string | null;
+    seasonNumber: number | null;
+    episodeNumber: number | null;
+    runtimeMinutes: number | null;
+  };
+  watchedAt?: string | null;
+  watchNumber?: number | null;
+  customPosterUrl?: string | null;
+  likesCount?: number | null;
+  commentsCount?: number | null;
+  likedByMe?: boolean | null;
+  card?: {
+    title: string | null;
+    posterPath: string | null;
+    customPosterUrl: string | null;
+    releaseDate: string | null;
+    releaseYear: number | null;
+    tmdbVoteAverage?: number | null;
+    runtimeMinutes: number | null;
+  } | null;
 }
 
 export interface ContentReview {
@@ -212,9 +464,36 @@ export interface CommentCreationRequest {
   containsSpoiler?: boolean;
 }
 
+export interface SeriesDiaryBulkRequest {
+  content:
+    | { type: 'SERIES'; tmdbId: string }
+    | { type: 'SEASON'; seriesTmdbId: string; seasonNumber: number; isSeriesFinale?: boolean };
+  watchedDate?: string | null;
+  finaleSeasonNumber?: number | null;
+  seasonFinaleEpisodeNumbers?: Record<number, number> | null;
+  watchedWith?: string[];
+}
+
+export interface SeriesDiaryRequest {
+  content: { type: 'EPISODE'; seriesTmdbId: string; seasonNumber: number; episodeNumber: number; isSeasonFinale?: boolean; isSeriesFinale?: boolean; runtimeMinutes?: number };
+  watchedDate?: string | null;
+  score?: number | null;
+  comment?: string | null;
+  isRewatch?: boolean;
+  watchedInTheater?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ContentApiService {
   constructor(private readonly http: HttpClient) {}
+
+  getSeriesSeasons(seriesTmdbId: string): Observable<ContentSeasonSelection[]> {
+    return this.http.get<ContentSeasonSelection[]>(`/api/v1/contents/selection/series/${encodeURIComponent(seriesTmdbId)}/seasons`);
+  }
+
+  getSeasonEpisodes(seriesTmdbId: string, seasonNumber: number): Observable<ContentEpisodeSelection[]> {
+    return this.http.get<ContentEpisodeSelection[]>(`/api/v1/contents/selection/series/${encodeURIComponent(seriesTmdbId)}/seasons/${seasonNumber}/episodes`);
+  }
 
   createMovieReference(tmdbId: string): Observable<ContentReference> {
     return this.http.post<ContentReference>('/api/v1/contents/reference', {
@@ -223,8 +502,40 @@ export class ContentApiService {
     });
   }
 
+  createSeriesReference(tmdbId: string): Observable<ContentReference> {
+    return this.http.post<ContentReference>('/api/v1/contents/reference', {
+      type: 'SERIES',
+      tmdbId,
+    });
+  }
+
+  createEpisodeReference(
+    seriesTmdbId: string,
+    seasonNumber: number,
+    episodeNumber: number,
+    runtimeMinutes?: number | null,
+  ): Observable<ContentReference> {
+    return this.http.post<ContentReference>('/api/v1/contents/reference', {
+      type: 'EPISODE',
+      seriesTmdbId,
+      seasonNumber,
+      episodeNumber,
+      runtimeMinutes: runtimeMinutes ?? undefined,
+    });
+  }
+
   getPage(contentId: string): Observable<ContentPage> {
     return this.http.get<ContentPage>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`);
+  }
+
+  getSeriesPage(contentId: string): Observable<SeriesPage> {
+    return this.http
+      .get<SeriesPageResponse>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`)
+      .pipe(map(normalizeSeriesPageResponse));
+  }
+
+  getEpisodePage(contentId: string): Observable<EpisodeContentPage> {
+    return this.http.get<EpisodeContentPage>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`);
   }
 
   getReviews(
@@ -269,8 +580,15 @@ export class ContentApiService {
     });
   }
 
-  getListItems(listId: string, page: number): Observable<UserListDetail> {
-    const params = new HttpParams().set('page', page).set('size', 30).set('type', 'MOVIE');
+  createSeriesList(name: string, tmdbId: string): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>('/api/v1/users/me/lists/bulk', {
+      name,
+      items: [{ type: 'SERIES', tmdbId }],
+    });
+  }
+
+  getListItems(listId: string, page: number, type: 'MOVIE' | 'SERIES' = 'MOVIE'): Observable<UserListDetail> {
+    const params = new HttpParams().set('page', page).set('size', 30).set('type', type);
     return this.http.get<UserListDetail>(`/api/v1/lists/${encodeURIComponent(listId)}`, { params });
   }
 
@@ -282,13 +600,42 @@ export class ContentApiService {
     );
   }
 
+  getFollowers(userId: string, page: number): Observable<FollowingPage> {
+    const params = new HttpParams().set('page', page).set('size', 20);
+    return this.http.get<FollowingPage>(
+      `/api/v1/users/${encodeURIComponent(userId)}/followers`,
+      { params },
+    );
+  }
+
   getDiaryEntry(diaryEntryId: string): Observable<DiaryEntryRecord> {
     return this.http.get<DiaryEntryRecord>(`/api/v1/diary/${encodeURIComponent(diaryEntryId)}`);
+  }
+
+  getDiaryComments(diaryEntryId: string, page: number): Observable<ContentPageResult<ContentComment>> {
+    const params = new HttpParams().set('page', page).set('size', 20);
+    return this.http.get<ContentPageResult<ContentComment>>(
+      `/api/v1/diary/${encodeURIComponent(diaryEntryId)}/comments`,
+      { params },
+    );
+  }
+
+  createDiaryComment(diaryEntryId: string, request: CommentCreationRequest): Observable<ContentComment> {
+    return this.http.post<ContentComment>(
+      `/api/v1/diary/${encodeURIComponent(diaryEntryId)}/comments`,
+      request,
+    );
   }
 
   addMovieToList(listId: string, tmdbId: string): Observable<unknown> {
     return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
       content: { type: 'MOVIE', tmdbId },
+    });
+  }
+
+  addSeriesToList(listId: string, tmdbId: string): Observable<unknown> {
+    return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
+      content: { type: 'SERIES', tmdbId },
     });
   }
 
@@ -324,9 +671,19 @@ export class ContentApiService {
     return this.http.post('/api/v1/users/me/watchlist/MOVIE', { tmdbId });
   }
 
+  addSeriesToWatchlist(tmdbId: string): Observable<unknown> {
+    return this.http.post('/api/v1/users/me/watchlist/SERIES', { tmdbId });
+  }
+
   removeFromWatchlist(entryId: string): Observable<void> {
     return this.http.delete<void>(
       `/api/v1/users/me/watchlist/MOVIE/${encodeURIComponent(entryId)}`,
+    );
+  }
+
+  removeSeriesFromWatchlist(entryId: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/v1/users/me/watchlist/SERIES/${encodeURIComponent(entryId)}`,
     );
   }
 
@@ -337,9 +694,34 @@ export class ContentApiService {
     );
   }
 
+  markSeriesDropped(tmdbId: string): Observable<unknown> {
+    return this.http.post(`/api/v1/users/me/dropped/SERIES/${encodeURIComponent(tmdbId)}`, null);
+  }
+
   removeDropped(tmdbId: string): Observable<void> {
     return this.http.delete<void>(
       `/api/v1/users/me/dropped/MOVIE/${encodeURIComponent(tmdbId)}`,
+    );
+  }
+
+  removeSeriesDropped(tmdbId: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/users/me/dropped/SERIES/${encodeURIComponent(tmdbId)}`);
+  }
+
+  createBulkSeriesDiaryEntry(request: SeriesDiaryBulkRequest, idempotencyKey: string): Observable<unknown> {
+    return this.http.post('/api/v1/diary/bulk', request, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
+  }
+
+  createSeriesDiaryEntry(request: SeriesDiaryRequest): Observable<unknown> {
+    return this.http.post('/api/v1/diary', request);
+  }
+
+  setContentRating(contentId: string, score: number, expectedVersion: number | null): Observable<{ score: number; version: number }> {
+    return this.http.put<{ score: number; version: number }>(
+      `/api/v1/contents/${encodeURIComponent(contentId)}/my-rating`,
+      { score, expectedVersion },
     );
   }
 

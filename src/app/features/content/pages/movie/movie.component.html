@@ -306,6 +306,7 @@
             <button
               class="movie-action-watch"
               type="button"
+              [attr.aria-label]="copy.watched + '. ' + copy.yourRating + ': ' + (moviePage.viewerState.myRating ?? copy.noRating)"
               [disabled]="actionPending()"
               (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
             >
@@ -316,16 +317,10 @@
                   <small>{{ formatDate(moviePage.viewerState.lastWatchedDate) }}</small>
                 }
               </span>
-            </button>
-            <button
-              class="movie-action-rating-compact"
-              type="button"
-              [disabled]="actionPending()"
-              [attr.aria-label]="copy.yourRating"
-              (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
-            >
-              <span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span>
-              {{ moviePage.viewerState.myRating ?? copy.noRating }}
+              <span class="movie-action-rating-inline" aria-hidden="true">
+                <ng-container [ngTemplateOutlet]="ratingStar" />
+                {{ moviePage.viewerState.myRating ?? copy.noRating }}
+              </span>
             </button>
             </div>
             <details class="movie-mobile-more-actions">
@@ -589,20 +584,22 @@
           </div>
         }
         <label class="visually-hidden" for="movie-comment-input">{{ copy.commentPlaceholder }}</label>
-        <textarea
-          id="movie-comment-input"
-          maxlength="280"
-          rows="3"
-          [value]="commentDraft()"
-          [placeholder]="copy.commentPlaceholder"
-          (input)="onCommentInput($event)"
-        ></textarea>
+        <div class="movie-comment-input-wrap">
+          <textarea
+            id="movie-comment-input"
+            maxlength="280"
+            rows="3"
+            [value]="commentDraft()"
+            [placeholder]="copy.commentPlaceholder"
+            (input)="onCommentInput($event)"
+          ></textarea>
+          <span class="movie-character-count" aria-live="polite">{{ commentDraft().length }}/280</span>
+        </div>
         <div class="movie-comment-form-footer">
           <label class="movie-checkbox-label">
             <input type="checkbox" [checked]="commentHasSpoiler()" (change)="setCommentSpoiler($event)" />
             <span>{{ copy.commentSpoiler }}</span>
           </label>
-          <span class="movie-character-count">{{ commentDraft().length }}/280</span>
           <button class="movie-button movie-button--primary" type="submit" [disabled]="!canSubmitComment()">
             {{ commentPending() ? copy.commentsLoading : copy.commentSubmit }}
           </button>
@@ -696,14 +693,13 @@
           @if (currentDialog === 'watch' && page(); as moviePage) {
             <span class="movie-watch-subtitle">{{ moviePage.details.title || copy.untitled }}@if (moviePage.details.releaseDate) { · {{ moviePage.details.releaseDate.slice(0, 4) }} }@if (moviePage.details.runtimeMinutes) { · {{ formatRuntime(moviePage.details.runtimeMinutes) }} }</span>
           }
+          @if (currentDialog === 'videos' && page(); as videoPage) {
+            <p class="movie-videos-subtitle">{{ videoPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(videoPage.details.videos.length, 0)) }}</p>
+          }
           @if (currentDialog === 'share') { <p class="movie-share-description">{{ copy.shareDescription }}</p> }
           </div>
           <button class="movie-icon-button" type="button" [attr.aria-label]="copy.closeDialog" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
         </header>
-
-        @if (currentDialog === 'videos' && page(); as videoPage) {
-          <p class="movie-videos-subtitle">{{ videoPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(videoPage.details.videos.length, 0)) }}</p>
-        }
 
         @if (currentDialog === 'watch') {
           <form class="movie-watch-form" [formGroup]="watchForm" [attr.aria-busy]="watchDetailsLoading()" (ngSubmit)="saveWatch()">
@@ -743,12 +739,10 @@
                   </div>
                 }
               </div>
-              @if (watchMode() !== 'edit') {
-                <label class="movie-checkbox-label movie-watch-rewatch">
-                  <input type="checkbox" formControlName="isRewatch" />
-                  <span>{{ copy.rewatchLabel }}</span>
-                </label>
-              }
+              <label class="movie-checkbox-label movie-watch-rewatch">
+                <input type="checkbox" formControlName="isRewatch" />
+                <span>{{ copy.rewatchLabel }}</span>
+              </label>
             </div>
             @if (watchForm.controls.watchedDate.touched && watchForm.controls.watchedDate.invalid) {
               <p class="movie-field-error" role="alert">{{ copy.invalid }}</p>
@@ -920,9 +914,9 @@
                         <button type="button" class="movie-video-card" [attr.aria-label]="copy.playVideo.replace('{video}', otherVideo.name)" (click)="selectVideo(otherVideo)">
                           <span class="movie-video-card-image">
                             @if (videoThumbnail(otherVideo); as thumbnail) { <img [src]="thumbnail" alt="" loading="lazy" /> }
-                            <span aria-hidden="true">&#9654;</span>
+                            <span aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5V19.5L19 12L7 4.5Z" /></svg></span>
                           </span>
-                          <strong>{{ otherVideo.name }}</strong><small>{{ otherVideo.type }}</small>
+                          <span class="movie-video-card-copy"><strong>{{ otherVideo.name }}</strong><small>{{ otherVideo.type }}</small></span>
                         </button>
                       }
                     }
