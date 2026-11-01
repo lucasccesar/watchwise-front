@@ -1,0 +1,92 @@
+<main class="pick-create-page">
+  <nav class="pick-create-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/picks">{{ picksCopy.title }}</a><span>/</span><span>{{ copy.title }}</span></nav>
+  <header class="pick-create-header"><div><h1>{{ copy.title }}</h1><p>{{ copy.intro }}</p></div><a routerLink="/picks/import"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>{{ copy.importJson }}</a></header>
+  <nav class="pick-create-steps" aria-label="{{ copy.breadcrumb }}">
+    <button type="button" [class.active]="step() === 1" [class.complete]="step() > 1" [attr.aria-current]="step() === 1 ? 'step' : null" (click)="goToStep(1)"><span>1</span><strong>{{ copy.stepGeneral }}</strong></button>
+    <i aria-hidden="true"></i>
+    <button type="button" [class.active]="step() === 2" [class.complete]="step() > 2" [attr.aria-current]="step() === 2 ? 'step' : null" [disabled]="step() < 2" (click)="goToStep(2)"><span>2</span><strong>{{ copy.stepCategories }}</strong></button>
+    <i aria-hidden="true"></i>
+    <button type="button" [class.active]="step() === 3" [class.complete]="step() > 3" [attr.aria-current]="step() === 3 ? 'step' : null" [disabled]="step() < 3" (click)="goToStep(3)"><span>3</span><strong>{{ copy.stepOptions }}</strong></button>
+    <i aria-hidden="true"></i>
+    <button type="button" [class.active]="step() === 4" [attr.aria-current]="step() === 4 ? 'step' : null" [disabled]="step() < 4" (click)="goToStep(4)"><span>4</span><strong>{{ copy.stepReview }}</strong></button>
+  </nav>
+
+  <div class="pick-create-layout">
+    <section class="pick-create-workspace">
+      @if (step() === 1) {
+        <section class="pick-create-panel" aria-labelledby="pick-create-general-title"><header><h2 id="pick-create-general-title">{{ copy.stepGeneral }}</h2><p>{{ copy.periodDescription }}</p></header>
+          <label class="pick-create-field"><span>{{ copy.name }} <b>*</b></span><input type="text" maxlength="120" [value]="name()" (input)="updateName($event)" /><small>{{ name().length }} / 120</small></label>
+          <label class="pick-create-field"><span>{{ copy.description }}</span><textarea rows="3" [value]="description()" (input)="updateDescription($event)"></textarea></label>
+          <label class="pick-create-field"><span>{{ copy.cover }}</span><input type="url" [value]="coverImage()" (input)="updateCover($event)" /><small>{{ copy.coverHint }}</small></label>
+          <div class="pick-create-period"><div><h3>{{ copy.period }}</h3><p>{{ copy.periodDescription }}</p></div><label class="pick-create-switch"><input type="checkbox" [checked]="limitByDate()" (change)="setDateLimit($event)"/><span aria-hidden="true"></span><span>{{ copy.limitByDate }}</span></label>
+            @if (limitByDate()) { <div class="pick-create-dates"><label>{{ copy.startDate }}<input type="date" [value]="eligibilityStartDate()" (input)="setEligibilityStart($event)" /></label><label>{{ copy.endDate }}<input type="date" [value]="eligibilityEndDate()" (input)="setEligibilityEnd($event)" /></label></div> } @else { <small>{{ copy.noDateLimit }}</small> }
+          </div>
+        </section>
+      } @else if (step() === 2) {
+        <section class="pick-create-panel" aria-labelledby="pick-create-categories-title"><header><h2 id="pick-create-categories-title">{{ copy.categories }}</h2><p>{{ copy.categoriesDescription }}</p></header>
+          @if (categories().length) { <div class="pick-create-category-list">@for (category of categories(); track category.key; let i = $index) {
+            <article class="pick-create-category-form"><header><span>{{ i + 1 }}</span><strong>{{ category.name || copy.categoryName }}</strong><button type="button" [attr.aria-label]="copy.removeCategory" (click)="removeCategory(category.key)">×</button></header>
+              <label class="pick-create-field"><span>{{ copy.categoryName }} *</span><input type="text" maxlength="100" [value]="category.name" (input)="setCategoryName(category.key, $event)" /></label>
+              <label class="pick-create-field"><span>{{ copy.categoryDescription }}</span><input type="text" maxlength="240" [value]="category.description" (input)="setCategoryDescription(category.key, $event)" /></label>
+              <div class="pick-create-category-options"><label>{{ copy.group }}<select [value]="category.group" (change)="setCategoryGroup(category.key, $event)"><option value="PRIMARY">{{ copy.primary }}</option><option value="SECONDARY">{{ copy.secondary }}</option></select></label><label>{{ copy.allowedType }}<select [value]="category.allowedType" (change)="setCategoryType(category.key, $event)"><option value="MOVIE">{{ copy.movie }}</option><option value="SERIES">{{ copy.series }}</option><option value="EPISODE">{{ copy.episode }}</option><option value="PERSON">{{ copy.person }}</option></select></label><label>{{ copy.optionMode }}<select [value]="category.optionMode" (change)="setOptionMode(category.key, $event)"><option value="OPEN">{{ copy.open }}</option><option value="FIXED">{{ copy.fixed }}</option></select></label></div>
+              @if (category.optionMode === 'FIXED') { <button class="pick-create-manage-options" type="button" (click)="openOptions(category)">{{ copy.fixedOptions }} <span>{{ category.options.length }}</span><span aria-hidden="true">→</span></button> }
+            </article>
+          }</div> } @else { <p class="pick-create-empty">{{ copy.categoriesDescription }}</p> }
+          <button type="button" class="pick-create-add" (click)="addCategory()"><span aria-hidden="true">＋</span>{{ copy.addCategory }}</button>
+        </section>
+      } @else if (step() === 3) {
+        <section class="pick-create-panel" aria-labelledby="pick-create-options-title"><header><h2 id="pick-create-options-title">{{ copy.fixedOptions }}</h2><p>{{ copy.optionsDescription }}</p></header>
+          @for (category of categories(); track category.key) { @if (category.optionMode === 'FIXED') {
+            <article class="pick-create-option-category"><header><div><span>{{ typeLabel(category.allowedType) }} · {{ category.group === 'PRIMARY' ? copy.primary : copy.secondary }}</span><h3>{{ category.name }}</h3></div><button type="button" (click)="openOptions(category)">{{ copy.addOption }} <span aria-hidden="true">＋</span></button></header>
+              @if (category.options.length) { <div class="pick-create-option-chips">@for (option of category.options; track option.key) { <span>@if (option.image) { <img [src]="option.image" alt="" /> }<span><strong>{{ option.label }}</strong>@if (option.subtitle) { <small>{{ option.subtitle }}</small> }</span><button type="button" [attr.aria-label]="copy.removeOption.replace('{name}', option.label)" (click)="removeOption(category.key, option.key)">×</button></span> }</div> } @else { <p class="pick-create-empty">{{ copy.optionsRequired }}</p> }
+              @if (category.pendingNames.length) { <div class="pick-create-pending">@for (nominee of category.pendingNames; track $index) { <button type="button" (click)="searchPendingNominee(category, nominee)">{{ nominee }} <span aria-hidden="true">⌕</span></button> }</div> }
+            </article>
+          } }
+          @if (!hasFixedCategories()) { <p class="pick-create-empty">{{ copy.optionsDescription }}</p> }
+        </section>
+      } @else {
+        <section class="pick-create-panel pick-create-review" aria-labelledby="pick-create-review-title"><header><h2 id="pick-create-review-title">{{ copy.review }}</h2><p>{{ copy.reviewDescription }}</p></header>
+          <div class="pick-create-review-hero">@if (coverImage()) { <img [src]="coverImage()" alt="" /> } @else { <span>{{ name().slice(0,1).toLocaleUpperCase('pt-BR') || '✦' }}</span> }<div><strong>{{ name() }}</strong>@if (description()) { <p>{{ description() }}</p> }@if (eligibilityStartDate() || eligibilityEndDate()) { <small>{{ eligibilityStartDate() }} – {{ eligibilityEndDate() }}</small> }</div></div>
+          <div class="pick-create-review-categories">@for (category of categories(); track category.key) { <article><div><span>{{ category.group === 'PRIMARY' ? copy.primary : copy.secondary }} · {{ typeLabel(category.allowedType) }}</span><h3>{{ category.name }}</h3>@if (category.description) { <p>{{ category.description }}</p> }</div><strong>{{ category.optionMode === 'FIXED' ? optionCountLabel(category.options.length) : copy.previewAny.replace('{type}', typeLabel(category.allowedType).toLocaleLowerCase('pt-BR')) }}</strong>@if (category.options.length) { <small>{{ optionNames(category) }}</small> }</article> }</div>
+        </section>
+      }
+      @if (formError()) { <p class="pick-create-error" role="alert">{{ errorText() }}</p> }
+      <footer class="pick-create-actions"><button type="button" class="pick-create-cancel" (click)="cancel()">{{ copy.cancel }}</button><span>{{ copy.stepOf.replace('{step}', step().toString()) }}</span>@if (step() > 1) { <button type="button" class="pick-create-back" (click)="previousStep()">{{ copy.back }}</button> } @if (step() < 4) { <button type="button" class="pick-create-next" (click)="nextStep()">{{ copy.continue }}<span aria-hidden="true">→</span></button> } @else { <button type="button" class="pick-create-next" [disabled]="creating()" (click)="submit()">{{ creating() ? copy.creating : copy.create }}</button> }</footer>
+    </section>
+
+    <aside class="pick-create-preview"><header><div><h2>{{ copy.cardPreview }}</h2><p>{{ copy.cardPreviewDescription }}</p></div></header><article class="pick-create-preview-card"><div class="pick-create-preview-cover">@if (coverImage()) { <img [src]="coverImage()" alt="" /> } @else { <span>{{ copy.noCover }}</span> }<b>{{ copy.community }}</b></div><div class="pick-create-preview-body"><h3>{{ name() || ' ' }}</h3><div class="pick-create-preview-meta"><span>{{ picksCopy.unknownCreator }}</span><span>·</span><time>{{ copy.today }}</time></div>@if (description()) { <p>{{ description() }}</p> }<div class="pick-create-preview-tags">@for (category of categories().slice(0, 3); track category.key) { <span>{{ category.name || copy.categoryName }}</span> }</div><footer><span>{{ categoryCount() }} {{ copy.categoriesCount.replace('{count}', '').trim() }}</span><span>0 {{ copy.picksCount.replace('{count}', '').trim() }}</span></footer></div></article></aside>
+  </div>
+</main>
+
+@if (activeCategory(); as category) {
+  <div class="pick-create-backdrop" (click)="$event.target === $event.currentTarget ? closeOptions() : null"><section class="pick-create-dialog" role="dialog" appModalFocus (modalDismiss)="closeOptions()" aria-modal="true" [attr.aria-label]="copy.fixedOptions + ': ' + category.name">
+    <header><div><span>{{ typeLabel(category.allowedType) }} · {{ category.group === 'PRIMARY' ? copy.primary : copy.secondary }}</span><h2>{{ category.name }}</h2></div><button type="button" aria-label="{{ copy.cancel }}" (click)="closeOptions()">×</button></header>
+    <div class="pick-create-dialog-body">
+      @if (selectedSeries(); as series) {
+        @if (seriesSeasons().length) {
+          <div class="pick-create-series"><img [src]="series.posterUrl || ''" alt="" /><strong>{{ series.title }}</strong><button type="button" (click)="openOptions(category)">{{ copy.search }}</button></div>
+          <label class="pick-create-select">{{ copy.season }}<select [value]="seriesSeason() ?? ''" (change)="setSeriesSeason($event)"><option value="">{{ copy.chooseSeason }}</option>@for (season of seasonChoices(); track season.number) { <option [value]="season.number">{{ season.name }}</option> }</select></label>
+          @if (seriesSeason() !== null) {
+            @if (seasonEpisodes().length) {
+              <div class="pick-create-episode-list">
+                @for (episode of seasonEpisodes(); track episode.episodeNumber) {
+                  <button type="button" (click)="addEpisodeOption(episode)">@if (episode.stillUrl) { <img [src]="episode.stillUrl" alt="" /> }<span><strong>{{ episode.name || copy.episodeChoice }} · E{{ episode.episodeNumber }}</strong><small>{{ episode.airDate || '' }}</small></span><b>＋</b></button>
+                }
+              </div>
+            } @else { <p class="pick-create-empty">{{ copy.noEpisodes }}</p> }
+          }
+        }
+      } @else {
+        <form class="pick-create-option-search" (submit)="searchOptions($event)"><label for="pick-create-search">{{ copy.search }}</label><div><input id="pick-create-search" type="search" [value]="optionQuery()" (input)="setOptionQuery($event)" [placeholder]="copy.searchPlaceholder" /><button type="submit" [disabled]="!optionQuery().trim() || optionSearchBusy()">{{ optionSearchBusy() ? copy.searching : copy.search }}</button></div></form>
+        @if (optionSearchError()) { <p class="pick-create-error" role="alert">{{ optionSearchError() }}</p> }
+        @if (optionSearchBusy()) { <p class="pick-create-dialog-empty">{{ copy.searching }}</p> }
+        @else if (optionResults().contents.length || optionResults().people.length) {
+          @if (optionResults().contents.length) { <div class="pick-create-results">@for (content of optionResults().contents; track content.tmdbId) { <button type="button" (click)="chooseSearchContent(content)">@if (content.posterUrl) { <img [src]="content.posterUrl" alt="" /> }<span><strong>{{ content.title || typeLabel(category.allowedType) }}</strong><small>{{ content.releaseYear || '' }} {{ content.genres?.slice(0,2)?.join(' · ') || '' }}</small></span><b>＋</b></button> }</div> }
+          @if (optionResults().people.length) { <div class="pick-create-results">@for (person of optionResults().people; track person.tmdbId) { <button type="button" (click)="choosePerson(person)">@if (person.photoUrl) { <img class="person" [src]="person.photoUrl" alt="" /> }<span><strong>{{ person.name || copy.person }}</strong><small>{{ person.knownForDepartment || copy.person }}</small></span><b>＋</b></button> }</div> }
+        } @else if (optionQuery().trim()) { <p class="pick-create-dialog-empty">{{ copy.noResults }}</p> }
+      }
+      @if (activeCategoryOptions().length) { <section class="pick-create-chosen"><h3>{{ copy.fixedOptions }} · {{ activeCategoryOptions().length }}</h3><div>@for (option of activeCategoryOptions(); track option.key) { <span>{{ option.label }}<button type="button" [attr.aria-label]="copy.removeOption.replace('{name}', option.label)" (click)="removeOption(category.key, option.key)">×</button></span> }</div></section> }
+    </div>
+    <footer><span>@if (pendingNominee()) { {{ importCopy.nomineeField }}: {{ pendingNominee() }} } @else { {{ copy.optionsDescription }} }</span><button type="button" (click)="closeOptions()">{{ copy.back }}</button></footer>
+  </section></div>
+}
