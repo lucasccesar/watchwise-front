@@ -13,6 +13,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import {
   TrendingApiService,
   TrendingCard,
@@ -47,16 +48,21 @@ function emptySection(loading = false): SectionState {
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ContentImageActionsComponent],
   templateUrl: './trending.component.html',
 })
 export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].trendingPage;
   protected readonly footerCopy = messageCatalog['pt-BR'].home;
-  protected readonly copyrightYear = new Date().getFullYear();
+  protected readonly posterActions: readonly ContentImageAction[] = [
+    { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
+  ];
   protected readonly period = signal<TrendingWindow>('week');
-  protected readonly view = signal<'grid' | 'list'>('grid');
+  protected readonly view = signal<'grid' | 'list'>(
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches ? 'list' : 'grid',
+  );
   protected readonly filterOpen = signal(false);
+  protected readonly filterSubpage = signal<'view' | 'period' | null>(null);
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly errorMessage = signal('');
   protected readonly sections = signal<Sections>({ MOVIE: emptySection(), SERIES: emptySection() });
@@ -145,6 +151,27 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.load();
   }
 
+  protected selectFilterPeriod(period: TrendingWindow): void {
+    if (period !== this.period()) {
+      this.period.set(period);
+      this.load();
+    }
+    this.filterSubpage.set(null);
+  }
+
+  protected selectFilterView(view: 'grid' | 'list'): void {
+    this.view.set(view);
+    this.filterSubpage.set(null);
+  }
+
+  protected openFilterSubpage(page: 'view' | 'period'): void {
+    this.filterSubpage.set(page);
+  }
+
+  protected backToFilters(): void {
+    this.filterSubpage.set(null);
+  }
+
   protected openFilters(event: Event): void {
     this.filterOpener = event.currentTarget as HTMLElement;
     this.filterOpen.set(true);
@@ -152,6 +179,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
 
   protected closeFilters(): void {
     this.filterOpen.set(false);
+    this.filterSubpage.set(null);
     this.filterOpener?.focus();
   }
 
@@ -265,6 +293,10 @@ export class TrendingComponent implements OnInit, OnDestroy {
 
   protected cardTitle(card: TrendingCard): string {
     return card.title || this.copy.untitled;
+  }
+
+  protected openContent(card: TrendingCard): void {
+    void this.router.navigate(['/content', card.type.toLowerCase(), card.tmdbId]);
   }
 
   protected cardRating(card: TrendingCard): { label: string; value: string } | null {

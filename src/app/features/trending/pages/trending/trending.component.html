@@ -84,47 +84,31 @@
               [attr.aria-busy]="section(type).loading"
             >
               @for (card of visibleCards(type); track card.tmdbId) {
-                <li class="tr-card">
+                <li class="tr-card content-image-card">
                   <article [attr.aria-label]="cardTitle(card)">
                     <div class="tr-poster">
                       @if (card.posterUrl) {
-                        @if (card.type === 'MOVIE') {
-                          <a
-                            class="tr-poster-link"
-                            [routerLink]="['/content/movie', card.tmdbId]"
-                            [attr.aria-label]="footerCopy.movieSingular + ': ' + cardTitle(card)"
-                          ><img [src]="card.posterUrl" alt="" loading="lazy" /></a>
-                        } @else {
-                          <img [src]="card.posterUrl" alt="" loading="lazy" />
-                        }
+                        <a
+                          class="tr-poster-link"
+                          [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]"
+                          [attr.aria-label]="cardTitle(card)"
+                        ><img [src]="card.posterUrl" alt="" loading="lazy" /></a>
                       } @else {
-                        @if (card.type === 'MOVIE') {
-                          <a
-                            class="tr-poster-link tr-poster-empty"
-                            [routerLink]="['/content/movie', card.tmdbId]"
-                            [attr.aria-label]="footerCopy.movieSingular + ': ' + cardTitle(card)"
-                            >{{ copy.noPoster }}</a
-                          >
-                        } @else {
-                          <span class="tr-poster-empty" aria-hidden="true">{{ copy.noPoster }}</span>
-                        }
-                      }
-                      @if (cardRating(card); as rating) {
-                        <span
-                          class="tr-community-rating"
-                          [attr.aria-label]="rating.label + ': ' + rating.value"
+                        <a
+                          class="tr-poster-link tr-poster-empty"
+                          [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]"
+                          [attr.aria-label]="cardTitle(card)"
+                          >{{ copy.noPoster }}</a
                         >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path
-                              d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-                            />
-                            <path
-                              d="m19 3 1.2 2.4 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z"
-                            />
-                          </svg>
-                          {{ rating.value }}
-                        </span>
                       }
+                      @let rating = cardRating(card);
+                      <app-content-image-actions
+                        [ratingValue]="rating?.value ?? null"
+                        [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''"
+                        [optionsLabel]="footerCopy.contentOptions"
+                        [actions]="posterActions"
+                        (actionSelected)="openContent(card)"
+                      />
                       @if (upcomingRelease(card); as release) {
                         <span
                           class="tr-upcoming-release"
@@ -138,17 +122,6 @@
                           {{ release.short }}
                         </span>
                       }
-                      <button
-                        class="tr-content-menu-trigger"
-                        type="button"
-                        [attr.aria-label]="footerCopy.contentOptions"
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <circle cx="5" cy="12" r="2" />
-                          <circle cx="12" cy="12" r="2" />
-                          <circle cx="19" cy="12" r="2" />
-                        </svg>
-                      </button>
                       @if (stateLabel(card); as state) {
                         <span
                           class="tr-state-marker"
@@ -196,11 +169,7 @@
                     <div class="tr-card-text">
                       <div class="tr-card-main">
                         <strong>
-                          @if (card.type === 'MOVIE') {
-                            <a class="tr-title-link" [routerLink]="['/content/movie', card.tmdbId]">{{ cardTitle(card) }}</a>
-                          } @else {
-                            {{ cardTitle(card) }}
-                          }
+                          <a class="tr-title-link" [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]">{{ cardTitle(card) }}</a>
                         </strong><span>{{ cardLength(card) }}</span>
                       </div>
                       <p>{{ cardMeta(card) }}</p>
@@ -254,40 +223,6 @@
     }
   }
 
-  <footer class="home-footer">
-    <div class="home-footer-content">
-      <div class="home-footer-primary">
-        <img
-          class="home-footer-brand"
-          src="/watchwise-logo.svg"
-          alt="Watchwise"
-          width="105"
-          height="20"
-        />
-        <nav class="home-footer-nav" [attr.aria-label]="footerCopy.footerNavigation">
-          <a routerLink="/terms">{{ footerCopy.terms }}</a>
-          <a routerLink="/privacy">{{ footerCopy.privacy }}</a>
-          <a routerLink="/community-guidelines">{{ footerCopy.communityGuidelines }}</a>
-          <a routerLink="/help-contact">{{ footerCopy.helpContact }}</a>
-        </nav>
-      </div>
-      <div class="home-footer-secondary">
-        <div class="home-footer-tmdb-credit">
-          <a
-            href="https://www.themoviedb.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="The Movie Database (TMDB)"
-          >
-            <img src="/tmdb-logo.svg" alt="TMDB" width="69" height="9" />
-          </a>
-          <p>{{ copy.tmdbAttribution }}</p>
-        </div>
-        <span class="home-footer-copyright">© {{ copyrightYear }} Watchwise</span>
-      </div>
-    </div>
-  </footer>
-
   @if (filterOpen()) {
     <div class="tr-filter-layer">
       <button
@@ -303,44 +238,63 @@
         aria-modal="true"
         aria-labelledby="tr-filter-title"
       >
+        <div class="tr-filter-handle" aria-hidden="true"><span></span></div>
         <div class="tr-filter-heading">
-          <h2 id="tr-filter-title">{{ copy.filters }}</h2>
-          <button
-            #filterCloseButton
-            type="button"
-            [attr.aria-label]="copy.closeFilters"
-            (click)="closeFilters()"
-          >
-            ×
-          </button>
+          @if (filterSubpage()) {
+            <button class="tr-filter-back" type="button" (click)="backToFilters()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12" /></svg>
+              {{ copy.filters }}
+            </button>
+            <button
+              #filterCloseButton
+              type="button"
+              [attr.aria-label]="copy.closeFilters"
+              (click)="closeFilters()"
+            >×</button>
+          } @else {
+            <h2 id="tr-filter-title">{{ copy.filters }}</h2>
+            <button
+              #filterCloseButton
+              type="button"
+              [attr.aria-label]="copy.closeFilters"
+              (click)="closeFilters()"
+            >×</button>
+          }
         </div>
-        <fieldset>
-          <legend>{{ copy.periodLabel }}</legend>
-          <button
-            type="button"
-            [attr.aria-pressed]="period() === 'day'"
-            (click)="changePeriod('day')"
-          >
-            {{ copy.today }}</button
-          ><button
-            type="button"
-            [attr.aria-pressed]="period() === 'week'"
-            (click)="changePeriod('week')"
-          >
-            {{ copy.thisWeek }}
-          </button>
-        </fieldset>
-        <fieldset>
-          <legend>{{ copy.viewLabel }}</legend>
-          <button type="button" [attr.aria-pressed]="view() === 'grid'" (click)="view.set('grid')">
-            {{ copy.grid }}</button
-          ><button type="button" [attr.aria-pressed]="view() === 'list'" (click)="view.set('list')">
-            {{ copy.list }}
-          </button>
-        </fieldset>
-        <button class="tr-filter-done" type="button" (click)="closeFilters()">
-          {{ copy.apply }}
-        </button>
+        @if (!filterSubpage()) {
+          <div class="tr-filter-options">
+            <button class="tr-filter-row" type="button" (click)="openFilterSubpage('view')">
+              <span>{{ copy.viewLabel }}</span><span>{{ view() === 'list' ? copy.list : copy.grid }}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+            <button class="tr-filter-row" type="button" (click)="openFilterSubpage('period')">
+              <span>{{ copy.periodLabel }}</span><span>{{ period() === 'week' ? copy.thisWeek : copy.today }}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+          </div>
+        } @else if (filterSubpage() === 'view') {
+          <h2 id="tr-filter-title" class="tr-filter-subtitle">{{ copy.viewLabel }}</h2>
+          <div class="tr-filter-radio-list" role="radiogroup" [attr.aria-label]="copy.viewLabel">
+            <button type="button" role="radio" [attr.aria-checked]="view() === 'list'" (click)="selectFilterView('list')">
+              <span class="tr-filter-radio"></span>{{ copy.list }}
+            </button>
+            <button type="button" role="radio" [attr.aria-checked]="view() === 'grid'" (click)="selectFilterView('grid')">
+              <span class="tr-filter-radio"></span>{{ copy.grid }}
+            </button>
+          </div>
+          <button class="tr-filter-done" type="button" (click)="backToFilters()">{{ copy.apply }}</button>
+        } @else {
+          <h2 id="tr-filter-title" class="tr-filter-subtitle">{{ copy.periodLabel }}</h2>
+          <div class="tr-filter-radio-list" role="radiogroup" [attr.aria-label]="copy.periodLabel">
+            <button type="button" role="radio" [attr.aria-checked]="period() === 'week'" (click)="selectFilterPeriod('week')">
+              <span class="tr-filter-radio"></span>{{ copy.thisWeek }}
+            </button>
+            <button type="button" role="radio" [attr.aria-checked]="period() === 'day'" (click)="selectFilterPeriod('day')">
+              <span class="tr-filter-radio"></span>{{ copy.today }}
+            </button>
+          </div>
+          <button class="tr-filter-done" type="button" (click)="backToFilters()">{{ copy.apply }}</button>
+        }
       </div>
     </div>
   }
