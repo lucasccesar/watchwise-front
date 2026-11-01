@@ -1,0 +1,199 @@
+<main class="settings-page">
+  <header class="settings-intro">
+    <div class="settings-page-width">
+      @if (activeSection()) {
+        <button class="settings-back" type="button" (click)="closeMobileSection()"><span aria-hidden="true">‹</span> Configurações <span class="settings-back-separator" aria-hidden="true">/</span> <span class="settings-back-current">{{ activeSectionTitle() }}</span></button>
+      }
+      <h1>Configurações</h1>
+      <p>Gerencie seu perfil, privacidade, preferências de conteúdo e conta.</p>
+    </div>
+  </header>
+
+  @if (notice()) {
+    <div class="settings-notice settings-notice--{{ noticeKind() }}" role="status">{{ notice() }}</div>
+  }
+
+  <div class="settings-page-width settings-layout">
+    <nav class="settings-section-nav" aria-label="Seções de configurações">
+      @for (section of sections; track section.id) {
+        <button type="button" [class.active]="activeSection() === section.id" (click)="openSection(section.id)">
+          <span class="settings-section-icon" aria-hidden="true">
+            @switch (section.id) {
+              @case ('profile') { <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg> }
+              @case ('privacy') { <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
+              @case ('content') { <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg> }
+              @case ('account') { <svg viewBox="0 0 24 24"><path d="m12 3 8 3v5c0 5-3.5 8.6-8 10-4.5-1.4-8-5-8-10V6l8-3Z"/></svg> }
+            }
+          </span>
+          <span class="settings-section-copy"><strong>{{ section.title }}</strong><small>{{ section.subtitle }}</small></span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+      }
+    </nav>
+
+    <div class="settings-content">
+      <section class="settings-section" id="settings-profile" [class.settings-section--mobile-active]="activeSection() === 'profile'">
+        <header class="settings-section-heading">
+          <h2>Perfil</h2>
+          <p>Como você aparece no Watchwise: no seu perfil, avaliações, listas e Picks.</p>
+        </header>
+        <div class="settings-panel settings-profile-panel">
+          <h3>Prévia</h3>
+          <div class="settings-profile-preview" [style.background-image]="bannerImage() ? 'linear-gradient(180deg, transparent, rgba(10, 12, 17, .84)), url(' + bannerImage() + ')' : null">
+            @if (profilePhoto()) { <img class="settings-preview-avatar" [src]="profilePhoto()" alt="" /> }
+            @else { <span class="settings-preview-avatar settings-preview-avatar--fallback">{{ (displayName() || username() || 'W').slice(0, 1).toUpperCase() }}</span> }
+            <strong>{{ displayName() || 'Seu nome' }}</strong>
+            <span>@{{ username() || 'seuusuario' }}</span>
+          </div>
+
+          <div class="settings-upload-grid">
+            <label class="settings-upload-card">
+              <strong>Foto do perfil</strong>
+              <span class="settings-upload-action">Alterar foto</span>
+              <small>JPG, PNG ou WebP. Imagens quadradas funcionam melhor.</small>
+              <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event, 'profile')" />
+            </label>
+            <label class="settings-upload-card">
+              <strong>Banner</strong>
+              <span class="settings-upload-action">Alterar banner</span>
+              <small>JPG, PNG ou WebP. Imagens largas ficam melhores.</small>
+              <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event, 'banner')" />
+            </label>
+          </div>
+          @if (bannerImage()) { <button class="settings-text-button" type="button" [disabled]="busy()" (click)="removeBanner()">Remover banner</button> }
+          <div class="settings-profile-fields">
+            <label class="settings-field"><span>Nome <b>*</b></span><input [value]="displayName()" maxlength="80" autocomplete="name" [disabled]="busy() || !settingsLoaded()" (input)="displayName.set($any($event.target).value)" /></label>
+            <label class="settings-field"><span>Nome de usuário <b>*</b></span><input [value]="username()" maxlength="30" autocomplete="username" [disabled]="busy() || !settingsLoaded()" (input)="username.set($any($event.target).value)" /><small>Use apenas letras, números, pontos e sublinhados.</small></label>
+          </div>
+          <label class="settings-field"><span>Descrição <small>{{ bio().length }} / 160</small></span><textarea [value]="bio()" maxlength="160" rows="4" [disabled]="busy() || !settingsLoaded()" (input)="bio.set($any($event.target).value)"></textarea></label>
+          <footer class="settings-actions"><button class="settings-secondary-button" type="button" [disabled]="busy() || !isProfileDirty()" (click)="resetProfile()">Descartar alterações</button><button class="settings-primary-button" type="button" [disabled]="busy() || !settingsLoaded() || !isProfileDirty()" (click)="saveProfile()">{{ busy() ? 'Salvando…' : 'Salvar alterações' }}</button></footer>
+        </div>
+      </section>
+
+      <section class="settings-section" id="settings-privacy" [class.settings-section--mobile-active]="activeSection() === 'privacy'">
+        <header class="settings-section-heading"><h2>Privacidade</h2><p>Solicitações para seguir, usuários bloqueados e pessoas conectadas a você.</p></header>
+        <div class="settings-panel settings-visibility-panel">
+          <div><h3>Visibilidade do perfil</h3><p>Listas e Picks têm configurações de visibilidade próprias.</p></div>
+          <div class="settings-radio-list">
+            <label><input type="radio" name="profile-visibility" value="PUBLIC" [checked]="visibility() === 'PUBLIC'" [disabled]="busy() || !settingsLoaded()" (change)="visibility.set('PUBLIC')" /><span class="settings-visibility-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span><span><strong>Público</strong><small>Qualquer pessoa pode ver seu perfil e sua atividade.</small></span></label>
+            <label><input type="radio" name="profile-visibility" value="PRIVATE" [checked]="visibility() === 'PRIVATE'" [disabled]="busy() || !settingsLoaded()" (change)="visibility.set('PRIVATE')" /><span class="settings-visibility-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span><strong>Privado</strong><small>Apenas seguidores que você aceitar podem ver sua atividade.</small></span></label>
+          </div>
+          <p class="settings-helper"><span class="settings-helper-icon" aria-hidden="true">i</span><span>Sem uma solicitação aceita, não se vê seu diário, Top 5, watchlist, títulos abandonados, seguidores ou quem você segue.</span></p>
+          <footer class="settings-actions"><button class="settings-secondary-button" type="button" [disabled]="busy() || !isVisibilityDirty()" (click)="visibility.set(settingsBaseline()?.profile?.isProfilePublic ? 'PUBLIC' : 'PRIVATE')">Descartar alterações</button><button class="settings-primary-button" type="button" [disabled]="busy() || !settingsLoaded() || !isVisibilityDirty()" (click)="saveVisibility()">{{ busy() ? 'Salvando…' : 'Salvar visibilidade' }}</button></footer>
+        </div>
+        <div class="settings-panel settings-list-panel">
+          <header><div><h3>Solicitações para seguir</h3><p>Quem pediu para seguir você. Ao aceitar, a pessoa poderá ver sua atividade.</p></div><span>{{ followRequestCount() }} {{ followRequestCount() === 1 ? 'pendente' : 'pendentes' }}</span></header>
+          @if (followRequestsStatus() === 'loading') {
+            <p class="settings-empty" role="status">Carregando solicitações…</p>
+          } @else if (followRequestsStatus() === 'error') {
+            <p class="settings-empty" role="alert">{{ followRequestsError() }}</p><button class="settings-secondary-button" type="button" (click)="retryFollowRequests()">Tentar novamente</button>
+          } @else if (followRequests().length) {
+            <div class="settings-connection-list">
+              @for (request of followRequests(); track request.id) {
+                <article class="settings-connection-row">
+                  <a class="settings-connection-user" [routerLink]="['/users', request.username]">
+                    <span class="settings-connection-avatar">@if (request.profilePicture) { <img [src]="request.profilePicture" alt="" /> } @else { {{ connectionInitial(request.name, request.username) }} }</span>
+                    <span><strong>{{ connectionName(request.name, request.username) }}</strong><small>@{{ request.username }} · Solicitou {{ requestDate(request.createdAt) }}</small></span>
+                  </a>
+                  <div class="settings-connection-actions">
+                    <button class="settings-secondary-button" type="button" [disabled]="!!followRequestActionId()" (click)="decideFollowRequest(request, 'rejected')">Recusar</button>
+                    <button class="settings-primary-button" type="button" [disabled]="!!followRequestActionId()" (click)="decideFollowRequest(request, 'accepted')">Aceitar</button>
+                  </div>
+                </article>
+              }
+            </div>
+            @if (followRequestsHasNext()) { <button class="settings-load-more" type="button" [disabled]="loadingMoreFollowRequests()" (click)="loadMoreFollowRequests()">{{ loadingMoreFollowRequests() ? 'Carregando…' : 'Carregar mais solicitações' }}</button> }
+            @if (followRequestsError()) { <p class="settings-inline-error" role="alert">{{ followRequestsError() }}</p> }
+            @if (followRequestsMessage()) { <p class="settings-inline-message" role="status">{{ followRequestsMessage() }}</p> }
+          } @else {
+            <p class="settings-empty">Você não tem solicitações pendentes.</p>
+          }
+          <small>Ao tornar seu perfil público, todas as solicitações pendentes serão aceitas automaticamente.</small>
+        </div>
+        <div class="settings-panel settings-list-panel">
+          <header><div><h3>Usuários bloqueados</h3><p>Pessoas bloqueadas não podem seguir você nem responder aos seus comentários. Elas não recebem aviso quando você as bloqueia ou desbloqueia.</p></div><span>{{ blockedUserCount() }} {{ blockedUserCount() === 1 ? 'bloqueado' : 'bloqueados' }}</span></header>
+          @if (blockedUsersStatus() === 'loading') {
+            <p class="settings-empty" role="status">Carregando usuários bloqueados…</p>
+          } @else if (blockedUsersStatus() === 'error') {
+            <p class="settings-empty" role="alert">{{ blockedUsersError() }}</p><button class="settings-secondary-button" type="button" (click)="retryBlockedUsers()">Tentar novamente</button>
+          } @else if (blockedUsers().length) {
+            <div class="settings-connection-list">
+              @for (record of blockedUsers(); track record.user.id) {
+                <article class="settings-connection-row">
+                  <a class="settings-connection-user" [routerLink]="['/users', record.user.username]">
+                    <span class="settings-connection-avatar">@if (record.user.profilePicture) { <img [src]="record.user.profilePicture" alt="" /> } @else { {{ connectionInitial(record.user.name, record.user.username) }} }</span>
+                    <span><strong>{{ connectionName(record.user.name, record.user.username) }}</strong><small>@{{ record.user.username }} · Bloqueado {{ requestDate(record.createdAt) }}</small></span>
+                  </a>
+                  <div class="settings-connection-actions"><button class="settings-secondary-button" type="button" [disabled]="!!blockedUserActionId()" (click)="unblockUser(record)">{{ blockedUserActionId() === record.user.id ? 'Desbloqueando…' : 'Desbloquear' }}</button></div>
+                </article>
+              }
+            </div>
+            @if (blockedUsersHasNext()) { <button class="settings-load-more" type="button" [disabled]="loadingMoreBlockedUsers()" (click)="loadMoreBlockedUsers()">{{ loadingMoreBlockedUsers() ? 'Carregando…' : 'Carregar mais usuários' }}</button> }
+            @if (blockedUsersError()) { <p class="settings-inline-error" role="alert">{{ blockedUsersError() }}</p> }
+            @if (blockedUsersMessage()) { <p class="settings-inline-message" role="status">{{ blockedUsersMessage() }}</p> }
+          } @else {
+            <p class="settings-empty">Você não bloqueou ninguém.</p>
+          }
+        </div>
+        <div class="settings-panel settings-connections"><header><h3>Conexões</h3><p>Revise quem segue você e quem você segue.</p></header><div><a [routerLink]="['/users', username(), 'followers']"><span class="settings-connection-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6m0-5c3.2 0 5 1.8 5 5"/></svg></span><strong>Seguidores</strong><span>Veja quem segue você <b>→</b></span></a><a [routerLink]="['/users', username(), 'following']"><span class="settings-connection-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6m0-5c3.2 0 5 1.8 5 5"/></svg></span><strong>Seguindo</strong><span>Veja e deixe de seguir pessoas <b>→</b></span></a></div></div>
+      </section>
+
+      <section class="settings-section" id="settings-content" [class.settings-section--mobile-active]="activeSection() === 'content'">
+        <header class="settings-section-heading"><h2>Preferências de conteúdo</h2><p>O idioma e a região usados para os dados de filmes e séries.</p></header>
+        <div class="settings-panel settings-preferences-panel">
+          <label class="settings-field"><span>Idioma de títulos e detalhes</span><select [value]="language()" [disabled]="busy() || !settingsLoaded()" (change)="language.set($any($event.target).value)"><option value="pt-BR">Português (Brasil)</option><option value="en-US">Inglês</option><option value="es-ES">Espanhol</option><option value="fr-FR">Francês</option><option value="ja-JP">Japonês</option></select><small>Títulos, sinopses e nomes alternativos aparecem neste idioma quando disponível.</small></label>
+          <label class="settings-field"><span>Região de lançamentos e serviços</span><select [value]="region()" [disabled]="busy() || !settingsLoaded()" (change)="region.set($any($event.target).value)"><option value="BR">Brasil</option><option value="US">Estados Unidos</option><option value="GB">Reino Unido</option><option value="PT">Portugal</option><option value="JP">Japão</option></select><small>Datas de lançamento e serviços de streaming serão mostrados para esta região.</small></label>
+          <footer class="settings-actions"><button class="settings-secondary-button" type="button" [disabled]="busy() || !isPreferencesDirty()" (click)="language.set(settingsBaseline()?.contentPreferences?.preferredLanguage ?? 'pt-BR'); region.set(settingsBaseline()?.contentPreferences?.preferredRegion ?? 'BR')">Descartar alterações</button><button class="settings-primary-button" type="button" [disabled]="busy() || !settingsLoaded() || !isPreferencesDirty()" (click)="savePreferences()">{{ busy() ? 'Salvando…' : 'Salvar alterações' }}</button></footer>
+        </div>
+      </section>
+
+      <section class="settings-section" id="settings-account" [class.settings-section--mobile-active]="activeSection() === 'account'">
+        <header class="settings-section-heading"><h2>Segurança e conta</h2><p>Seus dados de acesso, sessões e conta.</p></header>
+        <div class="settings-panel settings-account-panel">
+          <section class="settings-account-group">
+            <header><h3>E-mail</h3><p>Você entra com este endereço.</p></header>
+            <p class="settings-current-email"><span class="settings-email-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span><span class="settings-email-value"><small>E-mail atual</small><strong>{{ user()?.email || '—' }}</strong></span></p>
+            <div class="settings-account-fields settings-account-fields--email">
+              <label class="settings-field"><span>Novo e-mail</span><input type="email" autocomplete="email" [value]="newEmail()" [disabled]="busy()" (input)="newEmail.set($any($event.target).value)" /></label>
+              <label class="settings-field"><span>Senha atual</span><input type="password" autocomplete="current-password" [value]="emailCurrentPassword()" [disabled]="busy()" (input)="emailCurrentPassword.set($any($event.target).value)" /></label>
+            </div>
+            <p class="settings-security-warning"><span class="settings-security-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.3 3.8 1.9 18.2A1.5 1.5 0 0 0 3.2 20.5h17.6a1.5 1.5 0 0 0 1.3-2.3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 3h.01"/></svg></span><span>Confirme o novo endereço pelo link enviado. O e-mail atual continua na conta até a confirmação.</span></p>
+            <footer class="settings-actions"><span></span><button class="settings-primary-button" type="button" [disabled]="busy()" (click)="updateEmail()">{{ busy() ? 'Atualizando…' : 'Atualizar e-mail' }}</button></footer>
+          </section>
+          <section class="settings-account-group">
+            <header><h3>Senha</h3><p>Confirme sua senha atual para definir uma nova.</p></header>
+            <div class="settings-account-fields settings-account-fields--password">
+              <label class="settings-field"><span>Senha atual</span><input type="password" autocomplete="current-password" [value]="passwordCurrentPassword()" [disabled]="busy()" (input)="passwordCurrentPassword.set($any($event.target).value)" /></label>
+              <label class="settings-field"><span>Nova senha</span><input type="password" autocomplete="new-password" [value]="newPassword()" [disabled]="busy()" (input)="newPassword.set($any($event.target).value)" /></label>
+              <label class="settings-field"><span>Confirme a nova senha</span><input type="password" autocomplete="new-password" [value]="confirmPassword()" [disabled]="busy()" (input)="confirmPassword.set($any($event.target).value)" /></label>
+            </div>
+            <p class="settings-security-warning"><span class="settings-security-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.3 3.8 1.9 18.2A1.5 1.5 0 0 0 3.2 20.5h17.6a1.5 1.5 0 0 0 1.3-2.3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 3h.01"/></svg></span><span>Depois de atualizar a senha, você deverá entrar novamente.</span></p>
+            <footer class="settings-actions"><span></span><button class="settings-primary-button" type="button" [disabled]="busy()" (click)="updatePassword()">{{ busy() ? 'Atualizando…' : 'Atualizar senha' }}</button></footer>
+          </section>
+          <section class="settings-account-group">
+            <header><h3>Sessões</h3><p>Encerre aqui ou em todos os dispositivos.</p></header>
+            <div class="settings-session-row"><span class="settings-session-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 17 15 12 10 7M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg></span><span class="settings-session-copy"><strong>Sair deste dispositivo</strong><small>Você continuará conectada nos outros dispositivos.</small></span><button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="logoutHere()">Sair</button></div>
+            <div class="settings-session-row"><span class="settings-session-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg></span><span class="settings-session-copy"><strong>Sair de todos os dispositivos</strong><small>Encerra todas as sessões, inclusive esta. Você precisará entrar novamente.</small></span><button class="settings-secondary-button" type="button" (click)="openDialog('all-sessions')">Encerrar todas</button></div>
+          </section>
+          <section class="settings-account-group settings-delete-group">
+            <header><h3>Excluir conta</h3><p>Remove permanentemente sua conta e tudo o que existe nela.</p></header>
+            <div class="settings-delete-content"><span class="settings-delete-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg></span><div class="settings-delete-warning"><strong>Esta ação não pode ser desfeita</strong><span>Seu diário, avaliações, listas, Picks, seguidores e conexões seriam excluídos permanentemente.</span></div><button class="settings-danger-button" type="button" (click)="openDialog('delete')">Excluir conta</button></div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+@if (dialog(); as dialogType) {
+  <div class="settings-dialog-backdrop" (click)="closeDialog()">
+    <section class="settings-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" [attr.aria-labelledby]="'settings-dialog-title'" (click)="$event.stopPropagation()">
+      <button type="button" class="settings-dialog-close" aria-label="Fechar" (click)="closeDialog()">×</button>
+      @if (dialogType === 'delete') {
+        <h2 id="settings-dialog-title">Excluir conta</h2><p>A exclusão é permanente e remove todos os dados. Digite sua senha para confirmar.</p><label class="settings-field settings-delete-confirm-field"><span>Senha atual</span><input type="password" autocomplete="current-password" [value]="deleteAccountPassword()" [disabled]="busy()" (input)="deleteAccountPassword.set($any($event.target).value)" /></label><div class="settings-dialog-actions"><button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="closeDialog()">Cancelar</button><button class="settings-danger-button" type="button" [disabled]="busy() || !deleteAccountPassword()" (click)="deleteAccount()">{{ busy() ? 'Excluindo…' : 'Excluir permanentemente' }}</button></div>
+      } @else {
+        <h2 id="settings-dialog-title">Sair de todos os dispositivos</h2><p>Esta ação não está disponível pela API atual. Nenhuma sessão foi encerrada.</p><div class="settings-dialog-actions"><button class="settings-secondary-button" type="button" (click)="closeDialog()">Cancelar</button><button class="settings-primary-button" type="button" (click)="closeDialog()">Entendi</button></div>
+      }
+    </section>
+  </div>
+}
