@@ -1,0 +1,64 @@
+@if (status() === 'loading') {
+  <main class="review-detail-state"><span class="review-detail-spinner" aria-hidden="true"></span><p>Carregando resenha…</p></main>
+} @else if (status() === 'error') {
+  <main class="review-detail-state"><h1>Não foi possível abrir a resenha</h1><p>{{ errorMessage() }}</p><div><button type="button" (click)="retry()">Tentar novamente</button><a routerLink="/diary/reviews">Voltar às resenhas</a></div></main>
+} @else if (entry(); as review) {
+  <main class="review-detail-page">
+    <header class="review-detail-hero" [style.background-image]="backdropStyle()">
+      <div class="review-detail-hero-copy">
+        <span class="review-detail-author-pill"><span>{{ initials(reviewerName()) }}</span>{{ reviewerName() }}</span>
+        <h1 class="review-detail-title-desktop">{{ contentTitle() }}</h1>
+        <h1 class="review-detail-title-mobile">Resenha</h1>
+        <span class="review-detail-kicker"><i></i>Resenha<i></i></span>
+        @if (episodeHeroLabel()) { <p>{{ episodeHeroLabel() }}</p> }
+      </div>
+    </header>
+    <nav class="review-detail-breadcrumb" aria-label="Caminho da página">
+      <a [routerLink]="reviewerReviewsRoute()">‹ <span>Resenhas</span></a><span aria-hidden="true">/</span><a [routerLink]="contentRoute()">{{ contentTitle() }}</a>
+    </nav>
+
+    <section class="review-detail-body" aria-labelledby="review-content-title">
+      <a class="review-detail-poster" [routerLink]="contentRoute()" [attr.aria-label]="'Abrir ' + contentTitle()">
+        @if (posterUrl(); as poster) { <img [src]="poster" [alt]="contentTitle()" /> }
+        @else { <span>{{ contentTitle() }}</span> }
+        @if (episodeLabel()) { <b class="review-detail-type-badge">Episódio</b> }
+      </a>
+      <article class="review-detail-copy">
+        <header class="review-detail-content-heading">
+          <div><h2 id="review-content-title"><a [routerLink]="contentRoute()">{{ contentTitle() }}</a></h2>@if (episodeLabel()) { <span>{{ episodeLabel() }}</span> }</div>
+          @if (review.score !== null) { <strong class="review-detail-score" [attr.aria-label]="'Nota ' + review.score + ' de 10'"><span aria-hidden="true">★</span>{{ review.score }} <small>/10</small></strong> }
+        </header>
+        <div class="review-detail-meta"><span>Assistido {{ formatDate(review.watchedDate) }}</span>@if (review.watchNumber && review.watchNumber > 1) { <span>· Reassistido {{ review.watchNumber }} vezes</span> }@if (watchedWithLabel()) { <span>· {{ watchedWithLabel() }}</span> }</div>
+        @if (review.comment) { <p class="review-detail-text">{{ review.comment }}</p> }
+        <div class="review-detail-actions">
+          <button type="button" class="review-detail-like" [class.is-liked]="review.likedByMe" [attr.aria-pressed]="!!review.likedByMe" (click)="toggleReviewLike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg>{{ review.likesCount ?? 0 }} curtidas</button>
+          <a class="review-detail-comments-link" href="#comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.6-.8L4 20l1.4-3.7A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z" /></svg>{{ review.commentsCount ?? comments().length }} comentários</a>
+          <div class="review-detail-share-wrap"><button type="button" class="review-detail-share" [attr.aria-expanded]="shareMenuOpen()" (click)="toggleShareMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2M8.6 13.4l6.8 4.2"/></svg>Compartilhar <span aria-hidden="true">⌄</span></button></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="review-detail-comments" id="comments" aria-labelledby="review-comments-title">
+      <h2 id="review-comments-title">Comentários <span>{{ review.commentsCount ?? comments().length }}</span></h2>
+      <form class="review-comment-form" (submit)="submitComment($event)">
+        <span class="review-comment-avatar review-comment-avatar--viewer">{{ initials(currentUser()?.name || currentUser()?.username) }}</span>
+        <div class="review-comment-compose"><textarea id="diary-review-comment" [value]="commentDraft()" (input)="setCommentDraft($event)" [placeholder]="replyTo() ? 'Escreva uma resposta…' : 'Adicione um comentário…'" maxlength="500"></textarea>@if (replyTo(); as target) { <div class="review-reply-context">Respondendo a {{ target.user.name || target.user.username }} <button type="button" aria-label="Cancelar resposta" (click)="replyTo.set(null)">×</button></div> }<div class="review-comment-submit"><button type="submit" [attr.aria-label]="pendingComments() ? 'Publicando comentário' : replyTo() ? 'Responder' : 'Comentar'" [disabled]="!commentDraft().trim() || pendingComments()"><span class="review-submit-label">{{ pendingComments() ? 'Publicando…' : replyTo() ? 'Responder' : 'Comentar' }}</span><span class="review-submit-icon" aria-hidden="true">➤</span></button></div></div>
+      </form>
+      @if (commentError()) { <p class="review-comment-error" role="alert">{{ commentError() }}</p> }
+      @if (commentsStatus() === 'loading') { <p class="review-comment-state">Carregando comentários…</p> }
+      @else if (commentsStatus() === 'error') { <p class="review-comment-state">{{ commentError() }}</p> }
+      @else if (comments().length) {
+        <div class="review-comment-list" [class.show-all]="allCommentsVisible()">
+          @for (comment of comments(); track comment.id) {
+            <article class="review-comment" [class.review-comment--reply]="!!comment.parentCommentId" [id]="'comment-' + comment.id">
+              <a class="review-comment-avatar" [routerLink]="['/users', comment.user.username]">@if (comment.user.profilePicture) { <img [src]="comment.user.profilePicture" alt="" /> } @else { {{ initials(comment.user.name || comment.user.username) }} }</a>
+              <div class="review-comment-content"><header><a [routerLink]="['/users', comment.user.username]">{{ comment.user.name || comment.user.username }}</a><time>{{ formatTime(comment.createdAt) }}</time><div class="review-comment-menu-wrap"><button type="button" aria-label="Opções do comentário" [attr.aria-expanded]="commentMenuId() === comment.id" (click)="toggleCommentMenu(comment.id)">···</button>@if (commentMenuId() === comment.id) { <div class="review-comment-menu" role="menu"><button type="button" role="menuitem" (click)="copyCommentLink(comment)">Copiar link</button></div> }</div></header><p [class.review-comment-spoiler]="comment.containsSpoiler">{{ comment.text }}</p>@if (comment.containsSpoiler) { <small>Contém spoiler</small> }<div class="review-comment-actions"><button type="button" [class.is-liked]="comment.likedByMe" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)">♡ {{ comment.likesCount }}</button><button type="button" (click)="startReply(comment)">Responder</button></div></div>
+            </article>
+          }
+        </div>
+        @if (comments().length > 2) { <button class="review-view-all-comments" type="button" (click)="toggleAllComments()">{{ allCommentsVisible() ? 'Mostrar menos' : 'Ver todos os ' + comments().length + ' comentários' }}</button> }
+      } @else { <p class="review-comment-state">Ainda não há comentários. Comece a conversa.</p> }
+    </section>
+  </main>
+  @if (shareMenuOpen()) { <div class="review-share-overlay" (click)="toggleShareMenu()"><section class="review-share-sheet" role="dialog" aria-modal="true" aria-labelledby="review-share-title" (click)="$event.stopPropagation()"><span class="review-share-handle" aria-hidden="true"></span><h2 id="review-share-title">Opções da resenha</h2><button type="button" (click)="copyReviewLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4m3 7a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19"/></svg>{{ copiedLink() ? 'Link copiado' : 'Copiar link' }}</button></section></div> }
+}
