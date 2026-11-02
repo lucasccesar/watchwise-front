@@ -2,6 +2,7 @@
 @import './app/layout/authenticated-layout.component.css';
 @import './app/features/search-content/components/header-search/header-search.component.css';
 @import './app/shared/components/dialog-backdrop/dialog-panel.css';
+@import './app/shared/hero-media.css';
 
 :root {
   color-scheme: dark;

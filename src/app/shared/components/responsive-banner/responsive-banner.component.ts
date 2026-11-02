@@ -6,12 +6,14 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <picture aria-hidden="true">
-      <source media="(max-width: 480px)" [srcset]="imageUrls().mobile" />
-      <source media="(min-width: 481px) and (max-width: 800px)" [srcset]="imageUrls().tablet" />
-      <source media="(min-width: 801px) and (max-width: 1599px)" [srcset]="imageUrls().notebook" />
-      <img [src]="imageUrls().desktop" alt="" />
-    </picture>
+    @if (imageUrls(); as images) {
+      <picture aria-hidden="true">
+        <source media="(max-width: 480px)" [srcset]="images.mobile" />
+        <source media="(min-width: 481px) and (max-width: 800px)" [srcset]="images.tablet" />
+        <source media="(min-width: 801px) and (max-width: 1599px)" [srcset]="images.notebook" />
+        <img [src]="images.desktop" alt="" />
+      </picture>
+    }
   `,
   styles: `
     :host {
@@ -37,11 +39,18 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
   `,
 })
 export class ResponsiveBannerComponent {
-  readonly path = input<string | null | undefined>(null);
+  readonly path = input<string | null | undefined>(undefined);
   readonly fallbackPath = input.required<string>();
 
   protected readonly imageUrls = computed(() => {
-    const path = this.path()?.trim() ? this.path()! : this.fallbackPath();
+    const currentPath = this.path();
+    const path = currentPath === null
+      ? this.fallbackPath()
+      : currentPath?.trim()
+        ? currentPath
+        : null;
+    if (!path) return null;
+
     return {
       mobile: tmdbImageUrl(path, 'w500') ?? '',
       tablet: tmdbImageUrl(path, 'w780') ?? '',

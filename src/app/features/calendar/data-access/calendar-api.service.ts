@@ -23,6 +23,7 @@ export interface CalendarMonthResponse {
   month: string;
   region: string;
   events: CalendarReleaseEvent[];
+  backdropPath?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

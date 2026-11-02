@@ -4,7 +4,6 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CalendarApiService, CalendarEventType, CalendarMonthResponse, CalendarReleaseEvent } from '../../data-access/calendar-api.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { HomeApiService } from '../../../home/data-access/home-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 
@@ -32,7 +31,7 @@ export class CalendarComponent {
   protected readonly copy = messageCatalog['pt-BR'].calendarPage;
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly error = signal('');
-  protected readonly heroBackdropPath = signal<string | null>(null);
+  protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
   protected readonly month = signal(this.currentMonth());
   protected readonly filter = signal<CalendarFilter>('ALL');
   protected readonly response = signal<CalendarMonthResponse | null>(null);
@@ -64,17 +63,10 @@ export class CalendarComponent {
 
   private readonly api = inject(CalendarApiService);
   private readonly session = inject(AuthSessionService);
-  private readonly homeApi = inject(HomeApiService);
   private readonly router = inject(Router);
   private request?: Subscription;
 
   constructor() {
-    const user = this.session.user();
-    if (user) {
-      this.homeApi.getHomeSummary(user.id).subscribe({
-        next: (summary) => this.heroBackdropPath.set(summary.latestWatchedBackdropPath),
-      });
-    }
     this.loadMonth();
   }
 
@@ -85,9 +77,15 @@ export class CalendarComponent {
     }
     this.request?.unsubscribe();
     this.status.set('loading');
+    this.heroBackdropPath.set(undefined);
+    this.response.set(null);
     this.error.set('');
     this.request = this.api.getMonth(this.month()).subscribe({
-      next: (response) => { this.response.set(response); this.status.set('ready'); },
+      next: (response) => {
+        this.response.set(response);
+        this.heroBackdropPath.set(response.backdropPath);
+        this.status.set('ready');
+      },
       error: (error: unknown) => {
         this.status.set('error');
         this.error.set(error instanceof HttpErrorResponse && error.status === 0

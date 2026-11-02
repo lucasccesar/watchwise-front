@@ -48,7 +48,7 @@ export class NotificationsComponent {
   protected readonly loadError = signal('');
   protected readonly actionError = signal('');
   protected readonly actionMessage = signal('');
-  protected readonly heroBackdropPath = signal<string | null>(null);
+  protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
   protected readonly followDecisions = signal<ReadonlyMap<string, FollowDecision>>(new Map());
   protected readonly groups = computed(() => this.groupByDay(this.notifications()));
 
