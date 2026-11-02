@@ -10,9 +10,7 @@ import { PicksApiService, PicksCommentPreview } from '../../../picks/data-access
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { FeedActivity, FeedApiService, FeedCommentPreview, FeedPage } from '../../data-access/feed-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
-import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
-
-const SOCIAL_BACKDROP_FALLBACK = '/1PXwh3nJzgRkkYnqfWInJNypeL4.jpg';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 
 interface ActivityGroup {
   key: string;
@@ -26,7 +24,7 @@ type SocialCommentResponse = ContentComment | PicksCommentPreview;
 @Component({
   selector: 'app-social',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './social.component.html',
   styleUrl: './social.component.css',
@@ -94,9 +92,9 @@ export class SocialComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: ({ summary, feed }) => {
         this.viewer.set(summary.viewer);
-        const backdropPath = feed.backdropPath === null ? SOCIAL_BACKDROP_FALLBACK : feed.backdropPath;
+        const backdropPath = feed.backdropPath;
         this.latestBackdrop.set(backdropPath);
-        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(backdropPath, 'w1920')));
+        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
         this.heroBackdropFailed.set(false);
         this.data.set(feed);
         this.shellState.updateHomeState(summary.viewer, summary.hasUnreadNotifications);
@@ -113,10 +111,6 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected followingLabel(): string {
     const count = new Intl.NumberFormat('pt-BR').format(this.data()?.followingCount ?? 0);
     return this.copy.followingActivity.replace('{count}', count);
-  }
-
-  protected heroBackdropUrl(): string | null {
-    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.latestBackdrop(), 'w1920');
   }
 
   protected onHeroBackdropLoaded(): void {

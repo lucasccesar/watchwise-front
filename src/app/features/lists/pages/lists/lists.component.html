@@ -1,7 +1,7 @@
 <main class="lists-page" aria-labelledby="lists-title">
   <header class="lists-hero">
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton lists-hero-skeleton" aria-hidden="true"></div> }
-    @if (heroBackdropUrl(); as backdropUrl) { <img class="tr-hero-backdrop lists-hero-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
+    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="/zb6fM1CX41D9rF9hdgclu0peUmy.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <div class="lists-hero-copy">
       <h1 id="lists-title">{{ isCommunity ? copy.communityTitle : copy.title }}</h1>
       <p class="lists-hero-count">{{ listCountLabel() }}</p>

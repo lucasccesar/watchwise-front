@@ -1,7 +1,7 @@
 .lists-page { min-height: 100%; padding: 0 0 var(--space-16); background: var(--color-surface); }
 .lists-hero { position: relative; isolation: isolate; display: grid; min-height: 294px; overflow: hidden; place-items: center; box-sizing: border-box; padding: 36px 24px; background: radial-gradient(ellipse at 50% 35%, #33363b 0%, #202125 56%, #181818 100%); text-align: center; }
 .lists-hero::before { position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, rgb(16 16 18 / 52%) 0%, rgb(16 16 18 / 70%) 62%, #181818 100%); content: ''; }
-.lists-hero-backdrop { object-position: center 35%; }
+.lists-hero { --responsive-banner-position: center 35%; }
 .lists-hero-copy { position: relative; z-index: 2; display: flex; width: min(800px, 100%); flex-direction: column; align-items: center; gap: var(--space-3); }
 .lists-hero h1 { margin: 0; color: #fff; font-size: 72px; font-weight: 700; letter-spacing: -.035em; line-height: 1.12; }
 .lists-hero-count { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0; color: var(--color-accent); font-size: var(--font-size-md); font-weight: 650; line-height: var(--line-height-md); }

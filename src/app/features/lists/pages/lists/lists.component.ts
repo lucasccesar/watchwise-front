@@ -6,9 +6,7 @@ import { ListsApiService, ListCardPreview, ListItemType, ListSource, UserListCar
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
-import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
-
-const LISTS_BACKDROP_FALLBACK = '/zb6fM1CX41D9rF9hdgclu0peUmy.jpg';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 
 type ListMenu = 'source' | 'type' | 'sort' | null;
 type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
@@ -16,7 +14,7 @@ type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'c
 @Component({
   selector: 'app-lists',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './lists.component.html',
   styleUrl: './lists.component.css',
@@ -56,10 +54,6 @@ export class ListsComponent {
     this.load();
   }
 
-  protected heroBackdropUrl(): string | null {
-    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.heroBackdropPath(), 'w1280');
-  }
-
   protected onHeroBackdropLoaded(): void {
     this.heroBackdropLoading.set(false);
   }
@@ -93,9 +87,9 @@ export class ListsComponent {
         });
     this.request = request.subscribe({
       next: (page) => {
-        const backdropPath = page.backdropPath === null ? LISTS_BACKDROP_FALLBACK : page.backdropPath;
+        const backdropPath = page.backdropPath;
         this.heroBackdropPath.set(backdropPath);
-        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(backdropPath, 'w1280')));
+        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
         this.heroBackdropFailed.set(false);
         this.pageData.set(page);
         this.status.set('ready');

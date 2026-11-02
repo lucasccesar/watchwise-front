@@ -6,6 +6,7 @@
 .social-hero {
   position: relative;
   isolation: isolate;
+  --responsive-banner-position: center 30%;
   display: grid;
   min-height: 292px;
   place-items: center;
@@ -21,16 +22,6 @@
   inset: 0;
   background: linear-gradient(180deg, rgb(24 24 24 / 42%), rgb(24 24 24 / 82%) 64%, var(--color-surface));
   content: '';
-}
-
-.social-hero-backdrop {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 30%;
 }
 
 .social-hero-content {

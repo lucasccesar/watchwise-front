@@ -1,7 +1,7 @@
 <main class="diary-page" aria-labelledby="diary-title">
   <header class="diary-heading">
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton diary-hero-skeleton" aria-hidden="true"></div> }
-    @if (heroBackdropUrl(); as backdropUrl) { <img class="tr-hero-backdrop diary-heading-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
+    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="/zdXnJqBaGFVtLoPNuMeKfEYUViZ.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <h1 id="diary-title">{{ copy.title }}</h1>
     <h2 class="diary-heading-subtitle">{{ isReviewsPage ? copy.reviewsSubtitle : copy.historySubtitle }}</h2>
     <p>{{ isReviewsPage ? copy.reviewsDescription : copy.description }}</p>

@@ -15,10 +15,8 @@ import {
   ContentImageActionsComponent,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
-import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { filterDiaryEntries, localDiaryDay, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
-
-const DIARY_BACKDROP_FALLBACK = '/zdXnJqBaGFVtLoPNuMeKfEYUViZ.jpg';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
@@ -53,7 +51,7 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
 @Component({
   selector: 'app-diary',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diary.component.html',
   styleUrl: './diary.component.css',
@@ -156,10 +154,6 @@ export class DiaryComponent implements OnDestroy {
 
   ngOnDestroy(): void { this.request?.unsubscribe(); }
 
-  protected heroBackdropUrl(): string | null {
-    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.heroBackdropPath(), 'w1280');
-  }
-
   protected onHeroBackdropLoaded(): void {
     this.heroBackdropLoading.set(false);
   }
@@ -191,9 +185,8 @@ export class DiaryComponent implements OnDestroy {
     }).subscribe({
       next: ({ summary, backdropPath, diary, series }) => {
         this.summary.set(summary);
-        const resolvedBackdropPath = backdropPath === null ? DIARY_BACKDROP_FALLBACK : backdropPath;
-        this.heroBackdropPath.set(resolvedBackdropPath);
-        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(resolvedBackdropPath, 'w1280')));
+        this.heroBackdropPath.set(backdropPath);
+        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
         this.heroBackdropFailed.set(false);
         this.diarySeries.set(series);
         this.page.set(1);

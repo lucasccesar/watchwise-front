@@ -1,7 +1,7 @@
 <main class="social-page" aria-labelledby="social-title">
   <section class="social-hero">
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton" aria-hidden="true"></div> }
-    @if (heroBackdropUrl(); as backdropUrl) { <img class="social-hero-backdrop tr-hero-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
+    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : latestBackdrop()" fallbackPath="/1PXwh3nJzgRkkYnqfWInJNypeL4.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <div class="social-hero-content">
       <h1 id="social-title">{{ copy.title }}</h1>
       <p class="social-eyebrow">{{ copy.eyebrow }}</p>

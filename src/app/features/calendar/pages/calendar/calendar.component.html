@@ -1,6 +1,6 @@
 <main class="calendar-page" aria-labelledby="calendar-title">
   <header class="calendar-heading">
-    <app-responsive-banner [path]="heroBackdropPath()" fallbackPath="/einbto9qLXFx9QXxEHylaxDbKPx.jpg" />
+    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="/einbto9qLXFx9QXxEHylaxDbKPx.jpg" (imageError)="onHeroBackdropError()" />
     <div class="calendar-heading-copy">
       <h1 id="calendar-title">{{ copy.title }}</h1>
       <p class="calendar-heading-month">{{ monthTitle() }}</p>

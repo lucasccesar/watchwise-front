@@ -7,10 +7,8 @@ import { AuthSessionService } from '../../../../core/session/session.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
-import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { WatchlistApiService, WatchlistCard, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../data-access/watchlist-api.service';
-
-const WATCHLIST_BACKDROP_FALLBACK = '/dtFS7DS64umOHK6PcfabXtDaf2w.jpg';
 
 type WatchlistMenu = 'genre' | 'sort' | 'visibility' | null;
 type WatchlistUpcomingMode = 'ALL' | 'FADE' | 'HIDE';
@@ -18,7 +16,7 @@ type WatchlistUpcomingMode = 'ALL' | 'FADE' | 'HIDE';
 @Component({
   selector: 'app-watchlist',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './watchlist.component.html',
   styleUrl: './watchlist.component.css',
@@ -67,10 +65,6 @@ export class WatchlistComponent implements OnDestroy {
 
   constructor() {
     this.load();
-  }
-
-  protected heroBackdropUrl(): string | null {
-    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.heroBackdropPath(), 'w1280');
   }
 
   protected onHeroBackdropLoaded(): void {
@@ -149,9 +143,9 @@ export class WatchlistComponent implements OnDestroy {
       size: this.pageSize,
     }).subscribe({
       next: (view) => {
-        const backdropPath = view.backdropPath === null ? WATCHLIST_BACKDROP_FALLBACK : view.backdropPath;
+        const backdropPath = view.backdropPath;
         this.heroBackdropPath.set(backdropPath);
-        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(backdropPath, 'w1280')));
+        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
         this.heroBackdropFailed.set(false);
         this.view.set(view);
         this.status.set('ready');

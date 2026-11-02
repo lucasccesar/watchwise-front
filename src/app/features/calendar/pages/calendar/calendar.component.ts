@@ -32,6 +32,7 @@ export class CalendarComponent {
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly error = signal('');
   protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
+  protected readonly heroBackdropFailed = signal(false);
   protected readonly month = signal(this.currentMonth());
   protected readonly filter = signal<CalendarFilter>('ALL');
   protected readonly response = signal<CalendarMonthResponse | null>(null);
@@ -78,12 +79,14 @@ export class CalendarComponent {
     this.request?.unsubscribe();
     this.status.set('loading');
     this.heroBackdropPath.set(undefined);
+    this.heroBackdropFailed.set(false);
     this.response.set(null);
     this.error.set('');
     this.request = this.api.getMonth(this.month()).subscribe({
       next: (response) => {
         this.response.set(response);
         this.heroBackdropPath.set(response.backdropPath);
+        this.heroBackdropFailed.set(false);
         this.status.set('ready');
       },
       error: (error: unknown) => {
@@ -109,6 +112,8 @@ export class CalendarComponent {
   }
 
   protected setFilter(filter: CalendarFilter): void { this.filter.set(filter); }
+
+  protected onHeroBackdropError(): void { this.heroBackdropFailed.set(true); }
 
   protected eventTitle(event: CalendarReleaseEvent): string {
     if (event.eventType === 'EPISODE' && 'seriesTitle' in event.content) return event.content.seriesTitle;

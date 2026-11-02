@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { tmdbImageUrl } from '../../utils/tmdb-image-url';
 
 @Component({
@@ -11,7 +11,7 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
         <source media="(max-width: 480px)" [srcset]="images.mobile" />
         <source media="(min-width: 481px) and (max-width: 800px)" [srcset]="images.tablet" />
         <source media="(min-width: 801px) and (max-width: 1599px)" [srcset]="images.notebook" />
-        <img [src]="images.desktop" alt="" />
+        <img [src]="images.desktop" alt="" (load)="imageLoaded.emit()" (error)="imageError.emit()" />
       </picture>
     }
   `,
@@ -41,6 +41,8 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
 export class ResponsiveBannerComponent {
   readonly path = input<string | null | undefined>(undefined);
   readonly fallbackPath = input.required<string>();
+  readonly imageLoaded = output<void>();
+  readonly imageError = output<void>();
 
   protected readonly imageUrls = computed(() => {
     const currentPath = this.path();
