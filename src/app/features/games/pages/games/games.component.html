@@ -1,45 +1,74 @@
 <main class="games-page" aria-labelledby="games-title">
+  <section class="games-hero" aria-labelledby="games-title">
+    @if (heroBackdrop(); as backdrop) { <img class="games-hero-backdrop" [src]="backdrop" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
+    @if (status() === 'loading' || (heroBackdrop() && heroBackdropLoading())) { <div class="tr-skeleton tr-hero-skeleton games-hero-skeleton" aria-hidden="true"></div> }
+    <div class="games-hero-shade" aria-hidden="true"></div>
+    <div class="games-hero-content">
+      <h1 id="games-title">{{ copy.title }}</h1>
+      <p class="games-hero-stats"><span aria-hidden="true"></span>{{ copy.challengeCount }}<span aria-hidden="true"></span></p>
+      <p class="games-hero-description">{{ copy.description }}</p>
+    </div>
+  </section>
+
   @if (status() === 'loading') {
     <section class="games-state" aria-live="polite"><span class="games-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section>
   } @else if (status() === 'error') {
-    <section class="games-state"><h1>{{ copy.errorTitle }}</h1><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
+    <section class="games-state"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else {
-    <header class="games-header">
-      <div><div class="games-title-line"><h1 id="games-title">{{ copy.title }}</h1><span>{{ copy.challengeCount }}</span></div><p>{{ copy.description }}</p></div>
-      <div class="games-header-actions"><button class="games-calendar-button" type="button" (click)="openCalendar()"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>{{ copy.calendar }}</button><a class="games-ranking-button" routerLink="/games/ranking">{{ copy.ranking }}<span aria-hidden="true">↗</span></a></div>
-    </header>
     <section class="games-daily-summary" aria-label="{{ copy.todaySummary }}">
-      <div class="games-summary-date"><span>{{ copy.todayChallenges }}</span><strong>{{ dateLabel(date()) }}</strong></div>
-      @if (!historicalDate) { <span class="games-reset"><i aria-hidden="true"></i>{{ copy.newChallenges }}</span> }
-      <strong class="games-score">{{ scoreLabel() }}</strong>
-    </section>
-    @for (group of availableGroups; track group.id) {
-      <section class="games-group" [attr.aria-labelledby]="'games-group-' + group.id">
-        <header><div><h2 [id]="'games-group-' + group.id">{{ group.title }}</h2><p>{{ group.description }}</p></div></header>
-        <div class="games-grid" [class.games-grid-four]="group.id === 'image'">
-          @for (game of definitions(group.id); track game.type) {
-            <article class="game-card" [class.game-card-image]="group.id === 'image'" [class.game-card-actor]="group.id === 'actor'">
-              @if (group.id === 'image') {
-                <a class="game-card-image-preview" [routerLink]="gameRoute(game.type)" [attr.aria-label]="game.title">
-                  @if (imageUrl(card(game.type))) { <img [src]="imageUrl(card(game.type))" alt="" loading="lazy" /> } @else { <span class="game-image-hidden">?</span> }
-                  <span class="game-reveal">{{ copy.revealProgress.replace('{revealed}', number(card(game.type)?.attemptsUsed)).replace('{max}', number(card(game.type)?.maxAttempts)) }}</span>
-                </a>
-              } @else {
-                <div class="game-card-kicker"><span class="game-type-icon" aria-hidden="true">{{ group.id === 'actor' ? '♟' : '↔' }}</span><span>{{ game.subject }}</span></div>
-              }
-              <div class="game-card-body">
-                <div class="game-card-category">{{ game.subject }}</div>
-                <h3><a [routerLink]="gameRoute(game.type)">{{ game.title }}</a></h3>
-                <p>{{ game.description }}</p>
-                <dl><div><dt>{{ copy.attempts }}</dt><dd>{{ copy.upTo.replace('{count}', number(card(game.type)?.maxAttempts)) }}</dd></div><div><dt>{{ copy.maxScore }}</dt><dd>{{ card(game.type)?.maxAttempts ?? 0 }} {{ copy.points }}</dd></div></dl>
-                <div class="game-card-progress"><span class="game-status" [class.status-complete]="card(game.type)?.status === 'COMPLETED'" [class.status-failed]="card(game.type)?.status === 'FAILED'">{{ statusLabel(card(game.type)) }}</span><span>{{ progressLabel(card(game.type)) }}</span></div>
-                <a class="game-continue" [routerLink]="gameRoute(game.type)">{{ gameLinkLabel(game) }}<span aria-hidden="true">→</span></a>
-              </div>
-            </article>
-          }
+      <div class="games-summary-inner">
+        <div class="games-summary-date"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><strong>{{ copy.todayChallenges }} · {{ dateLabel(date()) }}</strong></div>
+        <div class="games-summary-actions">
+          @if (!historicalDate) { @if (resetCountdown(); as remaining) { <span class="games-reset"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ copy.newChallenges.replace('{time}', remaining) }}</span> } }
+          <strong class="games-score"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4m-4 0v5m-4 3h8m-7-3h6"/></svg>{{ scoreLabel() }}</strong>
+          <span class="games-summary-divider" aria-hidden="true"></span>
+          <div class="games-header-actions"><button class="games-calendar-button" type="button" (click)="openCalendar()"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>{{ copy.calendar }}</button><a class="games-ranking-button" routerLink="/games/ranking"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4m-5-17h10v6a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4"/></svg>{{ copy.ranking }}</a></div>
         </div>
-      </section>
-    }
+      </div>
+    </section>
+    <div class="games-groups">
+      @for (group of availableGroups; track group.id) {
+        <section class="games-group" [class.games-group-image]="group.id === 'image'" [attr.aria-labelledby]="'games-group-' + group.id">
+          <header><div><h2 [id]="'games-group-' + group.id"><span class="games-group-icon" aria-hidden="true">{{ group.id === 'image' ? '▧' : group.id === 'info' ? '⌘' : '♙' }}</span>{{ group.title }}</h2><p>{{ group.description }}</p></div></header>
+          <div class="games-grid" [class.games-grid-four]="group.id === 'image'">
+            @for (game of definitions(group.id); track game.type) {
+              <article class="game-card" [class.game-card-image]="group.id === 'image'">
+                @if (group.id === 'image') {
+                  <a class="game-card-image-preview" [routerLink]="gameRoute(game.type)" [attr.aria-label]="game.title">
+                    @if (imageUrl(card(game.type))) { <img [src]="imageUrl(card(game.type))" alt="" loading="lazy" /> } @else { <span class="game-image-hidden">?</span> }
+                    <span class="game-type-badge"><i aria-hidden="true">{{ gameKindIcon(game.type) }}</i>{{ game.subject }}</span>
+                    <span class="game-reveal">{{ game.type === 'EPISODE_BY_FRAME' ? frameProgressLabel(card(game.type)) : copy.revealProgress.replace('{revealed}', number(card(game.type)?.attemptsUsed)).replace('{max}', number(card(game.type)?.maxAttempts)) }}</span>
+                  </a>
+                } @else if (group.id === 'info') {
+                  <div class="game-card-visual game-info-visual" aria-hidden="true">
+                    <span class="game-type-badge"><i aria-hidden="true">{{ gameKindIcon(game.type) }}</i>{{ game.subject }}</span>
+                    <div class="game-info-cells">@for (cell of infoPreviewCells; track $index) { <i [class]="infoPreviewCellClass($index)"></i> }</div>
+                  </div>
+                } @else {
+                  <div class="game-card-visual game-actor-visual" aria-hidden="true">
+                    <span class="game-type-badge"><i aria-hidden="true">{{ gameKindIcon(game.type) }}</i>{{ game.subject }}</span>
+                    <div class="game-actor-person"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><b>?</b></div>
+                    <span class="game-actor-link">↗</span>
+                    <div class="game-actor-poster"><span>{{ game.subject === copy.movieCast ? copy.movie : copy.series }}</span></div>
+                    <div class="game-actor-film"><span>▣</span></div>
+                  </div>
+                }
+                <div class="game-card-body">
+                  <h3><a [routerLink]="gameRoute(game.type)">{{ game.title }}</a></h3>
+                  <p>{{ game.description }}</p>
+                  <dl><div><dt>{{ copy.attempts }}</dt><dd>{{ copy.upTo.replace('{count}', number(card(game.type)?.maxAttempts)) }}</dd></div><div><dt>{{ copy.maxScore }}</dt><dd>{{ card(game.type)?.maxAttempts ?? 0 }} {{ copy.points }}</dd></div></dl>
+                  <div class="game-card-progress">
+                    <div class="game-progress-labels"><span class="game-status" [class.status-complete]="card(game.type)?.status === 'COMPLETED'" [class.status-failed]="card(game.type)?.status === 'FAILED'">{{ statusLabel(card(game.type)) }}</span><span>{{ progressLabel(card(game.type)) }}</span></div>
+                    <div class="game-attempt-track" role="progressbar" [attr.aria-label]="progressLabel(card(game.type))" [attr.aria-valuenow]="card(game.type)?.attemptsUsed ?? 0" [attr.aria-valuemin]="0" [attr.aria-valuemax]="card(game.type)?.maxAttempts ?? 0">@for (slot of attemptSlots(card(game.type)); track slot) { <i [class.used]="slot < (card(game.type)?.attemptsUsed ?? 0)" [class.completed]="card(game.type)?.status === 'COMPLETED' && slot < (card(game.type)?.attemptsUsed ?? 0)"></i> }</div>
+                  </div>
+                  <a class="game-continue" [routerLink]="gameRoute(game.type)" [attr.aria-label]="gameLinkAccessibleLabel(game)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"/></svg>{{ gameLinkLabel(game) }}</a>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+    </div>
   }
 </main>
 

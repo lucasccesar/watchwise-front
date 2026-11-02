@@ -41,7 +41,6 @@
       <a class="navigation-link" routerLink="/calendar" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></a>
       <a class="navigation-link" routerLink="/lists" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8" /></svg><span>{{ copy.lists }}</span></a>
       <a class="navigation-link navigation-link--optional" routerLink="/picks" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg><span>{{ copy.picks }}</span></a>
-      <a class="navigation-link navigation-link--optional" routerLink="/games" routerLinkActive="navigation-link--active" ariaCurrentWhenActive="page" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 9h.01M16 9h.01M8 15c1 1.2 2.3 2 4 2s3-.8 4-2" /></svg><span>{{ copy.games }}</span></a>
       <p class="navigation-note">{{ copy.navigationNote }}</p>
       </div>
 
@@ -71,9 +70,6 @@
               </span>
               <a class="mobile-menu-link" [routerLink]="viewerRoute('progress')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M12 20V4M20 20V14" /></svg><span>{{ copy.progress }}</span></a>
               <a class="mobile-menu-link" [routerLink]="viewerRoute('episode-ratings-map')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3H21V21H3ZM3 9H21M3 15H21M9 3V21M15 3V21" /></svg><span>{{ copy.episodeRatingsMap }}</span></a>
-              <a class="mobile-menu-link" [routerLink]="viewerRoute('month-in-review')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1 4 21 4.9 21 6V20C21 21.1 20.1 22 19 22H5C3.9 22 3 21.1 3 20V6C3 4.9 3.9 4 5 4Z" /></svg><span>{{ copy.monthReview }}</span></a>
-              <a class="mobile-menu-link" [routerLink]="viewerRoute('year-in-review')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg><span>{{ copy.yearReview }}</span></a>
-              <a class="mobile-menu-link" [routerLink]="viewerRoute('all-time-stats')" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3V21H21M7 15L11 11L14 14L20 8" /></svg><span>{{ copy.allTimeStats }}</span></a>
             </div>
           </section>
 
@@ -84,7 +80,6 @@
               <a class="mobile-menu-link" routerLink="/calendar" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M6 5h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" /></svg><span>{{ copy.calendar }}</span></a>
               <a class="mobile-menu-link" routerLink="/lists" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12H9M21 6H9M21 18H9M5 12C5 12.552 4.552 13 4 13C3.448 13 3 12.552 3 12C3 11.448 3.448 11 4 11C4.552 11 5 11.448 5 12ZM5 6C5 6.552 4.552 7 4 7C3.448 7 3 6.552 3 6C3 5.448 3.448 5 4 5C4.552 5 5 5.448 5 6ZM5 18C5 18.552 4.552 19 4 19C3.448 19 3 18.552 3 18C3 17.448 3.448 17 4 17C4.552 17 5 17.448 5 18Z" /></svg><span>{{ copy.lists }}</span></a>
               <a class="mobile-menu-link" routerLink="/picks" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg><span>{{ copy.picks }}</span></a>
-              <a class="mobile-menu-link" routerLink="/games" routerLinkActive="mobile-menu-link--active" (click)="closeMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11H10M8 9V13M15 12H15.01M18 10H18.01M17.32 5H6.68C4.65 5 2.95 6.53 2.7 8.54L1.8 15.74C1.58 17.48 2.94 19 4.69 19C5.48 19 6.21 18.53 6.54 17.8L7.5 16H16.5L17.46 17.8C17.79 18.53 18.52 19 19.31 19C21.06 19 22.42 17.48 22.2 15.74L21.3 8.54C21.05 6.53 19.35 5 17.32 5Z" /></svg><span>{{ copy.games }}</span></a>
             </div>
           </section>
 
@@ -169,18 +164,6 @@
               <a class="account-menu-item" [routerLink]="viewerRoute('episode-ratings-map')" role="menuitem" (click)="closeAccountMenu()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3H21V21H3ZM3 9H21M3 15H21M9 3V21M15 3V21" /></svg>
                 {{ copy.episodeRatingsMap }}
-              </a>
-              <a class="account-menu-item" [routerLink]="viewerRoute('month-in-review')" role="menuitem" (click)="closeAccountMenu()">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1 4 21 4.9 21 6V20C21 21.1 20.1 22 19 22H5C3.9 22 3 21.1 3 20V6C3 4.9 3.9 4 5 4Z" /></svg>
-                {{ copy.monthReview }}
-              </a>
-              <a class="account-menu-item" [routerLink]="viewerRoute('year-in-review')" role="menuitem" (click)="closeAccountMenu()">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L14.8 8.7L21 9.6L16.5 14L17.6 20.2L12 17.3L6.4 20.2L7.5 14L3 9.6L9.2 8.7Z" /></svg>
-                {{ copy.yearReview }}
-              </a>
-              <a class="account-menu-item" [routerLink]="viewerRoute('all-time-stats')" role="menuitem" (click)="closeAccountMenu()">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3V21H21M7 15L11 11L14 14L20 8" /></svg>
-                {{ copy.allTimeStats }}
               </a>
               <div class="account-menu-divider" role="separator"></div>
               <a class="account-menu-item" routerLink="/settings" role="menuitem" (click)="closeAccountMenu()">

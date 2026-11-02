@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { catchError, forkJoin, of, Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { DiaryApiService, DiaryRecord, DiarySeriesOption } from '../../data-access/diary-api.service';
 import {
@@ -15,7 +15,10 @@ import {
   ContentImageActionsComponent,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { filterDiaryEntries, localDiaryDay, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
+
+const DIARY_BACKDROP_FALLBACK = '/zdXnJqBaGFVtLoPNuMeKfEYUViZ.jpg';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
@@ -62,6 +65,9 @@ export class DiaryComponent implements OnDestroy {
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly errorMessage = signal('');
   protected readonly summary = signal<HomeSummary | null>(null);
+  protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
+  protected readonly heroBackdropLoading = signal(true);
+  protected readonly heroBackdropFailed = signal(false);
   protected readonly diarySeries = signal<DiarySeriesOption[]>([]);
   protected readonly diaryEntries = signal<DiaryGridEntry[]>([]);
   protected readonly loadingPlaceholders = Array.from({ length: 12 }, (_, index) => index);
@@ -150,6 +156,19 @@ export class DiaryComponent implements OnDestroy {
 
   ngOnDestroy(): void { this.request?.unsubscribe(); }
 
+  protected heroBackdropUrl(): string | null {
+    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.heroBackdropPath(), 'w1280');
+  }
+
+  protected onHeroBackdropLoaded(): void {
+    this.heroBackdropLoading.set(false);
+  }
+
+  protected onHeroBackdropError(): void {
+    this.heroBackdropFailed.set(true);
+    this.heroBackdropLoading.set(false);
+  }
+
   protected load(): void {
     const user = this.session.user();
     if (!user) {
@@ -158,22 +177,31 @@ export class DiaryComponent implements OnDestroy {
     }
     this.request?.unsubscribe();
     this.status.set('loading');
+    this.heroBackdropPath.set(undefined);
+    this.heroBackdropLoading.set(true);
+    this.heroBackdropFailed.set(false);
     this.errorMessage.set('');
     this.request = forkJoin({
       summary: this.api.getHomeSummary(user.id),
+      backdropPath: this.diaryApi.getDiaryBackdropPath(user.id).pipe(catchError(() => of(undefined))),
       diary: this.isReviewsPage
         ? this.diaryApi.getAllReviews(user.id)
         : this.diaryApi.getAllDiaryEntries(user.id),
       series: this.diaryApi.getDiarySeries(user.id),
     }).subscribe({
-      next: ({ summary, diary, series }) => {
+      next: ({ summary, backdropPath, diary, series }) => {
         this.summary.set(summary);
+        const resolvedBackdropPath = backdropPath === null ? DIARY_BACKDROP_FALLBACK : backdropPath;
+        this.heroBackdropPath.set(resolvedBackdropPath);
+        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(resolvedBackdropPath, 'w1280')));
+        this.heroBackdropFailed.set(false);
         this.diarySeries.set(series);
         this.page.set(1);
         this.diaryEntries.set(diary.map((record) => this.toGridEntry(record)));
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.errorMessage.set(error instanceof HttpErrorResponse && error.status === 0
           ? this.homeCopy.actionConnectionError
@@ -525,16 +553,16 @@ export class DiaryComponent implements OnDestroy {
     return `${this.statsNumber(hours)} ${label}`;
   }
 
-  protected viewerInitial(): string {
-    return this.summary()?.viewer?.name?.charAt(0).toUpperCase() || 'W';
-  }
-
   protected seriesCountLabel(count: number): string {
     return this.copy.fromSeries.replace('{count}', new Intl.NumberFormat('pt-BR').format(count));
   }
 
   protected moviePlaysLabel(count: number): string {
     return this.copy.moviePlays.replace('{count}', new Intl.NumberFormat('pt-BR').format(count));
+  }
+
+  protected companionInitial(companion: DiaryReviewCompanion): string {
+    return (companion.name || companion.username || 'W').trim().charAt(0).toLocaleUpperCase('pt-BR') || 'W';
   }
 
   protected showingLabel(): string {
@@ -563,6 +591,12 @@ export class DiaryComponent implements OnDestroy {
   private toGridEntry(record: DiaryRecord): DiaryGridEntry {
     const content = record.content;
     const card = record.card;
+    const viewer = this.session.user();
+    const viewerUsername = viewer?.username.trim().toLowerCase();
+    const companions = (record.watchedWith ?? []).filter(user =>
+      (!viewer?.id || user.id !== viewer.id)
+      && (!viewerUsername || user.username?.trim().toLowerCase() !== viewerUsername),
+    );
     return {
       id: record.id,
       reviewSource: record.reviewSource ?? 'DIARY',
@@ -580,12 +614,12 @@ export class DiaryComponent implements OnDestroy {
       watchNumber: record.watchNumber,
       customPosterUrl: record.customPosterUrl,
       seriesTitle: record.seriesTitle ?? null,
-      companions: (record.watchedWith ?? []).map(user => ({
+      companions: companions.map(user => ({
         name: user.name ?? null,
         username: user.username ?? null,
         profilePicture: user.profilePicture ?? null,
       })),
-      companionProfilePictures: (record.watchedWith ?? [])
+      companionProfilePictures: companions
         .map((user) => user.profilePicture)
         .filter((picture): picture is string => Boolean(picture)),
       card: card ? {

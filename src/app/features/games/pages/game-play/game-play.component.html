@@ -4,64 +4,114 @@
   } @else if (status() === 'error') {
     <section class="game-play-state"><h1>{{ gamesCopy.title }}</h1><p>{{ error() }}</p><button type="button" (click)="load()">{{ gamesCopy.retry }}</button></section>
   } @else if (state()) {
-    <nav class="game-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/games">{{ gamesCopy.title }}</a><span>/</span><span>{{ gameName() }}</span></nav>
-    <header class="game-play-header">
-      <div><div class="game-play-title-line"><h1>{{ gameName() }}</h1><span>{{ copy.dailyChallenge }} · {{ formatChallengeDate(state()!.challengeDate) }}</span></div><p>{{ description() }}</p></div>
-      <button type="button" class="game-howto-button" (click)="showHowToPlay()"><span aria-hidden="true">ⓘ</span>{{ copy.howToPlay }}</button>
+    <header class="game-play-hero">
+      <img class="game-play-hero-backdrop" src="https://image.tmdb.org/t/p/w1280/6UFnKzVzFqKDjs4iCVLJdneK3ch.jpg" alt="" aria-hidden="true" />
+      <div class="game-play-hero-shade" aria-hidden="true"></div>
+      <nav class="game-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/games">{{ gamesCopy.title }}</a><span>/</span><span>{{ gameName() }}</span></nav>
+      <div class="game-play-hero-content">
+        <h1>{{ gameName() }}</h1>
+        <p class="game-play-hero-stats"><span aria-hidden="true"></span>{{ copy.dailyChallenge }} · {{ formatChallengeDate(state()!.challengeDate) }}<span aria-hidden="true"></span></p>
+        <p>{{ description() }}</p>
+      </div>
     </header>
+
     <section class="game-attempt-status" aria-label="{{ copy.attemptStatus }}">
-      <strong>{{ copy.attemptNumber.replace('{number}', number(state()!.attemptsUsed + 1)).replace('{max}', number(state()!.maxAttempts)) }}</strong>
-      <div class="game-attempt-segments" aria-hidden="true">@for (segment of attemptSegments(); track segment) { <i [class.used]="segment < state()!.attemptsUsed" [class.current]="segment === state()!.attemptsUsed"></i> }</div>
-      @if (!statusCompleted()) { <span>{{ copy.newChallengeCountdown }}</span> }
-      @if (state()!.canGiveUp) { <button type="button" (click)="confirmGiveUp()">{{ copy.giveUp }}</button> }
-    </section>
-    @if (actionError()) { <p class="game-action-error" role="alert">{{ actionError() }}</p> }
-    <section class="game-challenge" [class.info-challenge]="gameType === 'MOVIE_BY_INFO' || gameType === 'SERIES_BY_INFO'" [class.filmography-challenge]="gameType === 'ACTOR_BY_MOVIE_FILMOGRAPHY' || gameType === 'ACTOR_BY_SERIES_FILMOGRAPHY'">
-      @if (gameType === 'ACTOR_BY_MOVIE_FILMOGRAPHY' || gameType === 'ACTOR_BY_SERIES_FILMOGRAPHY') {
-        <div class="game-filmography-settings"><label><input type="checkbox" [checked]="majorRoles()" (change)="toggleMajorRoles($event)" />{{ copy.majorRoles }}</label><p>{{ copy.majorRolesDescription }}</p></div>
-      }
-      @if (displayMedia().length) {
-        <div class="game-media-grid" [class.frame-grid]="gameType === 'EPISODE_BY_FRAME'">
-          @for (media of displayMedia(); track media.slot) { <figure [class.blurred]="mediaBlur(media)"><img [src]="visibleImageUrl(media)" [alt]="gameType === 'EPISODE_BY_FRAME' ? copy.frameAlt : copy.mysteryImageAlt" /><figcaption>{{ media.slot }}</figcaption></figure> }
+      <div class="game-attempt-status-inner">
+        <div class="game-attempt-progress">
+          <strong>{{ copy.attemptNumber.replace('{number}', currentAttemptNumber()).replace('{max}', number(state()!.maxAttempts)) }}</strong>
+          <div class="game-attempt-segments" aria-hidden="true">@for (segment of attemptSegments(); track segment) { <i [class.used]="segment < state()!.attemptsUsed" [class.current]="segment === state()!.attemptsUsed"></i> }</div>
         </div>
-      } @else if (gameType === 'MOVIE_BY_INFO' || gameType === 'SERIES_BY_INFO') {
-        <div class="game-info-intro"><span class="game-info-symbol" aria-hidden="true">↔</span><p>{{ copy.infoIntro }}</p></div>
-      }
-      @if (gameType === 'ACTOR_BY_MOVIE_FILMOGRAPHY' || gameType === 'ACTOR_BY_SERIES_FILMOGRAPHY') {
-        <section class="game-filmography-results"><header><div><h2>{{ copy.sharedWorks }}</h2><p>{{ copy.sharedWorksDescription }}</p></div><span>{{ state()!.filmography?.entries?.length ?? 0 }}</span></header>
-          <div class="filmography-grid">@for (work of state()!.filmography?.entries ?? []; track work.workId) { <article [class.highlighted]="work.highlighted">@if (work.posterUrl && work.revealed) { <img [src]="work.posterUrl" alt="" loading="lazy" /> } @else { <div class="filmography-hidden">?</div> }<div><strong>{{ work.revealed ? work.title : copy.hiddenWork }}</strong><span>{{ work.year ?? copy.yearUnknown }}@if (work.genres.length) { · {{ work.genres.join(', ') }} }</span>@if (work.character) { <small>{{ work.character }}</small> }</div></article> }</div>
-        </section>
-      }
-      @if (state()!.canAttempt) {
-        <form class="game-guess-form" (submit)="submitGuess()">
-          <label for="game-answer">{{ copy.answerPrompt }}</label>
-          <div class="game-search-row"><input id="game-answer" type="search" autocomplete="off" [value]="searchText()" [placeholder]="copy.searchPlaceholder" (input)="updateSearch($event)" (focus)="searchOpen.set(searchResults().length > 0)" (keyup.enter)="search()"/><button type="button" [disabled]="!searchText().trim() || searchBusy()" (click)="search()">{{ searchBusy() ? copy.searching : copy.search }}</button></div>
-          @if (searchOpen() && searchResults().length) { <ul class="game-search-results" role="listbox" [attr.aria-label]="copy.searchResults">@for (result of searchResults(); track result.tmdbId ?? result.personTmdbId ?? result.title) { <li><button type="button" role="option" (click)="chooseResult(result)">@if (result.imageUrl) { <img [src]="result.imageUrl" alt="" loading="lazy" /> }<span><strong>{{ result.title }}</strong><small>{{ candidateLabel(result) }}@if (result.genres?.length) { · {{ result.genres?.join(', ') }} }</small></span></button></li> }</ul> }
-          @if (selected(); as selection) {
-            <div class="game-selected-candidate"><span>{{ selection.title }}</span><button type="button" [attr.aria-label]="copy.removeSelection" (click)="clearSelection()">×</button></div>
-          }
-          @if (gameType === 'EPISODE_BY_FRAME' && canChooseEpisode()) {
-            <div class="game-episode-selects"><label>{{ copy.season }}<select [value]="selectedSeason() ?? ''" (change)="changeSeason($event)"><option value="">{{ copy.chooseSeason }}</option>@for (season of seasons(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name }}</option> }</select></label><label>{{ copy.episode }}<select [value]="selectedEpisode() ?? ''" (change)="changeEpisode($event)" [disabled]="!selectedSeason()"><option value="">{{ copy.chooseEpisode }}</option>@for (episode of episodes(); track episode.episodeNumber) { <option [value]="episode.episodeNumber">{{ copy.episodeOption.replace('{number}', episode.episodeNumber.toString()).replace('{name}', episode.name) }}</option> }</select></label></div>
-          }
-          @if (state()!.shareOnCompletion) { <label class="game-share-check"><input type="checkbox" [checked]="shareOnCompletion()" (change)="toggleShare($event)"/>{{ copy.shareOnCompletion }}</label> }
-          <button class="game-submit" type="submit" [disabled]="!canSubmit()">{{ submitting() ? copy.submitting : copy.submitGuess }}</button>
-        </form>
-      }
-      @if (statusCompleted()) {
-        <section class="game-answer-reveal" aria-live="polite">
-          @if (answerImage()) { <img [src]="answerImage()!.url" [alt]="''" /> }
-          <div><span class="game-result-status" [class.failed]="state()!.status === 'FAILED'">{{ statusLabel() }}</span><h2>{{ state()!.answer?.title || state()!.answer?.seriesName || copy.answerRevealed }}</h2><p>{{ state()!.answer?.year ?? '' }}@if (state()!.answer?.genres?.length) { · {{ state()!.answer?.genres?.join(', ') }} }</p><strong>{{ copy.pointsEarned.replace('{score}', state()!.score.toString()).replace('{max}', state()!.maxAttempts.toString()) }}</strong></div>
-        </section>
-      }
+        <div class="game-attempt-actions">
+          @if (!statusCompleted()) { <span class="game-countdown"><span aria-hidden="true">◷</span>{{ newChallengeCountdown() }}</span> }
+          @if (state()!.canGiveUp) { <button class="game-give-up-button" type="button" (click)="confirmGiveUp()">{{ copy.giveUp }}</button> }
+          <button type="button" class="game-howto-button" (click)="showHowToPlay()"><span aria-hidden="true">ⓘ</span>{{ copy.howToPlay }}</button>
+        </div>
+      </div>
     </section>
-    @if (state()!.attempts.length) {
-      <section class="game-guess-history"><header><h2>{{ copy.yourGuesses }}</h2><span>{{ copy.attemptsRemaining.replace('{count}', state()!.attemptsRemaining.toString()) }}</span></header>
-        <ol>@for (attempt of state()!.attempts; track attempt.attemptNumber) { <li><div class="game-guess-heading"><span>{{ attempt.attemptNumber }}</span><strong>{{ attempt.candidate.title }}</strong><span class="guess-outcome" [class.correct]="attempt.outcome.correct">{{ attempt.outcome.correct ? copy.correct : copy.wrong }}</span></div>
-            @if (attempt.infoFeedback) { <div class="game-feedback-grid">@for (cell of feedbackCells(attempt.infoFeedback); track cell.label) { <div [class]="'feedback-cell ' + cell.status"><small>{{ cell.label }}</small><span>{{ cell.value }}</span></div> }</div> }
-            @if (gameType === 'EPISODE_BY_FRAME' && attempt.outcome) { <div class="episode-feedback"><span [class.right]="attempt.outcome.seriesCorrect">{{ copy.series }}</span><span [class.right]="attempt.outcome.seasonCorrect">{{ copy.season }}</span><span [class.right]="attempt.outcome.episodeCorrect">{{ copy.episode }}</span></div> }
-          </li> }</ol>
+
+    <div class="game-play-content">
+      @if (actionError()) { <p class="game-action-error" role="alert">{{ actionError() }}</p> }
+      <section class="game-challenge"
+        [class.poster-challenge]="gameType === 'MOVIE_BY_POSTER' || gameType === 'SERIES_BY_POSTER' || gameType === 'PERSON_BY_FACE'"
+        [class.frame-challenge]="gameType === 'EPISODE_BY_FRAME'"
+        [class.info-challenge]="gameType === 'MOVIE_BY_INFO' || gameType === 'SERIES_BY_INFO'"
+        [class.filmography-challenge]="gameType === 'ACTOR_BY_MOVIE_FILMOGRAPHY' || gameType === 'ACTOR_BY_SERIES_FILMOGRAPHY'">
+        @if (gameType === 'ACTOR_BY_MOVIE_FILMOGRAPHY' || gameType === 'ACTOR_BY_SERIES_FILMOGRAPHY') {
+          <div class="game-filmography-settings"><label><input type="checkbox" [checked]="majorRoles()" (change)="toggleMajorRoles($event)" />{{ copy.majorRoles }}</label><p>{{ copy.majorRolesDescription }}</p></div>
+        }
+
+        @if (gameType === 'EPISODE_BY_FRAME') {
+          <div class="game-frame-gallery">
+            @if (activeFrame(); as frame) {
+              <figure class="game-frame-current" [class.blurred]="mediaBlur(frame)"><img [src]="visibleImageUrl(frame)" [alt]="copy.frameAlt" /><figcaption>{{ frameProgressLabel(frame) }}</figcaption></figure>
+            } @else {
+              <div class="game-frame-current game-frame-placeholder"><span>{{ copy.frameAlt }}</span></div>
+            }
+            <div class="game-frame-thumbnails" role="group" aria-label="{{ copy.frameAlt }}">
+              @for (slot of frameSlots(); track slot) {
+                @if (state()!.media[slot]; as frame) {
+                  @if (frame.revealed) {
+                    <button class="game-frame-thumb" [class.active]="frame.slot === activeFrame()?.slot" type="button" [attr.aria-label]="frameSlotLabel(slot)" [attr.aria-pressed]="frame.slot === activeFrame()?.slot" (click)="selectFrame(frame)"><img [src]="visibleImageUrl(frame)" alt="" /><span>{{ slot + 1 }}</span></button>
+                  } @else {
+                    <div class="game-frame-thumb locked" role="img" [attr.aria-label]="frameSlotLabel(slot)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>{{ slot + 1 }}</span></div>
+                  }
+                } @else {
+                  <div class="game-frame-thumb locked" role="img" [attr.aria-label]="frameSlotLabel(slot)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>{{ slot + 1 }}</span></div>
+                }
+              }
+            </div>
+          </div>
+        } @else if (displayMedia().length) {
+          <div class="game-media-grid">
+            @for (media of displayMedia(); track media.slot) { <figure [class.blurred]="mediaBlur(media)"><img [src]="visibleImageUrl(media)" [alt]="copy.mysteryImageAlt" /><figcaption>{{ revealProgressLabel() }}</figcaption></figure> }
+          </div>
+        } @else if (gameType === 'MOVIE_BY_POSTER' || gameType === 'SERIES_BY_POSTER' || gameType === 'PERSON_BY_FACE') {
+          <div class="game-media-placeholder"><span>{{ gameType === 'PERSON_BY_FACE' ? gamesCopy.person : gameType === 'SERIES_BY_POSTER' ? gamesCopy.series : gamesCopy.movie }}</span><b aria-hidden="true">?</b><small>{{ revealProgressLabel() }}</small></div>
+        } @else if (gameType === 'MOVIE_BY_INFO' || gameType === 'SERIES_BY_INFO') {
+          <div class="game-info-intro"><span class="game-info-symbol" aria-hidden="true">↔</span><p>{{ copy.infoIntro }}</p></div>
+        }
+
+        @if (gameType === 'ACTOR_BY_MOVIE_FILMOGRAPHY' || gameType === 'ACTOR_BY_SERIES_FILMOGRAPHY') {
+          <section class="game-filmography-results"><header><div><h2>{{ copy.sharedWorks }}</h2><p>{{ copy.sharedWorksDescription }}</p></div><span>{{ state()!.filmography?.entries?.length ?? 0 }}</span></header>
+            <div class="filmography-grid">@for (work of state()!.filmography?.entries ?? []; track work.workId) { <article [class.highlighted]="work.highlighted">@if (work.posterUrl && work.revealed) { <img [src]="work.posterUrl" alt="" loading="lazy" /> } @else { <div class="filmography-hidden">?</div> }<div><strong>{{ work.revealed ? work.title : copy.hiddenWork }}</strong><span>{{ work.year ?? copy.yearUnknown }}@if (work.genres.length) { · {{ work.genres.join(', ') }}}</span>@if (work.character) { <small>{{ work.character }}</small> }</div></article> }</div>
+          </section>
+        }
+
+        <div class="game-play-controls">
+        @if (state()!.canAttempt) {
+          <form class="game-guess-form" (submit)="submitGuess()">
+            <label for="game-answer">{{ gameType === 'EPISODE_BY_FRAME' ? copy.series : copy.answerPrompt }}</label>
+            <div class="game-search-row"><input id="game-answer" type="search" autocomplete="off" [value]="searchText()" [placeholder]="copy.searchPlaceholder" (input)="updateSearch($event)" (focus)="searchOpen.set(searchResults().length > 0)" (keyup.enter)="search()"/><button type="button" [disabled]="searchOrGuessDisabled()" (click)="searchOrGuess()">{{ searchBusy() ? copy.searching : selected() && gameType !== 'EPISODE_BY_FRAME' ? copy.submitGuess : copy.search }}</button></div>
+            @if (searchOpen() && searchResults().length) { <ul class="game-search-results" role="listbox" [attr.aria-label]="copy.searchResults">@for (result of searchResults(); track result.tmdbId ?? result.personTmdbId ?? result.title) { <li><button type="button" role="option" (click)="chooseResult(result)">@if (result.imageUrl) { <img [src]="result.imageUrl" alt="" loading="lazy" /> }<span><strong>{{ result.title }}</strong><small>{{ candidateLabel(result) }}@if (result.genres?.length) { · {{ result.genres?.join(', ') }}}</small></span></button></li> }</ul> }
+            @if (selected(); as selection) {
+              <div class="game-selected-candidate"><span>{{ selection.title }}</span><button type="button" [attr.aria-label]="copy.removeSelection" (click)="clearSelection()">×</button></div>
+            }
+            @if (gameType === 'EPISODE_BY_FRAME' && canChooseEpisode()) {
+              <div class="game-episode-selects"><label>{{ copy.season }}<select [value]="selectedSeason() ?? ''" (change)="changeSeason($event)"><option value="">{{ copy.chooseSeason }}</option>@for (season of seasons(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name }}</option> }</select></label><label>{{ copy.episode }}<select [value]="selectedEpisode() ?? ''" (change)="changeEpisode($event)" [disabled]="!selectedSeason()"><option value="">{{ copy.chooseEpisode }}</option>@for (episode of episodes(); track episode.episodeNumber) { <option [value]="episode.episodeNumber">{{ copy.episodeOption.replace('{number}', episode.episodeNumber.toString()).replace('{name}', episode.name) }}</option> }</select></label></div>
+            }
+            @if (state()!.shareOnCompletion) { <label class="game-share-check"><input type="checkbox" [checked]="shareOnCompletion()" (change)="toggleShare($event)"/>{{ copy.shareOnCompletion }}</label> }
+            <button class="game-submit" type="submit" [disabled]="!canSubmit()">{{ submitting() ? copy.submitting : copy.submitGuess }}</button>
+          </form>
+        }
+
+        @if (statusCompleted()) {
+          <section class="game-answer-reveal" aria-live="polite">
+            @if (answerImage()) { <img [src]="answerImage()!.url" [alt]="''" /> }
+            <div><span class="game-result-status" [class.failed]="state()!.status === 'FAILED'">{{ statusLabel() }}</span><h2>{{ state()!.answer?.title || state()!.answer?.seriesName || copy.answerRevealed }}</h2><p>{{ state()!.answer?.year ?? '' }}@if (state()!.answer?.genres?.length) { <span> · {{ state()!.answer?.genres?.join(', ') }}</span> }</p><strong>{{ copy.pointsEarned.replace('{score}', state()!.score.toString()).replace('{max}', state()!.maxAttempts.toString()) }}</strong></div>
+          </section>
+        }
+
+        @if (state()!.attempts.length) {
+          <section class="game-guess-history"><header><h2>{{ copy.yourGuesses }}</h2><span>{{ copy.attemptsRemaining.replace('{count}', state()!.attemptsRemaining.toString()) }}</span></header>
+            <ol>@for (attempt of state()!.attempts; track attempt.attemptNumber) { <li><div class="game-guess-heading"><span class="game-guess-number">{{ attempt.attemptNumber }}</span>@if (attempt.candidate.imageUrl) { <img class="game-guess-poster" [src]="attempt.candidate.imageUrl" alt="" loading="lazy" /> }<div class="game-guess-copy"><strong>{{ attempt.candidate.title }}</strong>@if (candidateMeta(attempt.candidate); as meta) { <small>{{ meta }}</small> }</div><span class="guess-outcome" [class.correct]="attempt.outcome.correct">{{ attempt.outcome.correct ? copy.correct : copy.wrong }}</span></div>
+              @if (attempt.infoFeedback) { <div class="game-feedback-grid">@for (cell of feedbackCells(attempt.infoFeedback); track cell.label) { <div [class]="'feedback-cell ' + cell.status"><small>{{ cell.label }}</small><span>{{ cell.value }}</span></div> }</div> }
+              @if (gameType === 'EPISODE_BY_FRAME' && attempt.outcome) { <div class="episode-feedback"><span [class.right]="attempt.outcome.seriesCorrect">{{ copy.series }}</span><span [class.right]="attempt.outcome.seasonCorrect">{{ copy.season }}</span><span [class.right]="attempt.outcome.episodeCorrect">{{ copy.episode }}</span></div> }
+            </li> }</ol>
+          </section>
+        }
+        </div>
       </section>
-    }
+    </div>
   }
 </main>
 

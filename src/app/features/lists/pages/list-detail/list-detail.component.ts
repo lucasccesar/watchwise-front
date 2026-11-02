@@ -1,5 +1,4 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
-import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,7 +19,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-  imports: [ModalFocusDirective, RouterLink, DecimalPipe, ContentImageActionsComponent, SharePreviewComponent],
+  imports: [ModalFocusDirective, RouterLink, ContentImageActionsComponent, SharePreviewComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
@@ -69,7 +68,6 @@ export class ListDetailComponent {
   protected readonly expandedSpoilers = signal<ReadonlySet<string>>(new Set());
   protected readonly commentDeleteTarget = signal<ListComment | null>(null);
   protected readonly deletingComment = signal(false);
-  protected readonly progressWidth = computed(() => Math.max(0, Math.min(100, this.detail()?.watchedPercentage ?? 0)));
   protected readonly itemCount = computed(() => this.detail()?.items.totalElements ?? 0);
   protected readonly totalPages = computed(() => Math.max(1, this.detail()?.items.totalPages ?? 1));
   protected readonly pageNumbers = computed(() => Array.from({ length: this.totalPages() }, (_, index) => index + 1));
@@ -134,7 +132,7 @@ export class ListDetailComponent {
     this.errorMessage.set('');
     const params = {
       page: this.page(),
-      size: 20,
+      size: 30,
       type: this.type() ?? undefined,
       genre: this.genre() ?? undefined,
       watchStatus: this.watchStatus() ?? undefined,
@@ -282,6 +280,14 @@ export class ListDetailComponent {
   protected listRuntime(): string { return this.durationLabel(this.detail()?.totalRuntimeMinutes); }
   protected updatedLabel(): string { return this.detail() ? this.copy.updated.replace('{date}', this.dateLabel(this.detail()!.updatedAt)) : ''; }
   protected pageLabel(): string { return this.copy.page.replace('{page}', String(this.page())).replace('{total}', String(this.totalPages())); }
+  protected heroBackground(): string {
+    const item = this.items().find((entry) => entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath);
+    const path = item?.customPosterUrl || item?.card?.customPosterUrl || item?.card?.posterPath;
+    const image = path
+      ? `url("${/^https?:\/\//i.test(path) ? path.replace('/w342/', '/w1280/') : `https://image.tmdb.org/t/p/w1280${path.startsWith('/') ? path : `/${path}`}`}")`
+      : 'radial-gradient(ellipse at 50% 20%, #303238 0%, #1c1c1d 68%)';
+    return `linear-gradient(180deg, rgb(16 16 18 / 42%) 0%, rgb(16 16 18 / 62%) 58%, var(--color-surface) 100%), ${image}`;
+  }
   protected visibilityLabel(visibility: ListVisibility): string {
     return visibility === 'PRIVATE' ? this.listCopy.private : visibility === 'FOLLOWERS' ? this.listCopy.followers : this.listCopy.public;
   }

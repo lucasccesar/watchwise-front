@@ -1,37 +1,15 @@
-<main class="picks-page" aria-labelledby="picks-title">
-  <header class="picks-header">
-    <div class="picks-heading-copy">
-      <div class="picks-title-line"><h1 id="picks-title">{{ copy.title }}</h1><span>{{ copy.templateCount.replace('{count}', count().toLocaleString('pt-BR')) }}</span></div>
-      <p>{{ copy.description }}</p>
-    </div>
-    <a class="picks-create" routerLink="/picks/create"><span aria-hidden="true">＋</span>{{ copy.createTemplate }}</a>
-  </header>
+<main class="picks-page" aria-labelledby="picks-page-title">
+  <app-picks-page-hero activeTab="explore" [statsText]="heroStats()" [backdropPath]="heroBackdropPath()" />
 
-  @if (section() !== 'all') {
-  <nav class="picks-tabs" [attr.aria-label]="copy.sections">
-    <button type="button" [class.active]="section() === 'mine'" [attr.aria-pressed]="section() === 'mine'" (click)="selectSection('mine')">{{ copy.myPicks }}</button>
-    <button type="button" [class.active]="section() === 'explore'" [attr.aria-pressed]="section() === 'explore'" (click)="selectSection('explore')">{{ copy.explorePicks }}</button>
-  </nav>
-  } @else {
-    <nav class="picks-tabs picks-catalog-back"><a routerLink="/picks">← {{ copy.explorePicks }}</a></nav>
-  }
+  <section class="picks-template-strip" aria-label="{{ copy.yourTemplates }}">
+    <span class="picks-template-count">{{ myTemplateCountLabel() }}</span>
+    <a class="picks-create" routerLink="/picks/create"><span aria-hidden="true">＋</span>{{ copy.createTemplate }}</a>
+  </section>
 
   @if (status() === 'loading') {
     <section class="picks-state" aria-live="polite"><span class="picks-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section>
   } @else if (status() === 'error') {
     <section class="picks-state"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
-  } @else if (section() === 'mine') {
-    <section class="picks-toolbar picks-mine-toolbar">
-      <div><h2>{{ copy.yourTemplates }}</h2><p>{{ pageCount(mine()) }}</p></div>
-      <a class="picks-secondary-create" routerLink="/picks/create">{{ copy.createTemplate }}</a>
-    </section>
-    @if (mine()?.content?.length) {
-      <div class="picks-grid">
-        @for (template of mine()?.content ?? []; track trackTemplate($index, template)) { <ng-container *ngTemplateOutlet="templateCard; context: { $implicit: template }" /> }
-      </div>
-    } @else {
-      <section class="picks-empty"><div class="picks-empty-mark" aria-hidden="true">✦</div><h2>{{ copy.emptyMineTitle }}</h2><p>{{ copy.emptyMineDescription }}</p><a class="picks-create" routerLink="/picks/create">{{ copy.createTemplate }}</a></section>
-    }
   } @else if (section() === 'all') {
     <section class="picks-toolbar picks-all-toolbar">
       <label class="picks-sort-label">{{ copy.sortTemplates }}
@@ -98,14 +76,14 @@
 <ng-template #templateCard let-template>
   <article class="picks-card">
     <a class="picks-card-cover" [routerLink]="templateRoute(template)" [attr.aria-label]="copy.openTemplate.replace('{name}', template.name)">
-      @if (template.coverImage) { <img [src]="template.coverImage" [alt]="''" loading="lazy" /> } @else { <div class="picks-cover-art"><span>{{ template.name.slice(0, 1).toUpperCase() }}</span><i aria-hidden="true"></i><i aria-hidden="true"></i></div> }
+      @if (template.coverImage) { <img [src]="template.coverImage" [alt]="''" loading="lazy" /> } @else { <div class="picks-cover-art"><span>{{ template.name.slice(0, 1).toUpperCase() }}</span></div> }
       <span class="picks-origin-badge" [class.official]="template.origin === 'OFFICIAL'">{{ template.origin === 'OFFICIAL' ? copy.official : copy.community }}</span>
     </a>
     <div class="picks-card-body">
       <div class="picks-card-meta"><a [routerLink]="templateRoute(template)">{{ creatorName(template) }}</a><span>·</span><time>{{ dateLabel(template.createdAt) }}</time></div>
       <h3><a [routerLink]="templateRoute(template)">{{ template.name }}</a></h3>
       <p class="picks-card-description">{{ template.description || copy.noDescription }}</p>
-      @if (template.categoryNames.length) { <div class="picks-categories"><span>{{ template.categoryNames[0] }}</span><span>{{ template.categoryNames[1] }}</span>@if (template.categoriesCount > 2) { <span>+{{ template.categoriesCount - 2 }}</span> }</div> }
+      @if (template.categoryNames.length) { <div class="picks-categories"><span>{{ template.categoryNames[0] }}</span>@if (template.categoryNames.length > 1) { <span>{{ template.categoryNames[1] }}</span> }@if (template.categoriesCount > 2) { <span>+{{ template.categoriesCount - 2 }}</span> }</div> }
       <div class="picks-card-footer">
         <span class="picks-card-count"><strong>{{ template.picksCount | number:'1.0-0' }}</strong> {{ copy.picks }}</span>
         @if (template.myPicksCount > 0 && template.latestMyPickId) { <a class="picks-my-answer" [routerLink]="pickRoute(template)">{{ copy.myPicks }}<span aria-hidden="true">→</span></a> }

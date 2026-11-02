@@ -4,9 +4,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ListsApiService, ListCardPreview, ListItemType, ListSource, UserListCard } from '../../data-access/lists-api.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { HomeApiService } from '../../../home/data-access/home-api.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+
+const LISTS_BACKDROP_FALLBACK = '/zb6fM1CX41D9rF9hdgclu0peUmy.jpg';
 
 type ListMenu = 'source' | 'type' | 'sort' | null;
 type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
@@ -25,7 +27,9 @@ export class ListsComponent {
   protected readonly isCommunity = inject(ActivatedRoute).snapshot.data['mode'] === 'community';
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly error = signal('');
-  protected readonly heroBackdropPath = signal<string | null>(null);
+  protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
+  protected readonly heroBackdropLoading = signal(true);
+  protected readonly heroBackdropFailed = signal(false);
   protected readonly pageData = signal<import('../../data-access/lists-api.service').UserListCardPage | null>(null);
   protected readonly page = signal(1);
   protected readonly source = signal<ListSource>('ALL');
@@ -35,12 +39,6 @@ export class ListsComponent {
   protected readonly activeMenu = signal<ListMenu>(null);
   protected readonly activeCardMenu = signal<string | null>(null);
   protected readonly activePreviewMenu = signal<string | null>(null);
-  protected readonly createDialogOpen = signal(false);
-  protected readonly createName = signal('');
-  protected readonly createDescription = signal('');
-  protected readonly createVisibility = signal<'PUBLIC' | 'FOLLOWERS' | 'PRIVATE'>('PUBLIC');
-  protected readonly creating = signal(false);
-  protected readonly createError = signal('');
   protected readonly shareNoticeId = signal<string | null>(null);
   protected readonly reorderMode = signal(false);
   protected readonly totalPages = computed(() => Math.max(1, this.pageData()?.totalPages ?? 1));
@@ -51,26 +49,24 @@ export class ListsComponent {
 
   private readonly api = inject(ListsApiService);
   private readonly session = inject(AuthSessionService);
-  private readonly homeApi = inject(HomeApiService);
   private readonly router = inject(Router);
   private request?: Subscription;
 
   constructor() {
-    const user = this.session.user();
-    if (user) {
-      this.homeApi.getHomeSummary(user.id).subscribe({
-        next: (summary) => this.heroBackdropPath.set(summary.latestWatchedBackdropPath),
-      });
-    }
     this.load();
   }
 
-  protected heroBackground(): string {
-    const backdrop = this.heroBackdropPath();
-    const image = backdrop
-      ? `url("https://image.tmdb.org/t/p/w1280${backdrop.startsWith('/') ? backdrop : `/${backdrop}`}")`
-      : 'radial-gradient(ellipse at 50% 35%, #33363b 0%, #202125 56%, #181818 100%)';
-    return `linear-gradient(180deg, rgb(16 16 18 / 52%) 0%, rgb(16 16 18 / 70%) 62%, #181818 100%), ${image}`;
+  protected heroBackdropUrl(): string | null {
+    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.heroBackdropPath(), 'w1280');
+  }
+
+  protected onHeroBackdropLoaded(): void {
+    this.heroBackdropLoading.set(false);
+  }
+
+  protected onHeroBackdropError(): void {
+    this.heroBackdropFailed.set(true);
+    this.heroBackdropLoading.set(false);
   }
 
   protected load(): void {
@@ -80,6 +76,9 @@ export class ListsComponent {
     }
     this.request?.unsubscribe();
     this.status.set('loading');
+    this.heroBackdropPath.set(undefined);
+    this.heroBackdropLoading.set(true);
+    this.heroBackdropFailed.set(false);
     this.error.set('');
     const options = { page: this.page(), itemType: this.itemType() ?? undefined };
     const selectedSort = this.sort();
@@ -93,8 +92,16 @@ export class ListsComponent {
           sortDirection: this.sortDirection(),
         });
     this.request = request.subscribe({
-      next: (page) => { this.pageData.set(page); this.status.set('ready'); },
+      next: (page) => {
+        const backdropPath = page.backdropPath === null ? LISTS_BACKDROP_FALLBACK : page.backdropPath;
+        this.heroBackdropPath.set(backdropPath);
+        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(backdropPath, 'w1280')));
+        this.heroBackdropFailed.set(false);
+        this.pageData.set(page);
+        this.status.set('ready');
+      },
       error: (error: unknown) => {
+        this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.homeCopy.actionConnectionError : this.homeCopy.genericError);
       },
@@ -210,22 +217,6 @@ export class ListsComponent {
     if (!path) return null;
     if (/^https?:\/\//i.test(path)) return path;
     return `https://image.tmdb.org/t/p/w500${path.startsWith('/') ? path : `/${path}`}`;
-  }
-
-  protected openCreateDialog(): void { this.createError.set(''); this.createName.set(''); this.createDescription.set(''); this.createDialogOpen.set(true); }
-  protected closeCreateDialog(): void { if (!this.creating()) this.createDialogOpen.set(false); }
-  protected updateCreateName(event: Event): void { this.createName.set((event.target as HTMLInputElement).value); }
-  protected updateCreateDescription(event: Event): void { this.createDescription.set((event.target as HTMLTextAreaElement).value); }
-  protected setCreateVisibility(value: 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE'): void { this.createVisibility.set(value); }
-  protected submitCreate(): void {
-    const name = this.createName().trim();
-    if (!name || this.creating()) return;
-    this.creating.set(true);
-    this.createError.set('');
-    this.api.createList({ name, description: this.createDescription().trim() || undefined, visibility: this.createVisibility() }).subscribe({
-      next: () => { this.creating.set(false); this.createDialogOpen.set(false); this.source.set('OWNED'); this.page.set(1); this.load(); },
-      error: () => { this.creating.set(false); this.createError.set(this.copy.createError); },
-    });
   }
 
   private communitySort(): 'name' | 'likesCount' | 'itemsCount' | 'commentsCount' {

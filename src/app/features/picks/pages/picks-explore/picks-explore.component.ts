@@ -5,14 +5,15 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksApiService, PicksOrigin, PicksTemplatePage, PicksTemplatePreview, PicksTemplateSort } from '../../data-access/picks-api.service';
+import { PicksPageHeroComponent } from '../../shared/picks-page-hero.component';
 
-type PicksSection = 'explore' | 'mine' | 'all';
+type PicksSection = 'explore' | 'all';
 type PicksLoadState = 'loading' | 'ready' | 'error';
 
 @Component({
   selector: 'app-picks-explore',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, NgTemplateOutlet],
+  imports: [RouterLink, DecimalPipe, NgTemplateOutlet, PicksPageHeroComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-explore.component.html',
   styleUrl: './picks-explore.component.css',
@@ -26,17 +27,24 @@ export class PicksExploreComponent {
   protected readonly popular = signal<PicksTemplatePage | null>(null);
   protected readonly mostPicked = signal<PicksTemplatePage | null>(null);
   protected readonly recent = signal<PicksTemplatePage | null>(null);
-  protected readonly mine = signal<PicksTemplatePage | null>(null);
   protected readonly allTemplates = signal<PicksTemplatePage | null>(null);
+  protected readonly myPicksCount = signal<number | null>(null);
+  protected readonly myTemplatesCount = signal<number | null>(null);
   protected readonly allSort = signal<PicksTemplateSort>('POPULAR_WEEK');
   protected readonly allPage = signal(1);
   protected readonly error = signal('');
   protected readonly busyLikeIds = signal<ReadonlySet<string>>(new Set());
-  protected readonly count = computed(() => this.section() === 'mine'
-    ? this.mine()?.totalElements ?? 0
-    : this.section() === 'all'
-      ? this.allTemplates()?.totalElements ?? 0
-      : this.popular()?.totalElements ?? 0);
+  protected readonly heroStats = computed(() => {
+    const picks = this.myPicksCount();
+    const templates = this.myTemplatesCount();
+    if (picks === null || templates === null) return null;
+    return this.copy.pickStats
+      .replace('{picks}', new Intl.NumberFormat('pt-BR').format(picks))
+      .replace('{templates}', new Intl.NumberFormat('pt-BR').format(templates));
+  });
+  protected readonly heroBackdropPath = computed(() => this.section() === 'all'
+    ? this.allTemplates()?.backdropPath ?? null
+    : this.popular()?.backdropPath ?? this.mostPicked()?.backdropPath ?? this.recent()?.backdropPath ?? null);
 
   private readonly api = inject(PicksApiService);
   private readonly route = inject(ActivatedRoute);
@@ -54,19 +62,13 @@ export class PicksExploreComponent {
       const page = Number(this.route.snapshot.queryParamMap.get('page'));
       if (Number.isInteger(page) && page > 0) this.allPage.set(page);
     }
+    this.loadStats();
     this.load();
   }
 
   protected load(): void {
     this.status.set('loading');
     this.error.set('');
-    if (this.section() === 'mine') {
-      this.api.getMyTemplates({ page: 1, size: 20, sort: 'RECENT' }).subscribe({
-        next: (page) => { this.mine.set(page); this.status.set('ready'); },
-        error: (error: unknown) => this.fail(error),
-      });
-      return;
-    }
     const name = this.query().trim() || undefined;
     if (this.section() === 'all') {
       this.api.getTemplates({ origin: this.origin() ?? undefined, name, page: this.allPage(), size: 20, sort: this.allSort() }).subscribe({
@@ -85,7 +87,6 @@ export class PicksExploreComponent {
     });
   }
 
-  protected selectSection(section: PicksSection): void { this.section.set(section); this.load(); }
   protected selectOrigin(origin: PicksOrigin | null): void { this.origin.set(origin); this.allPage.set(1); this.load(); }
   protected updateQuery(event: Event): void { this.query.set((event.target as HTMLInputElement).value); }
   protected submitSearch(event: Event): void { event.preventDefault(); this.allPage.set(1); this.load(); }
@@ -121,12 +122,18 @@ export class PicksExploreComponent {
   protected templateRoute(template: PicksTemplatePreview): string[] { return ['/picks/templates', template.id]; }
   protected pickRoute(template: PicksTemplatePreview): string[] | null { return template.latestMyPickId ? ['/picks', template.latestMyPickId] : null; }
   protected pageCount(page: PicksTemplatePage | null): string { return this.copy.templateCount.replace('{count}', new Intl.NumberFormat('pt-BR').format(page?.totalElements ?? 0)); }
+  protected myTemplateCountLabel(): string { return this.copy.templateCount.replace('{count}', new Intl.NumberFormat('pt-BR').format(this.myTemplatesCount() ?? 0)); }
   protected dateLabel(date: string | null): string { return date ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date)) : ''; }
+
+  private loadStats(): void {
+    this.api.getMyPicksView(1, 1).subscribe({ next: (page) => this.myPicksCount.set(page.totalElements), error: () => this.myPicksCount.set(null) });
+    this.api.getMyTemplates({ page: 1, size: 1 }).subscribe({ next: (page) => this.myTemplatesCount.set(page.totalElements), error: () => this.myTemplatesCount.set(null) });
+  }
 
   private fail(error: unknown): void {
     this.status.set('error');
     this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.copy.connectionError : this.copy.loadError);
-    this.popular.set(this.emptyPage); this.mostPicked.set(this.emptyPage); this.recent.set(this.emptyPage); this.mine.set(this.emptyPage);
+    this.popular.set(this.emptyPage); this.mostPicked.set(this.emptyPage); this.recent.set(this.emptyPage);
     this.allTemplates.set(this.emptyPage);
   }
 }

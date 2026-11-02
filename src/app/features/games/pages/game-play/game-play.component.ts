@@ -1,9 +1,10 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { interval, Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { GamesApiService, DailyGameEpisodeOption, DailyGameInfoFeedback, DailyGameMediaRef, DailyGamePlayView, DailyGameSeasonOption, DailyGameSearchResult, DailyGameType } from '../../data-access/games-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 
@@ -43,9 +44,26 @@ export class GamePlayComponent {
   protected readonly howToPlayOpen = signal(false);
   protected readonly giveUpOpen = signal(false);
   protected readonly actionError = signal('');
+  protected readonly selectedFrameSlot = signal<string | null>(null);
+  protected readonly clockTick = signal(0);
   protected readonly statusCompleted = computed(() => ['COMPLETED', 'FAILED'].includes(this.state()?.status ?? ''));
   protected readonly displayMedia = computed(() => (this.state()?.media ?? []).filter((media) => media.revealed));
   protected readonly attemptSegments = computed(() => Array.from({ length: this.state()?.maxAttempts ?? 0 }, (_, index) => index));
+  protected readonly frameSlots = computed(() => Array.from({ length: Math.max(6, this.state()?.media.length ?? 0) }, (_, index) => index));
+  protected readonly activeFrame = computed(() => {
+    const visible = this.displayMedia();
+    return visible.find((media) => media.slot === this.selectedFrameSlot()) || visible[visible.length - 1] || null;
+  });
+  protected readonly newChallengeCountdown = computed(() => {
+    this.clockTick();
+    const resetAt = this.state()?.nextResetAt;
+    const remainingMs = resetAt ? Date.parse(resetAt) - Date.now() : Number.NaN;
+    if (!Number.isFinite(remainingMs)) return this.copy.newChallengeCountdown;
+    const remainingMinutes = Math.max(0, Math.ceil(remainingMs / 60_000));
+    const hours = Math.floor(remainingMinutes / 60);
+    const minutes = String(remainingMinutes % 60).padStart(2, '0');
+    return this.gamesCopy.newChallenges.replace('{time}', `${hours}h ${minutes}m`);
+  });
   protected readonly gameName = computed(() => {
     const type = this.gameType;
     const names = this.gamesCopy.gameTypes;
@@ -81,18 +99,20 @@ export class GamePlayComponent {
 
   private readonly api = inject(GamesApiService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private searchRequest?: Subscription;
 
   constructor() {
     if (!this.gameType) { void this.router.navigateByUrl('/games'); return; }
     this.load();
+    interval(60_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.clockTick.update((tick) => tick + 1));
   }
 
   protected load(): void {
     if (!this.gameType) return;
     this.status.set('loading'); this.error.set('');
     this.api.getPlay(this.gameType, this.majorRoles()).subscribe({
-      next: (state) => { this.state.set(state); this.status.set('ready'); },
+      next: (state) => { this.state.set(state); this.selectedFrameSlot.set(null); this.status.set('ready'); },
       error: (error: unknown) => { this.status.set('error'); this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.copy.connectionError : this.copy.loadError); },
     });
   }
@@ -108,6 +128,15 @@ export class GamePlayComponent {
       next: (page) => { this.searchResults.set(page.content); this.searchBusy.set(false); },
       error: (error: unknown) => { this.searchResults.set([]); this.searchBusy.set(false); this.actionError.set(error instanceof HttpErrorResponse && error.status === 429 ? this.copy.searchLimitError : this.copy.searchError); },
     });
+  }
+  protected searchOrGuess(): void {
+    if (this.selected() && this.gameType !== 'EPISODE_BY_FRAME') this.submitGuess();
+    else this.search();
+  }
+  protected searchOrGuessDisabled(): boolean {
+    if (this.searchBusy()) return true;
+    if (this.selected() && this.gameType !== 'EPISODE_BY_FRAME') return !this.canSubmit();
+    return !this.searchText().trim();
   }
   protected chooseResult(result: DailyGameSearchResult): void {
     if (this.gameType === 'EPISODE_BY_FRAME') {
@@ -143,7 +172,7 @@ export class GamePlayComponent {
     else request.tmdbId = candidate.tmdbId || undefined;
     this.submitting.set(true); this.actionError.set('');
     this.api.submitPlayAttempt(this.gameType, request, this.majorRoles()).subscribe({
-      next: (result) => { this.state.set(result.state); this.submitting.set(false); this.clearSelection(); },
+      next: (result) => { this.state.set(result.state); this.selectedFrameSlot.set(null); this.submitting.set(false); this.clearSelection(); },
       error: (error: unknown) => { this.submitting.set(false); this.actionError.set(error instanceof HttpErrorResponse && error.status === 429 ? this.copy.attemptLimitError : this.copy.guessError); },
     });
   }
@@ -162,6 +191,23 @@ export class GamePlayComponent {
   protected closeHowToPlay(): void { this.howToPlayOpen.set(false); }
   protected visibleImageUrl(media: DailyGameMediaRef): string { return media.url; }
   protected mediaBlur(media: DailyGameMediaRef): boolean { return media.variant.toUpperCase().includes('BLUR'); }
+  protected selectFrame(media: DailyGameMediaRef): void { if (media.revealed) this.selectedFrameSlot.set(media.slot); }
+  protected frameProgressLabel(media: DailyGameMediaRef): string {
+    const index = (this.state()?.media ?? []).findIndex((entry) => entry.slot === media.slot);
+    const max = Math.max(6, this.state()?.media.length ?? 0);
+    return this.gamesCopy.frameProgress.replace('{revealed}', String(index + 1)).replace('{max}', String(max));
+  }
+  protected revealProgressLabel(): string {
+    const state = this.state();
+    return this.gamesCopy.revealProgress
+      .replace('{revealed}', String(Math.min((state?.attemptsUsed ?? 0) + 1, state?.maxAttempts ?? 1)))
+      .replace('{max}', String(state?.maxAttempts ?? 0));
+  }
+  protected frameSlotLabel(index: number): string { return this.gamesCopy.frameProgress.replace('{revealed}', String(index + 1)).replace('{max}', String(Math.max(6, this.state()?.media.length ?? 0))); }
+  protected candidateMeta(candidate: DailyGamePlayView['attempts'][number]['candidate']): string {
+    if (candidate.targetKind === 'EPISODE') return [candidate.year, candidate.seasonNumber !== null ? `T${candidate.seasonNumber}` : null, candidate.episodeNumber !== null ? `E${candidate.episodeNumber}` : null].filter((value) => value !== null).join(' · ');
+    return [candidate.year, candidate.genres?.join(', ')].filter(Boolean).join(' · ');
+  }
   protected answerImage(): DailyGameMediaRef | null { return this.state()?.answer?.image ?? null; }
   protected statusLabel(): string { return this.state()?.status === 'COMPLETED' ? this.copy.correct : this.state()?.status === 'FAILED' ? this.copy.revealResult : ''; }
   protected feedbackCells(info: DailyGameInfoFeedback | null): FeedbackCell[] {
@@ -178,6 +224,7 @@ export class GamePlayComponent {
   protected canChooseEpisode(): boolean { return Boolean(this.selected()?.seriesTmdbId); }
   protected showHowToPlay(): void { this.howToPlayOpen.set(true); }
   protected number(value: number | null | undefined): string { return String(value ?? 0); }
+  protected currentAttemptNumber(): string { const state = this.state(); return String(Math.min((state?.attemptsUsed ?? 0) + 1, state?.maxAttempts ?? 0)); }
   protected formatChallengeDate(value: string): string { return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T12:00:00`)); }
 
   private displayValue(value: unknown): string {

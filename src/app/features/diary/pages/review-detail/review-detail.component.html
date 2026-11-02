@@ -6,7 +6,7 @@
   <main class="review-detail-page">
     <header class="review-detail-hero" [style.background-image]="backdropStyle()">
       <div class="review-detail-hero-copy">
-        <span class="review-detail-author-pill"><span>{{ initials(reviewerName()) }}</span>{{ reviewerName() }}</span>
+        <span class="review-detail-author-pill"><span>@if (reviewerPicture(); as picture) { <img [src]="picture" alt="" /> } @else { {{ initials(reviewerName()) }} }</span>{{ reviewerName() }}</span>
         <h1 class="review-detail-title-desktop">{{ contentTitle() }}</h1>
         <h1 class="review-detail-title-mobile">Resenha</h1>
         <span class="review-detail-kicker"><i></i>Resenha<i></i></span>
@@ -14,7 +14,7 @@
       </div>
     </header>
     <nav class="review-detail-breadcrumb" aria-label="Caminho da página">
-      <a [routerLink]="reviewerReviewsRoute()">‹ <span>Resenhas</span></a><span aria-hidden="true">/</span><a [routerLink]="contentRoute()">{{ contentTitle() }}</a>
+      <a routerLink="/diary">‹ <span>Diário</span></a><span aria-hidden="true">/</span><a [routerLink]="reviewerReviewsRoute()">Resenhas</a><span aria-hidden="true">/</span><span>{{ episodeLabel() || contentTitle() }}</span>
     </nav>
 
     <section class="review-detail-body" aria-labelledby="review-content-title">
@@ -28,12 +28,12 @@
           <div><h2 id="review-content-title"><a [routerLink]="contentRoute()">{{ contentTitle() }}</a></h2>@if (episodeLabel()) { <span>{{ episodeLabel() }}</span> }</div>
           @if (review.score !== null) { <strong class="review-detail-score" [attr.aria-label]="'Nota ' + review.score + ' de 10'"><span aria-hidden="true">★</span>{{ review.score }} <small>/10</small></strong> }
         </header>
-        <div class="review-detail-meta"><span>Assistido {{ formatDate(review.watchedDate) }}</span>@if (review.watchNumber && review.watchNumber > 1) { <span>· Reassistido {{ review.watchNumber }} vezes</span> }@if (watchedWithLabel()) { <span>· {{ watchedWithLabel() }}</span> }</div>
+        <div class="review-detail-meta"><span>Assistido {{ formatDate(review.watchedDate) }}@if (review.watchNumber && review.watchNumber > 1) { · Reassistido {{ review.watchNumber }} vezes }</span>@if (firstCompanion(); as companion) { <span class="review-detail-companions"><span class="review-detail-companion-avatar">@if (companion.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { {{ initials(companion.name || companion.username) }} }</span>{{ watchedWithLabel() }}</span> }</div>
         @if (review.comment) { <p class="review-detail-text">{{ review.comment }}</p> }
         <div class="review-detail-actions">
           <button type="button" class="review-detail-like" [class.is-liked]="review.likedByMe" [attr.aria-pressed]="!!review.likedByMe" (click)="toggleReviewLike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg>{{ review.likesCount ?? 0 }} curtidas</button>
           <a class="review-detail-comments-link" href="#comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.6-.8L4 20l1.4-3.7A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z" /></svg>{{ review.commentsCount ?? comments().length }} comentários</a>
-          <div class="review-detail-share-wrap"><button type="button" class="review-detail-share" [attr.aria-expanded]="shareMenuOpen()" (click)="toggleShareMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2M8.6 13.4l6.8 4.2"/></svg>Compartilhar <span aria-hidden="true">⌄</span></button></div>
+          <div class="review-detail-share-wrap"><button type="button" class="review-detail-share" aria-label="Mais opções da resenha" title="Mais opções da resenha" [attr.aria-expanded]="shareMenuOpen()" (click)="toggleShareMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
         </div>
       </article>
     </section>

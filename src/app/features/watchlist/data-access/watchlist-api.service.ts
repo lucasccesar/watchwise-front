@@ -45,6 +45,7 @@ export interface WatchlistView {
   totalElements: number;
   totalPages: number;
   hasNext: boolean;
+  backdropPath?: string | null;
   aggregate: {
     totalCount: number;
     movieCount: number;

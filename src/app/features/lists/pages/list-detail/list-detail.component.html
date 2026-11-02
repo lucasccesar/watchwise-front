@@ -4,22 +4,53 @@
   } @else if (status() === 'error') {
     <section class="list-detail-state" role="alert"><h1>{{ copy.errorTitle }}</h1><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (detail(); as list) {
-    <header class="list-detail-header">
-      <nav class="list-detail-breadcrumb" aria-label="Navegação estrutural">
-        <a routerLink="/lists">{{ copy.backToLists }}</a><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg><span>{{ list.name }}</span>
-      </nav>
-      <div class="list-detail-heading-row">
-        <div class="list-detail-heading-copy">
+    <header class="list-detail-hero" [style.background-image]="heroBackground()">
+      <div class="list-detail-header">
+        <nav class="list-detail-breadcrumb" aria-label="Navegação estrutural">
+          <a routerLink="/lists"><span aria-hidden="true">←</span>{{ copy.backToLists }}</a><span aria-hidden="true">/</span><span>{{ list.name }}</span>
+        </nav>
+        <div class="list-detail-hero-copy">
           @if (owner(); as author) {
-            <a class="list-detail-owner" [routerLink]="['/users', author.username]"><span class="list-detail-avatar">@if (userAvatar(author)) { <img [src]="userAvatar(author)" alt="" /> } @else { {{ author.name.slice(0, 1) }} }</span>{{ copy.owner.replace('{name}', author.name) }}</a>
+            <a class="list-detail-owner" [routerLink]="['/users', author.username]"><span class="list-detail-avatar">@if (userAvatar(author)) { <img [src]="userAvatar(author)" alt="" /> } @else { {{ author.name.slice(0, 1) }} }</span>{{ author.name }}</a>
           }
-          <div class="list-detail-title-row"><h1 id="list-detail-title">{{ list.name }}</h1><span class="list-detail-visibility" [class.list-detail-visibility-private]="list.visibility === 'PRIVATE'" [class.list-detail-visibility-followers]="list.visibility === 'FOLLOWERS'">{{ visibilityLabel(list.visibility) }}</span></div>
-          <p class="list-detail-updated">{{ updatedLabel() }}</p>
+          <h1 id="list-detail-title">{{ list.name }}</h1>
+          <p class="list-detail-updated"><span aria-hidden="true"></span>{{ updatedLabel() }}<span aria-hidden="true"></span></p>
           @if (list.description) { <p class="list-detail-description">{{ list.description }}</p> }
         </div>
-        <div class="list-detail-header-actions">
-          <button class="list-detail-like" type="button" [class.list-detail-like-active]="list.likedByMe" [attr.aria-pressed]="list.likedByMe" (click)="toggleLike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg><span>{{ list.likesCount ?? 0 }}</span><small>{{ copy.likes }}</small></button>
-          <a class="list-detail-comments-link" href="#list-comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z" /></svg><span>{{ list.commentsCount }}</span><small>{{ copy.comments }}</small></a>
+      </div>
+    </header>
+
+    <section class="list-detail-control-band" aria-label="Filtros e ordenação da lista">
+      <div class="list-detail-controls">
+        <div class="list-detail-filters">
+          <div class="list-detail-type-tabs" role="group" [attr.aria-label]="copy.typeFilter">
+            <button type="button" [class.active]="type() === null" [attr.aria-pressed]="type() === null" (click)="selectType(null)">{{ copy.all }}</button>
+            <button type="button" [class.active]="type() === 'MOVIE'" [attr.aria-pressed]="type() === 'MOVIE'" (click)="selectType('MOVIE')">{{ copy.movies }}</button>
+            <button type="button" [class.active]="type() === 'SERIES'" [attr.aria-pressed]="type() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}</button>
+            @if (list.itemScope === 'SEASON' || list.itemScope === 'MIXED') { <button type="button" [class.active]="type() === 'SEASON'" [attr.aria-pressed]="type() === 'SEASON'" (click)="selectType('SEASON')">{{ copy.seasons }}</button> }
+            @if (list.itemScope === 'EPISODE' || list.itemScope === 'MIXED') { <button type="button" [class.active]="type() === 'EPISODE'" [attr.aria-pressed]="type() === 'EPISODE'" (click)="selectType('EPISODE')">{{ copy.episodes }}</button> }
+          </div>
+          <div class="list-detail-control-wrap">
+            <button class="list-detail-control" type="button" [attr.aria-expanded]="activeMenu() === 'genre'" (click)="toggleMenu('genre')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a.6.6 0 0 1 0 .8Z"/><circle cx="8" cy="8" r="1"/></svg>{{ genre() ?? copy.allGenres }}<svg class="list-detail-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+            @if (activeMenu() === 'genre') { <div class="list-detail-dropdown" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="genre() === null" (click)="selectGenre(null)">{{ copy.allGenres }}</button>@for (option of genreOptions(); track option) { <button type="button" role="menuitemradio" [attr.aria-checked]="genre() === option" (click)="selectGenre(option)">{{ option }}</button> }</div> }
+          </div>
+        </div>
+        <div class="list-detail-toolbar">
+          <div class="list-detail-stats" aria-label="Estatísticas da lista">
+            <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ listRuntime() }}</span>
+            <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></svg>{{ list.itemsCount }}</span>
+            <button type="button" [class.list-detail-liked]="list.likedByMe" [attr.aria-pressed]="list.likedByMe" [attr.aria-label]="list.likesCount + ' ' + copy.likes" (click)="toggleLike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ list.likesCount ?? 0 }}</button>
+            <a href="#list-comments" [attr.aria-label]="list.commentsCount + ' ' + copy.comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z" /></svg>{{ list.commentsCount }}</a>
+          </div>
+          <div class="list-detail-control-wrap">
+            <button class="list-detail-control" type="button" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="list-detail-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+            @if (activeMenu() === 'sort') { <div class="list-detail-dropdown" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'position'" (click)="selectSort('position')">{{ copy.sortPosition }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'dateAdded'" (click)="selectSort('dateAdded')">{{ copy.sortDate }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'duration'" (click)="selectSort('duration')">{{ copy.sortDuration }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'globalEpisodeAvgRating'" (click)="selectSort('globalEpisodeAvgRating')">{{ copy.sortGlobalRating }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'contentAvgRating'" (click)="selectSort('contentAvgRating')">{{ copy.sortContentRating }}</button>@if (canManage()) { <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'episodeAvgRating'" (click)="selectSort('episodeAvgRating')">{{ copy.sortEpisodeRating }}</button> }</div> }
+          </div>
+          <button class="list-detail-direction" type="button" [attr.aria-label]="sortDirection() === 'asc' ? copy.ascending : copy.descending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="sortDirection() === 'asc' ? 'M12 5v14m-7-7 7-7 7 7' : 'M12 19V5m7 7-7 7-7-7'" /></svg></button>
+          <div class="list-detail-control-wrap">
+            <button class="list-detail-control" type="button" [attr.aria-expanded]="activeMenu() === 'status'" (click)="toggleMenu('status')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>{{ statusLabel() }}<svg class="list-detail-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+            @if (activeMenu() === 'status') { <div class="list-detail-dropdown" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === null" (click)="selectWatchStatus(null)">{{ copy.allStatuses }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'WATCHED'" (click)="selectWatchStatus('WATCHED')">{{ copy.watched }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'PARTIALLY_WATCHED'" (click)="selectWatchStatus('PARTIALLY_WATCHED')">{{ copy.partiallyWatched }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'UNWATCHED'" (click)="selectWatchStatus('UNWATCHED')">{{ copy.unwatched }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'UNKNOWN'" (click)="selectWatchStatus('UNKNOWN')">{{ copy.unknown }}</button></div> }
+          </div>
           <div class="list-detail-actions-wrap">
             <button #listMenuButton class="list-detail-more" type="button" [attr.aria-label]="copy.actions" [attr.aria-expanded]="listMenuOpen()" (click)="toggleListMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
             @if (listMenuOpen()) {
@@ -38,75 +69,41 @@
           </div>
         </div>
       </div>
-      <div class="list-detail-summary">
-        <span><strong>{{ listRuntime() }}</strong><small>{{ copy.runtime }}</small></span>
-        <span><strong>{{ list.itemsCount }}</strong><small>{{ copy.itemCount.replace('{count}', '') }}</small></span>
-        @if (list.watchedPercentage !== null) { <span class="list-detail-progress-summary"><strong>{{ list.watchedPercentage | number:'1.0-0' }}%</strong><small>{{ copy.progress }}</small><i><b [style.width.%]="progressWidth()"></b></i></span> }
-      </div>
-    </header>
-
-    <section class="list-detail-controls" aria-label="Filtros e ordenação da lista">
-      <div class="list-detail-type-tabs" role="group" [attr.aria-label]="copy.typeFilter">
-        <button type="button" [class.active]="type() === null" [attr.aria-pressed]="type() === null" (click)="selectType(null)">{{ copy.all }}</button>
-        <button type="button" [class.active]="type() === 'MOVIE'" [attr.aria-pressed]="type() === 'MOVIE'" (click)="selectType('MOVIE')">{{ copy.movies }}</button>
-        <button type="button" [class.active]="type() === 'SERIES'" [attr.aria-pressed]="type() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}</button>
-        @if (list.itemScope === 'SEASON' || list.itemScope === 'MIXED') { <button type="button" [class.active]="type() === 'SEASON'" [attr.aria-pressed]="type() === 'SEASON'" (click)="selectType('SEASON')">{{ copy.seasons }}</button> }
-        @if (list.itemScope === 'EPISODE' || list.itemScope === 'MIXED') { <button type="button" [class.active]="type() === 'EPISODE'" [attr.aria-pressed]="type() === 'EPISODE'" (click)="selectType('EPISODE')">{{ copy.episodes }}</button> }
-      </div>
-      <div class="list-detail-toolbar">
-        <div class="list-detail-control-wrap">
-          <button class="list-detail-control" type="button" [attr.aria-expanded]="activeMenu() === 'genre'" (click)="toggleMenu('genre')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a.6.6 0 0 1 0 .8Z"/><circle cx="8" cy="8" r="1"/></svg>{{ genre() ?? copy.allGenres }}<svg class="list-detail-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
-          @if (activeMenu() === 'genre') { <div class="list-detail-dropdown" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="genre() === null" (click)="selectGenre(null)">{{ copy.allGenres }}</button>@for (option of genreOptions(); track option) { <button type="button" role="menuitemradio" [attr.aria-checked]="genre() === option" (click)="selectGenre(option)">{{ option }}</button> }</div> }
-        </div>
-        <div class="list-detail-stats"><span>{{ listRuntime() }}</span><span>{{ list.itemsCount }} {{ copy.itemCount.replace('{count}', '').trim() }}</span><button type="button" [class.list-detail-liked]="list.likedByMe" [attr.aria-pressed]="list.likedByMe" (click)="toggleLike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ list.likesCount ?? 0 }}</button><a href="#list-comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z" /></svg>{{ list.commentsCount }}</a></div>
-        <div class="list-detail-control-wrap">
-          <button class="list-detail-control" type="button" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="list-detail-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
-          @if (activeMenu() === 'sort') { <div class="list-detail-dropdown" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'position'" (click)="selectSort('position')">{{ copy.sortPosition }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'dateAdded'" (click)="selectSort('dateAdded')">{{ copy.sortDate }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'duration'" (click)="selectSort('duration')">{{ copy.sortDuration }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'globalEpisodeAvgRating'" (click)="selectSort('globalEpisodeAvgRating')">{{ copy.sortGlobalRating }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'contentAvgRating'" (click)="selectSort('contentAvgRating')">{{ copy.sortContentRating }}</button>@if (canManage()) { <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'episodeAvgRating'" (click)="selectSort('episodeAvgRating')">{{ copy.sortEpisodeRating }}</button> }</div> }
-        </div>
-        <button class="list-detail-direction" type="button" [attr.aria-label]="sortDirection() === 'asc' ? copy.ascending : copy.descending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="sortDirection() === 'asc' ? 'M12 5v14m-7-7 7-7 7 7' : 'M12 19V5m7 7-7 7-7-7'" /></svg></button>
-        <div class="list-detail-control-wrap">
-          <button class="list-detail-control" type="button" [attr.aria-expanded]="activeMenu() === 'status'" (click)="toggleMenu('status')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>{{ statusLabel() }}<svg class="list-detail-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
-          @if (activeMenu() === 'status') { <div class="list-detail-dropdown" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === null" (click)="selectWatchStatus(null)">{{ copy.allStatuses }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'WATCHED'" (click)="selectWatchStatus('WATCHED')">{{ copy.watched }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'PARTIALLY_WATCHED'" (click)="selectWatchStatus('PARTIALLY_WATCHED')">{{ copy.partiallyWatched }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'UNWATCHED'" (click)="selectWatchStatus('UNWATCHED')">{{ copy.unwatched }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="watchStatus() === 'UNKNOWN'" (click)="selectWatchStatus('UNKNOWN')">{{ copy.unknown }}</button></div> }
-        </div>
-        @if (canManage()) { <button class="list-detail-reorder" type="button" [attr.aria-pressed]="reorderMode()" (click)="toggleReorder()">{{ reorderMode() ? copy.done : copy.reorder }}</button> }
-      </div>
     </section>
 
     @if (status() === 'ready' && items().length) {
-      <nav class="list-detail-pagination" [attr.aria-label]="copy.pagination">
-        <button type="button" [disabled]="page() <= 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-        @for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }
-        <button type="button" [disabled]="page() >= totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
-      </nav>
-      <p class="list-detail-page-label">{{ pageLabel() }}</p>
+      <div class="list-detail-page-bar">
+        <nav class="list-detail-pagination" [attr.aria-label]="copy.pagination">
+          <button type="button" [disabled]="page() <= 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+          @for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }
+          <button type="button" [disabled]="page() >= totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+        </nav>
+        <p class="list-detail-page-label">{{ pageLabel() }}</p>
+      </div>
       <ol class="list-detail-items" aria-label="Itens da lista">
         @for (item of items(); track item.id) {
           <li class="list-detail-item">
-            <span class="list-detail-position" [attr.aria-label]="copy.position.replace('{position}', item.position.toString())">{{ item.position }}</span>
             <div class="list-detail-poster content-image-card">
               @if (contentRoute(item); as route) { <a class="list-detail-poster-link" [routerLink]="route" [attr.aria-label]="item.card?.title ?? item.nestedList?.name ?? copy.openContent">@if (posterFor(item)) { <img [src]="posterFor(item)" alt="" loading="lazy" /> } @else { <span>{{ item.card?.title ?? item.nestedList?.name ?? copy.openContent }}</span> }</a> }
               @else if (posterFor(item)) { <img [src]="posterFor(item)" alt="" loading="lazy" /> }
               @if (item.card) { <app-content-image-actions [ratingValue]="ratingFor(item)" [ratingLabel]="ratingLabel(item)" [optionsLabel]="homeCopy.contentOptions" [actions]="imageActions" [expanded]="activeImageMenu() === item.id" (toggle)="toggleImageMenu(item, $event)" (actionSelected)="openImageAction(item, $event)" /> }
+              <span class="list-detail-position" [attr.aria-label]="copy.position.replace('{position}', item.position.toString())">{{ item.position }}</span>
+              @if (item.contentState?.watchStatus === 'WATCHED') { <span class="list-detail-watched-check" [attr.aria-label]="copy.watched">✓</span> }
+              <span class="list-detail-added-date">{{ dateLabel(item.createdAt) }}</span>
+              @if (item.contentState?.myRating; as rating) { <span class="list-detail-my-rating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>{{ rating }}/10</span> }
             </div>
             <div class="list-detail-item-copy">
               @if (item.nestedList; as nested) { <a class="list-detail-item-title" [routerLink]="['/lists', nested.id]">{{ nested.name }}</a><p class="list-detail-item-meta">{{ nested.itemsCount }} {{ copy.itemCount.replace('{count}', '').trim() }} · {{ visibilityLabel(nested.visibility) }}</p> }
               @else { @if (contentRoute(item); as route) { <a class="list-detail-item-title" [routerLink]="route">{{ item.card?.title ?? copy.openContent }}</a> } @else { <strong class="list-detail-item-title">{{ item.card?.title ?? copy.openContent }}</strong> }<p class="list-detail-item-meta">@if (item.card?.releaseYear) { <span>{{ item.card?.releaseYear }}</span> } @if (item.card?.type === 'EPISODE' || item.card?.type === 'SEASON') { <span>{{ item.card?.seasonNumber ? 'T' + item.card?.seasonNumber : '' }}{{ item.card?.episodeNumber ? 'E' + item.card?.episodeNumber : '' }}</span> }@if (item.card?.runtimeMinutes) { <span>{{ durationLabel(item.card?.runtimeMinutes) }}</span> }</p> }
               @if (item.description) { <p class="list-detail-item-description">{{ item.description }}</p> }
-              <div class="list-detail-item-states">@if (statusText(item); as stateText) { <span class="list-detail-watch-state" [class.list-detail-watch-state-complete]="item.contentState?.watchStatus === 'WATCHED'">{{ stateText }}</span> } @if (item.contentState?.myRating) { <span class="list-detail-my-rating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>{{ item.contentState?.myRating }}</span> } @if (item.contentState?.lastWatchedDate) { <span>{{ copy.watchedOn.replace('{date}', dateLabel(item.contentState!.lastWatchedDate!)) }}</span> }</div>
             </div>
             @if (reorderMode() && canManage()) { <div class="list-detail-reorder-controls"><button type="button" [disabled]="item.position <= 1" [attr.aria-label]="copy.moveUp" (click)="moveItem(item, -1)">↑</button><button type="button" [disabled]="item.position >= list.itemsCount" [attr.aria-label]="copy.moveDown" (click)="moveItem(item, 1)">↓</button></div> }
           </li>
         }
       </ol>
-      <nav class="list-detail-pagination list-detail-pagination-bottom" [attr.aria-label]="copy.pagination">
-        <button type="button" [disabled]="page() <= 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-        @for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }
-        <button type="button" [disabled]="page() >= totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
-      </nav>
     } @else if (status() === 'ready') {
       <section class="list-detail-state list-detail-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
     }
-
     <section id="list-comments" class="list-detail-comments" aria-labelledby="list-detail-comments-title">
       <header><h2 id="list-detail-comments-title">{{ copy.commentsTitle }}</h2><span>{{ list.commentsCount }}</span></header>
       @if (commentsError()) { <p class="list-detail-comments-error" role="alert">{{ copy.actionError }} <button type="button" (click)="loadComments(true)">{{ copy.retry }}</button></p> }

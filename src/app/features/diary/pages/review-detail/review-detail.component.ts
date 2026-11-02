@@ -39,6 +39,11 @@ export class DiaryReviewDetailComponent {
   protected readonly backdrop = signal<string | null>(null);
   protected readonly parentTitle = signal('');
   protected readonly reviewerProfile = signal<PublicUserProfile | null>(null);
+  protected readonly reviewerPicture = computed(() => {
+    const entry = this.entry();
+    if (entry?.userId === this.currentUser()?.id) return this.currentUser()?.profilePicture ?? null;
+    return this.reviewerProfile()?.profilePicture ?? null;
+  });
   protected readonly contentTitle = computed(() => {
     const entry = this.entry();
     return entry?.content?.type === 'EPISODE' || entry?.content?.type === 'SEASON'
@@ -107,7 +112,7 @@ export class DiaryReviewDetailComponent {
 
   protected backdropStyle(): string | null {
     const url = this.backdrop();
-    return url ? `linear-gradient(180deg, rgba(17, 17, 19, .18) 0%, #111113 100%), url("${url}")` : null;
+    return url ? `url("${url}")` : null;
   }
 
   protected formatDate(value: string | null | undefined): string {
@@ -134,6 +139,10 @@ export class DiaryReviewDetailComponent {
     const people = this.entry()?.watchedWith ?? [];
     const names = people.map((person) => person.name || person.username).filter(Boolean);
     return names.length ? `com ${names.join(', ')}` : '';
+  }
+
+  protected firstCompanion() {
+    return this.entry()?.watchedWith?.[0] ?? null;
   }
 
   protected setCommentDraft(event: Event): void {

@@ -45,6 +45,39 @@ export interface PicksTemplatePreview {
 
 export interface PicksTemplatePage {
   content: PicksTemplatePreview[];
+  backdropPath?: string | null;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+export interface PicksMyPickCard {
+  id: string;
+  picksTemplate: PicksTemplatePreview;
+  user: PicksUserPreview;
+  visibility: 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
+  createdAt: string;
+  progress: 'EMPTY' | 'PARTIAL' | 'COMPLETE';
+  answeredCategoriesCount: number;
+  totalCategoriesCount: number;
+  answeredCategories: Array<{
+    categoryId: string;
+    name: string;
+    group: 'PRIMARY' | 'SECONDARY' | null;
+    displayOrder: number | null;
+    isAnswered: boolean | null;
+    isValid: boolean | null;
+  }>;
+  likesCount: number | null;
+  commentsCount: number;
+  isLikedByViewer: boolean | null;
+}
+
+export interface PicksMyPickPage {
+  content: PicksMyPickCard[];
+  backdropPath?: string | null;
   page: number;
   size: number;
   totalElements: number;
@@ -206,6 +239,11 @@ export class PicksApiService {
     if (options.origin) params = params.set('origin', options.origin);
     if (options.name?.trim()) params = params.set('name', options.name.trim());
     return this.http.get<PicksTemplatePage>('/api/v1/picks-templates', { params });
+  }
+
+  getMyPicksView(page = 1, size = 10): Observable<PicksMyPickPage> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PicksMyPickPage>('/api/v1/users/me/picks/view', { params });
   }
 
   getMyTemplates(options: { page?: number; size?: number; sort?: PicksTemplateSort } = {}): Observable<PicksTemplatePage> {

@@ -15,6 +15,7 @@ interface CalendarDay {
   dayNumber: number;
   relativeLabel: string | null;
   isToday: boolean;
+  isPast: boolean;
   events: CalendarReleaseEvent[];
 }
 
@@ -196,6 +197,7 @@ export class CalendarComponent {
         dayNumber,
         relativeLabel,
         isToday: date === todayKey,
+        isPast: date < todayKey,
         events: byDate.get(date) ?? [],
       };
     });

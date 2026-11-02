@@ -1,5 +1,7 @@
 <main class="diary-page" aria-labelledby="diary-title">
   <header class="diary-heading">
+    @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton diary-hero-skeleton" aria-hidden="true"></div> }
+    @if (heroBackdropUrl(); as backdropUrl) { <img class="tr-hero-backdrop diary-heading-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
     <h1 id="diary-title">{{ copy.title }}</h1>
     <h2 class="diary-heading-subtitle">{{ isReviewsPage ? copy.reviewsSubtitle : copy.historySubtitle }}</h2>
     <p>{{ isReviewsPage ? copy.reviewsDescription : copy.description }}</p>
@@ -259,14 +261,19 @@
                       <span aria-hidden="true"></span>{{ typeLabel(entry) }}
                     </span>
                     <app-content-image-actions [ratingValue]="imageRating(entry)" [ratingLabel]="imageRatingLabel(entry)" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="handlePosterAction(entry, $event)" />
-                    <div class="diary-entry-viewer-rating">
-                      @if (entry.companionProfilePictures.length > 0) {
-                        <span class="diary-companion-avatar"><img [src]="entry.companionProfilePictures[0]" alt="" loading="lazy" /></span>
-                      } @else { <span class="diary-companion-avatar">{{ viewerInitial() }}</span> }
-                      @if (entry.score !== null) {
-                        <span class="diary-viewer-score"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>{{ entry.score }}</span>
-                      }
-                    </div>
+                    @if (entry.companions.length > 0 || entry.score !== null) {
+                      <div class="diary-entry-viewer-rating">
+                        @if (entry.companions.length > 0) {
+                          <span class="diary-companion-avatar">
+                            @if (entry.companions[0].profilePicture; as picture) { <img [src]="picture" alt="" loading="lazy" /> }
+                            @else { {{ companionInitial(entry.companions[0]) }} }
+                          </span>
+                        }
+                        @if (entry.score !== null) {
+                          <span class="diary-viewer-score"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>{{ entry.score }}</span>
+                        }
+                      </div>
+                    }
                   </div>
                   <div class="diary-entry-engagement">
                     <div class="diary-entry-indicators">

@@ -46,6 +46,7 @@ export interface ProfileContentCard {
   episodeNumber: number | null;
   title: string | null;
   posterPath: string | null;
+  backdropPath?: string | null;
   customPosterUrl: string | null;
   releaseYear: number | null;
   runtimeMinutes?: number | null;

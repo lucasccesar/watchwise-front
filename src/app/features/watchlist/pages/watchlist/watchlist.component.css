@@ -5,15 +5,20 @@
 }
 
 .watchlist-heading {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   min-height: 295px;
   place-items: center;
   padding: 36px 24px;
-  background-position: center 38%;
-  background-size: cover;
+  background: radial-gradient(ellipse at 50% 35%, #33363b 0%, #202125 56%, #181818 100%);
   box-sizing: border-box;
   text-align: center;
 }
+.watchlist-heading::before { position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, rgb(16 16 18 / 55%) 0%, rgb(16 16 18 / 66%) 62%, #181818 100%); content: ''; }
+.watchlist-hero-backdrop { object-position: center 38%; }
+.watchlist-heading-copy { position: relative; z-index: 2; }
 
 .watchlist-heading-copy { width: min(720px, 100%); }
 .watchlist-heading h1 { margin: 0; font-size: var(--font-size-display-2xl); line-height: var(--line-height-display-2xl); font-weight: 700; letter-spacing: -.035em; }

@@ -10,6 +10,9 @@ import { PicksApiService, PicksCommentPreview } from '../../../picks/data-access
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { FeedActivity, FeedApiService, FeedCommentPreview, FeedPage } from '../../data-access/feed-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+
+const SOCIAL_BACKDROP_FALLBACK = '/1PXwh3nJzgRkkYnqfWInJNypeL4.jpg';
 
 interface ActivityGroup {
   key: string;
@@ -37,7 +40,9 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected readonly status = signal<SocialStatus>('loading');
   protected readonly data = signal<FeedPage | null>(null);
   protected readonly viewer = signal<HomeSummary['viewer'] | null>(null);
-  protected readonly latestBackdrop = signal<string | null>(null);
+  protected readonly latestBackdrop = signal<string | null | undefined>(undefined);
+  protected readonly heroBackdropLoading = signal(true);
+  protected readonly heroBackdropFailed = signal(false);
   protected readonly busyMore = signal(false);
   protected readonly busyLikeIds = signal<ReadonlySet<string>>(new Set());
   protected readonly busyCommentIds = signal<ReadonlySet<string>>(new Set());
@@ -78,6 +83,9 @@ export class SocialComponent implements OnInit, OnDestroy {
 
     this.request?.unsubscribe();
     this.status.set('loading');
+    this.latestBackdrop.set(undefined);
+    this.heroBackdropLoading.set(true);
+    this.heroBackdropFailed.set(false);
     this.loadError.set('');
     this.actionError.set('');
     this.request = forkJoin({
@@ -86,12 +94,16 @@ export class SocialComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: ({ summary, feed }) => {
         this.viewer.set(summary.viewer);
-        this.latestBackdrop.set(summary.latestWatchedBackdropPath);
+        const backdropPath = feed.backdropPath === null ? SOCIAL_BACKDROP_FALLBACK : feed.backdropPath;
+        this.latestBackdrop.set(backdropPath);
+        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(backdropPath, 'w1920')));
+        this.heroBackdropFailed.set(false);
         this.data.set(feed);
         this.shellState.updateHomeState(summary.viewer, summary.hasUnreadNotifications);
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.loadError.set(this.errorMessage(error));
       },
@@ -101,6 +113,19 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected followingLabel(): string {
     const count = new Intl.NumberFormat('pt-BR').format(this.data()?.followingCount ?? 0);
     return this.copy.followingActivity.replace('{count}', count);
+  }
+
+  protected heroBackdropUrl(): string | null {
+    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.latestBackdrop(), 'w1920');
+  }
+
+  protected onHeroBackdropLoaded(): void {
+    this.heroBackdropLoading.set(false);
+  }
+
+  protected onHeroBackdropError(): void {
+    this.heroBackdropFailed.set(true);
+    this.heroBackdropLoading.set(false);
   }
 
   protected avatarStack(): string[] {

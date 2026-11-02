@@ -3,6 +3,7 @@
 @import './app/features/home/pages/home/home.component.css';
 @import './app/features/search-content/components/header-search/header-search.component.css';
 @import './app/features/trending/pages/trending/trending.component.css';
+@import './app/features/picks/shared/picks-shared.css';
 
 :root {
   color-scheme: dark;

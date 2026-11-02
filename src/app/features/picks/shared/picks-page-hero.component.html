@@ -1,0 +1,29 @@
+<section class="picks-hero" aria-labelledby="picks-page-title">
+  @if (heroBackdropLoading) {
+    <div class="tr-skeleton tr-hero-skeleton picks-hero-skeleton" aria-hidden="true"></div>
+  }
+  @if (backgroundImage && !heroBackdropFailed) {
+    <img class="picks-hero-image" [src]="backgroundImage" alt="" (load)="onHeroImageLoad()" (error)="onHeroImageError()" />
+  }
+  <div class="picks-hero-shade" aria-hidden="true"></div>
+  <div class="picks-hero-content">
+    <h1 id="picks-page-title">{{ copy.title }}</h1>
+    @if (statsText) {
+      <p class="picks-hero-stats"><span aria-hidden="true"></span>{{ statsText }}<span aria-hidden="true"></span></p>
+    }
+    <p class="picks-hero-description">{{ copy.description }}</p>
+  </div>
+</section>
+
+<nav class="picks-page-tabs" [attr.aria-label]="copy.sections">
+  <div class="picks-page-tabs-inner">
+    <a routerLink="/picks" [class.active]="activeTab === 'mine'" [attr.aria-current]="activeTab === 'mine' ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /></svg>
+      <span>{{ copy.myPicks }}</span>
+    </a>
+    <a routerLink="/picks/explore" [class.active]="activeTab === 'explore'" [attr.aria-current]="activeTab === 'explore' ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M17 11h6" /></svg>
+      <span>{{ copy.explorePicks }}</span>
+    </a>
+  </div>
+</nav>

@@ -5,6 +5,11 @@ import { Observable } from 'rxjs';
 export type ListVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 export type ListSource = 'OWNED' | 'LIKED' | 'ALL';
 export type ListItemType = 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE' | 'LIST';
+export type ListContentReference =
+  | { type: 'MOVIE'; tmdbId: string }
+  | { type: 'SERIES'; tmdbId: string }
+  | { type: 'SEASON'; seriesTmdbId: string; seasonNumber: number }
+  | { type: 'EPISODE'; seriesTmdbId: string; seasonNumber: number; episodeNumber: number };
 
 export interface ListOwner {
   id: string;
@@ -60,6 +65,7 @@ export interface UserListCardPage {
   totalElements: number;
   totalPages: number;
   hasNext: boolean;
+  backdropPath?: string | null;
 }
 
 export interface ListDetailItem {
@@ -248,6 +254,10 @@ export class ListsApiService {
 
   createList(request: { name: string; description?: string; visibility: ListVisibility }): Observable<{ id: string; name: string; visibility: ListVisibility }> {
     return this.http.post<{ id: string; name: string; visibility: ListVisibility }>('/api/v1/users/me/lists', request);
+  }
+
+  createListWithItems(request: { name: string; description?: string; visibility: ListVisibility; items: ListContentReference[] }): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>('/api/v1/users/me/lists/bulk', request);
   }
 
   getDetail(listId: string, options: { page: number; size: number; type?: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE'; genre?: string; watchStatus?: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN'; sortBy?: 'position' | 'dateAdded' | 'duration' | 'episodeAvgRating' | 'globalEpisodeAvgRating' | 'contentAvgRating'; sortDirection?: 'asc' | 'desc' }): Observable<ListDetailView> {

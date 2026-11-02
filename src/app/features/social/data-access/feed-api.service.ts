@@ -28,6 +28,7 @@ export interface FeedPage {
   nextCursor: string | null;
   hasNext: boolean;
   followingCount: number;
+  backdropPath?: string | null;
   followedUsersPreview: Array<{
     id: string;
     username: string;

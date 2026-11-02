@@ -24,6 +24,15 @@ type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'none' | 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
 type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; releaseYear: number | null; averageScore: number | null; contentType: 'MOVIE' | 'SERIES' };
+type RecentSeriesCard = {
+  seriesTmdbId: string;
+  title: string;
+  posterPath: string | null;
+  releaseYear: number | null;
+  watchedEpisodeCount: number;
+  lastWatchedDate: string | null;
+  score: number | null;
+};
 
 const SECTION_KEYS: Array<{ key: ProfileTabKey; section: ProfileSection; path: string }> = [
   { key: 'profile', section: 'profile', path: '' },
@@ -58,9 +67,6 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
   'profile',
   'progress',
   'episodeRatingsMap',
-  'monthInReview',
-  'yearInReview',
-  'allTimeStats',
 ]);
 
 @Component({
@@ -91,11 +97,47 @@ export class ProfileComponent {
   protected readonly username = signal('');
   protected readonly mode = signal<ProfileContentMode>('MOVIE');
   protected readonly summary = signal<ProfileSummary | null>(null);
+  protected readonly recentMovieEntries = signal<DiaryRecord[]>([]);
+  protected readonly recentEpisodeEntries = signal<DiaryRecord[]>([]);
+  protected readonly recentSeriesProgress = signal<SeriesInProgressRecord[]>([]);
+  protected readonly recentSeriesPosterPaths = signal<Record<string, string>>({});
+  protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
+  protected readonly reviewComments = signal<Record<string, string>>({});
+  protected readonly episodeStillPaths = signal<Record<string, string>>({});
   protected readonly summarySlide = signal(0);
   protected readonly historySummarySlide = signal(0);
   protected readonly topFive = signal<ResolvedTopFive[]>([]);
   protected readonly diary = signal<DiaryRecordPage | null>(null);
-  protected readonly progress = signal<SeriesInProgressPage | null>(null);
+  private readonly progressEntries = signal<SeriesInProgressRecord[]>([]);
+  private readonly progressLoaded = signal(false);
+  protected readonly progress = computed<SeriesInProgressPage | null>(() => {
+    if (!this.progressLoaded()) return null;
+    const activeEntries = this.progressEntries().filter((entry) => !this.isCompletedProgress(entry));
+    const totalElements = activeEntries.length;
+    const totalPages = Math.ceil(totalElements / this.progressPageSize);
+    const page = Math.max(1, Math.min(this.currentPage(), totalPages || 1));
+    const content = activeEntries.slice((page - 1) * this.progressPageSize, page * this.progressPageSize);
+    const remainingRuntimeValues = activeEntries.map((entry) => entry.remainingRuntimeMinutes);
+    return {
+      content,
+      page,
+      size: this.progressPageSize,
+      totalElements,
+      totalPages,
+      hasNext: page < totalPages,
+      aggregate: {
+        totalSeriesCount: totalElements,
+        watchedEpisodeCount: activeEntries.reduce((sum, entry) => sum + (entry.watchedEpisodeCount ?? 0), 0),
+        totalReleasedEpisodeCount: activeEntries.reduce((sum, entry) => sum + (entry.totalReleasedEpisodeCount ?? entry.totalEpisodeCount ?? 0), 0),
+        remainingEpisodeCount: activeEntries.reduce((sum, entry) => sum + (entry.remainingEpisodeCount ?? 0), 0),
+        remainingRuntimeMinutes: remainingRuntimeValues.some((value) => value === null)
+          ? null
+          : remainingRuntimeValues.reduce<number>((sum, value) => sum + (value ?? 0), 0),
+      },
+    };
+  });
+  protected readonly progressStillPaths = signal<Record<string, string>>({});
+  private readonly progressBackdropPath = signal<string | null>(null);
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
   protected readonly listSort = signal<ProfileListSort>('none');
@@ -148,14 +190,69 @@ export class ProfileComponent {
   private genreRequest?: Subscription;
   protected readonly ratingScores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly tabEntries = SECTION_KEYS.filter(({ key }) => PROFILE_OVERVIEW_TAB_KEYS.has(key));
+  protected readonly overviewRatingsDistribution = computed(() => {
+    if (this.mode() === 'MOVIE') return this.summary()?.ratingsDistribution ?? [];
+    const counts = new Map<number, number>();
+    for (const entry of this.ratedEpisodeEntries()) {
+      if (entry.score === null || !Number.isFinite(entry.score)) continue;
+      counts.set(entry.score, (counts.get(entry.score) ?? 0) + 1);
+    }
+    return [...counts].map(([score, count]) => ({ score, count })).sort((a, b) => a.score - b.score);
+  });
+  protected readonly overviewRatingsSummary = computed(() => {
+    if (this.mode() === 'MOVIE') return this.summary()?.ratingsSummary ?? null;
+    const entries = this.ratedEpisodeEntries().filter((entry) => entry.score !== null && Number.isFinite(entry.score));
+    return {
+      totalRatings: entries.length,
+      averageScore: entries.length ? entries.reduce((sum, entry) => sum + (entry.score ?? 0), 0) / entries.length : null,
+    };
+  });
   protected readonly userName = computed(() => this.profile()?.name || this.profile()?.username || this.username());
+  protected readonly recentSeriesItems = computed<RecentSeriesCard[]>(() => {
+    return this.recentSeriesProgress()
+      .filter((entry) => this.isCompletedProgress(entry))
+      .map((entry) => {
+        const latestEpisode = this.recentEpisodeEntries().find((episode) => episode.content.seriesTmdbId === entry.seriesTmdbId);
+        return {
+          seriesTmdbId: entry.seriesTmdbId,
+          title: entry.title || entry.seriesTitle || this.copy.unavailable,
+          posterPath: this.recentSeriesPosterPaths()[entry.seriesTmdbId]
+            || entry.customPosterUrl
+            || entry.posterPath
+            || entry.seriesPosterPath
+            || latestEpisode?.seriesPosterPath
+            || latestEpisode?.card?.posterPath
+            || null,
+          releaseYear: entry.releaseYear,
+          watchedEpisodeCount: entry.watchedEpisodeCount,
+          lastWatchedDate: entry.lastWatchedDate,
+          score: latestEpisode?.score ?? null,
+        };
+      })
+      .sort((a, b) => (b.lastWatchedDate || '').localeCompare(a.lastWatchedDate || ''))
+      .slice(0, 6);
+  });
+  protected readonly recentReviewComment = (review: ProfileDiaryPreview): string | null =>
+    this.reviewComments()[review.id] || review.comment || null;
   protected readonly profileHeroBackdrop = computed(() => {
     const profile = this.profile();
-    const recent = this.summary()?.recentEpisodes[0];
-    const fallbackImage = this.topFive()[0]?.posterPath
-      || recent?.customPosterUrl
-      || recent?.card?.customPosterUrl
-      || recent?.card?.posterPath;
+    const summary = this.summary();
+    const selectedRecent = this.mode() === 'MOVIE' ? summary?.recentReviews[0] : summary?.recentEpisodes[0];
+    const fallbackRecent = summary?.recentReviews[0] || summary?.recentEpisodes[0];
+    const highlightedContent = summary?.highlights?.rewatch?.content || summary?.highlights?.longestWatch?.content;
+    const activeProgress = this.progress()?.content[0];
+    const fallbackImage = this.progressBackdropPath()
+      || this.topFive()[0]?.posterPath
+      || activeProgress?.seriesPosterPath
+      || activeProgress?.posterPath
+      || selectedRecent?.customPosterUrl
+      || selectedRecent?.card?.customPosterUrl
+      || selectedRecent?.card?.posterPath
+      || fallbackRecent?.customPosterUrl
+      || fallbackRecent?.card?.customPosterUrl
+      || fallbackRecent?.card?.posterPath
+      || highlightedContent?.customPosterUrl
+      || highlightedContent?.posterPath;
     return this.imageUrl(profile?.banner || fallbackImage, profile?.banner ? 'w1280' : 'w780');
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
@@ -528,6 +625,10 @@ export class ProfileComponent {
   protected previousPage(): void {
     if (this.currentPage() <= 1) return;
     this.currentPage.update((page) => page - 1);
+    if (this.section() === 'progress') {
+      this.loadProgressStillPaths(this.progress()?.content ?? []);
+      return;
+    }
     const profile = this.profile();
     if (profile) this.loadSection(profile.id);
   }
@@ -542,6 +643,10 @@ export class ProfileComponent {
     const maximum = this.pageTotalPages();
     if (page < 1 || page > maximum || page === this.currentPage()) return;
     this.currentPage.set(page);
+    if (this.section() === 'progress') {
+      this.loadProgressStillPaths(this.progress()?.content ?? []);
+      return;
+    }
     const profile = this.profile();
     if (profile) this.loadSection(profile.id);
   }
@@ -552,6 +657,23 @@ export class ProfileComponent {
 
   protected progressPercent(value: number | null | undefined): number {
     return typeof value === 'number' && Number.isFinite(value) ? Math.round(Math.min(100, Math.max(0, value))) : 0;
+  }
+
+  protected progressStill(seriesTmdbId: string, fallback: string | null | undefined): string | null {
+    return this.imageUrl(this.progressStillPaths()[seriesTmdbId] || fallback, 'w780');
+  }
+
+  protected progressEpisodeCoordinates(item: SeriesInProgressRecord): string {
+    if (item.lastWatchedSeasonNumber === null || item.lastWatchedEpisodeNumber === null) return '';
+    return `S${item.lastWatchedSeasonNumber} · E${item.lastWatchedEpisodeNumber}`;
+  }
+
+  private isCompletedProgress(item: SeriesInProgressRecord): boolean {
+    const totalEpisodes = item.totalEpisodeCount ?? item.totalReleasedEpisodeCount;
+    return totalEpisodes !== null
+      && totalEpisodes !== undefined
+      && totalEpisodes > 0
+      && item.watchedEpisodeCount >= totalEpisodes;
   }
 
   protected pageRangeStart(data: ProfilePageMetadata): number {
@@ -628,11 +750,11 @@ export class ProfileComponent {
   }
 
   protected progressRangeStart(data: SeriesInProgressPage): number {
-    return data.totalElements ? (this.currentPage() - 1) * data.size + 1 : 0;
+    return data.totalElements ? (data.page - 1) * data.size + 1 : 0;
   }
 
   protected progressRangeEnd(data: SeriesInProgressPage): number {
-    return Math.min(this.currentPage() * data.size, data.totalElements);
+    return Math.min(data.page * data.size, data.totalElements);
   }
 
   private reloadHistory(): void {
@@ -703,6 +825,27 @@ export class ProfileComponent {
   protected openProfileAction(action: 'report' | 'block'): void {
     this.actionMessage.set(action === 'report' ? 'A denúncia ficará disponível nesta tela.' : 'O bloqueio ficará disponível nesta tela.');
     this.profileMenuOpen.set(false);
+  }
+
+  protected openProfileSettings(): void {
+    this.profileMenuOpen.set(false);
+    void this.router.navigate(['/settings']);
+  }
+
+  protected episodeDetailRoute(entry: DiaryRecord): string[] | null {
+    const { seriesTmdbId, seasonNumber, episodeNumber } = entry.content;
+    if (!seriesTmdbId || seasonNumber === null || episodeNumber === null) return this.detailRoute(entry);
+    return this.episodeRoute(seriesTmdbId, seasonNumber, episodeNumber);
+  }
+
+  protected episodeStill(entry: DiaryRecord): string | null {
+    const key = this.episodeKey(entry);
+    return this.imageUrl((key ? this.episodeStillPaths()[key] : null) || entry.card?.backdropPath || entry.seriesPosterPath || entry.card?.posterPath, 'w780');
+  }
+
+  protected profileGenrePercentage(count: number, items: readonly { count: number }[]): string {
+    const total = items.reduce((sum, item) => sum + item.count, 0);
+    return total ? Math.round((count / total) * 100) + '%' : '0%';
   }
 
   protected imageUrl(path: string | null | undefined, size = 'w342'): string | null {
@@ -942,6 +1085,10 @@ export class ProfileComponent {
   protected nextPage(): void {
     if (this.currentPage() >= this.pageTotalPages()) return;
     this.currentPage.update((page) => page + 1);
+    if (this.section() === 'progress') {
+      this.loadProgressStillPaths(this.progress()?.content ?? []);
+      return;
+    }
     const profile = this.profile();
     if (profile) this.loadSection(profile.id);
   }
@@ -1012,9 +1159,31 @@ export class ProfileComponent {
       forkJoin({
         summary: this.profileApi.getSummary(userId, mode),
         topFive: this.profileApi.getTopFive(userId, mode === 'MOVIE' ? 'MOVIE' : 'SERIES'),
+        recentMovies: mode === 'MOVIE'
+          ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 6, type: 'MOVIE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
+          : of(null),
+        recentEpisodes: mode === 'EPISODE'
+          ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 30, type: 'EPISODE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
+          : of(null),
+        recentSeries: mode === 'EPISODE'
+          ? this.diaryApi.getAllSeriesInProgress(userId, { sortBy: 'LAST_WATCHED', direction: 'DESC' }).pipe(catchError(() => of([] as SeriesInProgressRecord[])))
+          : of([] as SeriesInProgressRecord[]),
+        ratedEpisodes: mode === 'EPISODE'
+          ? this.diaryApi.getAllDiaryEntries(userId).pipe(catchError(() => of([] as DiaryRecord[])))
+          : of([] as DiaryRecord[]),
+        reviews: this.diaryApi.getUserReviewsPage(userId, 1, 50).pipe(catchError(() => of(null))),
       }).subscribe({
-        next: ({ summary, topFive }) => {
+        next: ({ summary, topFive, recentMovies, recentEpisodes, recentSeries, ratedEpisodes, reviews }) => {
           this.summary.set(summary);
+          this.recentMovieEntries.set(recentMovies?.content ?? []);
+          this.recentEpisodeEntries.set(recentEpisodes?.content ?? []);
+          this.recentSeriesProgress.set(recentSeries);
+          this.loadRecentSeriesPosterPaths(recentSeries);
+          this.ratedEpisodeEntries.set(ratedEpisodes.filter((entry) => entry.content.type === 'EPISODE' && entry.score !== null));
+          this.reviewComments.set(Object.fromEntries((reviews?.content ?? [])
+            .filter((review) => Boolean(review.comment))
+            .map((review) => [review.id, review.comment as string])));
+          this.loadEpisodeStillPaths(recentEpisodes?.content ?? []);
           this.resolveTopFive(topFive);
         },
         error: (error: unknown) => this.handleError(error),
@@ -1023,8 +1192,28 @@ export class ProfileComponent {
     }
 
     if (section === 'progress') {
-      this.diaryApi.getSeriesInProgress(userId, { page: this.currentPage(), size: this.progressPageSize, sortBy: this.progressSort(), direction: this.progressDirection() })
-        .subscribe({ next: (data) => this.progress.set(data), error: (error: unknown) => this.handleError(error) });
+      this.progressStillPaths.set({});
+      this.progressBackdropPath.set(null);
+      forkJoin({
+        entries: this.diaryApi.getAllSeriesInProgress(userId, { sortBy: this.progressSort(), direction: this.progressDirection() }),
+        topFive: this.profileApi.getTopFive(userId, 'MOVIE').pipe(catchError(() => of([]))),
+      })
+        .subscribe({
+          next: ({ entries, topFive }) => {
+            this.resolveTopFive(topFive);
+            this.progressEntries.set(entries);
+            this.progressLoaded.set(true);
+            const firstItem = entries.find((entry) => !this.isCompletedProgress(entry));
+            this.expandedProgress.set(firstItem ? new Set([firstItem.seriesTmdbId]) : new Set());
+            this.loadProgressStillPaths(this.progress()?.content ?? []);
+            if (firstItem) {
+              this.contentApi.getSeriesPage(firstItem.seriesTmdbId)
+                .pipe(catchError(() => of(null)))
+                .subscribe((page) => this.progressBackdropPath.set(page?.details.backdropPath ?? null));
+            }
+          },
+          error: (error: unknown) => this.handleError(error),
+        });
       return;
     }
     if (section === 'history' || section === 'reviews') {
@@ -1170,9 +1359,18 @@ export class ProfileComponent {
 
   private resetSectionData(): void {
     this.summary.set(null);
+    this.recentMovieEntries.set([]);
+    this.recentEpisodeEntries.set([]);
+    this.recentSeriesProgress.set([]);
+    this.recentSeriesPosterPaths.set({});
+    this.ratedEpisodeEntries.set([]);
+    this.reviewComments.set({});
+    this.episodeStillPaths.set({});
     this.topFive.set([]);
     this.diary.set(null);
-    this.progress.set(null);
+    this.progressEntries.set([]);
+    this.progressLoaded.set(false);
+    this.progressStillPaths.set({});
     this.lists.set(null);
     this.watchlist.set(null);
     this.picks.set(null);
@@ -1183,6 +1381,92 @@ export class ProfileComponent {
     this.allTime.set(null);
     this.allTimeEdition.set(null);
     this.actionMessage.set('');
+  }
+
+  private loadEpisodeStillPaths(entries: readonly DiaryRecord[]): void {
+    const latestEpisodes = entries.slice(0, 4);
+    const seasons = new Map<string, { seriesTmdbId: string; seasonNumber: number }>();
+    for (const entry of latestEpisodes) {
+      const { seriesTmdbId, seasonNumber } = entry.content;
+      if (!seriesTmdbId || seasonNumber === null) continue;
+      seasons.set(`${seriesTmdbId}:${seasonNumber}`, { seriesTmdbId, seasonNumber });
+    }
+    if (!seasons.size) return;
+    const requests = [...seasons.entries()].map(([key, season]) => this.contentApi
+      .getSeasonEpisodes(season.seriesTmdbId, season.seasonNumber)
+      .pipe(map((episodes) => [key, episodes] as const), catchError(() => of([key, []] as const))));
+    forkJoin(requests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((seasonEpisodes) => {
+        const paths: Record<string, string> = {};
+        for (const entry of latestEpisodes) {
+          const episodeKey = this.episodeKey(entry);
+          const { seriesTmdbId, seasonNumber, episodeNumber } = entry.content;
+          if (!episodeKey || !seriesTmdbId || seasonNumber === null || episodeNumber === null) continue;
+          const seasonKey = `${seriesTmdbId}:${seasonNumber}`;
+          const episodes = seasonEpisodes.find(([key]) => key === seasonKey)?.[1] ?? [];
+          const stillPath = episodes.find((episode) => episode.episodeNumber === episodeNumber)?.stillUrl;
+          if (stillPath) paths[episodeKey] = stillPath;
+        }
+        this.episodeStillPaths.set(paths);
+      });
+  }
+
+  private loadRecentSeriesPosterPaths(entries: readonly SeriesInProgressRecord[]): void {
+    const missingPosters = entries
+      .filter((entry) => this.isCompletedProgress(entry))
+      .filter((entry) => !(entry.customPosterUrl || entry.posterPath || entry.seriesPosterPath))
+      .slice(0, 6);
+    if (!missingPosters.length) return;
+
+    const requests = missingPosters.map((entry) => this.contentApi
+      .getSeriesPage(entry.seriesTmdbId)
+      .pipe(
+        map((page) => [entry.seriesTmdbId, page.metadata.presentationPosterPath || page.details.customPosterUrl || page.details.posterPath] as const),
+        catchError(() => of([entry.seriesTmdbId, null] as const)),
+      ));
+
+    forkJoin(requests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((posters) => {
+        this.recentSeriesPosterPaths.set(Object.fromEntries(
+          posters.filter(([, path]) => Boolean(path)),
+        ) as Record<string, string>);
+      });
+  }
+
+  private loadProgressStillPaths(entries: readonly SeriesInProgressRecord[]): void {
+    const seasons = new Map<string, { seriesTmdbId: string; seasonNumber: number }>();
+    for (const entry of entries) {
+      if (!entry.seriesTmdbId || entry.lastWatchedSeasonNumber === null) continue;
+      seasons.set(`${entry.seriesTmdbId}:${entry.lastWatchedSeasonNumber}`, {
+        seriesTmdbId: entry.seriesTmdbId,
+        seasonNumber: entry.lastWatchedSeasonNumber,
+      });
+    }
+    if (!seasons.size) return;
+    const requests = [...seasons.entries()].map(([key, season]) => this.contentApi
+      .getSeasonEpisodes(season.seriesTmdbId, season.seasonNumber)
+      .pipe(map((episodes) => [key, episodes] as const), catchError(() => of([key, []] as const))));
+    forkJoin(requests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((seasonEpisodes) => {
+        const paths: Record<string, string> = {};
+        for (const entry of entries) {
+          if (entry.lastWatchedSeasonNumber === null || entry.lastWatchedEpisodeNumber === null) continue;
+          const episodes = seasonEpisodes.find(([key]) => key === `${entry.seriesTmdbId}:${entry.lastWatchedSeasonNumber}`)?.[1] ?? [];
+          const stillPath = episodes.find((episode) => episode.episodeNumber === entry.lastWatchedEpisodeNumber)?.stillUrl;
+          if (stillPath) paths[entry.seriesTmdbId] = stillPath;
+        }
+        this.progressStillPaths.update((current) => ({ ...current, ...paths }));
+      });
+  }
+
+  private episodeKey(entry: DiaryRecord): string | null {
+    const { seriesTmdbId, seasonNumber, episodeNumber } = entry.content;
+    return seriesTmdbId && seasonNumber !== null && episodeNumber !== null
+      ? `${seriesTmdbId}:${seasonNumber}:${episodeNumber}`
+      : null;
   }
 
   private handleError(error: unknown): void {

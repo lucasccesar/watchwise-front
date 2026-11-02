@@ -1,5 +1,7 @@
 <main class="watchlist-page" aria-labelledby="watchlist-title">
-  <header class="watchlist-heading" [style.background-image]="heroBackground()" aria-labelledby="watchlist-title">
+  <header class="watchlist-heading" aria-labelledby="watchlist-title">
+    @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton watchlist-hero-skeleton" aria-hidden="true"></div> }
+    @if (heroBackdropUrl(); as backdropUrl) { <img class="tr-hero-backdrop watchlist-hero-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
     <div class="watchlist-heading-copy">
       <h1 id="watchlist-title">{{ copy.title }}</h1>
       @if (updatedAt()) { <p class="watchlist-updated">{{ copy.updated }} {{ updatedAt() }}</p> }

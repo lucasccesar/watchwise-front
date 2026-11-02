@@ -1,0 +1,82 @@
+<main class="picks-page picks-my-page" aria-labelledby="my-picks-heading">
+  <app-picks-page-hero activeTab="mine" [statsText]="statsText()" [backdropPath]="backdropPath()" />
+
+  <section class="picks-template-strip" aria-label="{{ copy.yourTemplates }}">
+    <span class="picks-template-count">{{ countLabel(templateCount() ?? 0) }}</span>
+    <a class="picks-create" routerLink="/picks/create"><span aria-hidden="true">＋</span>{{ copy.createTemplate }}</a>
+  </section>
+
+  <section class="picks-my-content">
+    <header class="picks-my-heading">
+      <div>
+        <h2 id="my-picks-heading">{{ copy.yourPicks }}</h2>
+        <p>{{ copy.myPickCount.replace('{count}', (picks()?.totalElements ?? 0).toLocaleString('pt-BR')) }}</p>
+      </div>
+    </header>
+
+    @if (status() === 'loading') {
+      <section class="picks-state" aria-live="polite"><span class="picks-spinner" aria-hidden="true"></span><p>{{ copy.loadingPicks }}</p></section>
+    } @else if (status() === 'error') {
+      <section class="picks-state"><h3>{{ copy.errorTitle }}</h3><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
+    } @else if (picks()?.content?.length) {
+      <div class="picks-my-list">
+        @for (pick of picks()?.content ?? []; track trackPick($index, pick)) {
+          <article class="picks-my-row">
+            <a class="picks-my-poster" [routerLink]="pickRoute(pick)" [attr.aria-label]="copy.openPick.replace('{name}', pick.picksTemplate.name)">
+              @if (pick.picksTemplate.coverImage) { <img [src]="pick.picksTemplate.coverImage" alt="" loading="lazy" /> }
+              @else { <span>{{ pick.picksTemplate.name.slice(0, 1).toUpperCase() }}</span> }
+            </a>
+            <div class="picks-my-main">
+              <div class="picks-my-title-line">
+                <h3><a [routerLink]="pickRoute(pick)">{{ pick.picksTemplate.name }}</a></h3>
+                <span class="picks-visibility" [class.picks-visibility--private]="pick.visibility === 'PRIVATE'">{{ visibilityLabel(pick) }}</span>
+              </div>
+              <div class="picks-byline">
+                <span class="picks-creator-avatar" aria-hidden="true">
+                  @if (pick.picksTemplate.creator?.profilePicture) { <img [src]="pick.picksTemplate.creator?.profilePicture" alt="" /> }
+                  @else { <span>{{ creatorName(pick).slice(0, 1).toUpperCase() }}</span> }
+                </span>
+                <span>{{ copy.byCreator }}</span>
+                @if (creatorHandle(pick); as handle) { <strong>{{ handle }}</strong> } @else { <strong>{{ creatorName(pick) }}</strong> }
+                <span class="picks-byline-dot" aria-hidden="true">·</span>
+                <time>{{ copy.answeredOn.replace('{date}', dateLabel(pick.createdAt)) }}</time>
+              </div>
+              @if (pick.answeredCategories.length) {
+                <div class="picks-answer-chips" [attr.aria-label]="copy.answeredCategories">
+                  @for (answer of pick.answeredCategories; track answer.categoryId) { <span>{{ answer.name }}</span> }
+                  @if (extraAnswers(pick) > 0) { <span class="picks-chip-more">{{ copy.moreCategories.replace('{count}', extraAnswers(pick).toString()) }}</span> }
+                </div>
+              }
+              <div class="picks-my-progress">
+                <span class="picks-progress-icon" aria-hidden="true">✓</span>
+                <span>{{ progressLabel(pick) }}</span>
+                <span class="picks-progress-track" role="progressbar" [attr.aria-label]="progressLabel(pick)" [attr.aria-valuenow]="pick.answeredCategoriesCount" [attr.aria-valuemin]="0" [attr.aria-valuemax]="pick.totalCategoriesCount"><span [style.width.%]="progressPercent(pick)"></span></span>
+              </div>
+            </div>
+            <aside class="picks-my-side">
+              <a class="picks-view-pick" [routerLink]="pickRoute(pick)">{{ copy.viewPick }}</a>
+              <div class="picks-my-social">
+                <span class="picks-likes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg>{{ pick.likesCount ?? 0 }}</span>
+                <a [routerLink]="pickRoute(pick)" fragment="comments" [attr.aria-label]="copy.commentsCount.replace('{count}', pick.commentsCount.toString())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.6-.8L4 20l1.4-3.7A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z" /></svg>{{ pick.commentsCount }}</a>
+              </div>
+            </aside>
+          </article>
+        }
+      </div>
+      @if ((picks()?.totalPages ?? 0) > 1) {
+        <nav class="picks-my-pagination" aria-label="{{ copy.catalogPagination }}">
+          <button type="button" [disabled]="page() <= 1" (click)="previousPage()">{{ copy.previousPage }}</button>
+          <span>{{ pageLabel() }}</span>
+          <button type="button" [disabled]="!picks()?.hasNext" (click)="nextPage()">{{ copy.nextPage }}</button>
+        </nav>
+      }
+    } @else {
+      <section class="picks-empty picks-my-empty">
+        <div class="picks-empty-mark" aria-hidden="true">✦</div>
+        <h3>{{ copy.emptyPicksTitle }}</h3>
+        <p>{{ copy.emptyPicksDescription }}</p>
+        <a class="picks-create" routerLink="/picks/explore">{{ copy.explorePicks }}</a>
+      </section>
+    }
+  </section>
+</main>

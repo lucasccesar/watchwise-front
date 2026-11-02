@@ -1,7 +1,9 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { interval } from 'rxjs';
 import { GamesApiService, DailyGameHistory, DailyGameOverviewCard, DailyGameType, DailyGamesOverview } from '../../data-access/games-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 
@@ -35,6 +37,10 @@ export class GamesComponent {
   protected readonly calendarOpen = signal(false);
   protected readonly calendarMonth = signal(this.monthStart(new Date()));
   protected readonly loadingHistory = signal(false);
+  protected readonly heroBackdropLoading = signal(true);
+  protected readonly heroBackdropFailed = signal(false);
+  protected readonly heroLoadedBackdrop = signal<string | null>(null);
+  protected readonly clockTick = signal(0);
   protected readonly historicalDate = inject(ActivatedRoute).snapshot.paramMap.get('challengeDate');
   protected readonly currentDate = computed(() => this.overview()?.date ?? this.dateKey(new Date()));
   protected readonly date = computed(() => this.parseDate(this.currentDate()));
@@ -43,6 +49,7 @@ export class GamesComponent {
     { id: 'info' as const, title: this.copy.fromInfo, description: this.copy.fromInfoDescription },
     { id: 'actor' as const, title: this.copy.guessActor, description: this.copy.guessActorDescription },
   ];
+  protected readonly infoPreviewCells = Array.from({ length: 24 }, (_, index) => index);
   protected readonly games = computed<GameDefinition[]>(() => {
     const labels = this.copy.gameTypes;
     return [
@@ -57,6 +64,20 @@ export class GamesComponent {
     ];
   });
   protected readonly scoreLabel = computed(() => this.copy.scoreToday.replace('{score}', String(this.overview()?.currentScore ?? 0)).replace('{total}', String(this.overview()?.totalMaxScore ?? 0)));
+  protected readonly resetCountdown = computed(() => {
+    this.clockTick();
+    const resetAt = this.overview()?.nextResetAt;
+    const remainingMs = resetAt ? Date.parse(resetAt) - Date.now() : Number.NaN;
+    if (!Number.isFinite(remainingMs)) return null;
+    const remainingMinutes = Math.max(0, Math.ceil(remainingMs / 60_000));
+    const hours = Math.floor(remainingMinutes / 60);
+    const minutes = String(remainingMinutes % 60).padStart(2, '0');
+    return `${hours}h ${minutes}m`;
+  });
+  protected readonly heroBackdrop = computed(() => {
+    if (this.heroBackdropFailed()) return null;
+    return 'https://image.tmdb.org/t/p/w1280/6UFnKzVzFqKDjs4iCVLJdneK3ch.jpg';
+  });
   protected readonly calendarLabel = computed(() => new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(this.calendarMonth()));
   protected readonly calendarDays = computed<CalendarDay[]>(() => {
     const month = this.calendarMonth();
@@ -77,11 +98,18 @@ export class GamesComponent {
 
   private readonly api = inject(GamesApiService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  constructor() { this.load(); }
+  constructor() {
+    this.load();
+    interval(60_000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.clockTick.update((tick) => tick + 1));
+  }
 
   protected load(): void {
     this.status.set('loading'); this.error.set('');
+    const retryingBackdrop = this.heroBackdropFailed();
+    this.heroBackdropFailed.set(false);
+    if (retryingBackdrop) this.heroBackdropLoading.set(true);
     const request = this.historicalDate ? this.api.getDay(this.historicalDate) : this.api.getOverview();
     request.subscribe({
       next: (data) => {
@@ -90,6 +118,9 @@ export class GamesComponent {
           const games: DailyGameOverviewCard[] = data.games.map((item) => ({ ...item, targetKind: item.targetKind as DailyGameOverviewCard['targetKind'] }));
           this.overview.set({ date: data.date, nextResetAt: '', totalMaxScore: games.reduce((sum, game) => sum + game.maxAttempts, 0), currentScore: games.reduce((sum, game) => sum + game.score, 0), games });
         }
+        const backdrop = this.heroBackdrop();
+        this.heroBackdropFailed.set(false);
+        this.heroBackdropLoading.set(Boolean(backdrop) && backdrop !== this.heroLoadedBackdrop());
         this.calendarMonth.set(this.monthStart(this.parseDate(this.overview()!.date)));
         this.status.set('ready');
       },
@@ -100,6 +131,12 @@ export class GamesComponent {
   protected card(type: DailyGameType): DailyGameOverviewCard | undefined { return this.overview()?.games.find((game) => game.gameType === type); }
   protected definitions(group: GamesGroup): GameDefinition[] { return this.games().filter((game) => game.group === group); }
   protected gameRoute(type: DailyGameType): string[] { return ['/games/play', type]; }
+  protected gameKindIcon(type: DailyGameType): string {
+    if (type === 'MOVIE_BY_POSTER' || type === 'MOVIE_BY_INFO' || type === 'ACTOR_BY_MOVIE_FILMOGRAPHY') return '▦';
+    if (type === 'SERIES_BY_POSTER' || type === 'SERIES_BY_INFO' || type === 'ACTOR_BY_SERIES_FILMOGRAPHY') return '▣';
+    if (type === 'PERSON_BY_FACE') return '♙';
+    return '▧';
+  }
   protected progressLabel(card: DailyGameOverviewCard | undefined): string { return this.copy.attemptsUsed.replace('{used}', String(card?.attemptsUsed ?? 0)).replace('{max}', String(card?.maxAttempts ?? 0)); }
   protected statusLabel(card: DailyGameOverviewCard | undefined): string {
     switch (card?.status) {
@@ -110,6 +147,22 @@ export class GamesComponent {
     }
   }
   protected imageUrl(card: DailyGameOverviewCard | undefined): string | null { return card?.visibleImageUrls?.[0] ?? card?.imageUrl ?? null; }
+  protected infoPreviewCellClass(index: number): string {
+    const column = index % 8;
+    const row = Math.floor(index / 8);
+    if (row === 2) return 'is-correct';
+    if (column === 0) return 'is-neutral';
+    if ((column + row) % 5 === 0) return 'is-partial';
+    return 'is-wrong';
+  }
+  protected attemptSlots(card: DailyGameOverviewCard | undefined): number[] {
+    return Array.from({ length: Math.max(0, card?.maxAttempts ?? 0) }, (_, index) => index);
+  }
+  protected frameProgressLabel(card: DailyGameOverviewCard | undefined): string {
+    return this.copy.frameProgress.replace('{revealed}', String(card?.attemptsUsed ?? 0)).replace('{max}', String(card?.maxAttempts ?? 0));
+  }
+  protected onHeroBackdropLoaded(): void { this.heroLoadedBackdrop.set(this.heroBackdrop()); this.heroBackdropLoading.set(false); }
+  protected onHeroBackdropError(): void { this.heroBackdropLoading.set(false); this.heroBackdropFailed.set(true); }
   protected openCalendar(): void {
     this.calendarOpen.set(true);
     if (!this.history().length && !this.loadingHistory()) {
@@ -127,7 +180,8 @@ export class GamesComponent {
     void this.router.navigate(['/games/day', day.date]);
   }
   protected goToToday(): void { this.calendarOpen.set(false); void this.router.navigateByUrl('/games'); }
-  protected gameLinkLabel(game: GameDefinition): string { return this.copy.continue.replace('{game}', game.title); }
+  protected gameLinkLabel(_game: GameDefinition): string { return this.copy.continue; }
+  protected gameLinkAccessibleLabel(game: GameDefinition): string { return this.copy.continueGame.replace('{game}', game.title); }
   protected number(value: number | null | undefined): string { return String(value ?? 0); }
   protected dateLabel(value: Date): string { return new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(value); }
 

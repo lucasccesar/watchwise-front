@@ -26,6 +26,7 @@ export interface DiaryRecord {
   card: {
     title: string | null;
     posterPath: string | null;
+    backdropPath?: string | null;
     customPosterUrl: string | null;
     releaseDate: string | null;
     releaseYear: number | null;
@@ -44,7 +45,7 @@ export interface DiaryRecord {
   likesCount: number;
   commentsCount: number;
   likedByMe: boolean;
-  watchedWith: Array<{ name?: string | null; username?: string | null; profilePicture?: string | null }>;
+  watchedWith: Array<{ id?: string | null; name?: string | null; username?: string | null; profilePicture?: string | null }>;
 }
 
 interface DiaryReviewApiRecord {
@@ -78,6 +79,7 @@ export interface DiaryRecordPage {
   totalElements: number;
   totalPages: number;
   hasNext: boolean;
+  backdropPath?: string | null;
 }
 
 export interface SeriesSeasonProgress {
@@ -208,6 +210,11 @@ export class DiaryApiService {
     );
   }
 
+  getDiaryBackdropPath(userId: string): Observable<string | null | undefined> {
+    return this.getDiaryPage(userId, { page: 1, size: 1, sortBy: 'NEWEST' })
+      .pipe(map(page => page.backdropPath));
+  }
+
   getSeriesInProgress(
     userId: string,
     options: { page: number; size: number; sortBy: ProgressSortBy; direction: 'ASC' | 'DESC' },
@@ -221,5 +228,18 @@ export class DiaryApiService {
       `/api/v1/users/${encodeURIComponent(userId)}/series-in-progress`,
       { params },
     );
+  }
+
+  getAllSeriesInProgress(
+    userId: string,
+    options: { sortBy: ProgressSortBy; direction: 'ASC' | 'DESC' },
+  ): Observable<SeriesInProgressRecord[]> {
+    const size = 100;
+    return readAllPages(page => this.getSeriesInProgress(userId, {
+      page,
+      size,
+      sortBy: options.sortBy,
+      direction: options.direction,
+    }));
   }
 }

@@ -1,5 +1,7 @@
 <main class="lists-page" aria-labelledby="lists-title">
-  <header class="lists-hero" [style.background-image]="heroBackground()">
+  <header class="lists-hero">
+    @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton lists-hero-skeleton" aria-hidden="true"></div> }
+    @if (heroBackdropUrl(); as backdropUrl) { <img class="tr-hero-backdrop lists-hero-backdrop" [src]="backdropUrl" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
     <div class="lists-hero-copy">
       <h1 id="lists-title">{{ isCommunity ? copy.communityTitle : copy.title }}</h1>
       <p class="lists-hero-count">{{ listCountLabel() }}</p>
@@ -8,13 +10,15 @@
   </header>
 
   <nav class="lists-tabs" [attr.aria-label]="copy.navigation">
-    <a routerLink="/lists" [class.lists-tab-active]="!isCommunity" ariaCurrentWhenActive="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>{{ copy.myLists }}</a>
-    <a routerLink="/lists/community" [class.lists-tab-active]="isCommunity" ariaCurrentWhenActive="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>{{ copy.communityLists }}</a>
+    <div class="lists-tabs-inner">
+      <a routerLink="/lists" [class.lists-tab-active]="!isCommunity" [attr.aria-current]="!isCommunity ? 'page' : null"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>{{ copy.myLists }}</a>
+      <a routerLink="/lists/community" [class.lists-tab-active]="isCommunity" [attr.aria-current]="isCommunity ? 'page' : null"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>{{ copy.communityLists }}</a>
+    </div>
   </nav>
 
   <section class="lists-toolbar" [attr.aria-label]="copy.filters">
     <div class="lists-toolbar-actions">
-      @if (!isCommunity) { <button class="lists-create-button" type="button" (click)="openCreateDialog()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</button> }
+      @if (!isCommunity) { <a class="lists-create-button" routerLink="/lists/create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</a> }
       @if (!isCommunity) { <button class="lists-reorder-button" type="button" [attr.aria-pressed]="reorderMode()" (click)="toggleReorder()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7 4-4 4 4M12 3v8m4 6-4 4-4-4m4 4v-8"/></svg>{{ reorderMode() ? copy.done : copy.reorder }}</button> }
     </div>
     <div class="lists-toolbar-controls">
@@ -39,7 +43,7 @@
 
   @if (status() === 'loading') { <div class="lists-state" role="status">{{ copy.loading }}</div> }
   @else if (status() === 'error') { <section class="lists-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section> }
-  @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty"><h2>{{ isCommunity ? copy.communityEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity) { <button type="button" (click)="openCreateDialog()">{{ copy.createList }}</button> }</section> }
+  @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty"><h2>{{ isCommunity ? copy.communityEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity) { <a routerLink="/lists/create">{{ copy.createList }}</a> }</section> }
   @else {
     <div class="lists-pagination-bar"><nav class="lists-pagination" [attr.aria-label]="copy.pagination"><button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>@for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.lists-page-active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }<button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button></nav><p class="lists-page-label">{{ copy.pageLabel.replace('{page}', page().toString()).replace('{total}', totalPages().toString()) }}</p></div>
     <section class="lists-grid" [attr.aria-label]="isCommunity ? copy.communityLists : copy.myLists">
@@ -59,33 +63,34 @@
               <div class="list-nested-preview">@for (nested of list.nestedListPreviews.slice(0, 3); track nested.id) { <span><strong>{{ nested.name }}</strong><small>{{ nested.user.name }}</small></span> }@if (list.nestedListsCount > 3) { <small>+{{ list.nestedListsCount - 3 }} {{ copy.moreLists }}</small> }</div>
             } @else { <div class="list-empty-preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17H5zM8 8h8M8 12h8M8 16h5" /></svg></div> }
           </div>
-          <div class="list-card-body">
-            <div class="list-card-title-row"><h2><a [routerLink]="listRoute(list)">{{ list.name }}</a></h2><span class="list-visibility" [class.list-visibility-private]="list.visibility === 'PRIVATE'" [class.list-visibility-followers]="list.visibility === 'FOLLOWERS'">{{ visibilityLabel(list) }}</span></div>
-            <div class="list-card-meta"><span>{{ itemCountLabel(list) }}</span><a [routerLink]="['/lists', list.id, 'progress']" [attr.aria-label]="copy.openProgress.replace('{name}', list.name)">{{ copy.viewProgress }}</a></div>
-            <div class="list-card-owner"><span class="list-owner-avatar">@if (list.user.profilePicture) { <img [src]="list.user.profilePicture" alt="" loading="lazy" /> } @else { {{ list.user.name.slice(0, 1) }} }</span><span>{{ copy.by }} <a [routerLink]="['/users', list.user.username]">{{ list.user.name }}</a></span><span aria-hidden="true">·</span><span>{{ copy.updated }} {{ updatedLabel(list.updatedAt) }}</span></div>
-            @if (list.description) { <p class="list-card-description">{{ list.description }}</p> }
-            <div class="list-card-footer"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ list.likesCount }}</span><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" /></svg>{{ list.commentsCount }}</span><button type="button" [attr.aria-label]="copy.shareList.replace('{name}', list.name)" (click)="share(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" /></svg>@if (shareNoticeId() === list.id) { {{ copy.copied }} } @else { {{ copy.share }} }</button></div>
-            <button class="list-card-more" type="button" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)" [attr.aria-expanded]="activeCardMenu() === list.id" (click)="toggleCardMenu(list.id)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+          <div class="list-card-main">
+            <div class="list-card-body">
+              <div class="list-card-title-row">
+                <h2><a [routerLink]="listRoute(list)">{{ list.name }}</a></h2>
+                <span class="list-visibility" [class.list-visibility-private]="list.visibility === 'PRIVATE'" [class.list-visibility-followers]="list.visibility === 'FOLLOWERS'" [attr.aria-label]="visibilityLabel(list)" [title]="visibilityLabel(list)">
+                  @if (list.visibility === 'PRIVATE') { <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
+                  @else if (list.visibility === 'FOLLOWERS') { <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v1"/></svg> }
+                  @else { <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg> }
+                </span>
+                <span class="list-item-count">{{ itemCountLabel(list) }}</span>
+              </div>
+              <div class="list-card-owner"><span class="list-owner-avatar">@if (list.user.profilePicture) { <img [src]="list.user.profilePicture" alt="" loading="lazy" /> } @else { {{ list.user.name.slice(0, 1) }} }</span><span>{{ copy.by }} <a [routerLink]="['/users', list.user.username]">{{ list.user.name }}</a></span><span aria-hidden="true">·</span><span>{{ copy.updated }} {{ updatedLabel(list.updatedAt) }}</span></div>
+              @if (list.description) { <p class="list-card-description">{{ list.description }}</p> }
+            </div>
+            <aside class="list-card-side" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)">
+              <div class="list-card-actions">
+                <a class="list-card-action" [routerLink]="['/lists', list.id, 'progress']" [attr.aria-label]="copy.openProgress.replace('{name}', list.name)" [title]="copy.viewProgress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/><path d="M17 17v5m-2.5-2.5h5"/></svg></a>
+                <button class="list-card-action" type="button" [attr.aria-label]="copy.shareList.replace('{name}', list.name)" [title]="shareNoticeId() === list.id ? copy.copied : copy.share" (click)="share(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" /></svg></button>
+                <button class="list-card-action list-card-more" type="button" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)" [attr.aria-expanded]="activeCardMenu() === list.id" [title]="copy.moreOptions" (click)="toggleCardMenu(list.id)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+                @if (reorderMode() && list.ownedByMe) { <div class="list-reorder-controls"><button type="button" [disabled]="(list.rank ?? 1) <= 1" [attr.aria-label]="copy.moveUp" (click)="moveList(list, -1)">↑</button><button type="button" [disabled]="(list.rank ?? 1) >= currentCount()" [attr.aria-label]="copy.moveDown" (click)="moveList(list, 1)">↓</button></div> }
+              </div>
+              <div class="list-card-footer"><span [attr.aria-label]="list.likesCount + ' curtidas'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ list.likesCount }}</span><span [attr.aria-label]="list.commentsCount + ' comentários'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" /></svg>{{ list.commentsCount }}</span></div>
+            </aside>
             @if (activeCardMenu() === list.id) { <div class="list-card-menu" role="menu"><a [routerLink]="listRoute(list)" role="menuitem">{{ copy.openList }}</a><button type="button" role="menuitem" (click)="share(list); toggleCardMenu(list.id)">{{ copy.share }}</button></div> }
-            @if (reorderMode() && list.ownedByMe) { <div class="list-reorder-controls"><button type="button" [disabled]="(list.rank ?? 1) <= 1" [attr.aria-label]="copy.moveUp" (click)="moveList(list, -1)">↑</button><button type="button" [disabled]="(list.rank ?? 1) >= currentCount()" [attr.aria-label]="copy.moveDown" (click)="moveList(list, 1)">↓</button></div> }
           </div>
         </article>
       }
     </section>
-    <nav class="lists-pagination lists-pagination-bottom" [attr.aria-label]="copy.pagination"><button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>@for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.lists-page-active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }<button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button></nav>
   }
 
-  @if (createDialogOpen()) {
-    <div class="lists-dialog-layer" (click)="closeCreateDialog()">
-      <section class="lists-create-dialog" role="dialog" aria-modal="true" [attr.aria-labelledby]="'create-list-title'" (click)="$event.stopPropagation()">
-        <button class="lists-dialog-close" type="button" [attr.aria-label]="copy.close" (click)="closeCreateDialog()">×</button>
-        <h2 id="create-list-title">{{ copy.createList }}</h2><p>{{ copy.createDescription }}</p>
-        <label>{{ copy.nameLabel }}<input maxlength="255" [value]="createName()" (input)="updateCreateName($event)" [placeholder]="copy.namePlaceholder" /></label>
-        <label>{{ copy.descriptionLabel }}<textarea maxlength="400" [value]="createDescription()" (input)="updateCreateDescription($event)" [placeholder]="copy.descriptionPlaceholder"></textarea></label>
-        <label>{{ copy.visibilityLabel }}<select [value]="createVisibility()" (change)="setCreateVisibility($any($event.target).value)"><option value="PUBLIC">{{ copy.public }}</option><option value="FOLLOWERS">{{ copy.followers }}</option><option value="PRIVATE">{{ copy.private }}</option></select></label>
-        @if (createError()) { <p class="lists-dialog-error" role="alert">{{ createError() }}</p> }
-        <div class="lists-dialog-actions"><button type="button" (click)="closeCreateDialog()">{{ copy.cancel }}</button><button type="button" [disabled]="!createName().trim() || creating()" (click)="submitCreate()">{{ creating() ? copy.creating : copy.save }}</button></div>
-      </section>
-    </div>
-  }
 </main>

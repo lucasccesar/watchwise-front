@@ -4,11 +4,13 @@ import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { HomeApiService } from '../../../home/data-access/home-api.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { WatchlistApiService, WatchlistCard, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../data-access/watchlist-api.service';
+
+const WATCHLIST_BACKDROP_FALLBACK = '/dtFS7DS64umOHK6PcfabXtDaf2w.jpg';
 
 type WatchlistMenu = 'genre' | 'sort' | 'visibility' | null;
 type WatchlistUpcomingMode = 'ALL' | 'FADE' | 'HIDE';
@@ -28,7 +30,9 @@ export class WatchlistComponent implements OnDestroy {
   protected readonly error = signal('');
   protected readonly loadingPlaceholders = Array.from({ length: 12 }, (_, index) => index);
   protected readonly view = signal<WatchlistView | null>(null);
-  protected readonly heroBackdropPath = signal<string | null>(null);
+  protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
+  protected readonly heroBackdropLoading = signal(true);
+  protected readonly heroBackdropFailed = signal(false);
   protected readonly viewMode = signal<'AUTO' | 'GRID' | 'LIST'>('AUTO');
   protected readonly mobileFiltersOpen = signal(false);
   protected readonly type = signal<WatchlistContentType | null>(null);
@@ -55,7 +59,6 @@ export class WatchlistComponent implements OnDestroy {
 
   private readonly session = inject(AuthSessionService);
   private readonly api = inject(WatchlistApiService);
-  private readonly homeApi = inject(HomeApiService);
   private readonly contentApi = inject(ContentApiService);
   private readonly router = inject(Router);
   private request?: Subscription;
@@ -63,21 +66,20 @@ export class WatchlistComponent implements OnDestroy {
   private genreUserId = '';
 
   constructor() {
-    const user = this.session.user();
-    if (user) {
-      this.homeApi.getHomeSummary(user.id).subscribe({
-        next: (summary) => this.heroBackdropPath.set(summary.latestWatchedBackdropPath),
-      });
-    }
     this.load();
   }
 
-  protected heroBackground(): string {
-    const backdrop = this.heroBackdropPath();
-    const image = backdrop
-      ? `url("https://image.tmdb.org/t/p/w1280${backdrop.startsWith('/') ? backdrop : `/${backdrop}`}")`
-      : 'radial-gradient(ellipse at 50% 35%, #33363b 0%, #202125 56%, #181818 100%)';
-    return `linear-gradient(180deg, rgb(16 16 18 / 55%) 0%, rgb(16 16 18 / 66%) 62%, #181818 100%), ${image}`;
+  protected heroBackdropUrl(): string | null {
+    return this.heroBackdropFailed() ? null : tmdbImageUrl(this.heroBackdropPath(), 'w1280');
+  }
+
+  protected onHeroBackdropLoaded(): void {
+    this.heroBackdropLoading.set(false);
+  }
+
+  protected onHeroBackdropError(): void {
+    this.heroBackdropFailed.set(true);
+    this.heroBackdropLoading.set(false);
   }
 
   protected updatedAt(): string {
@@ -133,6 +135,9 @@ export class WatchlistComponent implements OnDestroy {
     }
     this.request?.unsubscribe();
     this.status.set('loading');
+    this.heroBackdropPath.set(undefined);
+    this.heroBackdropLoading.set(true);
+    this.heroBackdropFailed.set(false);
     this.error.set('');
     this.request = this.api.getView(user.id, {
       type: this.type(),
@@ -143,8 +148,16 @@ export class WatchlistComponent implements OnDestroy {
       page: this.page(),
       size: this.pageSize,
     }).subscribe({
-      next: (view) => { this.view.set(view); this.status.set('ready'); },
+      next: (view) => {
+        const backdropPath = view.backdropPath === null ? WATCHLIST_BACKDROP_FALLBACK : view.backdropPath;
+        this.heroBackdropPath.set(backdropPath);
+        this.heroBackdropLoading.set(Boolean(tmdbImageUrl(backdropPath, 'w1280')));
+        this.heroBackdropFailed.set(false);
+        this.view.set(view);
+        this.status.set('ready');
+      },
       error: (error: unknown) => {
+        this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.error.set(error instanceof HttpErrorResponse && error.status === 0
           ? this.homeCopy.actionConnectionError
