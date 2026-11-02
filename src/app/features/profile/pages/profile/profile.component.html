@@ -24,7 +24,8 @@
     </nav>
 
     @if (section() === 'profile') {
-    <section class="profile-hero" [style.background-image]="profileHeroBackdrop() ? 'url(' + profileHeroBackdrop() + ')' : null">
+    <section class="profile-hero">
+      <app-responsive-banner [path]="profileHeroBackdrop()" fallbackPath="/dg3OindVAGZBjlT3xYKqIAdukPL.jpg" />
       <div class="profile-hero-actions">
         @if (followState() !== 'SELF') {
           <button class="profile-follow-button" type="button" [disabled]="followBusy()" (click)="follow()">

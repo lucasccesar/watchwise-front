@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
@@ -86,7 +87,7 @@ type HomeStatus = 'loading' | 'ready' | 'error';
 const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
 @Component({
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
@@ -834,11 +835,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected recentRuntime(entry: HomeRecentlyWatched): number | null {
     const cardRuntime = entry.card?.runtimeMinutes;
     return cardRuntime && cardRuntime > 0 ? cardRuntime : entry.content.runtimeMinutes;
-  }
-
-  protected heroBackdrop(): string | null {
-    const path = this.summary()?.latestWatchedBackdropPath;
-    return path ? this.imageUrl(path, 'w1920') : null;
   }
 
   protected recentEpisodeRuntime(entry: HomeRecentlyWatched): string {

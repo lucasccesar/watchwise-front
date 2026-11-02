@@ -6,6 +6,7 @@ import { CalendarApiService, CalendarEventType, CalendarMonthResponse, CalendarR
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { HomeApiService } from '../../../home/data-access/home-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 
 type CalendarFilter = 'ALL' | 'EPISODE' | 'SEASON' | 'MOVIE';
 interface CalendarDay {
@@ -22,6 +23,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendar',
   standalone: true,
+  imports: [ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.css',
@@ -74,14 +76,6 @@ export class CalendarComponent {
       });
     }
     this.loadMonth();
-  }
-
-  protected heroBackground(): string {
-    const backdrop = this.heroBackdropPath();
-    const image = backdrop
-      ? `url("https://image.tmdb.org/t/p/w1280${backdrop.startsWith('/') ? backdrop : `/${backdrop}`}")`
-      : 'radial-gradient(ellipse at 50% 35%, #33363b 0%, #202125 56%, #181818 100%)';
-    return `linear-gradient(180deg, rgb(16 16 18 / 52%) 0%, rgb(16 16 18 / 70%) 62%, #181818 100%), ${image}`;
   }
 
   protected loadMonth(): void {

@@ -13,6 +13,7 @@ import {
   WatchwiseNotificationType,
 } from '../../data-access/notifications-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 
 type NotificationFilter = 'all' | 'unread' | 'read';
 type LoadStatus = 'loading' | 'ready' | 'error';
@@ -27,7 +28,7 @@ interface NotificationGroup {
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.css',
@@ -66,14 +67,6 @@ export class NotificationsComponent {
         .subscribe({ next: (summary) => this.heroBackdropPath.set(summary.latestWatchedBackdropPath) });
     }
     this.load();
-  }
-
-  protected heroBackground(): string {
-    const backdrop = this.heroBackdropPath();
-    const image = backdrop
-      ? `url("https://image.tmdb.org/t/p/w1280${backdrop.startsWith('/') ? backdrop : `/${backdrop}`}")`
-      : 'radial-gradient(ellipse at 50% 35%, #33363b 0%, #202125 56%, #181818 100%)';
-    return `linear-gradient(180deg, rgb(16 16 18 / 44%) 0%, rgb(16 16 18 / 58%) 62%, #181818 100%), ${image}`;
   }
 
   protected setFilter(filter: NotificationFilter): void {

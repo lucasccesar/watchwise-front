@@ -1,5 +1,6 @@
 <main class="notifications-page" aria-labelledby="notifications-title">
-  <header class="notifications-heading" [style.background-image]="heroBackground()">
+  <header class="notifications-heading">
+    <app-responsive-banner [path]="heroBackdropPath()" fallbackPath="/9lYpkcO7WuruOXB2mn8ppC6Ecaq.jpg" />
     <div class="notifications-title-row">
       <h1 id="notifications-title">{{ copy.title }}</h1>
       @if (unreadCount() > 0) {

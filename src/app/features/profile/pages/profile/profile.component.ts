@@ -14,6 +14,7 @@ import { WatchlistApiService, WatchlistContentType, WatchlistSort, WatchlistStat
 import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
@@ -74,7 +75,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
@@ -255,7 +256,7 @@ export class ProfileComponent {
       || fallbackRecent?.card?.posterPath
       || highlightedContent?.customPosterUrl
       || highlightedContent?.posterPath;
-    return this.imageUrl(profile?.banner || fallbackImage, profile?.banner ? 'w1280' : 'w780');
+    return profile?.banner || fallbackImage;
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const profile = this.profile();
