@@ -19,30 +19,6 @@
   text-align: center;
 }
 
-.not-found-icon {
-  display: flex;
-  width: 64px;
-  height: 64px;
-  flex: 0 0 64px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: #1c1c1c;
-  color: var(--color-accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .36);
-}
-
-.not-found-icon svg {
-  width: 28px;
-  height: 28px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-}
-
 .not-found-code {
   margin: 0;
   color: #f2f7fa;
@@ -97,6 +73,7 @@
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
+  white-space: nowrap;
   text-decoration: none;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .32);
 }
@@ -113,7 +90,7 @@
 }
 
 .not-found-actions .not-found-secondary {
-  width: 162px;
+  width: 210px;
   border: 1px solid var(--color-border);
   background: #181818;
 }
@@ -124,7 +101,7 @@
 }
 
 .not-found-actions .not-found-primary {
-  width: 169px;
+  width: 210px;
   border: 0;
   background: #2563eb;
 }
@@ -165,7 +142,6 @@
 
 @media (max-width: 800px) {
   .not-found { max-width: 520px; gap: 28px; }
-  .not-found-icon { width: 56px; height: 56px; flex-basis: 56px; }
   .not-found-code { font-size: 120px; }
   .not-found-copy { gap: 8px; }
   .not-found h1 { font-size: 24px; line-height: 32px; }
@@ -174,8 +150,6 @@
 
 @media (max-width: 480px) {
   .not-found { width: calc(100vw - 32px); max-width: none; gap: 24px; }
-  .not-found-icon { width: 52px; height: 52px; flex-basis: 52px; }
-  .not-found-icon svg { width: 24px; height: 24px; }
   .not-found-code { font-size: 96px; }
   .not-found-actions { width: 100%; flex-direction: column-reverse; gap: 12px; }
   .not-found-actions a { width: 100%; }
