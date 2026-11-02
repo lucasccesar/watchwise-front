@@ -13,7 +13,7 @@ type PicksLoadState = 'loading' | 'ready' | 'error';
   imports: [RouterLink, PicksPageHeroComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-my.component.html',
-  styleUrl: './picks-my.component.css',
+  styleUrls: ['./picks-my.component.css', '../../shared/picks-shared.css'],
 })
 export class PicksMyComponent {
   protected readonly copy = messageCatalog['pt-BR'].picksPage;

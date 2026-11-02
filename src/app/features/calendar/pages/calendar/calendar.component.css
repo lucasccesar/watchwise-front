@@ -1,24 +1,24 @@
 .calendar-page { min-height: 100%; padding-bottom: var(--space-16); background: var(--color-surface); }
 .calendar-heading { display: grid; min-height: 294px; place-items: center; box-sizing: border-box; padding: 36px 24px; background-color: var(--color-surface); background-position: center 35%; background-size: cover; text-align: center; }
 .calendar-heading-copy { display: flex; width: min(800px, 100%); flex-direction: column; align-items: center; gap: var(--space-3); }
-.calendar-heading h1 { margin: 0; color: #fff; font-size: 72px; font-weight: 700; letter-spacing: -.035em; line-height: 1.12; }
-.calendar-heading-month { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0; color: var(--color-accent); font-size: var(--font-size-md); font-weight: 650; line-height: var(--line-height-md); text-transform: capitalize; }
+.calendar-heading h1 { margin: 0; color: var(--color-text); font-size: var(--font-size-display-2xl); font-weight: 600; letter-spacing: -.02em; line-height: var(--line-height-display-2xl); }
+.calendar-heading-month { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0; color: var(--color-accent); font-size: var(--font-size-md); font-weight: 600; line-height: var(--line-height-md); text-transform: capitalize; }
 .calendar-heading-month::before, .calendar-heading-month::after { width: 32px; height: 2px; background: currentColor; content: ''; }
-.calendar-heading-description { max-width: 480px; margin: 2px 0 0; color: #fff; font-size: var(--font-size-md); line-height: var(--line-height-md); }
-.calendar-controls, .calendar-releases { width: min(1334px, calc(100% - 64px)); box-sizing: border-box; margin-inline: auto; }
+.calendar-heading-description { max-width: 480px; margin: 2px 0 0; color: var(--color-text); font-size: var(--font-size-md); line-height: var(--line-height-md); }
+.calendar-controls, .calendar-releases { width: var(--content-width); box-sizing: border-box; margin-inline: auto; }
 .calendar-controls { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 0; border-bottom: 1px solid var(--color-border); }
 .calendar-month-control { display: flex; align-items: center; gap: 10px; }
 .calendar-month-control button { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); cursor: pointer; }
 .calendar-month-control button:hover { background: var(--color-secondary); }
 .calendar-month-control svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
-.calendar-month-control h2 { min-width: 190px; margin: 0; font-size: var(--font-size-lg); line-height: var(--line-height-lg); font-weight: 600; text-align: center; text-transform: capitalize; }
+.calendar-month-control h2 { min-width: 190px; margin: 0; font-size: var(--font-size-display-xs); line-height: var(--line-height-display-xs); font-weight: 600; text-align: center; text-transform: capitalize; }
 .calendar-month-control .calendar-today { width: auto; margin-left: 8px; padding: 0 14px; font-family: inherit; font-size: var(--font-size-sm); }
 .calendar-type-filter { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); }
 .calendar-type-filter button { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary); font-family: inherit; font-size: var(--font-size-sm); white-space: nowrap; cursor: pointer; }
 .calendar-type-filter button:hover { color: var(--color-text); }
 .calendar-type-filter .calendar-filter-active { background: var(--color-primary); color: var(--color-text); font-weight: 600; }
 .calendar-filter-dot, .calendar-event-kind i { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--color-primary); }
-.calendar-filter-dot--season, .calendar-event-kind--season i { background: #4dbb83; }
+.calendar-filter-dot--season, .calendar-event-kind--season i { background: var(--color-success); }
 .calendar-filter-dot--movie, .calendar-event-kind--movie i { background: var(--color-accent); }
 .calendar-releases { padding-top: 24px; }
 .calendar-releases-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
@@ -60,6 +60,7 @@
 }
 
 @media (max-width: 900px) {
+  .calendar-heading h1 { font-size: var(--font-size-display-sm); line-height: var(--line-height-display-sm); }
   .calendar-controls { align-items: flex-start; flex-direction: column; }
   .calendar-type-filter { width: 100%; box-sizing: border-box; }
   .calendar-type-filter button { flex: 1; }
@@ -67,7 +68,6 @@
 
 @media (max-width: 600px) {
   .calendar-heading { min-height: 250px; padding: 36px 20px 30px; }
-  .calendar-heading h1 { font-size: clamp(42px, 13vw, 58px); }
   .calendar-heading-description { font-size: var(--font-size-sm); }
   .calendar-controls, .calendar-releases { width: calc(100% - 32px); }
   .calendar-month-control { width: 100%; gap: 6px; }

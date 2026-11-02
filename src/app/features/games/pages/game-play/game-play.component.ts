@@ -1,4 +1,5 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ const supportedTypes: DailyGameType[] = ['MOVIE_BY_POSTER', 'SERIES_BY_POSTER', 
 @Component({
   selector: 'app-game-play',
   standalone: true,
-  imports: [ModalFocusDirective, FormsModule, RouterLink],
+  imports: [DialogBackdropComponent, ModalFocusDirective, FormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-play.component.html',
   styleUrl: './game-play.component.css',

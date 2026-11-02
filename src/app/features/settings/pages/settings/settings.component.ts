@@ -1,4 +1,5 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -32,7 +33,7 @@ const SETTINGS_SECTIONS: Array<{ id: SettingsSection; title: string; subtitle: s
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ModalFocusDirective, RouterLink],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css',
 })

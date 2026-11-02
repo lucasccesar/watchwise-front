@@ -1,0 +1,30 @@
+.ww-dialog-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  overflow-y: auto;
+  padding: var(--space-5);
+  place-items: center;
+  background: var(--dialog-backdrop);
+}
+
+.ww-dialog-backdrop--bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.ww-dialog-backdrop--top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 24px;
+}
+
+@media (max-width: 600px) {
+  .ww-dialog-backdrop--top {
+    padding: 16px 12px max(16px, env(safe-area-inset-bottom, 0px));
+  }
+}

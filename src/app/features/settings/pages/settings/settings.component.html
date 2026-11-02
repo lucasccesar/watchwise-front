@@ -186,8 +186,8 @@
 </main>
 
 @if (dialog(); as dialogType) {
-  <div class="settings-dialog-backdrop" (click)="closeDialog()">
-    <section class="settings-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" [attr.aria-labelledby]="'settings-dialog-title'" (click)="$event.stopPropagation()">
+  <app-dialog-backdrop (dismiss)="closeDialog()">
+    <section class="settings-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" [attr.aria-labelledby]="'settings-dialog-title'" (click)="$event.stopPropagation()">
       <button type="button" class="settings-dialog-close" aria-label="Fechar" (click)="closeDialog()">×</button>
       @if (dialogType === 'delete') {
         <h2 id="settings-dialog-title">Excluir conta</h2><p>A exclusão é permanente e remove todos os dados. Digite sua senha para confirmar.</p><label class="settings-field settings-delete-confirm-field"><span>Senha atual</span><input type="password" autocomplete="current-password" [value]="deleteAccountPassword()" [disabled]="busy()" (input)="deleteAccountPassword.set($any($event.target).value)" /></label><div class="settings-dialog-actions"><button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="closeDialog()">Cancelar</button><button class="settings-danger-button" type="button" [disabled]="busy() || !deleteAccountPassword()" (click)="deleteAccount()">{{ busy() ? 'Excluindo…' : 'Excluir permanentemente' }}</button></div>
@@ -195,5 +195,5 @@
         <h2 id="settings-dialog-title">Sair de todos os dispositivos</h2><p>Esta ação não está disponível pela API atual. Nenhuma sessão foi encerrada.</p><div class="settings-dialog-actions"><button class="settings-secondary-button" type="button" (click)="closeDialog()">Cancelar</button><button class="settings-primary-button" type="button" (click)="closeDialog()">Entendi</button></div>
       }
     </section>
-  </div>
+  </app-dialog-backdrop>
 }

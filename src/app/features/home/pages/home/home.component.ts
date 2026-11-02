@@ -13,6 +13,8 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
+import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
@@ -84,10 +86,11 @@ type HomeStatus = 'loading' | 'ready' | 'error';
 const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
 @Component({
-  imports: [RouterLink, ContentImageActionsComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent],
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
+  styleUrl: './home.component.css',
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].home;

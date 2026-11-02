@@ -1,0 +1,9 @@
+.ww-dialog-panel {
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid var(--dialog-border);
+  border-radius: var(--dialog-radius);
+  background: var(--dialog-surface);
+  color: var(--color-text);
+  box-shadow: var(--dialog-shadow);
+}

@@ -1,4 +1,5 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,7 +17,7 @@ type SearchState = { contents: SearchContentView[]; people: SearchPersonView[] }
 @Component({
   selector: 'app-pick-fill',
   standalone: true,
-  imports: [ModalFocusDirective, RouterLink, ContentImageActionsComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pick-fill.component.html',
   styleUrl: './pick-fill.component.css',

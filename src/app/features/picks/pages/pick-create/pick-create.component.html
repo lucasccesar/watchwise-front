@@ -59,7 +59,7 @@
 </main>
 
 @if (activeCategory(); as category) {
-  <div class="pick-create-backdrop" (click)="$event.target === $event.currentTarget ? closeOptions() : null"><section class="pick-create-dialog" role="dialog" appModalFocus (modalDismiss)="closeOptions()" aria-modal="true" [attr.aria-label]="copy.fixedOptions + ': ' + category.name">
+  <app-dialog-backdrop (dismiss)="closeOptions()"><section class="pick-create-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeOptions()" aria-modal="true" [attr.aria-label]="copy.fixedOptions + ': ' + category.name">
     <header><div><span>{{ typeLabel(category.allowedType) }} · {{ category.group === 'PRIMARY' ? copy.primary : copy.secondary }}</span><h2>{{ category.name }}</h2></div><button type="button" aria-label="{{ copy.cancel }}" (click)="closeOptions()">×</button></header>
     <div class="pick-create-dialog-body">
       @if (selectedSeries(); as series) {
@@ -88,5 +88,5 @@
       @if (activeCategoryOptions().length) { <section class="pick-create-chosen"><h3>{{ copy.fixedOptions }} · {{ activeCategoryOptions().length }}</h3><div>@for (option of activeCategoryOptions(); track option.key) { <span>{{ option.label }}<button type="button" [attr.aria-label]="copy.removeOption.replace('{name}', option.label)" (click)="removeOption(category.key, option.key)">×</button></span> }</div></section> }
     </div>
     <footer><span>@if (pendingNominee()) { {{ importCopy.nomineeField }}: {{ pendingNominee() }} } @else { {{ copy.optionsDescription }} }</span><button type="button" (click)="closeOptions()">{{ copy.back }}</button></footer>
-  </section></div>
+  </section></app-dialog-backdrop>
 }

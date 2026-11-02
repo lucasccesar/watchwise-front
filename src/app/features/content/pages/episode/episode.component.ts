@@ -4,6 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, Subscription, switchMap } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
+import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import {
   ContentApiService,
   ContentComment,
@@ -19,7 +21,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [RouterLink, SharePreviewComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, SharePreviewComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',

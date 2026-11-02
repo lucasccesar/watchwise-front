@@ -50,6 +50,7 @@ function emptySection(loading = false): SectionState {
   standalone: true,
   imports: [RouterLink, ContentImageActionsComponent],
   templateUrl: './trending.component.html',
+  styleUrl: './trending.component.css',
 })
 export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].trendingPage;

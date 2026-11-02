@@ -1,4 +1,5 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,7 +24,7 @@ interface CalendarDay { date: string; day: number; played: boolean; today: boole
 @Component({
   selector: 'app-games',
   standalone: true,
-  imports: [ModalFocusDirective, RouterLink],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './games.component.html',
   styleUrl: './games.component.css',

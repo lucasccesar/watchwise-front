@@ -42,8 +42,8 @@
 </main>
 
 @if (activeCategory(); as category) {
-  <div class="pick-fill-backdrop" (click)="closeOnBackdrop($event)">
-    <section class="pick-fill-dialog" role="dialog" appModalFocus (modalDismiss)="closeCategory()" aria-modal="true" [attr.aria-label]="copy.dialogTitle.replace('{category}', category.name)">
+  <app-dialog-backdrop (dismiss)="closeCategory()">
+    <section class="pick-fill-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeCategory()" aria-modal="true" [attr.aria-label]="copy.dialogTitle.replace('{category}', category.name)">
       <header><div><span>{{ templateCopy.type[category.allowedType] }} · {{ category.group === 'PRIMARY' ? templateCopy.primary : templateCopy.secondary }}</span><h2>{{ category.name }}</h2>@if (category.description) { <p>{{ category.description }}</p> }</div><button type="button" [attr.aria-label]="copy.close" (click)="closeCategory()">×</button></header>
       <div class="pick-fill-dialog-body">
         @if (category.optionMode === 'FIXED') {
@@ -79,5 +79,5 @@
       </div>
       <footer><button type="button" class="pick-fill-skip" (click)="closeCategory()">{{ copy.skip }}</button><button type="button" class="pick-fill-close" (click)="closeCategory()">{{ copy.close }}</button></footer>
     </section>
-  </div>
+  </app-dialog-backdrop>
 }

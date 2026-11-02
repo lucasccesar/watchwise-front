@@ -1,4 +1,5 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -18,7 +19,7 @@ type ImportedData = { title: string; description: string; coverImage: string; el
 @Component({
   selector: 'app-pick-create',
   standalone: true,
-  imports: [ModalFocusDirective, RouterLink],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pick-create.component.html',
   styleUrl: './pick-create.component.css',

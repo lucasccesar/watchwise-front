@@ -107,8 +107,7 @@
 .pick-create-actions .pick-create-next:disabled { opacity: .5; cursor: default; }
 .pick-create-error { margin: 10px 0 0; color: #ff8888; font-size: var(--font-size-xs); }
 .pick-create-empty { margin: 12px 0 0; padding: 16px; border: 1px dashed var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-tertiary); font-size: var(--font-size-xs); text-align: center; }
-.pick-create-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 24px; background: rgb(0 0 0 / .68); backdrop-filter: blur(5px); }
-.pick-create-dialog { display: flex; width: min(610px, 100%); max-height: min(740px, 90vh); flex-direction: column; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 24px 80px rgb(0 0 0 / .42); }
+.pick-create-dialog { display: flex; width: min(610px, 100%); max-height: min(740px, 90vh); flex-direction: column; overflow: hidden; background: var(--dialog-surface); }
 .pick-create-dialog > header { display: flex; align-items: center; justify-content: space-between; padding: 16px 19px; border-bottom: 1px solid var(--color-border); }
 .pick-create-dialog > header > div > span { color: var(--color-primary); font-size: 9px; font-weight: 650; text-transform: uppercase; }
 .pick-create-dialog > header h2 { margin: 5px 0 0; font-size: var(--font-size-md); }

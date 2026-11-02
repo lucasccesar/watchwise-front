@@ -422,8 +422,8 @@
               @if (historyGroups().length) { <button class="profile-collapse-days" type="button" (click)="toggleHistoryDayGroups()">{{ allHistoryDaysCollapsed() ? copy.expandDays : copy.collapseDays }}</button> }
             </div>
             @if (profileFiltersOpen()) {
-              <div class="profile-toolbar-backdrop" (click)="closeProfileFilters()">
-                <section class="profile-toolbar-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-history-filter-title" (click)="$event.stopPropagation()">
+              <app-dialog-backdrop placement="bottom" (dismiss)="closeProfileFilters()">
+                <section class="profile-toolbar-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeProfileFilters()" aria-modal="true" aria-labelledby="profile-history-filter-title" (click)="$event.stopPropagation()">
                   <header><h2 id="profile-history-filter-title">{{ copy.historyFilters }}</h2><button type="button" aria-label="Fechar filtros" (click)="closeProfileFilters()">×</button></header>
                   <label>{{ copy.type }}<select [value]="historyType()" (change)="setHistoryType($any($event.target).value)"><option value="ALL">{{ copy.filterAll }}</option><option value="MOVIE">{{ copy.movies }}</option><option value="EPISODE">{{ copy.series }}</option></select></label>
                   <label>{{ copy.seriesFilter }}<select [value]="historySeries()" (change)="setHistorySeries($any($event.target).value)"><option value="">{{ copy.allSeries }}</option>@for (option of historySeriesOptions(); track option.id) { <option [value]="option.id">{{ option.title }}</option> }</select></label>
@@ -433,7 +433,7 @@
                   <label>{{ copy.sortBy }}<select [value]="historySort()" (change)="setHistorySort($any($event.target).value)"><option value="NEWEST">{{ copy.newest }}</option><option value="OLDEST">{{ copy.oldest }}</option><option value="RATING_DESC">{{ copy.highestRated }}</option><option value="RATING_ASC">{{ copy.lowestRated }}</option></select></label>
                   <button class="profile-toolbar-dialog-done" type="button" (click)="closeProfileFilters()">Concluir</button>
                 </section>
-              </div>
+              </app-dialog-backdrop>
             }
             <div class="profile-history-list">
               @for (group of historyGroups(); track group.date ?? 'undated') {
@@ -529,15 +529,15 @@
             </button>
           </div>
           @if (profileFiltersOpen()) {
-            <div class="profile-toolbar-backdrop" (click)="closeProfileFilters()">
-              <section class="profile-toolbar-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-list-filter-title" (click)="$event.stopPropagation()">
+            <app-dialog-backdrop placement="bottom" (dismiss)="closeProfileFilters()">
+              <section class="profile-toolbar-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeProfileFilters()" aria-modal="true" aria-labelledby="profile-list-filter-title" (click)="$event.stopPropagation()">
                 <header><h2 id="profile-list-filter-title">{{ listsCopy.filters }}</h2><button type="button" aria-label="Fechar filtros" (click)="closeProfileFilters()">×</button></header>
                 <label>{{ listsCopy.allLists }}<select [value]="listSource()" (change)="setProfileListSource($any($event.target).value)"><option value="ALL">{{ listsCopy.allLists }}</option><option value="CREATED">{{ listsCopy.myLists }}</option><option value="LIKED">{{ listsCopy.likedLists }}</option></select></label>
                 <label>{{ listsCopy.allTypes }}<select [value]="listItemType() ?? 'ALL'" (change)="setProfileListType($any($event.target).value)"><option value="ALL">{{ listsCopy.allTypes }}</option><option value="MOVIE">{{ listsCopy.movies }}</option><option value="SERIES">{{ listsCopy.series }}</option><option value="SEASON">{{ listsCopy.seasons }}</option><option value="EPISODE">{{ listsCopy.episodes }}</option><option value="LIST">{{ listsCopy.nestedLists }}</option></select></label>
                 <label>Ordenar por<select [value]="listSort()" (change)="setProfileListSort($any($event.target).value)"><option value="none">Sem ordem</option><option value="updatedAt">{{ listsCopy.sortRecent }}</option><option value="rank">{{ listsCopy.sortManual }}</option><option value="name">{{ listsCopy.sortName }}</option><option value="likesCount">{{ listsCopy.sortLikes }}</option><option value="itemsCount">{{ listsCopy.sortItems }}</option><option value="commentsCount">{{ listsCopy.sortComments }}</option></select></label>
                 <button class="profile-toolbar-dialog-done" type="button" (click)="closeProfileFilters()">Concluir</button>
               </section>
-            </div>
+            </app-dialog-backdrop>
           }
           <div class="profile-list-grid">
             @for (list of profileListEntries(); track list.id) {
@@ -589,8 +589,8 @@
             </button>
           </div>
           @if (profileFiltersOpen()) {
-            <div class="profile-toolbar-backdrop" (click)="closeProfileFilters()">
-              <section class="profile-toolbar-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-watchlist-filter-title" (click)="$event.stopPropagation()">
+            <app-dialog-backdrop placement="bottom" (dismiss)="closeProfileFilters()">
+              <section class="profile-toolbar-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeProfileFilters()" aria-modal="true" aria-labelledby="profile-watchlist-filter-title" (click)="$event.stopPropagation()">
                 <header><h2 id="profile-watchlist-filter-title">{{ watchlistCopy.filters }}</h2><button type="button" aria-label="Fechar filtros" (click)="closeProfileFilters()">×</button></header>
                 <label>{{ watchlistCopy.contentType }}<select [value]="watchlistType() ?? ''" (change)="setWatchlistType($any($event.target).value)"><option value="">{{ watchlistCopy.all }}</option><option value="MOVIE">{{ watchlistCopy.movies }}</option><option value="SERIES">{{ watchlistCopy.series }}</option></select></label>
                 <label>{{ watchlistCopy.genre }}<select [value]="watchlistGenre() ?? ''" (change)="setWatchlistGenre($any($event.target).value)"><option value="">{{ watchlistCopy.allGenres }}</option>@for (genre of watchlistGenreOptions(); track genre) { <option [value]="genre">{{ genre }}</option> }</select></label>
@@ -598,7 +598,7 @@
                 <label>Status<select [value]="watchlistStatus()" (change)="setWatchlistStatus($any($event.target).value)"><option value="ALL">{{ watchlistCopy.all }}</option><option value="NEW">{{ watchlistCopy.new }}</option><option value="IN_PROGRESS">{{ watchlistCopy.inProgress }}</option><option value="UPCOMING">{{ watchlistCopy.upcoming }}</option></select></label>
                 <button class="profile-toolbar-dialog-done" type="button" (click)="closeProfileFilters()">{{ watchlistCopy.done }}</button>
               </section>
-            </div>
+            </app-dialog-backdrop>
           }
           <div class="profile-poster-grid">
             @for (item of watchlist()?.content ?? []; track item.id) {

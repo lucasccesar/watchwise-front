@@ -1,9 +1,7 @@
 @import './app/features/auth/auth-shared.css';
 @import './app/layout/authenticated-layout.component.css';
-@import './app/features/home/pages/home/home.component.css';
 @import './app/features/search-content/components/header-search/header-search.component.css';
-@import './app/features/trending/pages/trending/trending.component.css';
-@import './app/features/picks/shared/picks-shared.css';
+@import './app/shared/components/dialog-backdrop/dialog-panel.css';
 
 :root {
   color-scheme: dark;
@@ -20,7 +18,10 @@
   --color-warning: #eab308;
   --color-border: var(--color-secondary);
   --color-error: #f87171;
+  --color-error-soft: #450a0a;
   --color-success: #22c55e;
+  --color-success-soft: #052e16;
+  --color-warning-soft: #422006;
   --color-chart-1: #1e3a8a;
   --color-chart-2: #1d4ed8;
   --color-chart-3: #2563eb;
@@ -36,6 +37,8 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-size-display-2xl: 72px;
   --line-height-display-2xl: 90px;
+  --font-size-display-md: 36px;
+  --line-height-display-md: 44px;
   --font-size-display-lg: 48px;
   --line-height-display-lg: 60px;
   --font-size-display-sm: 30px;
@@ -77,6 +80,11 @@
   --shadow-xl: 0 12px 24px rgb(0 0 0 / 48%);
   --shadow-2xl: 0 20px 40px rgb(0 0 0 / 52%);
   --shadow-3xl: 0 32px 64px rgb(0 0 0 / 56%);
+  --dialog-backdrop: rgb(0 0 0 / 72%);
+  --dialog-surface: var(--color-surface-secondary);
+  --dialog-border: var(--color-border);
+  --dialog-radius: var(--radius-lg);
+  --dialog-shadow: var(--shadow-xl);
 }
 
 * {

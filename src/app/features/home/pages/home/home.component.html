@@ -614,9 +614,11 @@
     </section>
 
     @if (watchLogTarget(); as target) {
-      <div class="watch-log-backdrop" (click)="closeDialog()">
+      <app-dialog-backdrop placement="top" (dismiss)="closeDialog()">
         <section
-          class="watch-log-dialog"
+          class="watch-log-dialog ww-dialog-panel"
+          appModalFocus
+          (modalDismiss)="closeDialog()"
           role="dialog"
           aria-modal="true"
           aria-labelledby="watch-log-title"
@@ -751,13 +753,15 @@
             >{{ isSaving() ? copy.saving : copy.save }}</button>
           </footer>
         </section>
-      </div>
+      </app-dialog-backdrop>
     }
 
     @if (ratingTarget(); as target) {
-      <div class="rating-modal-backdrop" (click)="closeDialog()">
+      <app-dialog-backdrop placement="top" (dismiss)="closeDialog()">
         <section
-          class="rating-dialog"
+          class="rating-dialog ww-dialog-panel"
+          appModalFocus
+          (modalDismiss)="closeDialog()"
           role="dialog"
           aria-modal="true"
           aria-labelledby="rating-dialog-title"
@@ -822,7 +826,7 @@
             >{{ isSaving() ? copy.saving : copy.save }}</button>
           </footer>
         </section>
-      </div>
+      </app-dialog-backdrop>
     }
   }
 </div>

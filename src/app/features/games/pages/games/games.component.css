@@ -83,8 +83,7 @@
 .games-state button { min-height: 40px; padding: 0 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; cursor: pointer; }
 .games-spinner { width: 25px; height: 25px; border: 2px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: games-spin .8s linear infinite; }
 @keyframes games-spin { to { transform: rotate(360deg); } }
-.games-dialog-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 18px; background: rgb(0 0 0 / 68%); }
-.games-calendar-dialog { width: min(374px, 100%); padding: 18px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); box-shadow: 0 22px 56px rgb(0 0 0 / 50%); }
+.games-calendar-dialog { width: min(374px, 100%); padding: 18px; }
 .games-calendar-dialog > header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
 .games-calendar-dialog h2 { margin: 0; font-size: var(--font-size-md); }
 .games-calendar-dialog > header button { width: 30px; height: 30px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-size: 23px; cursor: pointer; }

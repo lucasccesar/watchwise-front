@@ -16,7 +16,7 @@ type PicksLoadState = 'loading' | 'ready' | 'error';
   imports: [RouterLink, DecimalPipe, NgTemplateOutlet, PicksPageHeroComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-explore.component.html',
-  styleUrl: './picks-explore.component.css',
+  styleUrls: ['./picks-explore.component.css', '../../shared/picks-shared.css'],
 })
 export class PicksExploreComponent {
   protected readonly copy = messageCatalog['pt-BR'].picksPage;
