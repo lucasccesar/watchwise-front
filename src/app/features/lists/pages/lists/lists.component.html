@@ -1,7 +1,7 @@
 <main class="lists-page" aria-labelledby="lists-title">
   <header class="lists-hero">
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton lists-hero-skeleton" aria-hidden="true"></div> }
-    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="/zb6fM1CX41D9rF9hdgclu0peUmy.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
+    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="https://image.tmdb.org/t/p/w{size}/zb6fM1CX41D9rF9hdgclu0peUmy.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <div class="lists-hero-copy">
       <h1 id="lists-title">{{ isCommunity ? copy.communityTitle : copy.title }}</h1>
       <p class="lists-hero-count">{{ listCountLabel() }}</p>

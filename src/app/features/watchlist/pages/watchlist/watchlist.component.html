@@ -1,7 +1,7 @@
 <main class="watchlist-page" aria-labelledby="watchlist-title">
   <header class="watchlist-heading" aria-labelledby="watchlist-title">
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton watchlist-hero-skeleton" aria-hidden="true"></div> }
-    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="/dtFS7DS64umOHK6PcfabXtDaf2w.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
+    <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="https://image.tmdb.org/t/p/w{size}/dtFS7DS64umOHK6PcfabXtDaf2w.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <div class="watchlist-heading-copy">
       <h1 id="watchlist-title">{{ copy.title }}</h1>
       @if (updatedAt()) { <p class="watchlist-updated">{{ copy.updated }} {{ updatedAt() }}</p> }

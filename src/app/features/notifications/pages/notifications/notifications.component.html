@@ -1,6 +1,6 @@
 <main class="notifications-page" aria-labelledby="notifications-title">
   <header class="notifications-heading">
-    <app-responsive-banner [path]="heroBackdropPath()" fallbackPath="/9lYpkcO7WuruOXB2mn8ppC6Ecaq.jpg" />
+    <app-responsive-banner [path]="heroBackdropPath()" fallbackPath="https://image.tmdb.org/t/p/w{size}/9lYpkcO7WuruOXB2mn8ppC6Ecaq.jpg" />
     <div class="notifications-title-row">
       <h1 id="notifications-title">{{ copy.title }}</h1>
       @if (unreadCount() > 0) {
