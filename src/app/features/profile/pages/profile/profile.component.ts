@@ -15,6 +15,7 @@ import { ContentApiService } from '../../../content/data-access/content-api.serv
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
@@ -75,7 +76,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
@@ -210,7 +211,7 @@ export class ProfileComponent {
       averageScore: entries.length ? entries.reduce((sum, entry) => sum + (entry.score ?? 0), 0) / entries.length : null,
     };
   });
-  protected readonly userName = computed(() => this.profile()?.name || this.profile()?.username || this.username());
+  protected readonly userName = computed(() => this.profile()?.name || this.foundUser()?.name || this.profile()?.username || this.foundUser()?.username || this.username());
   protected readonly recentSeriesItems = computed<RecentSeriesCard[]>(() => {
     return this.recentSeriesProgress()
       .filter((entry) => this.isCompletedProgress(entry))
@@ -238,6 +239,8 @@ export class ProfileComponent {
   protected readonly recentReviewComment = (review: ProfileDiaryPreview): string | null =>
     this.reviewComments()[review.id] || review.comment || null;
   protected readonly profileHeroBackdrop = computed(() => {
+    if (this.status() !== 'ready') return undefined;
+
     const profile = this.profile();
     const summary = this.summary();
     const selectedRecent = this.mode() === 'MOVIE' ? summary?.recentReviews[0] : summary?.recentEpisodes[0];
@@ -256,7 +259,7 @@ export class ProfileComponent {
       || fallbackRecent?.card?.posterPath
       || highlightedContent?.customPosterUrl
       || highlightedContent?.posterPath;
-    return profile?.banner || fallbackImage;
+    return profile?.banner || fallbackImage || null;
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const profile = this.profile();
@@ -789,11 +792,11 @@ export class ProfileComponent {
   }
 
   protected follow(): void {
-    const profile = this.profile();
-    if (!profile || this.followBusy() || this.followState() === 'SELF') return;
+    const userId = this.profile()?.id ?? this.foundUser()?.id;
+    if (!userId || this.followBusy() || this.followState() === 'SELF') return;
     const following = !this.isFollowing();
     this.followBusy.set(true);
-    this.profileApi.setFollow(profile.id, following).subscribe({
+    this.profileApi.setFollow(userId, following).subscribe({
       next: (result: unknown) => {
         const status = typeof result === 'object' && result !== null && 'status' in result
           ? String((result as { status: unknown }).status)
@@ -804,6 +807,10 @@ export class ProfileComponent {
         this.profile.update((user) => user ? {
           ...user,
           viewerRelation: nextState === 'FOLLOWING' ? 'FOLLOWING' : 'NOT_FOLLOWING',
+          followersCount: Math.max(0, (user.followersCount ?? 0) + (following && nextState === 'FOLLOWING' ? 1 : !following ? -1 : 0)),
+        } : user);
+        this.foundUser.update((user) => user ? {
+          ...user,
           followersCount: Math.max(0, (user.followersCount ?? 0) + (following && nextState === 'FOLLOWING' ? 1 : !following ? -1 : 0)),
         } : user);
         this.followBusy.set(false);
@@ -1132,7 +1139,13 @@ export class ProfileComponent {
         this.followState.set(found.ownedByViewer ? 'SELF' : found.viewerFollowStatus === 'ACCEPTED' ? 'FOLLOWING' : found.viewerFollowStatus === 'PENDING' ? 'PENDING' : 'NOT_FOLLOWING');
         this.followsViewer.set(found.followsViewer);
         if (!found.profileDetailsVisible) {
-          this.status.set('private');
+          this.profileApi.getUser(found.id).subscribe({
+            next: (profile) => {
+              this.profile.set(profile);
+              this.status.set('private');
+            },
+            error: () => this.status.set('private'),
+          });
           return;
         }
         this.profileApi.getUser(found.id).subscribe({

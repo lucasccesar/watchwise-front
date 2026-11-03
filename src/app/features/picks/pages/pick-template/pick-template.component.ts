@@ -1,10 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksOptionView, PicksTemplateDetail, PicksTemplatePickView } from '../../data-access/picks-api.service';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 
 type PickTemplateStatus = 'loading' | 'ready' | 'error';
 type CommunitySort = 'RECENT' | 'POPULAR';
@@ -12,7 +16,7 @@ type CommunitySort = 'RECENT' | 'POPULAR';
 @Component({
   selector: 'app-pick-template',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent],
+  imports: [NgTemplateOutlet, RouterLink, ContentImageActionsComponent, PageSkeletonComponent, CommentItemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pick-template.component.html',
   styleUrl: './pick-template.component.css',
@@ -27,6 +31,7 @@ export class PickTemplateComponent {
   protected readonly myPicks = signal<PicksTemplatePickView[]>([]);
   protected readonly communityPicks = signal<PicksTemplatePickView[]>([]);
   protected readonly comments = signal<PicksCommentPreview[]>([]);
+  protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly optionViews = signal<ReadonlyMap<string, PicksOptionView[]>>(new Map());
   protected readonly communitySort = signal<CommunitySort>('RECENT');
   protected readonly likesBusy = signal(false);

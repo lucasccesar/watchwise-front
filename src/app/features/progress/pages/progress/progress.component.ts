@@ -17,13 +17,14 @@ import {
   ContentImageActionsComponent,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type ProgressSort = 'watched' | 'remaining';
 
 @Component({
   selector: 'app-progress',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './progress.component.html',
   styleUrl: './progress.component.css',

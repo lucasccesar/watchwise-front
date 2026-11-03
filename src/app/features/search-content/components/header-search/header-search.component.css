@@ -375,6 +375,13 @@ app-header-search.header-search-host--open {
   flex-direction: column;
 }
 
+.search-result-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .search-result-title,
 .search-result-meta {
   overflow: hidden;
@@ -383,10 +390,23 @@ app-header-search.header-search-host--open {
 }
 
 .search-result-title {
+  min-width: 0;
+  flex: 0 1 auto;
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: var(--line-height-sm);
+}
+
+.search-result-private-lock {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  fill: none;
+  stroke: var(--color-text-tertiary);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .search-result-meta {

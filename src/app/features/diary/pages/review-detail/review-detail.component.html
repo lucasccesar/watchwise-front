@@ -1,12 +1,12 @@
 @if (status() === 'loading') {
-  <main class="review-detail-state"><span class="review-detail-spinner" aria-hidden="true"></span><p>Carregando resenha…</p></main>
+  <app-page-skeleton variant="detail" label="Carregando resenha…" />
 } @else if (status() === 'error') {
   <main class="review-detail-state"><h1>Não foi possível abrir a resenha</h1><p>{{ errorMessage() }}</p><div><button type="button" (click)="retry()">Tentar novamente</button><a routerLink="/diary/reviews">Voltar às resenhas</a></div></main>
 } @else if (entry(); as review) {
   <main class="review-detail-page">
     <header class="review-detail-hero" [style.background-image]="backdropStyle()">
       <div class="review-detail-hero-copy">
-        <span class="review-detail-author-pill"><span>@if (reviewerPicture(); as picture) { <img [src]="picture" alt="" /> } @else { {{ initials(reviewerName()) }} }</span>{{ reviewerName() }}</span>
+        <span class="review-detail-author-pill"><span><img [src]="reviewerPicture() || '/default-user-avatar.png'" alt="" /></span>{{ reviewerName() }}</span>
         <h1 class="review-detail-title-desktop">{{ contentTitle() }}</h1>
         <h1 class="review-detail-title-mobile">Resenha</h1>
         <span class="review-detail-kicker"><i></i>Resenha<i></i></span>
@@ -28,37 +28,145 @@
           <div><h2 id="review-content-title"><a [routerLink]="contentRoute()">{{ contentTitle() }}</a></h2>@if (episodeLabel()) { <span>{{ episodeLabel() }}</span> }</div>
           @if (review.score !== null) { <strong class="review-detail-score" [attr.aria-label]="'Nota ' + review.score + ' de 10'"><span aria-hidden="true">★</span>{{ review.score }} <small>/10</small></strong> }
         </header>
-        <div class="review-detail-meta"><span>Assistido {{ formatDate(review.watchedDate) }}@if (review.watchNumber && review.watchNumber > 1) { · Reassistido {{ review.watchNumber }} vezes }</span>@if (firstCompanion(); as companion) { <span class="review-detail-companions"><span class="review-detail-companion-avatar">@if (companion.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { {{ initials(companion.name || companion.username) }} }</span>{{ watchedWithLabel() }}</span> }</div>
+        <div class="review-detail-meta"><span>Assistido {{ formatDate(review.watchedDate) }}@if (review.watchNumber && review.watchNumber > 1) { · Reassistido {{ review.watchNumber }} vezes }</span>@if (firstCompanion(); as companion) { <span class="review-detail-companions"><span class="review-detail-companion-avatar">@if (companion.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span>{{ watchedWithLabel() }}</span> }</div>
         @if (review.comment) { <p class="review-detail-text">{{ review.comment }}</p> }
         <div class="review-detail-actions">
           <button type="button" class="review-detail-like" [class.is-liked]="review.likedByMe" [attr.aria-pressed]="!!review.likedByMe" (click)="toggleReviewLike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg>{{ review.likesCount ?? 0 }} curtidas</button>
           <a class="review-detail-comments-link" href="#comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.6-.8L4 20l1.4-3.7A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z" /></svg>{{ review.commentsCount ?? comments().length }} comentários</a>
-          <div class="review-detail-share-wrap"><button type="button" class="review-detail-share" aria-label="Mais opções da resenha" title="Mais opções da resenha" [attr.aria-expanded]="shareMenuOpen()" (click)="toggleShareMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
+          @if (canEditReview()) {
+            <div class="review-detail-share-wrap">
+              <button type="button" class="review-detail-share" aria-label="Mais opções da resenha" title="Mais opções da resenha" [attr.aria-expanded]="shareMenuOpen()" aria-haspopup="menu" (click)="toggleShareMenu()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+              @if (shareMenuOpen()) {
+                <div class="review-detail-share-menu" role="menu">
+                  <button type="button" role="menuitem" (click)="openReviewEditor()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z" /></svg>Editar resenha</button>
+                  <button type="button" role="menuitem" (click)="copyReviewLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4m3 7a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19" /></svg>{{ copiedLink() ? 'Link copiado' : 'Copiar link da resenha' }}</button>
+                  <button type="button" role="menuitem" (click)="shareReviewPreview($event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21" /></svg>Compartilhar prévia</button>
+                </div>
+              }
+            </div>
+          } @else if (reviewModerationAuthor(); as author) {
+            <app-social-actions-menu mode="review" [author]="author" [itemId]="review.id" [itemText]="review.comment || ''" />
+          }
         </div>
       </article>
     </section>
 
     <section class="review-detail-comments" id="comments" aria-labelledby="review-comments-title">
       <h2 id="review-comments-title">Comentários <span>{{ review.commentsCount ?? comments().length }}</span></h2>
+      <ng-template #commentNode let-node let-depth="depth">
+        @let comment = node.comment;
+        <app-comment-item [authorName]="comment.user.name || comment.user.username" [authorUsername]="comment.user.username" [authorPicture]="comment.user.profilePicture" [createdAt]="comment.createdAt" [timeLabel]="formatTime(comment.createdAt)" [replyingTo]="comment.parentCommentId ? replyTargetName(comment) : null" [depth]="depth" [hasReplies]="node.replies.length > 0" [commentId]="'comment-' + comment.id">
+              <div comment-menu class="review-comment-menu-wrap">@if (comment.user.id !== currentUser()?.id) { <app-social-actions-menu mode="comment" [author]="comment.user" [itemId]="comment.id" [itemText]="comment.text" (actionCompleted)="handleCommentModeration($event)" /> } @else { <button type="button" aria-label="Opções do comentário" [attr.aria-expanded]="commentMenuId() === comment.id" (click)="toggleCommentMenu(comment.id)">···</button>@if (commentMenuId() === comment.id) { <div class="review-comment-menu" role="menu"><button type="button" role="menuitem" (click)="copyCommentLink(comment)">Copiar link</button></div> } }</div>
+              <div comment-body><p [class.ww-comment-spoiler]="comment.containsSpoiler">{{ comment.text }}</p></div>@if (comment.containsSpoiler) { <small comment-extra>Contém spoiler</small> }
+              <div comment-actions class="review-comment-actions"><button type="button" class="review-comment-like ww-comment-like" [class.is-liked]="comment.likedByMe" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg><span>{{ comment.likesCount }}</span></button><button type="button" (click)="startReply(comment)">Responder</button></div>
+              @if (replyTo()?.id === comment.id) {
+                <form comment-compose class="review-comment-reply-form" (submit)="submitComment($event, comment)">
+                  <span class="review-comment-avatar review-comment-avatar--viewer"><img [src]="currentUser()?.profilePicture || '/default-user-avatar.png'" alt="" /></span>
+                  <div class="review-comment-compose">
+                    <div class="review-reply-context"><span>Respondendo a {{ comment.user.name || comment.user.username }}</span></div>
+                    <div class="review-comment-entry-row"><div class="review-comment-input-wrap"><textarea [id]="'diary-review-reply-' + comment.id" [attr.aria-label]="'Resposta para ' + (comment.user.name || comment.user.username)" [value]="replyDraft()" (input)="setReplyDraft($event)" placeholder="Escreva uma resposta…" maxlength="500"></textarea><small class="review-comment-character-count">{{ replyDraft().length }}/500</small></div></div>
+                    @if (replyError()) { <p class="review-comment-error" role="alert">{{ replyError() }}</p> }
+                    <div class="review-comment-submit"><button type="button" class="review-comment-cancel" (click)="cancelReply()">Cancelar</button><button type="submit" [attr.aria-label]="pendingComments() ? 'Publicando resposta' : 'Responder'" [disabled]="!replyDraft().trim() || pendingComments()"><span class="review-submit-label">{{ pendingComments() ? 'Publicando…' : 'Responder' }}</span></button></div>
+                  </div>
+                </form>
+              }
+          @if (node.replies.length) {
+            <div comment-replies>
+              @for (reply of node.replies; track reply.comment.id) {
+                <ng-container [ngTemplateOutlet]="commentNode" [ngTemplateOutletContext]="{$implicit: reply, depth: depth + 1}"></ng-container>
+              }
+            </div>
+          }
+        </app-comment-item>
+      </ng-template>
       <form class="review-comment-form" (submit)="submitComment($event)">
-        <span class="review-comment-avatar review-comment-avatar--viewer">{{ initials(currentUser()?.name || currentUser()?.username) }}</span>
-        <div class="review-comment-compose"><textarea id="diary-review-comment" [value]="commentDraft()" (input)="setCommentDraft($event)" [placeholder]="replyTo() ? 'Escreva uma resposta…' : 'Adicione um comentário…'" maxlength="500"></textarea>@if (replyTo(); as target) { <div class="review-reply-context">Respondendo a {{ target.user.name || target.user.username }} <button type="button" aria-label="Cancelar resposta" (click)="replyTo.set(null)">×</button></div> }<div class="review-comment-submit"><button type="submit" [attr.aria-label]="pendingComments() ? 'Publicando comentário' : replyTo() ? 'Responder' : 'Comentar'" [disabled]="!commentDraft().trim() || pendingComments()"><span class="review-submit-label">{{ pendingComments() ? 'Publicando…' : replyTo() ? 'Responder' : 'Comentar' }}</span><span class="review-submit-icon" aria-hidden="true">➤</span></button></div></div>
+        <span class="review-comment-avatar review-comment-avatar--viewer"><img [src]="currentUser()?.profilePicture || '/default-user-avatar.png'" alt="" /></span>
+        <div class="review-comment-compose">
+          <div class="review-comment-entry-row">
+            <div class="review-comment-input-wrap"><textarea id="diary-review-comment" [value]="commentDraft()" (input)="setCommentDraft($event)" placeholder="Adicione um comentário…" maxlength="500"></textarea><small class="review-comment-character-count">{{ commentDraft().length }}/500</small></div>
+            <div class="review-comment-submit"><button type="submit" [attr.aria-label]="pendingComments() ? 'Publicando comentário' : 'Comentar'" [disabled]="!commentDraft().trim() || pendingComments()"><span class="review-submit-label">{{ pendingComments() ? 'Publicando…' : 'Comentar' }}</span></button></div>
+          </div>
+        </div>
       </form>
       @if (commentError()) { <p class="review-comment-error" role="alert">{{ commentError() }}</p> }
-      @if (commentsStatus() === 'loading') { <p class="review-comment-state">Carregando comentários…</p> }
+      @if (commentsStatus() === 'loading') { <app-page-skeleton variant="rows" [compact]="true" label="Carregando comentários…" /> }
       @else if (commentsStatus() === 'error') { <p class="review-comment-state">{{ commentError() }}</p> }
       @else if (comments().length) {
-        <div class="review-comment-list" [class.show-all]="allCommentsVisible()">
-          @for (comment of comments(); track comment.id) {
-            <article class="review-comment" [class.review-comment--reply]="!!comment.parentCommentId" [id]="'comment-' + comment.id">
-              <a class="review-comment-avatar" [routerLink]="['/users', comment.user.username]">@if (comment.user.profilePicture) { <img [src]="comment.user.profilePicture" alt="" /> } @else { {{ initials(comment.user.name || comment.user.username) }} }</a>
-              <div class="review-comment-content"><header><a [routerLink]="['/users', comment.user.username]">{{ comment.user.name || comment.user.username }}</a><time>{{ formatTime(comment.createdAt) }}</time><div class="review-comment-menu-wrap"><button type="button" aria-label="Opções do comentário" [attr.aria-expanded]="commentMenuId() === comment.id" (click)="toggleCommentMenu(comment.id)">···</button>@if (commentMenuId() === comment.id) { <div class="review-comment-menu" role="menu"><button type="button" role="menuitem" (click)="copyCommentLink(comment)">Copiar link</button></div> }</div></header><p [class.review-comment-spoiler]="comment.containsSpoiler">{{ comment.text }}</p>@if (comment.containsSpoiler) { <small>Contém spoiler</small> }<div class="review-comment-actions"><button type="button" [class.is-liked]="comment.likedByMe" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)">♡ {{ comment.likesCount }}</button><button type="button" (click)="startReply(comment)">Responder</button></div></div>
+        <div class="review-comment-list ww-comment-list" [class.show-all]="allCommentsVisible()">
+          @for (thread of commentThreads(); track thread.root.comment.id) {
+            <article class="review-comment-thread">
+              <ng-container [ngTemplateOutlet]="commentNode" [ngTemplateOutletContext]="{$implicit: thread.root, depth: 0}"></ng-container>
             </article>
           }
         </div>
-        @if (comments().length > 2) { <button class="review-view-all-comments" type="button" (click)="toggleAllComments()">{{ allCommentsVisible() ? 'Mostrar menos' : 'Ver todos os ' + comments().length + ' comentários' }}</button> }
-      } @else { <p class="review-comment-state">Ainda não há comentários. Comece a conversa.</p> }
+        @if (commentThreads().length > 2) { <button class="review-view-all-comments" type="button" (click)="toggleAllComments()">{{ allCommentsVisible() ? 'Mostrar menos' : 'Ver todos os ' + comments().length + ' comentários' }}</button> }
+      } @else { <p class="review-comment-state ww-empty-message">Ainda não há comentários. Comece a conversa.</p> }
     </section>
   </main>
-  @if (shareMenuOpen()) { <div class="review-share-overlay" (click)="toggleShareMenu()"><section class="review-share-sheet" role="dialog" aria-modal="true" aria-labelledby="review-share-title" (click)="$event.stopPropagation()"><span class="review-share-handle" aria-hidden="true"></span><h2 id="review-share-title">Opções da resenha</h2><button type="button" (click)="copyReviewLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4m3 7a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19"/></svg>{{ copiedLink() ? 'Link copiado' : 'Copiar link' }}</button></section></div> }
+  @if (editReviewOpen()) {
+    <app-dialog-backdrop placement="top" (dismiss)="editReviewOpen.set(false)">
+      <section class="review-edit-dialog ww-dialog-panel" role="dialog" appModalFocus aria-modal="true" aria-labelledby="review-edit-title" (click)="$event.stopPropagation()">
+        <button class="review-edit-close" type="button" aria-label="Fechar" (click)="editReviewOpen.set(false)">×</button>
+        <header class="review-edit-header"><div><h2 id="review-edit-title">Editar resenha</h2><span>{{ editReviewSubtitle() }}</span></div></header>
+        <div class="review-edit-controls">
+          <div class="review-edit-date-picker">
+            <button class="review-edit-date" type="button" [attr.aria-label]="calendarCopy.chooseWatchDate" aria-haspopup="dialog" [attr.aria-expanded]="editReviewCalendarOpen()" [disabled]="editReviewBusy()" (click)="toggleEditReviewCalendar()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></svg>
+              <span><span>{{ calendarCopy.watchedOn }}</span> {{ formatDate(editReviewDate()) }}</span>
+              <svg class="review-edit-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            @if (editReviewCalendarOpen()) {
+              <div class="review-edit-calendar" role="dialog" [attr.aria-label]="calendarCopy.chooseWatchDate">
+                <div class="review-edit-calendar-header">
+                  <button type="button" [attr.aria-label]="calendarCopy.previousMonth" [disabled]="editReviewBusy()" (click)="changeEditReviewCalendarMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  <span>{{ editReviewMonthLabel() }}</span>
+                  <button type="button" [attr.aria-label]="calendarCopy.nextMonth" [disabled]="!canAdvanceEditReviewCalendar() || editReviewBusy()" (click)="changeEditReviewCalendarMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                </div>
+                <div class="review-edit-calendar-grid review-edit-calendar-weekdays" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
+                <div class="review-edit-calendar-grid">
+                  @for (day of editReviewCalendarDays(); track day.date) {
+                    @if (day.inMonth) {
+                      <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled || editReviewBusy()" [class.review-edit-calendar-day--selected]="day.selected" (click)="selectEditReviewDate(day.date)">{{ day.day }}</button>
+                    } @else { <span aria-hidden="true"></span> }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <label class="review-edit-rewatch"><input type="checkbox" [checked]="editReviewRewatch()" (change)="setEditReviewRewatch($event)" /> Já assisti antes</label>
+        </div>
+        @if (entry()?.content?.type === 'MOVIE') {
+          <label class="ww-theater-toggle review-edit-theater">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7C3 5.9 3.9 5 5 5h14c1.1 0 2 .9 2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v2c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-2c1.66 0 3-1.34 3-3S4.66 9 3 9Z"/><path d="M14 5v2m0 4v2m0 4v2"/></svg>
+            <span>Assisti no cinema</span>
+            <input type="checkbox" role="switch" [checked]="editReviewWatchedInTheater()" (change)="setEditReviewWatchedInTheater($event)" />
+          </label>
+        }
+        <div class="review-edit-companions" role="group" aria-label="Assistiu com">
+          <span>Assistiu com</span>
+          <div>
+            @if (editReviewWatchedWith().length) {
+              @for (person of editReviewWatchedWith(); track person.id) {
+                <span class="review-edit-companion-chip">
+                  <span class="review-edit-companion-avatar">@if (person.profilePicture) { <img [src]="person.profilePicture" alt="" /> } @else { {{ (person.name || person.username).slice(0, 1) }} }</span>
+                  {{ person.name || person.username }}
+                  <button type="button" [attr.aria-label]="'Remover ' + (person.name || person.username)" (click)="removeEditReviewCompanion(person.id)">×</button>
+                </span>
+              }
+            } @else { <span class="review-edit-just-you">Só você</span> }
+            <button class="review-edit-add-person" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Adicionar pessoa</button>
+          </div>
+        </div>
+        <fieldset class="review-edit-score"><legend>Sua nota</legend><div role="radiogroup" aria-label="Nota de 1 a 10">@for (score of ratingOptions; track score) { <button type="button" role="radio" [attr.aria-label]="'Nota ' + score + ' de 10'" [attr.aria-checked]="editReviewScore() === score" (click)="setEditReviewScore(score)"><svg viewBox="0 0 24 24" aria-hidden="true" [class.review-edit-star--selected]="editReviewScore() !== 0 && score <= editReviewScore()"><path d="m11.283 3.453.933-1.89.933 1.89 2.187 4.43c.068.138.102.207.152.26.044.048.097.086.155.113.067.031.143.042.295.065l4.891.714c.515.075.772.113.891.239.103.109.152.259.132.408-.022.171-.209.353-.581.716l-3.539 3.45c-.11.107-.165.161-.2.225a.48.48 0 0 0-.055.187c-.007.073.006.148.032.3l.835 4.872c.088.513.132.77.05.922a.5.5 0 0 1-.36.261c-.17.028-.4-.093-.86-.335l-4.375-2.3c-.136-.072-.204-.108-.276-.122a.5.5 0 0 0-.198 0c-.072.014-.14.05-.276.122l-4.375 2.3c-.46.242-.69.363-.86.335a.5.5 0 0 1-.36-.261c-.082-.153-.038-.409-.05-.922l.835-4.873c.026-.151.039-.226.032-.299a.5.5 0 0 0-.055-.187c-.035-.064-.09-.118-.2-.225l-3.539-3.45c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.164.891-.239l4.891-.714c.152-.023.228-.034.295-.065a.5.5 0 0 0 .155-.113c.05-.053.084-.122.152-.26l2.187-4.43Z" /></svg><span>{{ score }}</span></button> }</div></fieldset>
+        <label class="review-edit-review" for="review-edit-text"><span>Sua resenha</span><textarea id="review-edit-text" [value]="editReviewText()" (input)="setEditReviewText($event)" maxlength="20000"></textarea></label>
+        @if (editReviewError()) { <p class="review-edit-error" role="alert">{{ editReviewError() }}</p> }
+        <footer><button type="button" [disabled]="editReviewBusy()" (click)="editReviewOpen.set(false)">Cancelar</button><button class="review-edit-save" type="button" [disabled]="editReviewBusy()" (click)="saveReviewEdit()">{{ editReviewBusy() ? 'Salvando…' : 'Salvar resenha' }}</button></footer>
+      </section>
+    </app-dialog-backdrop>
+  }
+  @if (sharePreviewOpen()) {
+    @if (shareReviewModel(); as model) {
+      <app-share-review-dialog [model]="model" [copy]="shareCopy" [returnFocusTarget]="shareMenuOpener()" (closed)="closeShareReviewPreview()" />
+    }
+  }
 }

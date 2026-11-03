@@ -59,9 +59,13 @@
       </button>
     </section>
   } @else if (summary(); as data) {
+    @if (actionFeedback(); as feedback) {
+      <p class="home-action-feedback" [class.home-action-feedback--error]="feedback.error" [attr.role]="feedback.error ? 'alert' : 'status'">
+        {{ feedback.message }}
+      </p>
+    }
     <section class="home-hero" aria-labelledby="home-title">
       <app-responsive-banner
-        class="home-hero-backdrop"
         [path]="data.latestWatchedBackdropPath"
         fallbackPath="https://image.tmdb.org/t/p/w{size}/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg"
       />
@@ -152,7 +156,7 @@
                   [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''"
                   [optionsLabel]="copy.contentOptions"
                   [expanded]="openContentMenuId() === 'continue:' + episode.seriesTmdbId"
-                  [actions]="episodeContentActions"
+                  [actions]="continueContentActions(episode)"
                   (toggle)="toggleContentMenu($event, 'continue:' + episode.seriesTmdbId)"
                   (actionSelected)="handleEpisodeContentAction(episode, $event)"
                 />
@@ -173,7 +177,7 @@
           }
         </div>
       } @else {
-        <p class="empty-state">{{ copy.noProgress }}</p>
+        <p class="home-empty-state ww-empty-message">{{ copy.noProgress }}</p>
       }
     </section>
 
@@ -269,15 +273,17 @@
                     } @else {
                       <span class="image-placeholder" aria-hidden="true"></span>
                     }
-                    <app-content-image-actions
-                      [ratingValue]="null"
-                      [ratingLabel]="''"
-                      [optionsLabel]="copy.contentOptions + ': ' + releaseTitle(release)"
-                      [expanded]="openContentMenuId() === 'upcoming:' + trackByUpcoming($index, release)"
-                      [actions]="posterContentActions"
-                      (toggle)="toggleContentMenu($event, 'upcoming:' + trackByUpcoming($index, release))"
-                      (actionSelected)="handleUpcomingContentAction(release, $event)"
-                    />
+                    @if (upcomingSeriesTmdbId(release)) {
+                      <app-content-image-actions
+                        [ratingValue]="null"
+                        [ratingLabel]="''"
+                        [optionsLabel]="copy.contentOptions + ': ' + releaseTitle(release)"
+                        [expanded]="openContentMenuId() === 'upcoming:' + trackByUpcoming($index, release)"
+                        [actions]="upcomingContentActions"
+                        (toggle)="toggleContentMenu($event, 'upcoming:' + trackByUpcoming($index, release))"
+                        (actionSelected)="handleUpcomingContentAction(release, $event)"
+                      />
+                    }
                     <span class="next-release-type">
                       <span
                         class="next-release-type-dot"
@@ -332,39 +338,35 @@
         </h2>
         <p>{{ watchActivitySummary() }}</p>
       </div>
-      @if (hasWatchHistory()) {
-        <div class="history-chart" (mouseleave)="clearHoveredChartDay()">
-          <div class="daily-chart" role="group" [attr.aria-label]="copy.watchActivity">
-            @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
-              <div
-                class="chart-column"
-                [class.chart-column--active]="hoveredChartDayIndex() === index"
-                [class.chart-column--muted]="hoveredChartDayIndex() !== null && hoveredChartDayIndex() !== index"
-                [style.--chart-bar-height]="day.height + '%'"
-                role="img"
-                [attr.aria-label]="day.description + ': ' + chartDayCountLabel(day)"
-                (mouseenter)="setHoveredChartDay(index, day.count)"
-              >
-                <span class="chart-bar" aria-hidden="true" [style.height.%]="day.height"></span>
-                <span class="chart-tooltip" aria-hidden="true">
-                  <strong>{{ copy.watchChartCategory }}</strong>
-                  <span>{{ chartDayCountValue(day) }}</span>
-                </span>
-              </div>
-            }
-          </div>
-          <div class="chart-labels" aria-hidden="true">
-            @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
-              <span
-                class="chart-label"
-                [class.chart-label--muted]="hoveredChartDayIndex() !== null && hoveredChartDayIndex() !== index"
-              >{{ day.label }}</span>
-            }
-          </div>
+      <div class="history-chart" [class.history-chart--empty]="!hasWatchHistory()" (mouseleave)="clearHoveredChartDay()">
+        <div class="daily-chart" role="group" [attr.aria-label]="copy.watchActivity">
+          @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
+            <div
+              class="chart-column"
+              [class.chart-column--active]="hoveredChartDayIndex() === index"
+              [class.chart-column--muted]="hoveredChartDayIndex() !== null && hoveredChartDayIndex() !== index"
+              [style.--chart-bar-height]="day.height + '%'"
+              role="img"
+              [attr.aria-label]="day.description + ': ' + chartDayCountLabel(day)"
+              (mouseenter)="setHoveredChartDay(index, day.count)"
+            >
+              <span class="chart-bar" aria-hidden="true" [style.height.%]="day.height"></span>
+              <span class="chart-tooltip" aria-hidden="true">
+                <strong>{{ copy.watchChartCategory }}</strong>
+                <span>{{ chartDayCountValue(day) }}</span>
+              </span>
+            </div>
+          }
         </div>
-      } @else {
-        <p class="empty-chart">{{ copy.noHistory }}</p>
-      }
+        <div class="chart-labels" aria-hidden="true">
+          @for (day of chartDays(); track trackByDate($index, day); let index = $index) {
+            <span
+              class="chart-label"
+              [class.chart-label--muted]="hoveredChartDayIndex() !== null && hoveredChartDayIndex() !== index"
+            >{{ day.label }}</span>
+          }
+        </div>
+      </div>
       <div class="genre-section">
         <h3>{{ copy.byGenre }}</h3>
         @if (genreBreakdown().length > 0) {
@@ -402,7 +404,7 @@
             }
           </ol>
         } @else {
-          <p class="empty-genre">{{ copy.noGenres }}</p>
+          <p class="home-empty-state ww-empty-message">{{ copy.noGenres }}</p>
         }
       </div>
     </section>
@@ -443,7 +445,7 @@
                   [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''"
                   [optionsLabel]="copy.contentOptions"
                   [expanded]="openContentMenuId() === 'recent:' + entry.id"
-                  [actions]="recentContentActions"
+                  [actions]="recentContentActions(entry)"
                   (toggle)="toggleContentMenu($event, 'recent:' + entry.id)"
                   (actionSelected)="handleRecentContentAction(entry, $event)"
                 />
@@ -524,7 +526,7 @@
           }
         </div>
       } @else {
-        <p class="empty-state">{{ copy.emptyRecentlyWatched }}</p>
+          <p class="home-empty-state ww-empty-message">{{ copy.emptyRecentlyWatched }}</p>
       }
     </section>
 
@@ -540,7 +542,7 @@
       @if (data.socialActivities.length > 0) {
         <div class="social-list">
           @for (activity of data.socialActivities; track activity.id) {
-            <article class="social-card">
+            <article class="social-card" [class.social-card--diary]="activity.eventType === 'DIARY_ENTRY'">
               <div class="social-author">
                 <span class="social-avatar">
                   @if (activity.user.profilePicture) {
@@ -568,7 +570,7 @@
                         [ratingLabel]="''"
                         [optionsLabel]="copy.contentOptions + ': ' + (activity.card?.title || activity.targetLabel || copy.titleUnavailable)"
                         [expanded]="openContentMenuId() === 'social:' + activity.id"
-                        [actions]="posterContentActions"
+                        [actions]="socialContentActions"
                         (toggle)="toggleContentMenu($event, 'social:' + activity.id)"
                         (actionSelected)="handleSocialContentAction(activity, $event)"
                       />
@@ -577,30 +579,54 @@
                 } @else if (activity.card?.previewStatus === 'PARTIAL' || activity.card?.previewStatus === 'UNAVAILABLE') {
                   <span class="social-poster social-poster--placeholder">{{ activity.card?.previewStatus === 'PARTIAL' ? copy.partialPreview : copy.unavailablePreview }}</span>
                 }
-                <div class="social-content-copy">
-                  <div>
+                <div class="social-content-copy" [class.social-content-copy--diary]="activity.eventType === 'DIARY_ENTRY'">
+                  <div class="social-content-heading" [class.social-content-heading--diary]="activity.eventType === 'DIARY_ENTRY'">
                     <h3>
                       @if (activity.content?.type === 'MOVIE' && activity.content.tmdbId) {
-                        <a class="home-content-title-link" [routerLink]="['/content/movie', activity.content.tmdbId]">{{ activity.card?.title || activity.targetLabel || copy.titleUnavailable }}</a>
+                        <a class="home-content-title-link" [routerLink]="['/content/movie', activity.content.tmdbId]">{{ socialActivityTitle(activity) }}</a>
                       } @else {
-                        {{ activity.card?.title || activity.targetLabel || copy.titleUnavailable }}
+                        {{ socialActivityTitle(activity) }}
                       }
                     </h3>
-                    <span>{{ socialSubtitle(activity) }}</span>
+                    <span class="social-activity-subtitle">{{ socialSubtitle(activity) }}</span>
+                    @if (activity.eventType === 'DIARY_ENTRY' && activity.score != null) {
+                      <span class="social-rating" [attr.aria-label]="socialCopy.rating + ' ' + formatNumber(activity.score) + ' de 10'">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" /></svg>
+                        {{ formatNumber(activity.score) }} <span>/ 10</span>
+                      </span>
+                    }
                   </div>
+                  @if (activity.eventType === 'DIARY_ENTRY' && activity.comment?.trim()) {
+                    <p class="social-review">{{ activity.comment }}</p>
+                  }
                   @if (activity.card?.previewStatus === 'PARTIAL') {
                     <span class="preview-status">{{ copy.partialPreview }}</span>
                   }
-                  @if (activity.content) {
+                  @if (activity.content && activity.eventType !== 'DIARY_ENTRY') {
                     <span class="social-activity-context">{{ activityVerb(activity) }}</span>
                   }
                 </div>
               </div>
               <div class="social-actions" aria-label="{{ copy.socialActivities }}">
-                <span class="social-count social-count--likes">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
-                  {{ formatNumber(activity.likesCount) }}
-                </span>
+                @if (activity.eventType === 'DIARY_ENTRY') {
+                  <button
+                    class="social-count social-count--likes social-like-button"
+                    type="button"
+                    [class.is-liked]="activity.likedByMe === true"
+                    [disabled]="socialLikeUnavailable(activity) || socialLikeBusy(activity)"
+                    [attr.aria-label]="socialLikeUnavailable(activity) ? socialCopy.likeUnavailable : activity.likedByMe ? socialCopy.unlike : socialCopy.like"
+                    [attr.aria-pressed]="activity.likedByMe === true"
+                    (click)="toggleDiaryLike(activity)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+                    {{ formatNumber(activity.likesCount) }}
+                  </button>
+                } @else {
+                  <span class="social-count social-count--likes">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+                    {{ formatNumber(activity.likesCount) }}
+                  </span>
+                }
                 <span class="social-count">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" /></svg>
                   {{ formatNumber(activity.commentsCount) }}
@@ -611,7 +637,7 @@
           }
         </div>
       } @else {
-        <p class="empty-state">{{ copy.emptySocial }}</p>
+        <p class="home-empty-state ww-empty-message">{{ copy.emptySocial }}</p>
       }
     </section>
 
@@ -628,7 +654,7 @@
         >
           <header class="watch-log-header">
             <div>
-              <h2 id="watch-log-title">{{ copy.markWatched }}</h2>
+              <h2 id="watch-log-title">{{ target.dialogTitle }}</h2>
               <span>{{ target.title }}<span aria-hidden="true"> · </span>{{ target.subtitle }}</span>
             </div>
             <button
@@ -771,7 +797,7 @@
         >
           <header class="watch-log-header">
             <div>
-              <h2 id="rating-dialog-title">{{ copy.rate }}</h2>
+              <h2 id="rating-dialog-title">{{ target.editing ? copy.editRating : copy.rate }}</h2>
               <span>{{ target.title }}<span aria-hidden="true"> · </span>{{ target.subtitle }}</span>
             </div>
             <button

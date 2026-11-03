@@ -7,6 +7,7 @@ import { AuthSessionService } from '../../../../core/session/session.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type ListMenu = 'source' | 'type' | 'sort' | null;
 type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
@@ -14,7 +15,7 @@ type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'c
 @Component({
   selector: 'app-lists',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './lists.component.html',
   styleUrl: './lists.component.css',
@@ -87,7 +88,7 @@ export class ListsComponent {
         });
     this.request = request.subscribe({
       next: (page) => {
-        const backdropPath = page.backdropPath;
+        const backdropPath = page.backdropPath ?? null;
         this.heroBackdropPath.set(backdropPath);
         this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
         this.heroBackdropFailed.set(false);

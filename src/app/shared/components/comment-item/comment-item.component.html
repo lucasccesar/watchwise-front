@@ -1,0 +1,41 @@
+<article
+  class="ww-comment-item ww-comment-node"
+  [class.ww-comment-node--reply]="depth() > 0"
+  [class.has-replies]="hasReplies()"
+>
+  <div class="ww-comment" [class.ww-comment--reply]="depth() > 0" [id]="commentId()">
+    @if (authorUsername(); as username) {
+      <a class="ww-comment-avatar" [routerLink]="['/users', username]">
+        <img [src]="authorPicture() || '/default-user-avatar.png'" alt="" loading="lazy" />
+      </a>
+    } @else {
+      <span class="ww-comment-avatar">
+        <img [src]="authorPicture() || '/default-user-avatar.png'" alt="" loading="lazy" />
+      </span>
+    }
+    <div class="ww-comment-content">
+      <header>
+        @if (authorUsername(); as username) {
+          <span class="ww-comment-author">
+            <a [routerLink]="['/users', username]">{{ authorName() }}</a>
+            <small>&#64;{{ username }}</small>
+          </span>
+        } @else {
+          <span class="ww-comment-author"><strong>{{ authorName() }}</strong></span>
+        }
+        @if (replyingTo()) { <span class="ww-comment-replying">Respondendo a {{ replyingTo() }}</span> }
+        @if (timeLabel() || createdAt()) {
+          <time [attr.datetime]="createdAt()">{{ timeLabel() || createdAt() }}</time>
+        }
+        <ng-content select="[comment-menu]" />
+      </header>
+      <ng-content select="[comment-body]" />
+      <ng-content select="[comment-extra]" />
+      <ng-content select="[comment-actions]" />
+      <ng-content select="[comment-compose]" />
+    </div>
+  </div>
+  @if (hasReplies()) {
+    <div class="ww-comment-replies"><ng-content select="[comment-replies]" /></div>
+  }
+</article>

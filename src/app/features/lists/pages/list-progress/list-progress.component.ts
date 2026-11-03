@@ -7,6 +7,7 @@ import { AuthSessionService } from '../../../../core/session/session.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ListProgressData, ListSeriesProgress, ListsApiService } from '../../data-access/lists-api.service';
 
 type ProgressSort = 'watched' | 'remaining' | 'title';
@@ -15,7 +16,7 @@ type ListProgressItem = ListProgressData['items'][number];
 @Component({
   selector: 'app-list-progress',
   standalone: true,
-  imports: [DecimalPipe, LowerCasePipe, RouterLink, ContentImageActionsComponent],
+  imports: [DecimalPipe, LowerCasePipe, RouterLink, ContentImageActionsComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-progress.component.html',
   styleUrl: './list-progress.component.css',

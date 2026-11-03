@@ -1,4 +1,9 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { NgTemplateOutlet } from '@angular/common';
+import { SocialActionsMenuComponent, SocialActionMenuEvent } from '../../../../shared/components/social-actions-menu/social-actions-menu.component';
+import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,7 +24,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-  imports: [ModalFocusDirective, RouterLink, ContentImageActionsComponent, SharePreviewComponent],
+    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, SocialActionsMenuComponent, CommentItemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
@@ -95,7 +100,7 @@ export class ListDetailComponent {
   protected readonly canManage = signal(false);
   protected readonly genreOptions = computed(() => [...new Set((this.detail()?.items.content ?? []).flatMap((item) => item.card?.genres ?? []))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
   protected readonly items = computed(() => this.detail()?.items.content ?? []);
-  protected readonly topLevelComments = computed(() => this.comments().filter((comment) => !comment.parentCommentId));
+  protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly imageActions: readonly ContentImageAction[] = [
     { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
     { id: 'remove-item', label: this.copy.removeItem, icon: 'trash' },
@@ -402,6 +407,26 @@ export class ListDetailComponent {
       if (next.has(comment.id)) next.delete(comment.id); else next.add(comment.id);
       return next;
     });
+  }
+
+  protected handleCommentModeration(event: SocialActionMenuEvent): void {
+    if (event.action !== 'blocked') return;
+    const removedIds = new Set(this.comments().filter((comment) => comment.user.id === event.userId).map((comment) => comment.id));
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const comment of this.comments()) {
+        if (comment.parentCommentId && removedIds.has(comment.parentCommentId) && !removedIds.has(comment.id)) {
+          removedIds.add(comment.id);
+          changed = true;
+        }
+      }
+    }
+    this.comments.update((comments) => comments.filter((comment) => !removedIds.has(comment.id)));
+    this.detail.update((detail) => detail ? {
+      ...detail,
+      commentsCount: Math.max(0, detail.commentsCount - removedIds.size),
+    } : detail);
   }
 
   protected toggleCommentLike(comment: ListComment): void {

@@ -24,11 +24,11 @@
   }
 
   @if (status() === 'loading') {
-    <div class="progress-state" role="status">{{ copy.loading }}</div>
+    <app-page-skeleton variant="profile" [label]="copy.loading" />
   } @else if (status() === 'error') {
     <section class="progress-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (items().length === 0) {
-    <section class="progress-state progress-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
+    <section class="progress-state progress-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
   } @else {
     <section class="progress-controls" aria-label="{{ copy.controls }}">
       <div class="progress-sort-group">

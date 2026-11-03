@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, Subscription, switchMap } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
@@ -15,13 +16,16 @@ import {
   SeriesChildCard,
   SeriesPage,
 } from '../../data-access/content-api.service';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, SharePreviewComponent],
+  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, CommentItemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',
@@ -31,6 +35,7 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly series = signal<SeriesPage | null>(null);
   protected readonly reviews = signal<ContentReview[]>([]);
   protected readonly comments = signal<ContentComment[]>([]);
+  protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly reviewPage = signal<ContentPageResult<ContentReview> | null>(null);
   protected readonly commentPage = signal<ContentPageResult<ContentComment> | null>(null);
   protected readonly reviewsLoading = signal(false);
@@ -92,13 +97,21 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly shareUrl = computed(() => `${window.location.origin}/content/series/${encodeURIComponent(this.tmdbId())}/season/${this.seasonNumber()}/episode/${this.episodeNumber()}`);
 
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(ContentApiService);
   private readonly session = inject(AuthSessionService);
+  private openShareReviewAfterLoad = false;
+  private shareReturnUrl: string | null = null;
   private request?: Subscription;
   private communityRequests = new Subscription();
   private routeRequest?: Subscription;
 
   constructor() {
+    const navigationState = this.router.getCurrentNavigation()?.extras.state;
+    this.openShareReviewAfterLoad = navigationState?.['openShareReview'] === true;
+    this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
+      ? navigationState['shareReturnUrl']
+      : null;
     this.routeRequest = this.route.paramMap.subscribe((params) => {
       const seriesTmdbId = params.get('tmdbId') ?? '';
       const season = Number(params.get('seasonNumber'));
@@ -119,6 +132,13 @@ export class EpisodeComponent implements OnDestroy {
 
   protected openSharePreview(): void {
     this.sharePreviewOpen.set(true);
+  }
+
+  protected closeSharePreview(): void {
+    this.sharePreviewOpen.set(false);
+    const returnUrl = this.shareReturnUrl;
+    this.shareReturnUrl = null;
+    if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
   protected imageUrl(path: string | null | undefined, size = 'w500'): string | null {
@@ -322,6 +342,10 @@ export class EpisodeComponent implements OnDestroy {
         this.reviewPage.set(reviews);
         this.commentPage.set(comments);
         this.status.set('ready');
+        if (this.openShareReviewAfterLoad) {
+          this.openShareReviewAfterLoad = false;
+          this.openSharePreview();
+        }
       },
       error: (error: unknown) => { this.status.set('error'); this.actionError.set(this.errorText(error)); },
     });

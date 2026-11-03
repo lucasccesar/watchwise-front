@@ -13,6 +13,7 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
         <source media="(min-width: 801px) and (max-width: 1599px)" [srcset]="images.notebook" />
         <img [src]="images.desktop" alt="" (load)="imageLoaded.emit()" (error)="imageError.emit()" />
       </picture>
+      <span class="responsive-banner-shade" aria-hidden="true"></span>
     }
   `,
   styles: `
@@ -32,9 +33,26 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
       height: 100%;
     }
 
+    picture {
+      position: relative;
+      z-index: 0;
+    }
+
     img {
       object-fit: cover;
       object-position: var(--responsive-banner-position, center);
+    }
+
+    .responsive-banner-shade {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-surface) 45%, transparent) 0%,
+        color-mix(in srgb, var(--color-surface) 80%, transparent) 62%,
+        var(--color-surface) 100%
+      );
     }
   `,
 })

@@ -21,6 +21,7 @@ export interface HomeContentCard {
   episodeNumber: number | null;
   title: string | null;
   posterPath: string | null;
+  backdropPath: string | null;
   customPosterUrl: string | null;
   releaseDate: string | null;
   releaseYear: number | null;
@@ -132,6 +133,11 @@ export interface HomeSocialActivity {
   targetLabel: string | null;
   likesCount: number | null;
   commentsCount: number | null;
+  score?: number | null;
+  comment?: string | null;
+  likedByMe?: boolean | null;
+  episodeTitle?: string | null;
+  seriesTitle?: string | null;
   createdAt: string;
   card: HomeContentCard | null;
 }
@@ -162,8 +168,15 @@ export interface DiaryEpisodeReference {
   episodeNumber: number;
 }
 
+export interface DiaryMovieReference {
+  type: 'MOVIE';
+  tmdbId: string;
+}
+
+export type DiaryContentReference = DiaryEpisodeReference | DiaryMovieReference;
+
 export interface DiaryEntryCreationRequest {
-  content: DiaryEpisodeReference;
+  content: DiaryContentReference;
   watchedDate: string;
   isRewatch: boolean;
   score?: number;

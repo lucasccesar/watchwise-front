@@ -15,7 +15,7 @@
     </header>
 
     @if (status() === 'loading') {
-      <section class="picks-state" aria-live="polite"><span class="picks-spinner" aria-hidden="true"></span><p>{{ copy.loadingPicks }}</p></section>
+      <app-page-skeleton variant="cards" [label]="copy.loadingPicks" />
     } @else if (status() === 'error') {
       <section class="picks-state"><h3>{{ copy.errorTitle }}</h3><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
     } @else if (picks()?.content?.length) {
@@ -34,7 +34,7 @@
               <div class="picks-byline">
                 <span class="picks-creator-avatar" aria-hidden="true">
                   @if (pick.picksTemplate.creator?.profilePicture) { <img [src]="pick.picksTemplate.creator?.profilePicture" alt="" /> }
-                  @else { <span>{{ creatorName(pick).slice(0, 1).toUpperCase() }}</span> }
+                  @else { <img src="/default-user-avatar.png" alt="" /> }
                 </span>
                 <span>{{ copy.byCreator }}</span>
                 @if (creatorHandle(pick); as handle) { <strong>{{ handle }}</strong> } @else { <strong>{{ creatorName(pick) }}</strong> }
@@ -71,7 +71,7 @@
         </nav>
       }
     } @else {
-      <section class="picks-empty picks-my-empty">
+      <section class="picks-empty picks-my-empty ww-empty-panel">
         <div class="picks-empty-mark" aria-hidden="true">✦</div>
         <h3>{{ copy.emptyPicksTitle }}</h3>
         <p>{{ copy.emptyPicksDescription }}</p>

@@ -22,7 +22,7 @@
     }
 
     @if (status() === 'loading') {
-      <div class="connections-state" role="status">Carregando conexões…</div>
+      <app-page-skeleton variant="connections" label="Carregando conexões…" />
     } @else if (status() === 'error') {
       <div class="connections-state connections-state--error">
         <p>{{ errorMessage() || 'Não foi possível carregar estas conexões.' }}</p>
@@ -38,7 +38,7 @@
                   @if (user.profilePicture) {
                     <img [src]="user.profilePicture" alt="" />
                   } @else {
-                    {{ userInitial(user) }}
+                    <img src="/default-user-avatar.png" alt="" />
                   }
                 </span>
                 <span class="connections-user-copy">
@@ -76,7 +76,7 @@
           </nav>
         }
       } @else {
-        <div class="connections-empty">
+        <div class="connections-empty ww-empty-panel">
           <span class="connections-empty-icon" aria-hidden="true">◎</span>
           <h2>{{ mode() === 'followers' ? 'Ainda não há seguidores' : 'Você ainda não segue ninguém' }}</h2>
           <p>{{ mode() === 'followers' ? 'Quando alguém seguir este perfil, aparecerá aqui.' : 'As pessoas que você seguir aparecerão aqui.' }}</p>

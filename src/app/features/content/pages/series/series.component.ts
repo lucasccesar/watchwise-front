@@ -35,6 +35,9 @@ import {
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
 import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'bulk' | 'lists' | 'rating' | 'videos' | null;
@@ -46,7 +49,7 @@ type RatingTarget =
 @Component({
   selector: 'app-series-content',
   standalone: true,
-  imports: [NgTemplateOutlet, ContentImageActionsComponent],
+  imports: [NgTemplateOutlet, ContentImageActionsComponent, PageSkeletonComponent, CommentItemComponent],
   templateUrl: './series.component.html',
 })
 export class SeriesComponent implements OnInit, OnDestroy {
@@ -62,6 +65,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly comments = signal<ContentComment[]>([]);
   protected readonly reviewPage = signal<ContentPageResult<ContentReview> | null>(null);
   protected readonly commentPage = signal<ContentPageResult<ContentComment> | null>(null);
+  protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly reviewStatus = signal<PageStatus>('loading');
   protected readonly commentStatus = signal<PageStatus>('loading');
   protected readonly reviewError = signal('');

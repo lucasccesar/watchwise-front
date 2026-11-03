@@ -1,6 +1,8 @@
 .product-shell {
+  display: flex;
   min-height: 100vh;
   min-height: 100dvh;
+  flex-direction: column;
   background: var(--color-surface);
 }
 
@@ -396,7 +398,7 @@
   stroke-width: 1.8;
 }
 
-a.navigation-link:hover {
+a.navigation-link:not(.navigation-link--active):hover {
   background: var(--color-secondary);
 }
 
@@ -415,11 +417,17 @@ a.navigation-link:hover {
 }
 
 .product-body {
+  display: flex;
   min-width: 0;
+  flex: 1 0 auto;
+  flex-direction: column;
 }
 
 .product-main {
+  display: flex;
   min-width: 0;
+  flex: 1 0 auto;
+  flex-direction: column;
 }
 
 .navigation-backdrop,

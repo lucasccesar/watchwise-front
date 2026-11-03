@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, forkJoin, of, Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { DiaryApiService, DiaryRecord, DiarySeriesOption } from '../../data-access/diary-api.service';
+import { ContentApiService } from '../../../content/data-access/content-api.service';
 import {
   HomeApiService,
   HomeRecentlyWatched,
@@ -41,6 +42,7 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
   reviewSource: 'DIARY' | 'CONTENT_REVIEW';
   seriesPosterPath: string | null;
   likesCount: number;
+  likedByMe: boolean;
   commentsCount: number;
   comment: string | null;
   watchedInTheater: boolean | null;
@@ -70,15 +72,18 @@ export class DiaryComponent implements OnDestroy {
   protected readonly diaryEntries = signal<DiaryGridEntry[]>([]);
   protected readonly loadingPlaceholders = Array.from({ length: 12 }, (_, index) => index);
   protected readonly reviewLoadingPlaceholders = [0, 1, 2];
+  protected readonly busyReviewLikeIds = signal<ReadonlySet<string>>(new Set());
   protected readonly activeFilter = signal<DiaryFilter>(null);
   protected readonly typeFilter = signal<DiaryTypeFilter>('all');
   protected readonly ratingMin = signal(1);
   protected readonly ratingMax = signal(10);
+  protected readonly ratingScale = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
   protected readonly ratingApplied = computed(() => this.ratingMin() > 1 || this.ratingMax() < 10);
   protected readonly selectedSeriesId = signal('');
   protected readonly sortOrder = signal<DiarySort>('newest');
   protected readonly dateFrom = signal('');
   protected readonly dateTo = signal('');
+  protected readonly selectedDateShortcut = signal<'week' | 'month' | 'year' | 'all' | null>('all');
   protected readonly theaterOnly = signal(false);
   protected readonly collapsedDays = signal<ReadonlySet<string>>(new Set());
   protected readonly grouped = signal(true);
@@ -104,20 +109,9 @@ export class DiaryComponent implements OnDestroy {
     { value: 'series', label: this.copy.seriesPlural }, { value: 'seasons', label: this.copy.seasons },
     { value: 'episodes', label: this.copy.episodes },
   ];
-  protected readonly reviewTypeOptions: readonly { value: DiaryTypeFilter; label: string }[] = [
-    { value: 'all', label: this.copy.all },
-    { value: 'movies', label: this.copy.movies },
-    { value: 'series', label: this.copy.seriesPlural },
-    { value: 'seasons', label: this.copy.seasons },
-    { value: 'episodes', label: this.copy.episodes },
-  ];
   protected readonly sortOptions: readonly { value: DiarySort; label: string }[] = [
     { value: 'newest', label: this.copy.newest }, { value: 'oldest', label: this.copy.oldest },
     { value: 'highest', label: this.copy.highestRated }, { value: 'lowest', label: this.copy.lowestRated },
-  ];
-  protected readonly reviewSortOptions: readonly { value: DiarySort; label: string }[] = [
-    { value: 'newest', label: this.copy.newest },
-    { value: 'oldest', label: this.copy.oldest },
   ];
   protected readonly totalPlays = computed(() => this.entries().length);
   protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalPlays() / this.currentPageSize())));
@@ -143,6 +137,7 @@ export class DiaryComponent implements OnDestroy {
   private readonly session = inject(AuthSessionService);
   private readonly api = inject(HomeApiService);
   private readonly diaryApi = inject(DiaryApiService);
+  private readonly contentApi = inject(ContentApiService);
   private readonly router = inject(Router);
   private request?: Subscription;
   private filterOpener?: HTMLButtonElement;
@@ -177,16 +172,16 @@ export class DiaryComponent implements OnDestroy {
     this.errorMessage.set('');
     this.request = forkJoin({
       summary: this.api.getHomeSummary(user.id),
-      backdropPath: this.diaryApi.getDiaryBackdropPath(user.id).pipe(catchError(() => of(undefined))),
       diary: this.isReviewsPage
         ? this.diaryApi.getAllReviews(user.id)
         : this.diaryApi.getAllDiaryEntries(user.id),
       series: this.diaryApi.getDiarySeries(user.id),
     }).subscribe({
-      next: ({ summary, backdropPath, diary, series }) => {
+      next: ({ summary, diary, series }) => {
         this.summary.set(summary);
+        const backdropPath = summary.latestWatchedBackdropPath;
         this.heroBackdropPath.set(backdropPath);
-        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
+        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath.trim()));
         this.heroBackdropFailed.set(false);
         this.diarySeries.set(series);
         this.page.set(1);
@@ -291,27 +286,14 @@ export class DiaryComponent implements OnDestroy {
 
   protected updateDate(value: 'from' | 'to', event: Event): void {
     const date = (event.target as HTMLInputElement).value;
+    this.selectedDateShortcut.set(null);
     if (value === 'from') this.dateFrom.set(date);
     else this.dateTo.set(date);
     this.page.set(1);
   }
 
-  protected setReviewDate(event: Event): void {
-    const date = (event.target as HTMLInputElement).value;
-    this.dateFrom.set(date);
-    this.dateTo.set(date);
-    this.page.set(1);
-    this.closeFilter();
-  }
-
-  protected clearReviewDate(): void {
-    this.dateFrom.set('');
-    this.dateTo.set('');
-    this.page.set(1);
-    this.closeFilter();
-  }
-
   protected setDateShortcut(shortcut: 'week' | 'month' | 'year' | 'all'): void {
+    this.selectedDateShortcut.set(shortcut);
     const today = new Date();
     const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     if (shortcut === 'week' || shortcut === 'month') start.setDate(start.getDate() - (shortcut === 'week' ? 6 : 29));
@@ -323,6 +305,16 @@ export class DiaryComponent implements OnDestroy {
 
   protected seriesOptions(): Array<{ id: string; title: string }> {
     return this.diarySeries().map(option => ({ id: option.seriesTmdbId, title: option.title }));
+  }
+
+  protected seriesEntriesCount(seriesId: string): number {
+    return this.diarySeries().find((option) => option.seriesTmdbId === seriesId)?.entriesCount ?? 0;
+  }
+
+  protected ratingSummary(): string {
+    return this.ratingApplied()
+      ? `${this.ratingMin()}–${this.ratingMax()}`
+      : `${this.copy.any} (1–10)`;
   }
 
   protected seriesFilterLabel(): string {
@@ -337,8 +329,7 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected typeFilterLabel(): string {
-    const options = this.isReviewsPage ? this.reviewTypeOptions : this.typeOptions;
-    return this.copy.typeFilter.replace('{value}', options.find(option => option.value === this.typeFilter())!.label);
+    return this.copy.typeFilter.replace('{value}', this.typeOptions.find(option => option.value === this.typeFilter())!.label);
   }
 
   protected reviewContext(entry: DiaryGridEntry): string {
@@ -366,9 +357,42 @@ export class DiaryComponent implements OnDestroy {
       .join(', ');
   }
 
-  protected reviewCompanionInitial(entry: DiaryGridEntry): string {
-    const name = this.reviewCompanionNames(entry);
-    return name.charAt(0).toLocaleUpperCase('pt-BR') || 'W';
+  protected isReviewLikeBusy(id: string): boolean {
+    return this.busyReviewLikeIds().has(id);
+  }
+
+  protected toggleReviewLike(entry: DiaryGridEntry): void {
+    if (this.isReviewLikeBusy(entry.id)) return;
+
+    const nextLiked = !entry.likedByMe;
+    this.updateReviewLikeState(entry.id, nextLiked);
+    this.busyReviewLikeIds.update((current) => new Set(current).add(entry.id));
+    this.contentApi.setReviewLike(entry.id, entry.reviewSource, nextLiked).subscribe({
+      next: () => this.finishReviewLikeRequest(entry.id),
+      error: () => {
+        this.updateReviewLikeState(entry.id, !nextLiked);
+        this.finishReviewLikeRequest(entry.id);
+      },
+    });
+  }
+
+  private updateReviewLikeState(id: string, liked: boolean): void {
+    this.diaryEntries.update((entries) => entries.map((entry) => {
+      if (entry.id !== id || entry.likedByMe === liked) return entry;
+      return {
+        ...entry,
+        likedByMe: liked,
+        likesCount: Math.max(0, entry.likesCount + (liked ? 1 : -1)),
+      };
+    }));
+  }
+
+  private finishReviewLikeRequest(id: string): void {
+    this.busyReviewLikeIds.update((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
   }
 
   protected sortLabel(): string {
@@ -515,6 +539,10 @@ export class DiaryComponent implements OnDestroy {
     return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
   }
 
+  protected formatUserScore(value: number): string {
+    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
+  }
+
   protected formatDuration(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const remaining = minutes % 60;
@@ -552,10 +580,6 @@ export class DiaryComponent implements OnDestroy {
 
   protected moviePlaysLabel(count: number): string {
     return this.copy.moviePlays.replace('{count}', new Intl.NumberFormat('pt-BR').format(count));
-  }
-
-  protected companionInitial(companion: DiaryReviewCompanion): string {
-    return (companion.name || companion.username || 'W').trim().charAt(0).toLocaleUpperCase('pt-BR') || 'W';
   }
 
   protected showingLabel(): string {
@@ -624,6 +648,7 @@ export class DiaryComponent implements OnDestroy {
         episodeNumber: content.episodeNumber,
         title: card.title,
         posterPath: card.posterPath,
+        backdropPath: card.backdropPath ?? null,
         customPosterUrl: card.customPosterUrl,
         releaseDate: card.releaseDate,
         releaseYear: card.releaseYear,
@@ -637,6 +662,7 @@ export class DiaryComponent implements OnDestroy {
       } : null,
       score: record.score,
       likesCount: record.likesCount,
+      likedByMe: record.likedByMe,
       commentsCount: record.commentsCount,
       comment: record.comment,
       watchedInTheater: record.watchedInTheater,

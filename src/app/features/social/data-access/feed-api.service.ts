@@ -19,6 +19,8 @@ export interface FeedCommentPreview {
   id: string;
   text: string;
   containsSpoiler?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   user: { id?: string; username?: string | null; name?: string | null; profilePicture?: string | null };
 }
 

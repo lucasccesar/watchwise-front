@@ -85,48 +85,52 @@
   @if (status() === 'loading') {
     <div class="watchlist-loading" role="status" [attr.aria-label]="copy.loading">
       <span class="visually-hidden">{{ copy.loading }}</span>
-      <section class="watchlist-grid watchlist-skeleton-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-hidden="true">
+      <ol class="watchlist-grid watchlist-skeleton-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-hidden="true">
         @for (placeholder of loadingPlaceholders; track placeholder) {
-          <div class="watchlist-card watchlist-card--skeleton">
-            <div class="watchlist-poster"><span class="watchlist-skeleton-poster watchlist-loading-shimmer"></span></div>
-            <div class="watchlist-skeleton-copy">
-              <span class="watchlist-skeleton-title watchlist-loading-shimmer"></span>
-              <span class="watchlist-skeleton-meta watchlist-loading-shimmer"></span>
-            </div>
-          </div>
+          <li class="watchlist-card watchlist-card--skeleton"><article>
+            <div class="tr-poster"><span class="watchlist-skeleton-poster watchlist-loading-shimmer"></span></div>
+            <div class="watchlist-skeleton-copy"><span class="watchlist-skeleton-title watchlist-loading-shimmer"></span><span class="watchlist-skeleton-meta watchlist-loading-shimmer"></span></div>
+          </article></li>
         }
-      </section>
+      </ol>
     </div>
   } @else if (status() === 'error') {
     <section class="watchlist-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if ((view()?.content?.length ?? 0) === 0) {
-    <section class="watchlist-state watchlist-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
+    <section class="watchlist-state watchlist-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
   } @else {
-    <nav class="watchlist-pagination" [attr.aria-label]="copy.pagination">
-      <button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-      @for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.watchlist-page-active]="pageNumber === page()" [attr.aria-current]="pageNumber === page() ? 'page' : null" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }
-      <button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
-    </nav>
-    <p class="watchlist-page-label">{{ pageLabel() }}</p>
+    <div class="watchlist-pagination-row">
+      <nav class="watchlist-pagination" [attr.aria-label]="copy.pagination">
+        <button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+        @for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.watchlist-page-active]="pageNumber === page()" [attr.aria-current]="pageNumber === page() ? 'page' : null" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }
+        <button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+      </nav>
+      <p class="watchlist-page-label">{{ pageLabel() }}</p>
+    </div>
 
-    <section class="watchlist-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-label="{{ copy.items }}">
+    <ol class="watchlist-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-label="{{ copy.items }}">
       @for (item of visibleItems(); track item.id) {
-        <article class="watchlist-card" [class.watchlist-card--busy]="busyId() === item.id" [class.watchlist-card--faded]="upcomingMode() === 'FADE' && isUpcoming(item)">
-          <div class="watchlist-poster content-image-card">
-            @if (route(item); as contentRoute) { <a class="watchlist-poster-link" [routerLink]="contentRoute" [attr.aria-label]="title(item)">@if (poster(item)) { <img [src]="poster(item)" alt="" loading="lazy" /> } @else { <span>{{ title(item) }}</span> }</a> }
+        <li class="watchlist-card tr-card content-image-card" [class.watchlist-card--busy]="busyId() === item.id" [class.watchlist-card--faded]="upcomingMode() === 'FADE' && isUpcoming(item)">
+          <article [attr.aria-label]="title(item)">
+          <div class="watchlist-poster tr-poster">
+            @if (route(item); as contentRoute) { <a class="watchlist-poster-link tr-poster-link" [routerLink]="contentRoute" [attr.aria-label]="title(item)">@if (poster(item)) { <img [src]="poster(item)" alt="" loading="lazy" /> } @else { <span class="tr-poster-empty">{{ trendingCopy.noPoster }}</span> }</a> }
             @else if (poster(item)) { <img [src]="poster(item)" alt="" loading="lazy" /> }
-            @else { <span class="watchlist-poster-fallback">{{ title(item) }}</span> }
-            @if (item.status === 'UPCOMING' && item.releaseDate) { <span class="watchlist-release-date">{{ dateLabel(item.releaseDate) }}</span> }
+            @else { <span class="tr-poster-empty">{{ trendingCopy.noPoster }}</span> }
             @let rating = cardRating(item);
-            <app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating?.label ?? ''" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="handlePosterAction(item, $event)" />
-            @if (item.status === 'IN_PROGRESS' && item.card.type === 'SERIES') { <span class="watchlist-progress-indicator" [attr.aria-label]="copy.progress.replace('{percent}', watchProgress(item).toString())"><span [style.width.%]="watchProgress(item)"></span></span> }
+            <app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="handlePosterAction(item, $event)" />
+            @if (isUpcoming(item) && item.releaseDate) { <span class="tr-upcoming-release"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2V6M8 2V6M7.8 22H16.2C17.88 22 18.72 22 19.362 21.673C19.927 21.385 20.385 20.927 20.673 20.362C21 19.72 21 18.88 21 17.2V8.8C21 7.12 21 6.28 20.673 5.638C20.385 5.074 19.927 4.615 19.362 4.327C18.72 4 17.88 4 16.2 4H7.8C6.12 4 5.28 4 4.638 4.327C4.074 4.615 3.615 5.074 3.327 5.638C3 6.28 3 7.12 3 8.8V17.2C3 18.88 3 19.72 3.327 20.362C3.615 20.927 4.074 21.385 4.638 21.673C5.28 22 6.12 22 7.8 22Z"/></svg>{{ releaseDateShort(item.releaseDate) }}</span> }
+            @if (item.card.viewerState?.watchStatus === 'WATCHED') {
+              <span class="tr-state-marker" [attr.aria-label]="trendingCopy.watched" [title]="trendingCopy.watched"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span>
+            }
           </div>
-          <div class="watchlist-card-copy">
-            <div class="watchlist-card-title-row"><a class="watchlist-card-title" [routerLink]="route(item) ?? []">{{ title(item) }}</a><span class="watchlist-card-runtime">{{ runtimeLabel(item) }}</span></div>
-            <p class="watchlist-card-year">{{ item.card.releaseYear ?? '' }}</p>
+          <div class="watchlist-card-copy tr-card-text">
+            <div class="watchlist-card-title-row tr-card-main"><strong><a class="watchlist-card-title tr-title-link" [routerLink]="route(item) ?? []">{{ title(item) }}</a></strong><span class="watchlist-card-runtime">{{ runtimeLabel(item) }}</span></div>
+            <p>{{ cardMeta(item) }}</p>
+            @if (item.card.previewStatus === 'UNAVAILABLE') { <span class="tr-preview-note">{{ trendingCopy.unavailablePreview }}</span> }
           </div>
-        </article>
+          </article>
+        </li>
       }
-    </section>
+    </ol>
   }
 </main>

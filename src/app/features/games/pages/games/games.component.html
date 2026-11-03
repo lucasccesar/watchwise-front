@@ -11,7 +11,7 @@
   </section>
 
   @if (status() === 'loading') {
-    <section class="games-state" aria-live="polite"><span class="games-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section>
+    <app-page-skeleton variant="cards" [label]="copy.loading" />
   } @else if (status() === 'error') {
     <section class="games-state"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else {

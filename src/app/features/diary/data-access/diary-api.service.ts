@@ -210,11 +210,6 @@ export class DiaryApiService {
     );
   }
 
-  getDiaryBackdropPath(userId: string): Observable<string | null | undefined> {
-    return this.getDiaryPage(userId, { page: 1, size: 1, sortBy: 'NEWEST' })
-      .pipe(map(page => page.backdropPath));
-  }
-
   getSeriesInProgress(
     userId: string,
     options: { page: number; size: number; sortBy: ProgressSortBy; direction: 'ASC' | 'DESC' },

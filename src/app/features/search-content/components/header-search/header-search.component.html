@@ -108,8 +108,8 @@
             @for (result of results(); track result.kind + ':' + result.title + ':' + $index) {
               <a
                 class="search-result"
-                [routerLink]="result.kind === 'content' && (result.scope === 'MOVIE' || result.scope === 'SERIES') ? ['/content', result.scope.toLowerCase(), result.tmdbId] : ['/search']"
-                [queryParams]="result.kind === 'content' && result.scope === 'MOVIE' ? null : resultQueryParams()"
+                [routerLink]="result.kind === 'user' && result.username ? ['/users', result.username] : result.kind === 'content' && (result.scope === 'MOVIE' || result.scope === 'SERIES') ? ['/content', result.scope.toLowerCase(), result.tmdbId] : ['/search']"
+                [queryParams]="result.kind === 'user' || result.kind === 'content' && result.scope === 'MOVIE' ? null : resultQueryParams()"
                 (click)="closeSearch(false)"
               >
                 @if (result.imageUrl) {
@@ -135,7 +135,15 @@
                   </span>
                 }
                 <span class="search-result-copy">
-                  <span class="search-result-title">{{ result.title }}</span>
+                  <span class="search-result-title-row">
+                    <span class="search-result-title">{{ result.title }}</span>
+                    @if (result.kind === 'user' && result.privateProfile) {
+                      <svg class="search-result-private-lock" viewBox="0 0 24 24" role="img" [attr.aria-label]="copy.searchPrivateUser">
+                        <rect x="4" y="10" width="16" height="11" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3" />
+                      </svg>
+                    }
+                  </span>
                   <span class="search-result-meta">{{ result.meta }}</span>
                 </span>
               </a>

@@ -1,6 +1,6 @@
 <main class="list-detail-page" aria-labelledby="list-detail-title">
   @if (status() === 'loading') {
-    <section class="list-detail-state" role="status"><span class="list-detail-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section>
+    <app-page-skeleton variant="detail" [label]="copy.loading" />
   } @else if (status() === 'error') {
     <section class="list-detail-state" role="alert"><h1>{{ copy.errorTitle }}</h1><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (detail(); as list) {
@@ -11,7 +11,7 @@
         </nav>
         <div class="list-detail-hero-copy">
           @if (owner(); as author) {
-            <a class="list-detail-owner" [routerLink]="['/users', author.username]"><span class="list-detail-avatar">@if (userAvatar(author)) { <img [src]="userAvatar(author)" alt="" /> } @else { {{ author.name.slice(0, 1) }} }</span>{{ author.name }}</a>
+            <a class="list-detail-owner" [routerLink]="['/users', author.username]"><span class="list-detail-avatar">@if (userAvatar(author)) { <img [src]="userAvatar(author)" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span>{{ author.name }}</a>
           }
           <h1 id="list-detail-title">{{ list.name }}</h1>
           <p class="list-detail-updated"><span aria-hidden="true"></span>{{ updatedLabel() }}<span aria-hidden="true"></span></p>
@@ -102,7 +102,7 @@
         }
       </ol>
     } @else if (status() === 'ready') {
-      <section class="list-detail-state list-detail-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
+      <section class="list-detail-state list-detail-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
     }
     <section id="list-comments" class="list-detail-comments" aria-labelledby="list-detail-comments-title">
       <header><h2 id="list-detail-comments-title">{{ copy.commentsTitle }}</h2><span>{{ list.commentsCount }}</span></header>
@@ -112,21 +112,21 @@
         <textarea maxlength="280" [value]="commentText()" (input)="setCommentText($event)" [placeholder]="replyingTo() ? copy.replyPlaceholder : copy.commentPlaceholder" [attr.aria-label]="replyingTo() ? copy.replyPlaceholder : copy.commentPlaceholder"></textarea>
         <div class="list-detail-comment-submit"><span>{{ commentText().length }}/280</span><button type="submit" [disabled]="!commentText().trim() || postingComment()">{{ postingComment() ? copy.commentPosting : copy.commentSubmit }}</button></div>
       </form>
-      @if (commentsLoading() && !comments().length) { <p class="list-detail-comments-state">Carregando comentários…</p> }
-      @else if (topLevelComments().length) {
-        <div class="list-detail-comment-list">
-          @for (comment of topLevelComments(); track comment.id) {
-            <article class="list-detail-comment">
-              <span class="list-detail-comment-avatar">@if (userAvatar(comment.user)) { <img [src]="userAvatar(comment.user)" alt="" loading="lazy" /> } @else { {{ comment.user.name.slice(0, 1) }} }</span>
-              <div class="list-detail-comment-body"><header><a [routerLink]="['/users', comment.user.username]">{{ comment.user.name }}</a><time [attr.datetime]="comment.createdAt">{{ relativeDate(comment.createdAt) }}</time>@if (isOwnComment(comment)) { <button type="button" [attr.aria-label]="copy.deleteComment" (click)="commentDeleteTarget.set(comment)">···</button> }</header>
-                @if (comment.containsSpoiler && !spoilerExpanded(comment)) { <button class="list-detail-spoiler" type="button" (click)="toggleSpoiler(comment)">{{ copy.showSpoiler }}</button> } @else { <p [class.list-detail-spoiler-text]="comment.containsSpoiler">{{ comment.text }}</p> }
-                <div class="list-detail-comment-actions"><button type="button" [class.active]="comment.likedByMe" [attr.aria-label]="comment.likedByMe ? copy.unlikeComment : copy.likeComment" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ comment.likesCount }}</button><button type="button" (click)="toggleReply(comment)">{{ copy.reply }}</button></div>
-                @for (reply of repliesTo(comment); track reply.id) { <article class="list-detail-comment list-detail-comment-reply"><span class="list-detail-comment-avatar">@if (userAvatar(reply.user)) { <img [src]="userAvatar(reply.user)" alt="" loading="lazy" /> } @else { {{ reply.user.name.slice(0, 1) }} }</span><div class="list-detail-comment-body"><header><a [routerLink]="['/users', reply.user.username]">{{ reply.user.name }}</a><time [attr.datetime]="reply.createdAt">{{ relativeDate(reply.createdAt) }}</time>@if (isOwnComment(reply)) { <button type="button" [attr.aria-label]="copy.deleteComment" (click)="commentDeleteTarget.set(reply)">···</button> }</header>@if (reply.containsSpoiler && !spoilerExpanded(reply)) { <button class="list-detail-spoiler" type="button" (click)="toggleSpoiler(reply)">{{ copy.showSpoiler }}</button> } @else { <p [class.list-detail-spoiler-text]="reply.containsSpoiler">{{ reply.text }}</p> }<div class="list-detail-comment-actions"><button type="button" [class.active]="reply.likedByMe" [attr.aria-label]="reply.likedByMe ? copy.unlikeComment : copy.likeComment" (click)="toggleCommentLike(reply)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ reply.likesCount }}</button></div></div></article> }
-              </div>
-            </article>
-          }
+      @if (commentsLoading() && !comments().length) { <app-page-skeleton variant="rows" [compact]="true" label="Carregando comentários…" /> }
+      @else if (commentThreads().length) {
+        <div class="list-detail-comment-list ww-comment-list">
+          <ng-template #listCommentNode let-node let-depth="depth" let-parentName="parentName">
+            @let comment = node.comment;
+            <app-comment-item [authorName]="comment.user.name || comment.user.username" [authorUsername]="comment.user.username" [authorPicture]="userAvatar(comment.user)" [createdAt]="comment.createdAt" [timeLabel]="relativeDate(comment.createdAt)" [depth]="depth" [replyingTo]="depth > 0 ? parentName : null" [commentId]="'comment-' + comment.id" [hasReplies]="node.replies.length > 0">
+              <div comment-menu>@if (isOwnComment(comment)) { <button type="button" [attr.aria-label]="copy.deleteComment" (click)="commentDeleteTarget.set(comment)">···</button> } @else { <app-social-actions-menu mode="comment" [author]="comment.user" [itemId]="comment.id" [itemText]="comment.text" (actionCompleted)="handleCommentModeration($event)" /> }</div>
+              <div comment-body>@if (comment.containsSpoiler && !spoilerExpanded(comment)) { <button class="list-detail-spoiler" type="button" (click)="toggleSpoiler(comment)">{{ copy.showSpoiler }}</button> } @else { <p [class.ww-comment-spoiler]="comment.containsSpoiler">{{ comment.text }}</p> }</div>
+              <div comment-actions><button type="button" class="ww-comment-like" [class.is-liked]="comment.likedByMe" [attr.aria-label]="comment.likedByMe ? copy.unlikeComment : copy.likeComment" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg><span>{{ comment.likesCount }}</span></button><button type="button" (click)="toggleReply(comment)">{{ copy.reply }}</button></div>
+              @if (node.replies.length) { <div comment-replies>@for (reply of node.replies; track reply.comment.id) { <ng-container [ngTemplateOutlet]="listCommentNode" [ngTemplateOutletContext]="{$implicit: reply, depth: depth + 1, parentName: comment.user.name || comment.user.username}"></ng-container> }</div> }
+            </app-comment-item>
+          </ng-template>
+          @for (thread of commentThreads(); track thread.comment.id) { <ng-container [ngTemplateOutlet]="listCommentNode" [ngTemplateOutletContext]="{$implicit: thread, depth: 0, parentName: null}"></ng-container> }
         </div>
-      } @else if (!commentsLoading()) { <p class="list-detail-comments-state">{{ copy.commentsEmpty }}</p> }
+      } @else if (!commentsLoading()) { <p class="list-detail-comments-state ww-empty-message">{{ copy.commentsEmpty }}</p> }
       @if (commentsHasNext()) { <button class="list-detail-load-comments" type="button" [disabled]="commentsLoading()" (click)="loadComments()">{{ commentsLoading() ? copy.loading : copy.loadMoreComments }}</button> }
     </section>
   }

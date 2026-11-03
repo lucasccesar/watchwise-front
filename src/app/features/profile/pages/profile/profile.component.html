@@ -1,10 +1,68 @@
 @if (status() === 'loading') {
-  <main class="profile-state" role="status">{{ copy.loading }}</main>
+  <app-page-skeleton variant="profile" [label]="copy.loading" />
 } @else if (status() === 'private') {
-  <main class="profile-state profile-state--private">
-    <div class="profile-state-icon" aria-hidden="true">◉</div>
-    <h1>{{ copy.privateProfile }}</h1>
-    <p>@{{ username() }}</p>
+  <main class="profile-page profile-page--private">
+    <section class="profile-hero">
+      <app-responsive-banner [path]="profile()?.banner ?? null" fallbackPath="https://image.tmdb.org/t/p/w{size}/sFEYsEfzTx7hhjetlNrme8B5OUo.jpg" />
+      <div class="profile-hero-actions">
+        @if (followState() !== 'SELF') {
+          <button class="profile-follow-button" type="button" [disabled]="followBusy()" (click)="follow()">
+            @if (followBusy()) { <span class="profile-spinner" aria-hidden="true"></span> }
+            {{ followState() === 'PENDING' ? copy.followPending : isFollowing() ? copy.following : copy.follow }}
+          </button>
+        }
+        <div class="profile-options">
+          <button #profileMenuButton class="profile-options-button" type="button" [attr.aria-label]="copy.profileOptions" [attr.aria-expanded]="profileMenuOpen()" (click)="toggleProfileMenu()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+          </button>
+          @if (profileMenuOpen()) {
+            <button class="profile-menu-backdrop" type="button" aria-label="Fechar menu" (click)="toggleProfileMenu()"></button>
+            <div class="profile-options-menu" role="menu">
+              @if (followState() === 'SELF') {
+                <button type="button" role="menuitem" (click)="openProfileSettings()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4 4M4 20l4-.8L19 8a2.8 2.8 0 0 0-4-4L4 15l0 5Z" /></svg><span>{{ copy.editProfile }}</span></button>
+                <button type="button" role="menuitem" (click)="copyProfileLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1l-1.2 1.2m3.1 6a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1l1.2-1.2" /></svg><span>{{ copy.copyProfileLink }}</span></button>
+                <button type="button" role="menuitem" (click)="openSharePreview($event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21" /></svg><span>{{ copy.sharePreview }}</span></button>
+              } @else {
+                <button type="button" role="menuitem" (click)="openSharePreview($event)">{{ copy.sharePreview }}</button>
+                <button type="button" role="menuitem" (click)="copyProfileLink()">{{ copy.copyProfileLink }}</button>
+                <button type="button" role="menuitem" (click)="openProfileAction('report')">{{ copy.report }} @{{ profile()?.username || foundUser()?.username || username() }}</button>
+                <button type="button" role="menuitem" (click)="openProfileAction('block')">{{ copy.block }} @{{ profile()?.username || foundUser()?.username || username() }}</button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      <div class="profile-identity">
+        <div class="profile-avatar">
+          @if (profile()?.profilePicture || foundUser()?.profilePicture; as picture) {
+            <img [src]="picture" [alt]="userName()" />
+          } @else {
+            <img src="/default-user-avatar.png" alt="" />
+          }
+        </div>
+        <h1 class="profile-private-name">
+          <span>{{ userName() }}</span>
+          <svg class="profile-private-lock" viewBox="0 0 24 24" role="img" [attr.aria-label]="copy.privateProfile"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg>
+        </h1>
+        <div class="profile-handle">
+          <span>@{{ profile()?.username || foundUser()?.username || username() }}</span>
+          @if (followsViewer()) { <span class="profile-follows-you">{{ copy.followsYou }}</span> }
+        </div>
+        <p class="profile-description">{{ profile()?.description || foundUser()?.description || '' }}</p>
+        <div class="profile-follow-counts">
+          <span><strong>{{ profile()?.followingCount ?? 0 | number }}</strong> {{ copy.followingCount }}</span>
+          <span><strong>{{ profile()?.followersCount ?? foundUser()?.followersCount ?? 0 | number }}</strong> {{ copy.followers }}</span>
+        </div>
+      </div>
+    </section>
+
+    @if (actionMessage()) { <div class="profile-feedback" role="status">{{ actionMessage() }}</div> }
+    <div class="profile-private-message-area">
+      <section class="profile-private-notice" aria-labelledby="private-profile-title">
+        <h2 id="private-profile-title">{{ copy.privateProfile }}</h2>
+        <p>{{ copy.privateProfileDescription.replace('{name}', userName()) }}</p>
+      </section>
+    </div>
   </main>
 } @else if (status() === 'error' || !profile()) {
   <main class="profile-state profile-state--error">
@@ -281,7 +339,7 @@
                             @for (person of review.watchedWith ?? []; track person.id ?? person.username ?? $index) {
                               <span class="profile-overview-review-companion">
                                 @if (person.profilePicture) { <img [src]="person.profilePicture" alt="" /> }
-                                @else { <b>{{ (person.name || person.username || '?').charAt(0).toUpperCase() }}</b> }
+@else { <img src="/default-user-avatar.png" alt="" /> }
                                 com {{ person.name || person.username }}
                               </span>
                             }
@@ -306,7 +364,7 @@
             <header class="profile-subpage-hero" [style.background-image]="profile()?.banner || profileHeroBackdrop() ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + (profile()?.banner ? imageUrl(profile()?.banner, 'w1280') : profileHeroBackdrop()) + ')' : null">
               <div class="profile-subpage-hero-copy">
                 <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
-                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                   <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
                 </a>
                 <h1>{{ copy.tabs.progress }}</h1>
@@ -373,7 +431,7 @@
             <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
               <div class="profile-subpage-hero-copy">
                 <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">
-                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                   {{ userName() }}
                 </a>
                 <h1>{{ copy.tabs.history }}</h1>
@@ -469,7 +527,7 @@
         <section class="profile-content profile-section-page">
           <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
             <div class="profile-subpage-hero-copy">
-              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }{{ userName() }}</a>
               <h1>{{ copy.tabs.reviews }}</h1>
               <p class="profile-subpage-accent">{{ diary()?.totalElements ?? 0 | number }}{{ copy.ratingCount.replace('{count}', '') }}</p>
               <p>Avaliações que {{ userName() }} escreveu sobre os filmes e séries que assistiu.</p>
@@ -492,7 +550,7 @@
         <section class="profile-content profile-section-page">
           <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
             <div class="profile-subpage-hero-copy">
-              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }{{ userName() }}</a>
               <h1>{{ copy.tabs.lists }}</h1>
               <p class="profile-subpage-accent">{{ copy.listCount.replace('{count}', asText(lists()?.totalElements ?? 0)) }}</p>
               <p>As listas que {{ userName() }} criou e as listas de outras pessoas que marcou com gostei, reunidas em um só lugar.</p>
@@ -562,7 +620,7 @@
         <section class="profile-content profile-section-page">
           <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
             <div class="profile-subpage-hero-copy">
-              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }{{ userName() }}</a>
               <h1>{{ copy.tabs.watchlist }}</h1>
               <p class="profile-subpage-accent">{{ watchlist()?.aggregate?.totalCount ?? 0 }} títulos · {{ formatDuration(watchlist()?.aggregate?.totalRuntimeMinutes) }}</p>
               <p>Filmes e séries que {{ userName() }} salvou para assistir depois, incluindo os títulos já lançados.</p>
@@ -623,7 +681,7 @@
         <section class="profile-content profile-section-page">
           <header class="profile-subpage-hero profile-subpage-hero--compact" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
             <div class="profile-subpage-hero-copy">
-              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</a>
+              <a class="profile-subpage-owner" [routerLink]="selectedSectionUrl('')">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }{{ userName() }}</a>
               <h1>{{ copy.tabs.picks }}</h1>
               <p class="profile-subpage-accent">{{ copy.pickCount.replace('{count}', asText(picks()?.totalElements ?? 0)) }}</p>
               <p>As escolhas respondidas por {{ userName() }} e os modelos de indicação que criou para a comunidade.</p>
@@ -658,7 +716,7 @@
           <header class="profile-subpage-hero profile-subpage-hero--identity" [style.background-image]="profile()?.banner ? 'linear-gradient(180deg, rgba(24,24,24,.36), #181818 100%), url(' + imageUrl(profile()?.banner, 'w1280') + ')' : null">
             <div class="profile-subpage-hero-copy">
               <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
-                @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                 <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
               </a>
               <h1>{{ copy.mapTitle }}</h1>
@@ -701,7 +759,7 @@
               </nav>
               <div class="profile-map-detail-hero-copy">
                 <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
-                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                   <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
                 </a>
                 <h1>{{ episodeGrid()?.title || copy.unavailable }} {{ copy.mapTitle }}</h1>
@@ -762,7 +820,7 @@
               </div>
               <div class="profile-review-hero-copy">
                 <span class="profile-review-hero-owner">
-                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span class="profile-review-hero-avatar" aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }
+                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                   {{ userName() }}
                 </span>
                 <h1><span class="profile-review-title-primary">{{ monthLabel(selectedMonth()).split(' de ')[0] }}</span><span class="profile-review-title-secondary">{{ selectedMonth().slice(0, 4) }} · {{ copy.tabs.monthInReview }}</span></h1>
@@ -826,7 +884,7 @@
               @else { @for (card of data.topLongestMovieCards; track card.contentId || card.tmdbId; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(card.customPosterUrl || card.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ card.title || copy.unavailable }}</strong><small>{{ card.releaseYear ?? '' }}</small></div><b>{{ formatDuration(card.runtimeMinutes) }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> } }
             </section>
 
-            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchedWith }}</h2><p>Pessoas com quem você mais assistiu neste mês.</p></div></div><div class="profile-companion-list">@for (entry of data.topWatchCompanions; track entry.companion.id || entry.companion.username; let i = $index) { <article><span class="profile-rank-pill">{{ i + 1 }}</span>@if (entry.companion.profilePicture) { <img [src]="entry.companion.profilePicture" [alt]="entry.companion.name || entry.companion.username || ''" /> } @else { <span class="profile-companion-avatar">{{ (entry.companion.name || entry.companion.username || '?').charAt(0).toUpperCase() }}</span> }<div><strong>{{ entry.companion.name || entry.companion.username || copy.unavailable }}</strong><small>@{{ entry.companion.username || '' }}</small></div><b>{{ entry.watchCount }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</b></article> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div></section>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchedWith }}</h2><p>Pessoas com quem você mais assistiu neste mês.</p></div></div><div class="profile-companion-list">@for (entry of data.topWatchCompanions; track entry.companion.id || entry.companion.username; let i = $index) { <article><span class="profile-rank-pill">{{ i + 1 }}</span>@if (entry.companion.profilePicture) { <img [src]="entry.companion.profilePicture" [alt]="entry.companion.name || entry.companion.username || ''" /> } @else { <img src="/default-user-avatar.png" alt="" /> }<div><strong>{{ entry.companion.name || entry.companion.username || copy.unavailable }}</strong><small>@{{ entry.companion.username || '' }}</small></div><b>{{ entry.watchCount }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</b></article> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div></section>
           }
         </section>
       }
@@ -834,7 +892,7 @@
       @case ('year-in-review') {
         <section class="profile-content profile-section-page profile-stats-page">
           @if (yearReview(); as data) {
-            <header class="profile-review-hero profile-review-hero--year"><div class="profile-review-hero-posters" aria-hidden="true">@for (entry of data.longestWatched.slice(0, 3); track entry.contentId || entry.tmdbId || entry.seriesTmdbId) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }</div><div class="profile-review-hero-copy"><span class="profile-review-hero-owner">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span class="profile-review-hero-avatar" aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</span><h1><span class="profile-review-title-primary">{{ selectedYear() }}</span><span class="profile-review-title-secondary">{{ copy.tabs.yearInReview }}</span></h1><p>Todos os episódios, filmes e avaliações que {{ userName() }} registrou neste ano.</p></div></header>
+            <header class="profile-review-hero profile-review-hero--year"><div class="profile-review-hero-posters" aria-hidden="true">@for (entry of data.longestWatched.slice(0, 3); track entry.contentId || entry.tmdbId || entry.seriesTmdbId) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }</div><div class="profile-review-hero-copy"><span class="profile-review-hero-owner">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }{{ userName() }}</span><h1><span class="profile-review-title-primary">{{ selectedYear() }}</span><span class="profile-review-title-secondary">{{ copy.tabs.yearInReview }}</span></h1><p>Todos os episódios, filmes e avaliações que {{ userName() }} registrou neste ano.</p></div></header>
             <div class="profile-review-controls profile-review-controls--period"><div class="profile-period-nav"><button type="button" aria-label="Ano anterior" (click)="yearChange(-1)">‹</button><span>{{ selectedYear() }}</span><button type="button" aria-label="Próximo ano" (click)="yearChange(1)">›</button></div><div class="profile-edition-switch"><button type="button" [class.profile-edition-active]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">{{ copy.editionSeries }}</button><button type="button" [class.profile-edition-active]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">{{ copy.editionMovies }}</button></div></div>
             <section class="profile-review-overview profile-review-overview--period" [class.profile-review-overview--two]="mode() === 'EPISODE'" aria-label="Resumo do ano"><article><span>{{ mode() === 'MOVIE' ? 'Filmes assistidos' : 'Episódios assistidos' }}</span><strong>{{ data.watchCount | number }}</strong></article><article><span>{{ copy.timeWatched }}</span><strong>{{ formatDuration(data.minutesWatched) }}</strong></article>@if (mode() === 'MOVIE') { <article><span>{{ copy.averagePerDay }}</span><strong>{{ formatDuration(data.averageMinutesPerDay) }}</strong></article> }</section>
             <section class="profile-review-averages"><header><h2>Médias de tempo assistido</h2><p>Uma visão da sua frequência ao longo do ano.</p></header><div class="profile-review-average-stack"><article><span>Média por mês</span><strong>{{ formatHours(data.averageMinutesPerMonth) }} h</strong><small>{{ formatCount(data.averageMinutesPerMonth) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por semana</span><strong>{{ formatHours(data.averageMinutesPerWeek) }} h</strong><small>{{ formatCount(data.averageMinutesPerWeek) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por dia</span><strong>{{ formatHours(data.averageMinutesPerDay) }} h</strong><small>{{ formatCount(data.averageMinutesPerDay) }} minutos</small></article></div></section>
@@ -851,7 +909,7 @@
             />
             <div class="profile-two-columns"><article class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.genres }}</h2><p>Gêneros mais assistidos em {{ selectedYear() }}.</p></div></div>@for (genre of data.genreCounts; track genre.genre; let i = $index) { <div class="profile-genre-row"><span>{{ genre.genre }}</span><div><i [style.width]="genreBarWidth(genre.count, data.genreCounts)" [attr.data-color]="i % 4"></i></div><strong>{{ genre.count }}</strong></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article><article class="profile-section profile-panel"><div class="profile-section-heading"><h2>{{ copy.ratings }}</h2><span>{{ ratingTotal(data.ratingsDistribution) }} {{ copy.ratingCount.replace('{count}', '').trim() }}</span></div><div class="profile-rating-bars">@for (score of ratingScores; track score) { <div [attr.aria-label]="copy.rating + ' ' + score + ': ' + ratingCount(data.ratingsDistribution, score)"><span>{{ score }}</span><i><b [style.height]="ratingBarHeight(ratingCount(data.ratingsDistribution, score), data.ratingsDistribution)"></b></i><small>{{ ratingCount(data.ratingsDistribution, score) }}</small></div> }</div></article></div>
             <div class="profile-two-columns"><article class="profile-section profile-panel"><h2>{{ copy.topRated }}</h2>@for (entry of data.topRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : dateLabel(entry.watchedDate) }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article><article class="profile-section profile-panel"><h2>{{ copy.bottomRated }}</h2>@for (entry of data.bottomRated; track entry.id; let i = $index) { <div class="profile-ranked-row"><span>{{ i + 1 }}</span>@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> }<div><strong>{{ entry.card?.title || copy.unavailable }}</strong><small>{{ entry.card?.seasonNumber !== null && entry.card?.episodeNumber !== null ? 'T' + entry.card?.seasonNumber + ' · E' + entry.card?.episodeNumber : dateLabel(entry.watchedDate) }}</small></div><b>{{ entry.score ?? 0 }}</b></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</article></div>
-            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchedWith }}</h2><p>Pessoas com quem você mais assistiu neste ano.</p></div></div><div class="profile-companion-list">@for (entry of data.topWatchCompanions; track entry.companion.id || entry.companion.username; let i = $index) { <article><span class="profile-rank-pill">{{ i + 1 }}</span>@if (entry.companion.profilePicture) { <img [src]="entry.companion.profilePicture" [alt]="entry.companion.name || entry.companion.username || ''" /> } @else { <span class="profile-companion-avatar">{{ (entry.companion.name || entry.companion.username || '?').charAt(0).toUpperCase() }}</span> }<div><strong>{{ entry.companion.name || entry.companion.username || copy.unavailable }}</strong><small>@{{ entry.companion.username || '' }}</small></div><b>{{ entry.watchCount }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</b></article> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div></section>
+            <section class="profile-section profile-panel"><div class="profile-section-heading"><div><h2>{{ copy.watchedWith }}</h2><p>Pessoas com quem você mais assistiu neste ano.</p></div></div><div class="profile-companion-list">@for (entry of data.topWatchCompanions; track entry.companion.id || entry.companion.username; let i = $index) { <article><span class="profile-rank-pill">{{ i + 1 }}</span>@if (entry.companion.profilePicture) { <img [src]="entry.companion.profilePicture" [alt]="entry.companion.name || entry.companion.username || ''" /> } @else { <img src="/default-user-avatar.png" alt="" /> }<div><strong>{{ entry.companion.name || entry.companion.username || copy.unavailable }}</strong><small>@{{ entry.companion.username || '' }}</small></div><b>{{ entry.watchCount }} {{ mode() === 'MOVIE' ? 'filmes' : 'episódios' }}</b></article> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div></section>
           }
         </section>
       }
@@ -859,7 +917,7 @@
       @case ('all-time-stats') {
         <section class="profile-content profile-section-page profile-stats-page">
           @if (allTime(); as data) {
-            <header class="profile-review-hero profile-review-hero--all-time"><div class="profile-review-hero-posters" aria-hidden="true">@for (entry of (allTimeEdition()?.mostLoggedContent ?? data.mostLoggedContent).slice(0, 3); track entry.card?.tmdbId || $index) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }</div><div class="profile-review-hero-copy"><span class="profile-review-hero-owner">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <span class="profile-review-hero-avatar" aria-hidden="true">{{ userName().charAt(0).toUpperCase() }}</span> }{{ userName() }}</span><h1><span class="profile-review-title-primary">Desde o início</span><span class="profile-review-title-secondary">Estatísticas</span></h1><p>Todos os episódios, filmes e avaliações da trajetória de {{ userName() }} no Watchwise.</p></div></header>
+            <header class="profile-review-hero profile-review-hero--all-time"><div class="profile-review-hero-posters" aria-hidden="true">@for (entry of (allTimeEdition()?.mostLoggedContent ?? data.mostLoggedContent).slice(0, 3); track entry.card?.tmdbId || $index) { @if (imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="" /> } }</div><div class="profile-review-hero-copy"><span class="profile-review-hero-owner">@if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }{{ userName() }}</span><h1><span class="profile-review-title-primary">Desde o início</span><span class="profile-review-title-secondary">Estatísticas</span></h1><p>Todos os episódios, filmes e avaliações da trajetória de {{ userName() }} no Watchwise.</p></div></header>
             <div class="profile-review-controls profile-review-controls--all-time"><span></span><div class="profile-edition-switch"><button type="button" [class.profile-edition-active]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">{{ copy.editionSeries }}</button><button type="button" [class.profile-edition-active]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">{{ copy.editionMovies }}</button></div></div>
             <section class="profile-review-overview profile-review-overview--all-time" [class.profile-review-overview--two]="mode() === 'EPISODE'" aria-label="Totais desde o início"><article><span>{{ copy.timeWatched }}</span><strong>{{ formatHours(allTimeEdition()?.minutesWatched ?? (mode() === 'MOVIE' ? data.totalMinutesWatchedMovies : data.totalMinutesWatchedEpisodes)) }} h</strong><small>{{ formatCount(allTimeEdition()?.minutesWatched ?? (mode() === 'MOVIE' ? data.totalMinutesWatchedMovies : data.totalMinutesWatchedEpisodes)) }} minutos de {{ mode() === 'MOVIE' ? 'filmes' : 'séries' }}</small></article><article><span>{{ mode() === 'MOVIE' ? 'Filmes assistidos' : 'Episódios assistidos' }}</span><strong>{{ allTimeEdition()?.watchedCount ?? (mode() === 'MOVIE' ? data.totalMoviesWatched : data.totalEpisodesWatched) | number }}</strong><small>{{ mode() === 'MOVIE' ? 'Filmes registrados no diário' : 'Episódios registrados no diário' }}</small></article>@if (mode() === 'MOVIE') { <article><span>Idas ao cinema</span><strong>{{ allTimeEdition()?.totalTheaterVisits ?? data.totalTheaterVisits | number }}</strong><small>Visitas registradas</small></article> }</section>
             <section class="profile-review-averages"><header><h2>Médias de tempo assistido</h2><p>Uma visão da sua frequência ao longo dos anos.</p></header><div class="profile-review-average-stack"><article><span>Média por mês</span><strong>{{ formatHours(allTimeEdition()?.averageMinutesPerMonth ?? data.averageMinutesPerMonth) }} h</strong><small>{{ formatCount(allTimeEdition()?.averageMinutesPerMonth ?? data.averageMinutesPerMonth) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por semana</span><strong>{{ formatHours(allTimeEdition()?.averageMinutesPerWeek ?? data.averageMinutesPerWeek) }} h</strong><small>{{ formatCount(allTimeEdition()?.averageMinutesPerWeek ?? data.averageMinutesPerWeek) }} minutos</small></article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg><article><span>Média por dia</span><strong>{{ formatHours(allTimeEdition()?.averageMinutesPerDay ?? data.averageMinutesPerDay) }} h</strong><small>{{ formatCount(allTimeEdition()?.averageMinutesPerDay ?? data.averageMinutesPerDay) }} minutos</small></article></div></section>

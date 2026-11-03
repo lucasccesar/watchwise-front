@@ -1,10 +1,10 @@
 <main class="pick-detail-page">
-  @if (status() === 'loading') { <section class="pick-detail-state"><span class="pick-detail-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section> }
+  @if (status() === 'loading') { <app-page-skeleton variant="detail" [label]="copy.loading" /> }
   @else if (status() === 'error') { <section class="pick-detail-state"><h1>{{ copy.errorTitle }}</h1><p>{{ error() }}</p><button type="button" (click)="load()">{{ picksCopy.retry }}</button></section> }
   @else if (pick(); as pick) {
     <nav class="pick-detail-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/picks">{{ picksCopy.title }}</a><span>/</span><a [routerLink]="templateRoute()">{{ pick.picksTemplate.name }}</a><span>/</span><span>{{ copy.categories }}</span></nav>
     <header class="pick-detail-header">
-      <a class="pick-detail-author" [routerLink]="authorRoute()"><span class="pick-detail-avatar">@if (pick.user.profilePicture) { <img [src]="pick.user.profilePicture" alt="" /> } @else { {{ initials(pick.user.name || pick.user.username) }} }</span><span><strong>{{ pick.user.name || copy.unknownUser }}</strong><small>@{{ pick.user.username }}</small></span></a>
+      <a class="pick-detail-author" [routerLink]="authorRoute()"><span class="pick-detail-avatar">@if (pick.user.profilePicture) { <img [src]="pick.user.profilePicture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span><span><strong>{{ pick.user.name || copy.unknownUser }}</strong><small>@{{ pick.user.username }}</small></span></a>
       <h1>{{ pick.picksTemplate.name }}</h1>
       @if (pick.picksTemplate.description) { <p class="pick-detail-description">{{ pick.picksTemplate.description }}</p> }
       <div class="pick-detail-meta"><span class="pick-detail-visibility" [class.private]="pick.visibility === 'PRIVATE'">{{ visibilityLabel(pick.visibility) }}</span><time>{{ copy.createdAt.replace('{date}', date(pick.createdAt)) }}</time><span>{{ answeredLabel() }}</span><a [routerLink]="templateRoute()">{{ copy.backToTemplate }}</a></div>
@@ -23,12 +23,20 @@
           </span>
           <div class="pick-detail-answer-copy"><span class="pick-detail-answer-type">{{ answer.group === 'PRIMARY' ? templateCopy.primary : templateCopy.secondary }} · {{ templateCopy.type[answer.allowedType] }}</span><h3>{{ answer.name }}</h3>@if (answer.target) { @if (answerRoute(answer); as route) { <a [routerLink]="route">{{ answerLabel(answer) }}</a> } @else { <strong>{{ answerLabel(answer) }}</strong> } } @else { <span class="pick-detail-no-answer">{{ copy.answerUnavailable }}</span> }</div>
         </article>
-      }</div> } @else { <p class="pick-detail-empty">{{ copy.noAnswers }}</p> }
+      }</div> } @else { <p class="pick-detail-empty ww-empty-message">{{ copy.noAnswers }}</p> }
     </section>
 
     <section class="pick-detail-comments" id="pick-comments" aria-labelledby="pick-detail-comments-title"><header><h2 id="pick-detail-comments-title">{{ copy.comments }} <span>{{ comments().length }}</span></h2></header>
       <form (submit)="postComment($event)"><textarea [value]="commentText()" (input)="updateComment($event)" [placeholder]="copy.commentPlaceholder" maxlength="280"></textarea><div><label><input type="checkbox" [checked]="commentSpoiler()" (change)="updateSpoiler($event)" />{{ copy.spoiler }}</label><button type="submit" [disabled]="!commentText().trim() || postingComment()">{{ postingComment() ? copy.posting : copy.postComment }}</button></div>@if (commentError()) { <p class="pick-detail-error" role="alert">{{ commentError() }}</p> }</form>
-      @if (comments().length) { <div class="pick-detail-comment-list">@for (comment of comments(); track comment.id) { <article><a class="pick-detail-avatar small" [routerLink]="['/users', comment.user.username]">@if (comment.user.profilePicture) { <img [src]="comment.user.profilePicture" alt="" /> } @else { {{ initials(comment.user.name || comment.user.username) }} }</a><div><header><a [routerLink]="['/users', comment.user.username]">{{ comment.user.name || comment.user.username }}</a><time>{{ date(comment.createdAt) }}</time></header><p [class.spoiler]="comment.containsSpoiler">{{ comment.text }}</p>@if (comment.containsSpoiler) { <small>{{ copy.spoiler }}</small> }</div></article> }</div> } @else { <p class="pick-detail-empty">{{ copy.noComments }}</p> }
+        <ng-template #pickDetailCommentNode let-node let-depth="depth" let-parentName="parentName">
+          @let comment = node.comment;
+          <app-comment-item [authorName]="comment.user.name || comment.user.username" [authorUsername]="comment.user.username" [authorPicture]="comment.user.profilePicture" [createdAt]="comment.createdAt" [timeLabel]="date(comment.createdAt)" [depth]="depth" [replyingTo]="depth > 0 ? parentName : null" [hasReplies]="node.replies.length > 0" [commentId]="'comment-' + comment.id">
+            <div comment-body><p [class.ww-comment-spoiler]="comment.containsSpoiler">{{ comment.text }}</p></div>
+            @if (comment.containsSpoiler) { <small comment-extra>{{ copy.spoiler }}</small> }
+            @if (node.replies.length) { <div comment-replies>@for (reply of node.replies; track reply.comment.id) { <ng-container [ngTemplateOutlet]="pickDetailCommentNode" [ngTemplateOutletContext]="{$implicit: reply, depth: depth + 1, parentName: comment.user.name || comment.user.username}"></ng-container> }</div> }
+          </app-comment-item>
+        </ng-template>
+        @if (commentThreads().length) { <div class="pick-detail-comment-list ww-comment-list">@for (thread of commentThreads(); track thread.comment.id) { <ng-container [ngTemplateOutlet]="pickDetailCommentNode" [ngTemplateOutletContext]="{$implicit: thread, depth: 0, parentName: null}"></ng-container> }</div> } @else { <p class="pick-detail-empty ww-empty-message">{{ copy.noComments }}</p> }
     </section>
     @if (sharePreviewOpen()) { <app-share-preview [model]="shareModel()" [shareUrl]="shareLink()" (closed)="sharePreviewOpen.set(false)" /> }
   }

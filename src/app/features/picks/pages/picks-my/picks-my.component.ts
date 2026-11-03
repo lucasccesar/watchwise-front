@@ -4,13 +4,14 @@ import { RouterLink } from '@angular/router';
 import { PicksApiService, PicksMyPickCard, PicksMyPickPage } from '../../data-access/picks-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksPageHeroComponent } from '../../shared/picks-page-hero.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type PicksLoadState = 'loading' | 'ready' | 'error';
 
 @Component({
   selector: 'app-picks-my',
   standalone: true,
-  imports: [RouterLink, PicksPageHeroComponent],
+  imports: [RouterLink, PicksPageHeroComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-my.component.html',
   styleUrls: ['./picks-my.component.css', '../../shared/picks-shared.css'],

@@ -30,7 +30,7 @@
     @if (actionMessage()) { <p class="notifications-feedback" role="status">{{ actionMessage() }}</p> }
 
     @if (status() === 'loading') {
-      <div class="notifications-empty" role="status">{{ copy.loading }}</div>
+      <app-page-skeleton variant="list" [label]="copy.loading" />
     } @else if (status() === 'error') {
       <div class="notifications-empty" role="alert">
         <h2>{{ copy.errorTitle }}</h2>
@@ -44,9 +44,9 @@
           <ol class="notification-list">
             @for (item of group.items; track item.id) {
               <li class="notification-card" [class.notification-card-unread]="!item.isRead">
-                <span class="notification-avatar" [class.notification-avatar-large]="actorInitial(item).length > 1" aria-hidden="true">
+                <span class="notification-avatar" aria-hidden="true">
                   @if (item.latestActor?.profilePicture; as avatar) { <img [src]="avatar" alt="" loading="lazy" /> }
-                  @else { {{ actorInitial(item) }} }
+                  @else { <img src="/default-user-avatar.png" alt="" loading="lazy" /> }
                 </span>
                 <div class="notification-copy">
                   <p class="notification-message">
@@ -96,7 +96,7 @@
         </section>
       }
     } @else {
-      <div class="notifications-empty">
+      <div class="notifications-empty ww-empty-panel">
         <span class="notifications-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg></span>
         <h2>{{ copy.emptyTitle }}</h2>
         <p>{{ copy.emptyDescription }}</p>

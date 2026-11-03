@@ -39,6 +39,10 @@ import {
   UserListSummary,
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
+import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'watch' | 'videos' | 'lists' | 'share' | null;
@@ -55,7 +59,7 @@ type WatchForm = FormGroup<{
 @Component({
   selector: 'app-movie-content',
   standalone: true,
-  imports: [ReactiveFormsModule, NgTemplateOutlet],
+  imports: [ReactiveFormsModule, NgTemplateOutlet, PageSkeletonComponent, ShareReviewDialogComponent, CommentItemComponent],
   templateUrl: './movie.component.html',
   styleUrl: './movie.component.css',
 })
@@ -68,6 +72,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly tmdbId = signal('');
   protected readonly reviews = signal<ContentReview[]>([]);
   protected readonly comments = signal<ContentComment[]>([]);
+  protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly reviewPage = signal<ContentPageResult<ContentReview> | null>(null);
   protected readonly commentPage = signal<ContentPageResult<ContentComment> | null>(null);
   protected readonly reviewStatus = signal<PageStatus>('loading');
@@ -137,24 +142,36 @@ export class MovieComponent implements OnInit, OnDestroy {
     return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1`);
   });
   protected readonly detailsExpanded = signal(false);
-  protected readonly shareImageUrl = signal<string | null>(null);
-  protected readonly sharePosterUrl = signal<string | null>(null);
-  protected readonly shareZoom = signal(100);
-  protected readonly shareX = signal(50);
-  protected readonly shareY = signal(30);
-  protected readonly shareShowReview = signal(true);
-  private shareDrag: { x: number; y: number; startX: number; startY: number } | null = null;
   protected readonly toast = signal('');
   protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly maxWatchedDate: string;
   protected readonly watchForm: WatchForm;
+  protected readonly shareModel = computed<ShareReviewDialogModel | null>(() => {
+    const page = this.page();
+    if (!page) return null;
+    const user = this.session.user();
+    return {
+      title: page.details.title || this.copy.untitled,
+      subtitle: page.details.releaseDate?.slice(0, 4) ?? null,
+      rating: page.viewerState.myRating,
+      review: page.viewerState.myReview,
+      backgroundUrl: this.backdropUrl(),
+      posterUrl: this.posterUrl(),
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: 'MOVIE',
+      tmdbId: page.details.tmdbId || this.tmdbId() || null,
+    };
+  });
 
   private readonly subscriptions = new Subscription();
   private requestSubscriptions = new Subscription();
   private watchHydrationSubscription = new Subscription();
-  private modalOpener: HTMLElement | null = null;
+  protected modalOpener: HTMLElement | null = null;
   private messageTimeout?: ReturnType<typeof setTimeout>;
   private movieStylesheet: HTMLLinkElement | null = null;
+  private openShareReviewAfterLoad = false;
+  private shareReturnUrl: string | null = null;
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
   private readonly sanitizer = inject(DomSanitizer);
@@ -195,6 +212,11 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const navigationState = this.router.getCurrentNavigation()?.extras.state;
+    this.openShareReviewAfterLoad = navigationState?.['openShareReview'] === true;
+    this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
+      ? navigationState['shareReturnUrl']
+      : null;
     this.loadMovieStylesheet();
     this.subscriptions.add(
       combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(
@@ -211,7 +233,6 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
     this.requestSubscriptions.unsubscribe();
     this.watchHydrationSubscription.unsubscribe();
-    this.releaseShareImage();
     if (this.messageTimeout) clearTimeout(this.messageTimeout);
     if (this.movieStylesheet) {
       this.renderer.removeChild(this.document.head, this.movieStylesheet);
@@ -269,6 +290,10 @@ export class MovieComponent implements OnInit, OnDestroy {
             this.pageStatus.set('ready');
             this.loadReviews(1);
             this.loadComments(1);
+            if (this.openShareReviewAfterLoad) {
+              this.openShareReviewAfterLoad = false;
+              this.openShareDialog();
+            }
           },
           error: (error: unknown) => {
             if (this.handleSessionError(error)) return;
@@ -503,202 +528,7 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   protected openShareDialog(event?: Event): void {
     this.captureDialogOpener(event);
-    this.releaseShareImage();
-    this.resetShareBackground();
-    this.shareShowReview.set(true);
     this.dialog.set('share');
-    queueMicrotask(() => this.movieDialog?.nativeElement.focus());
-  }
-
-  protected onShareImageChanged(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      this.showToast(this.copy.shareImageTypeError);
-      input.value = '';
-      return;
-    }
-    const current = this.shareImageUrl();
-    if (current?.startsWith('blob:')) URL.revokeObjectURL(current);
-    this.shareImageUrl.set(URL.createObjectURL(file));
-    this.shareX.set(50);
-    this.shareY.set(50);
-    this.shareZoom.set(120);
-  }
-
-  protected onSharePosterChanged(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      this.showToast(this.copy.shareImageTypeError);
-      input.value = '';
-      return;
-    }
-    const current = this.sharePosterUrl();
-    if (current) URL.revokeObjectURL(current);
-    this.sharePosterUrl.set(URL.createObjectURL(file));
-  }
-
-  protected changeShareZoom(delta: number): void {
-    this.shareZoom.update((zoom) => Math.min(250, Math.max(100, zoom + delta)));
-  }
-
-  protected shareWheel(event: WheelEvent): void {
-    event.preventDefault();
-    if (event.deltaY === 0) return;
-    this.changeShareZoom(event.deltaY < 0 ? 10 : -10);
-  }
-
-  protected resetShareBackground(): void {
-    this.shareX.set(50);
-    this.shareY.set(30);
-    this.shareZoom.set(120);
-  }
-
-  protected resetShareImages(): void {
-    this.releaseShareImage();
-    this.resetShareBackground();
-  }
-
-  protected shareDragStart(event: PointerEvent): void {
-    if (event.button !== 0) return;
-    this.shareDrag = { x: event.clientX, y: event.clientY, startX: this.shareX(), startY: this.shareY() };
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-  }
-
-  protected shareDragMove(event: PointerEvent): void {
-    if (!this.shareDrag) return;
-    const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.shareX.set(Math.min(100, Math.max(0, this.shareDrag.startX - (event.clientX - this.shareDrag.x) / bounds.width * 100)));
-    this.shareY.set(Math.min(100, Math.max(0, this.shareDrag.startY - (event.clientY - this.shareDrag.y) / bounds.height * 100)));
-  }
-
-  protected shareDragEnd(): void {
-    this.shareDrag = null;
-  }
-
-  protected async downloadShareImage(): Promise<void> {
-    const page = this.page();
-    if (!page) return;
-    const canvas = this.document.createElement('canvas');
-    canvas.width = 540;
-    canvas.height = 960;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    try {
-      context.fillStyle = '#181818';
-      context.fillRect(0, 0, 540, 960);
-      const background = this.shareImageUrl() || this.backdropUrl() || this.posterUrl();
-      if (background) {
-        const image = await this.loadShareImage(background);
-        const height = 1008 * this.shareZoom() / 100;
-        const width = height * image.naturalWidth / image.naturalHeight;
-        const x = (540 - width) * this.shareX() / 100;
-        const y = (960 - height) * this.shareY() / 100;
-        context.save();
-        context.filter = 'blur(3px)';
-        context.drawImage(image, x, y, width, height);
-        context.restore();
-      }
-      const shade = context.createLinearGradient(0, 0, 0, 960);
-      for (const [stop, opacity] of [[0, .45], [.3, .35], [.55, .8], [.75, .96], [1, 1]]) {
-        shade.addColorStop(stop, `rgba(24,24,24,${opacity})`);
-      }
-      context.fillStyle = shade;
-      context.fillRect(0, 0, 540, 960);
-      const username = `@${this.session.user()?.username || ''}`;
-      context.font = '600 14px Inter, sans-serif';
-      const authorWidth = Math.min(320, context.measureText(username).width + 52);
-      const authorX = (540 - authorWidth) / 2;
-      context.fillStyle = 'rgba(24,24,24,.72)';
-      context.beginPath();
-      context.roundRect(authorX, 110, authorWidth, 34, 17);
-      context.fill();
-      const avatar = await this.loadShareImage(this.session.user()?.profilePicture || '/default-user-avatar.png');
-      context.save();
-      context.beginPath();
-      context.arc(authorX + 17, 127, 12, 0, Math.PI * 2);
-      context.clip();
-      context.drawImage(avatar, authorX + 5, 115, 24, 24);
-      context.restore();
-      context.fillStyle = '#F2F7FA';
-      context.fillText(username, authorX + 36, 132);
-      const poster = this.sharePosterUrl() || this.posterUrl();
-      if (poster) {
-        const image = await this.loadShareImage(poster);
-        context.save();
-        context.beginPath();
-        context.roundRect(150, 164, 240, 360, 12);
-        context.clip();
-        context.drawImage(image, 150, 164, 240, 360);
-        context.restore();
-      }
-      context.textAlign = 'center';
-      context.font = '700 30px Inter, sans-serif';
-      context.fillText(`${page.details.title || this.copy.untitled}${page.details.releaseDate ? `  ${page.details.releaseDate.slice(0, 4)}` : ''}`, 270, 580, 444);
-      if (page.viewerState.myRating) {
-        const star = this.document.querySelector<SVGSVGElement>('.movie-head-star svg');
-        if (star) {
-          const starSvg = new XMLSerializer().serializeToString(star).replace('<svg ', '<svg style="color:#F59E0B" ');
-          const starImage = await this.loadShareImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(starSvg)}`);
-          context.drawImage(starImage, 194, 606, 28, 28);
-        }
-        context.fillStyle = '#F2F7FA';
-        context.font = '700 30px Inter, sans-serif';
-        context.fillText(`${page.viewerState.myRating}/10`, 285, 630);
-      }
-      if (this.shareShowReview() && page.viewerState.myReview) {
-        context.fillStyle = 'rgba(28,28,28,.72)';
-        context.fillRect(48, 655, 444, 140);
-        context.fillStyle = '#F2F7FA';
-        context.textAlign = 'left';
-        context.font = '16px Inter, sans-serif';
-        this.drawShareText(context, `“${page.viewerState.myReview}”`, 68, 683, 404, 24, 4);
-      }
-      context.fillStyle = '#F2F7FA';
-      context.textAlign = 'left';
-      context.font = '600 12px Inter, sans-serif';
-      context.fillText('ON', 188, 855);
-      const logo = await this.loadShareImage('/watchwise-logo.svg');
-      context.drawImage(logo, 222, 835, 126, 24);
-      const url = canvas.toDataURL('image/png');
-      const link = this.document.createElement('a');
-      link.href = url;
-      link.download = `watchwise-${this.tmdbId() || 'review'}.png`;
-      link.click();
-    } catch {
-      this.showToast(this.copy.shareError);
-    }
-  }
-
-  private loadShareImage(url: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.crossOrigin = 'anonymous';
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('image-load'));
-      image.src = url;
-    });
-  }
-
-  private drawShareText(context: CanvasRenderingContext2D, value: string, x: number, y: number, width: number, lineHeight: number, maxLines: number): void {
-    const words = value.split(/\s+/);
-    let line = '';
-    let lines = 0;
-    for (const word of words) {
-      const next = line ? `${line} ${word}` : word;
-      if (context.measureText(next).width > width && line) {
-        context.fillText(line, x, y + lines * lineHeight);
-        lines++;
-        if (lines >= maxLines) return;
-        line = word;
-      } else {
-        line = next;
-      }
-    }
-    if (line && lines < maxLines) context.fillText(line, x, y + lines * lineHeight);
   }
 
   protected openLists(event?: Event): void {
@@ -796,6 +626,8 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   protected closeDialog(): void {
+    const returnUrl = this.dialog() === 'share' ? this.shareReturnUrl : null;
+    this.shareReturnUrl = null;
     this.watchCalendarOpen.set(false);
     this.videoPlaying.set(false);
     this.watchHydrationSubscription.unsubscribe();
@@ -803,9 +635,9 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.watchDetailsReady.set(true);
     this.watchDetailsError.set('');
     this.dialog.set(null);
-    this.releaseShareImage();
     this.modalOpener?.focus();
     this.modalOpener = null;
+    if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
   private captureDialogOpener(event?: Event): void {
@@ -1240,15 +1072,6 @@ export class MovieComponent implements OnInit, OnDestroy {
         },
       }),
     );
-  }
-
-  private releaseShareImage(): void {
-    const imageUrl = this.shareImageUrl();
-    if (imageUrl?.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
-    this.shareImageUrl.set(null);
-    const posterUrl = this.sharePosterUrl();
-    if (posterUrl) URL.revokeObjectURL(posterUrl);
-    this.sharePosterUrl.set(null);
   }
 
   private handleSessionError(error: unknown): boolean {

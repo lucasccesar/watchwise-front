@@ -1,5 +1,6 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -33,7 +34,7 @@ const SETTINGS_SECTIONS: Array<{ id: SettingsSection; title: string; subtitle: s
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, PageSkeletonComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css',
 })
@@ -218,10 +219,6 @@ export class SettingsComponent {
 
   protected connectionName(name: string | null, username: string): string {
     return name?.trim() || username;
-  }
-
-  protected connectionInitial(name: string | null, username: string): string {
-    return this.connectionName(name, username).slice(0, 1).toLocaleUpperCase('pt-BR') || 'W';
   }
 
   protected requestDate(value: string | null): string {

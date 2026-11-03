@@ -147,6 +147,23 @@
   stroke-width: 2;
 }
 
+.content-dropdown-item svg[data-icon='check'] {
+  color: var(--color-primary);
+}
+
+.content-dropdown-item svg[data-icon='rewatch'] {
+  color: var(--color-primary);
+}
+
+.content-dropdown-item svg[data-icon='bookmark'],
+.content-dropdown-item svg[data-icon='bookmark-filled'] {
+  color: var(--color-accent);
+}
+
+.content-dropdown-item svg[data-icon='bookmark-filled'] {
+  fill: currentColor;
+}
+
 .content-dropdown-item span {
   flex: 1;
 }

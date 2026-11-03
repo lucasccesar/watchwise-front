@@ -6,6 +6,7 @@ import { CalendarApiService, CalendarEventType, CalendarMonthResponse, CalendarR
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type CalendarFilter = 'ALL' | 'EPISODE' | 'SEASON' | 'MOVIE';
 interface CalendarDay {
@@ -22,7 +23,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [ResponsiveBannerComponent],
+  imports: [ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.css',
@@ -85,7 +86,7 @@ export class CalendarComponent {
     this.request = this.api.getMonth(this.month()).subscribe({
       next: (response) => {
         this.response.set(response);
-        this.heroBackdropPath.set(response.backdropPath);
+        this.heroBackdropPath.set(response.backdropPath ?? null);
         this.heroBackdropFailed.set(false);
         this.status.set('ready');
       },

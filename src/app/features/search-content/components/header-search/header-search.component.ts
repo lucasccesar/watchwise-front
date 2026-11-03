@@ -28,6 +28,8 @@ type SearchSuggestionKind = 'content' | 'person' | 'list' | 'template' | 'user';
 interface SearchSuggestion {
   kind: SearchSuggestionKind;
   scope: SearchScope;
+  username?: string;
+  privateProfile?: boolean;
   tmdbId?: string;
   title: string;
   meta: string;
@@ -320,6 +322,8 @@ export class HeaderSearchComponent {
     return {
       kind: 'user',
       scope: 'USER',
+      username: user.username,
+      privateProfile: !user.profileDetailsVisible,
       title: user.name || this.copy.searchUserUnavailable,
       meta: `@${user.username}`,
       imageUrl: user.profilePicture || '/default-user-avatar.png',

@@ -4,7 +4,7 @@
 
 <main class="movie-page series-page">
   @if (pageStatus() === 'loading') {
-    <div class="movie-state movie-state--loading" role="status"><span class="movie-spinner" aria-hidden="true"></span><span>Carregando série…</span></div>
+    <app-page-skeleton variant="content" label="Carregando série…" />
   } @else if (pageStatus() === 'error') {
     <section class="movie-state movie-state--error" role="alert"><h1>{{ pageError() }}</h1><button class="movie-button movie-button--primary" type="button" (click)="reload()">{{ copy.retry }}</button></section>
   } @else if (page(); as seriesPage) {
@@ -163,12 +163,12 @@
             @if (listsExpanded()) {
               <div class="movie-lists-panel" aria-label="{{ copy.yourLists }}">
                 <strong class="movie-lists-panel-title">{{ copy.yourLists }}</strong>
-                @if (userListsStatus() === 'loading') { <p class="movie-empty-inline" role="status">{{ copy.loading }}</p> }
+                @if (userListsStatus() === 'loading') { <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loading" /> }
                 @else if (userListsStatus() === 'error') { <p class="movie-field-error" role="alert">{{ userListsError() }}</p><button class="movie-text-button" type="button" (click)="loadUserLists(1)">{{ copy.retry }}</button> }
                 @else if (userLists().length) {
                   @for (list of userLists(); track list.id) { <button class="movie-lists-panel-item" type="button" [disabled]="actionPending()" [attr.aria-pressed]="list.containsContent === true" (click)="toggleSeriesInList(list)"><span class="movie-lists-panel-check">@if (list.containsContent) {✓}</span><span class="movie-lists-panel-name">{{ list.name }}</span>@if (list.itemsCount !== undefined) { <span class="movie-lists-panel-count">{{ formatNumber(list.itemsCount, 0) }}</span> }</button> }
                   @if (userListsPage()?.hasNext) { <button class="movie-text-button movie-lists-panel-more" type="button" (click)="loadMoreLists()">{{ copy.moreLists }}</button> }
-                } @else { <p class="movie-empty-inline">{{ copy.listEmpty }}</p> }
+                } @else { <p class="movie-empty-inline ww-empty-message">{{ copy.listEmpty }}</p> }
                 @if (listCreateOpen()) { <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createSeriesList()"><label class="visually-hidden" for="series-new-list-name">{{ copy.newListName }}</label><input id="series-new-list-name" [value]="newListName()" [placeholder]="copy.newListName" maxlength="255" (input)="newListName.set($any($event.target).value)" /><button type="submit" [disabled]="!newListName().trim() || actionPending()">{{ copy.createNewList }}</button></form> }
                 @else { <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)"><span>+</span>{{ copy.createNewList }}</button> }
               </div>
@@ -274,14 +274,14 @@
 
     <section id="series-reviews" class="movie-page-section movie-reviews series-section" aria-labelledby="series-reviews-title">
       <div class="movie-section-heading movie-section-heading--split"><div class="movie-heading-count"><h2 id="series-reviews-title">{{ copy.reviews }}</h2><span>{{ formatNumber(reviewCount(), 0) }}</span></div><div class="movie-review-sort" role="group" aria-label="{{ copy.reviewSort }}"><button type="button" [attr.aria-pressed]="reviewSort() === 'POPULAR'" (click)="changeReviewSort('POPULAR')">{{ copy.popular }}</button><button type="button" [attr.aria-pressed]="reviewSort() === 'RECENT'" (click)="changeReviewSort('RECENT')">{{ copy.recent }}</button><button type="button" [attr.aria-pressed]="reviewSort() === 'FOLLOWING'" (click)="changeReviewSort('FOLLOWING')">{{ copy.following }}</button></div></div>
-      @if (reviewStatus() === 'loading') { <p class="movie-section-state" role="status">{{ copy.reviewLoading }}</p> }
+      @if (reviewStatus() === 'loading') { <app-page-skeleton variant="rows" [compact]="true" [label]="copy.reviewLoading" /> }
       @else if (reviewStatus() === 'error') { <div class="movie-section-state" role="alert"><p>{{ reviewError() }}</p><button class="movie-text-button" type="button" (click)="loadReviews(1)">{{ copy.retrySection }}</button></div> }
       @else if (reviews().length) {
         <div class="movie-review-list">@for (review of reviews(); track review.id) { <article class="movie-review-card">
           <div class="movie-review-header">
             <div class="movie-review-avatar">
               @if (review.reviewer.profilePicture) { <img [src]="review.reviewer.profilePicture" alt="" loading="lazy" /> }
-              @else { <span>{{ personInitials(reviewerName(review)) }}</span> }
+              @else { <img src="/default-user-avatar.png" alt="" loading="lazy" /> }
             </div>
             <div class="movie-review-body">
               <div class="movie-review-topline">
@@ -297,30 +297,34 @@
           <div class="movie-review-actions"><button type="button" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)"><span aria-hidden="true">{{ review.likedByMe ? '♥' : '♡' }}</span><span>{{ formatNumber(review.likesCount, 0) }}</span></button><span class="movie-review-comments">{{ formatNumber(review.commentsCount, 0) }} comentários</span></div>
         </article> }</div>
         @if (reviewPage()?.hasNext) { <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="loadMoreReviews()">{{ copy.moreReviews }}</button> }
-      } @else { <p class="movie-section-state">{{ copy.reviewsEmpty }}</p> }
+      } @else { <p class="movie-section-state ww-empty-message">{{ copy.reviewsEmpty }}</p> }
     </section>
 
     <section id="series-comments" class="movie-page-section movie-comments series-section" aria-labelledby="series-comments-title">
       <div class="movie-section-heading movie-heading-count"><h2 id="series-comments-title">{{ copy.comments }}</h2><span>{{ formatNumber(seriesPage.stats.commentsCount, 0) }}</span></div>
       @if (commentError()) { <p class="movie-field-error" role="alert">{{ commentError() }}</p> }
+      <ng-template #seriesCommentNode let-node let-depth="depth" let-parentName="parentName">
+        @let comment = node.comment;
+        <app-comment-item [authorName]="commentAuthorName(comment)" [authorUsername]="comment.user.username" [authorPicture]="comment.user.profilePicture" [createdAt]="comment.createdAt" [timeLabel]="formatDate(comment.createdAt)" [depth]="depth" [replyingTo]="depth > 0 ? parentName : null" [hasReplies]="node.replies.length > 0" [commentId]="'comment-' + comment.id">
+          <div comment-body>@if (comment.containsSpoiler) { <details class="movie-spoiler"><summary>{{ copy.commentSpoiler }}</summary><p>{{ comment.text }}</p></details> } @else { <p>{{ comment.text }}</p> }</div>
+          <div comment-actions><button type="button" class="ww-comment-like" [class.is-liked]="comment.likedByMe" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg><span>{{ formatNumber(comment.likesCount, 0) }}</span></button><button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>@if (comment.user.id === session.user()?.id) { <button type="button" (click)="deleteComment(comment)">{{ copy.commentDelete }}</button> }</div>
+          @if (node.replies.length) { <div comment-replies>@for (reply of node.replies; track reply.comment.id) { <ng-container [ngTemplateOutlet]="seriesCommentNode" [ngTemplateOutletContext]="{$implicit: reply, depth: depth + 1, parentName: commentAuthorName(comment)}"></ng-container> }</div> }
+        </app-comment-item>
+      </ng-template>
       <form class="movie-comment-form series-comment-form" (submit)="$event.preventDefault(); submitComment()">
-        <div class="movie-comment-composer-avatar" aria-hidden="true">@if (session.user()?.profilePicture; as avatar) { <img [src]="avatar" alt="" /> } @else { <span>{{ personInitials(session.user()?.name || session.user()?.username || 'W') }}</span> }</div>
+        <div class="movie-comment-composer-avatar" aria-hidden="true">@if (session.user()?.profilePicture; as avatar) { <img [src]="avatar" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</div>
         <div class="movie-comment-composer-body">
           @if (replyTo(); as reply) { <div class="movie-reply-context"><span>Resposta para {{ commentAuthorName(reply) }}</span><button type="button" class="movie-text-button" (click)="clearReply()">{{ copy.close }}</button></div> }
           <label class="visually-hidden" for="series-comment-input">{{ copy.commentPlaceholder }}</label><div class="movie-comment-input-wrap"><textarea id="series-comment-input" maxlength="280" rows="2" [value]="commentDraft()" [placeholder]="copy.commentPlaceholder" (input)="onCommentInput($event)"></textarea><span class="movie-character-count">{{ commentDraft().length }}/280</span></div>
           <div class="movie-comment-form-footer"><button class="movie-button movie-button--primary" type="submit" [disabled]="!commentDraft().trim() || commentPending()">{{ commentPending() ? copy.commentsLoading : copy.commentSubmit }}</button></div>
         </div>
       </form>
-      @if (commentStatus() === 'loading') { <p class="movie-section-state" role="status">{{ copy.commentsLoading }}</p> }
+      @if (commentStatus() === 'loading') { <app-page-skeleton variant="rows" [compact]="true" [label]="copy.commentsLoading" /> }
       @else if (commentStatus() === 'error') { <div class="movie-section-state" role="alert"><p>{{ commentError() }}</p><button class="movie-text-button" type="button" (click)="loadComments(1)">{{ copy.retrySection }}</button></div> }
       @else if (comments().length) {
-        <div class="movie-comment-list">@for (comment of commentsFor(null); track comment.id) {
-          <article class="movie-comment"><div class="movie-review-avatar movie-comment-avatar">@if (comment.user.profilePicture) { <img [src]="comment.user.profilePicture" alt="" loading="lazy" /> } @else { <span>{{ personInitials(commentAuthorName(comment)) }}</span> }</div><div class="movie-comment-body"><div class="movie-comment-heading"><strong>{{ commentAuthorName(comment) }}</strong><time [attr.datetime]="comment.createdAt">{{ formatDate(comment.createdAt) }}</time></div>@if (comment.containsSpoiler) { <details class="movie-spoiler"><summary>{{ copy.commentSpoiler }}</summary><p>{{ comment.text }}</p></details> } @else { <p>{{ comment.text }}</p> }<div class="movie-review-actions"><button type="button" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)"><span>{{ comment.likedByMe ? '♥' : '♡' }}</span><span>{{ formatNumber(comment.likesCount, 0) }}</span></button><button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>@if (comment.user.id === session.user()?.id) { <button type="button" (click)="deleteComment(comment)">{{ copy.commentDelete }}</button> }</div>
-            @for (reply of commentsFor(comment.id); track reply.id) { <article class="movie-comment movie-comment--reply"><div class="movie-review-avatar movie-comment-avatar">@if (reply.user.profilePicture) { <img [src]="reply.user.profilePicture" alt="" loading="lazy" /> } @else { <span>{{ personInitials(commentAuthorName(reply)) }}</span> }</div><div class="movie-comment-body"><div class="movie-comment-heading"><strong>{{ commentAuthorName(reply) }}</strong><time [attr.datetime]="reply.createdAt">{{ formatDate(reply.createdAt) }}</time></div><p>{{ reply.text }}</p><div class="movie-review-actions"><button type="button" [attr.aria-pressed]="reply.likedByMe" (click)="toggleCommentLike(reply)"><span>{{ reply.likedByMe ? '♥' : '♡' }}</span><span>{{ formatNumber(reply.likesCount, 0) }}</span></button><button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button></div></div></article> }
-          </div></article>
-        }</div>
+        <div class="movie-comment-list ww-comment-list">@for (thread of commentThreads(); track thread.comment.id) { <ng-container [ngTemplateOutlet]="seriesCommentNode" [ngTemplateOutletContext]="{$implicit: thread, depth: 0, parentName: null}"></ng-container> }</div>
         @if (commentPage()?.hasNext) { <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="loadMoreComments()">{{ copy.moreComments }}</button> }
-      } @else { <p class="movie-section-state">{{ copy.commentsEmpty }}</p> }
+      } @else { <p class="movie-section-state ww-empty-message">{{ copy.commentsEmpty }}</p> }
     </section>
 
     @if (dialog(); as currentDialog) {
@@ -393,10 +397,10 @@
         } @else {
           <section #seriesDialog class="movie-dialog series-lists-dialog" role="dialog" aria-modal="true" aria-labelledby="series-lists-title" tabindex="-1" (click)="$event.stopPropagation()">
             <header class="movie-dialog-header"><button class="movie-icon-button" type="button" aria-label="Voltar" (click)="closeDialog()">‹</button><h2 id="series-lists-title">{{ copy.yourLists }}</h2></header>
-            @if (userListsStatus() === 'loading') { <p class="movie-section-state" role="status">{{ copy.loading }}</p> }
+            @if (userListsStatus() === 'loading') { <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loading" /> }
             @else if (userListsStatus() === 'error') { <div class="movie-section-state" role="alert"><p>{{ userListsError() }}</p><button class="movie-text-button" type="button" (click)="loadUserLists(1)">{{ copy.retry }}</button></div> }
             @else if (userLists().length) { <ul class="movie-list-options">@for (list of userLists(); track list.id) { <li><button class="movie-list-option" type="button" [disabled]="actionPending()" [attr.aria-pressed]="list.containsContent === true" (click)="toggleSeriesInList(list)"><span class="movie-list-check">@if (list.containsContent) {✓}</span><span class="movie-list-name">{{ list.name }}</span><span class="movie-list-status">{{ formatNumber(list.itemsCount, 0) }}</span></button></li> }</ul>@if (userListsPage()?.hasNext) { <button class="movie-button movie-button--secondary movie-load-more" type="button" (click)="loadMoreLists()">{{ copy.moreLists }}</button> } }
-            @else { <p class="movie-empty-inline series-list-empty">{{ copy.listEmpty }}</p> }
+            @else { <p class="movie-empty-inline series-list-empty ww-empty-message">{{ copy.listEmpty }}</p> }
             @if (listCreateOpen()) { <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createSeriesList()"><label for="series-new-list-name-dialog">{{ copy.newListName }}</label><input id="series-new-list-name-dialog" [value]="newListName()" maxlength="255" (input)="newListName.set($any($event.target).value)" /><button type="submit" [disabled]="!newListName().trim() || actionPending()">{{ copy.createNewList }}</button></form> }
             @else { <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)"><span>+</span>{{ copy.createNewList }}</button> }
             <footer class="movie-dialog-actions"><button class="movie-button movie-button--primary" type="button" (click)="closeDialog()">Concluído</button></footer>

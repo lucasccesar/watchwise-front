@@ -43,7 +43,7 @@
           [disabled]="action.disabled"
           (click)="selectAction(action, $event)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
+          <svg viewBox="0 0 24 24" [attr.data-icon]="action.icon" aria-hidden="true">
             @switch (action.icon) {
               @case ('check') {
                 <path d="m5 12 4 4L19 6" />
@@ -57,6 +57,28 @@
               }
               @case ('trash') {
                 <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" />
+              }
+              @case ('ban') {
+                <circle cx="12" cy="12" r="10" />
+                <path d="m5 5 14 14" />
+              }
+              @case ('rewatch') {
+                <path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" />
+              }
+              @case ('share') {
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" />
+              }
+              @case ('bookmark') {
+                <path d="M6 4h12v17l-6-3.5L6 21V4Z" />
+              }
+              @case ('bookmark-filled') {
+                <path d="M6 4h12v17l-6-3.5L6 21V4Z" />
+              }
+              @case ('list') {
+                <path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01" />
               }
             }
           </svg>

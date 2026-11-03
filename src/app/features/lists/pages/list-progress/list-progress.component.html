@@ -17,7 +17,7 @@
   }
 
   @if (status() === 'loading') {
-    <div class="list-progress-state" role="status"><span class="list-progress-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></div>
+    <app-page-skeleton variant="list" [label]="copy.loading" />
   } @else if (status() === 'error') {
     <section class="list-progress-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (data(); as list) {
@@ -80,7 +80,7 @@
         }
       </section>
     }
-    @if (!progressHasRows()) { <section class="list-progress-state list-progress-empty"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section> }
+    @if (!progressHasRows()) { <section class="list-progress-state list-progress-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section> }
   }
   @if (actionError()) { <p class="list-progress-action-error" role="alert">{{ actionError() }}</p> }
 </main>

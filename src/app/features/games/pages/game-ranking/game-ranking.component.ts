@@ -3,11 +3,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { GamesApiService, DailyGameType, DailyGameRankingEntry, DailyGameRankingView } from '../../data-access/games-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 @Component({
   selector: 'app-game-ranking',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-ranking.component.html',
   styleUrl: './game-ranking.component.css',
@@ -59,5 +60,4 @@ export class GameRankingComponent {
     const start = (view.page - 1) * view.size + 1;
     return this.copy.range.replace('{start}', this.number(start)).replace('{end}', this.number(Math.min(view.totalElements, view.page * view.size))).replace('{total}', this.number(view.totalElements));
   }
-  protected initials(name: string): string { return (name.trim()[0] ?? '?').toLocaleUpperCase('pt-BR'); }
 }

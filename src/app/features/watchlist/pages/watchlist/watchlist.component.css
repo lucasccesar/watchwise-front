@@ -1,4 +1,8 @@
 .watchlist-page {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
   min-height: 100%;
   padding-bottom: var(--space-16);
   background: var(--color-surface);
@@ -17,7 +21,6 @@
   box-sizing: border-box;
   text-align: center;
 }
-.watchlist-heading::before { position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, rgb(16 16 18 / 55%) 0%, rgb(16 16 18 / 66%) 62%, #181818 100%); content: ''; }
 .watchlist-heading-copy { position: relative; z-index: 2; }
 
 .watchlist-heading-copy { width: min(720px, 100%); }
@@ -37,6 +40,7 @@
 .watchlist-summary { display: flex; flex: 0 0 auto; align-items: center; gap: 18px; }
 .watchlist-summary > div { display: flex; align-items: center; gap: 6px; }
 .watchlist-summary svg { width: 16px; height: 16px; fill: none; stroke: var(--color-accent); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.watchlist-summary > div:nth-of-type(-n + 2) svg { stroke: var(--color-text); }
 .watchlist-summary strong { font-size: var(--font-size-sm); line-height: var(--line-height-sm); font-weight: 650; white-space: nowrap; }
 .watchlist-summary span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .watchlist-mobile-filter-toggle { display: none; }
@@ -57,36 +61,45 @@
 .watchlist-visibility-group > span { padding: 0 8px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .watchlist-visibility-group button { width: 100%; }
 
-.watchlist-pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 24px auto 8px; }
+.watchlist-pagination-row { display: grid; width: min(1334px, calc(100% - 64px)); grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; margin: 24px auto 28px; }
+.watchlist-pagination { display: flex; grid-column: 2; align-items: center; justify-content: center; gap: 6px; margin: 0; }
 .watchlist-pagination button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font-family: inherit; font-size: var(--font-size-sm); cursor: pointer; }
 .watchlist-pagination button:disabled { opacity: .45; cursor: default; }
 .watchlist-pagination button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .watchlist-pagination .watchlist-page-active { border-color: var(--color-primary); background: var(--color-primary); font-weight: 600; }
-.watchlist-page-label { margin: 0 0 20px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); text-align: center; }
+.watchlist-page-label { grid-column: 3; justify-self: end; margin: 0; color: var(--color-text-tertiary); font-size: var(--font-size-xs); text-align: right; white-space: nowrap; }
 
-.watchlist-grid { display: grid; width: min(1334px, calc(100% - 64px)); grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 28px 20px; margin: 0 auto; }
-.watchlist-grid--list { display: flex; flex-direction: column; gap: 10px; }
-.watchlist-grid--list .watchlist-card { display: flex; min-height: 112px; align-items: center; gap: 14px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
-.watchlist-grid--list .watchlist-poster { width: 64px; height: 88px; flex: 0 0 auto; aspect-ratio: auto; }
-.watchlist-grid--list .watchlist-card-copy { flex: 1; padding-top: 0; }
-.watchlist-card { min-width: 0; }
-.watchlist-poster { position: relative; aspect-ratio: 2 / 3; overflow: visible; border-radius: var(--radius-md); background: var(--color-surface-secondary); }
-.watchlist-poster-link { display: grid; width: 100%; height: 100%; place-items: center; overflow: hidden; border-radius: inherit; color: var(--color-text-secondary); text-align: center; text-decoration: none; }
-.watchlist-poster-link img, .watchlist-poster > img { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
-.watchlist-poster-link > span { padding: 12px; }
-.watchlist-release-date { position: absolute; z-index: 4; bottom: 8px; left: 8px; padding: 4px 7px; border-radius: var(--radius-sm); background: var(--color-accent); color: var(--color-surface); font-size: var(--font-size-xs); font-weight: 700; }
-.watchlist-poster-fallback { display: grid; width: 100%; height: 100%; place-items: center; padding: 12px; box-sizing: border-box; color: var(--color-text-secondary); text-align: center; }
-.watchlist-progress-indicator { position: absolute; z-index: 4; right: 0; bottom: 0; left: 0; height: 4px; overflow: hidden; border-radius: 0 0 var(--radius-md) var(--radius-md); background: rgb(0 0 0 / 60%); }
-.watchlist-progress-indicator span { display: block; height: 100%; background: var(--color-primary); }
-.watchlist-card-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding-top: 10px; }
-.watchlist-card-title-row { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 6px; }
-.watchlist-card-title { min-width: 0; overflow: hidden; color: var(--color-text); font-size: var(--font-size-sm); font-weight: 600; line-height: var(--line-height-sm); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
-.watchlist-card-runtime { flex: 0 0 auto; color: var(--color-text-secondary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); white-space: nowrap; }
+.watchlist-grid { display: flex; width: min(1334px, calc(100% - 64px)); flex-wrap: wrap; justify-content: flex-start; gap: var(--space-8) var(--space-6); margin: 0 auto; padding: 0; list-style: none; }
+.watchlist-grid--list { flex-direction: column; gap: var(--space-3); }
+.watchlist-card { flex: 0 0 calc((100% - 120px) / 6); min-width: 0; }
+.watchlist-card article { display: flex; min-width: 0; flex-direction: column; gap: var(--space-3); }
+.watchlist-grid--list .watchlist-card { width: 100%; flex-basis: 100%; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.watchlist-grid--list .watchlist-card > article { flex-direction: row; gap: var(--space-3); }
+.watchlist-grid--list .watchlist-card .tr-poster { width: 72px; flex: 0 0 72px; aspect-ratio: 2 / 3; }
+.watchlist-grid--list .watchlist-card-copy { flex: 1; padding-top: var(--space-1); }
+.watchlist-poster, .watchlist-card .tr-poster { position: relative; min-width: 0; aspect-ratio: 2 / 3; overflow: visible; background: transparent; }
+.watchlist-poster-link { position: absolute; inset: 0; display: block; overflow: hidden; border-radius: var(--radius-md); color: var(--color-text-secondary); text-align: center; text-decoration: none; }
+.watchlist-poster-link:focus-visible, .watchlist-card-title:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.watchlist-poster-link img, .watchlist-poster > img, .watchlist-card .tr-poster > img { display: block; width: 100%; height: 100%; border-radius: var(--radius-md); object-fit: cover; }
+.watchlist-poster-link > .tr-poster-empty, .watchlist-poster > .tr-poster-empty, .watchlist-card .tr-poster > .tr-poster-empty { display: grid; width: 100%; height: 100%; box-sizing: border-box; place-items: center; padding: var(--space-2); border-radius: var(--radius-md); background: var(--color-secondary); color: var(--color-text-tertiary); font-size: var(--font-size-xs); text-align: center; }
+.watchlist-card-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.watchlist-card-title-row { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.watchlist-card-title-row strong { min-width: 0; overflow: hidden; font-size: var(--font-size-sm); line-height: var(--line-height-sm); text-overflow: ellipsis; white-space: nowrap; }
+.watchlist-card-title { color: inherit; text-decoration: none; }
+.watchlist-card-runtime { flex: 0 0 auto; color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); white-space: nowrap; }
 .watchlist-card-title:hover { text-decoration: underline; }
-.watchlist-card-copy p, .watchlist-card-copy small { overflow: hidden; margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); text-overflow: ellipsis; white-space: nowrap; }
-.watchlist-card-copy .watchlist-card-year { color: var(--color-text-tertiary); }
+.watchlist-card-copy p, .watchlist-card-copy small { overflow: hidden; margin: 0; color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); text-overflow: ellipsis; white-space: nowrap; }
 .watchlist-card-copy small { color: var(--color-text-tertiary); }
+.watchlist-grid--list .watchlist-card-copy p { white-space: normal; }
+.watchlist-card .tr-upcoming-release { position: absolute; z-index: 4; bottom: var(--space-2); left: var(--space-2); display: inline-flex; min-height: 18px; align-items: center; gap: var(--space-1); padding: 0 var(--space-2); border-radius: var(--radius-sm); background: var(--color-accent); color: var(--color-surface); font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
+.watchlist-card .tr-upcoming-release svg { width: 12px; height: 12px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.watchlist-card .tr-state-marker { position: absolute; top: 0; left: 50%; display: grid; width: 22px; height: 22px; box-sizing: border-box; place-items: center; border: 2px solid var(--color-surface); border-radius: var(--radius-full); background: var(--color-primary); color: var(--color-text); transform: translate(-50%, -50%); }
+.watchlist-card .tr-state-marker svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.watchlist-card .tr-card-text { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.watchlist-card .tr-card-main { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.watchlist-card .tr-card-text p, .watchlist-card .tr-preview-note { margin: 0; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); text-overflow: ellipsis; white-space: nowrap; }
 .watchlist-skeleton-grid .watchlist-card { min-width: 0; }
+.watchlist-skeleton-grid .watchlist-card > article { min-height: 100%; }
 .watchlist-card--skeleton { pointer-events: none; }
 .watchlist-skeleton-poster { display: block; width: 100%; height: 100%; border-radius: inherit; }
 .watchlist-skeleton-copy { display: flex; min-width: 0; flex-direction: column; gap: 8px; padding-top: 10px; }
@@ -99,6 +112,7 @@
 .watchlist-card--busy { opacity: .55; pointer-events: none; }
 .watchlist-card--faded { opacity: .4; }
 .watchlist-state { display: flex; min-height: 260px; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; color: var(--color-text-secondary); text-align: center; }
+.watchlist-empty.ww-empty-panel { min-height: 144px; padding: 28px 16px; }
 .watchlist-state h2 { margin: 0; color: var(--color-text); font-size: var(--font-size-lg); }
 .watchlist-state p { max-width: 440px; }
 .watchlist-state button { min-height: 40px; padding: 0 16px; border: 0; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text); font: inherit; cursor: pointer; }
@@ -118,8 +132,13 @@
 @media (max-width: 1100px) {
   .watchlist-heading { min-height: 280px; }
   .watchlist-toolbar { padding-inline: 24px; }
-  .watchlist-grid { width: calc(100% - 48px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .watchlist-pagination-row { width: calc(100% - 48px); }
+  .watchlist-grid { width: calc(100% - 48px); }
   .watchlist-control-row { gap: 10px; }
+}
+
+@media (min-width: 801px) and (max-width: 1279px) {
+  .watchlist-card { flex-basis: calc((100% - 72px) / 4); }
 }
 
 @media (max-width: 900px) {
@@ -136,16 +155,25 @@
   .watchlist-summary strong { font-size: 12px; line-height: 18px; }
   .watchlist-mobile-filter-toggle { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: transparent; color: var(--color-text); }
   .watchlist-mobile-filter-toggle svg { width: 18px; height: 18px; }
-  .watchlist-pagination { margin-top: 18px; }
-  .watchlist-grid { width: calc(100% - 32px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
-  .watchlist-grid:not(.watchlist-grid--grid) { display: flex; flex-direction: column; gap: 10px; }
-  .watchlist-grid:not(.watchlist-grid--grid) { display: flex; flex-direction: column; gap: 10px; }
-  .watchlist-grid:not(.watchlist-grid--grid) .watchlist-card { display: flex; min-height: 96px; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
-  .watchlist-grid:not(.watchlist-grid--grid) .watchlist-poster { width: 58px; height: 76px; flex: 0 0 auto; aspect-ratio: auto; }
-  .watchlist-grid:not(.watchlist-grid--grid) .watchlist-card-copy { flex: 1; padding-top: 0; }
-  .watchlist-grid:not(.watchlist-grid--grid) .watchlist-skeleton-copy { flex: 1; padding-top: 0; }
-  .watchlist-grid:not(.watchlist-grid--grid) .watchlist-card-copy p, .watchlist-grid:not(.watchlist-grid--grid) .watchlist-card-copy small { white-space: normal; }
+  .watchlist-pagination-row { width: calc(100% - 32px); margin-top: 18px; }
+  .watchlist-grid { width: calc(100% - 32px); }
   .watchlist-mobile-sheet { max-height: 82dvh; }
+}
+
+@media (max-width: 800px) {
+  .watchlist-grid { gap: var(--space-6) var(--space-3); }
+  .watchlist-card { flex-basis: calc((100% - 24px) / 3); }
+  .watchlist-card article { gap: var(--space-2); }
+  .watchlist-card .watchlist-card-runtime,
+  .watchlist-card .tr-upcoming-release { display: none; }
+  .watchlist-grid--list { gap: var(--space-3); }
+  .watchlist-grid--list .watchlist-card { flex-basis: 100%; }
+  .watchlist-grid--list .watchlist-card .watchlist-card-runtime,
+  .watchlist-grid--list .watchlist-card .tr-upcoming-release { display: inline-flex; }
+}
+
+@media (min-width: 600px) and (max-width: 800px) {
+  .watchlist-card { flex-basis: calc((100% - 36px) / 4); }
 }
 
 @media (prefers-reduced-motion: reduce) {

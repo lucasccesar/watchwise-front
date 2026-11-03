@@ -9,6 +9,7 @@ import { SearchApiService, SearchContentView, SearchPersonView, SearchView } fro
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PickCreationSelection, PicksApiService, PicksOptionView, PicksTargetSearch, PicksTemplateCategory, PicksTemplateDetail } from '../../data-access/picks-api.service';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 type PickAnswerState = { target: PickCreationSelection['target']; label: string; image: string | null; subtitle: string | null; option?: PicksOptionView };
@@ -17,7 +18,7 @@ type SearchState = { contents: SearchContentView[]; people: SearchPersonView[] }
 @Component({
   selector: 'app-pick-fill',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pick-fill.component.html',
   styleUrl: './pick-fill.component.css',

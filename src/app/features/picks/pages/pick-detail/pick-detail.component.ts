@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -7,13 +8,16 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksPickView } from '../../data-access/picks-api.service';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 
 @Component({
   selector: 'app-pick-detail',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, SharePreviewComponent],
+  imports: [NgTemplateOutlet, RouterLink, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, CommentItemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pick-detail.component.html',
   styleUrl: './pick-detail.component.css',
@@ -26,6 +30,7 @@ export class PickDetailComponent {
   protected readonly pickId = inject(ActivatedRoute).snapshot.paramMap.get('pickId') ?? '';
   protected readonly pick = signal<PicksPickView | null>(null);
   protected readonly comments = signal<PicksCommentPreview[]>([]);
+  protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly error = signal('');
   protected readonly likedBusy = signal(false);

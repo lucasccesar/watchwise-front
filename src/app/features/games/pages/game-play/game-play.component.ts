@@ -8,6 +8,7 @@ import { interval, Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { GamesApiService, DailyGameEpisodeOption, DailyGameInfoFeedback, DailyGameMediaRef, DailyGamePlayView, DailyGameSeasonOption, DailyGameSearchResult, DailyGameType } from '../../data-access/games-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 interface FeedbackCell { label: string; status: string; value: string; }
@@ -17,7 +18,7 @@ const supportedTypes: DailyGameType[] = ['MOVIE_BY_POSTER', 'SERIES_BY_POSTER', 
 @Component({
   selector: 'app-game-play',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, FormsModule, RouterLink],
+  imports: [DialogBackdropComponent, ModalFocusDirective, FormsModule, RouterLink, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-play.component.html',
   styleUrl: './game-play.component.css',

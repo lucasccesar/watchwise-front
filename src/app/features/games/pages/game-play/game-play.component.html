@@ -1,6 +1,6 @@
 <main class="game-play-page">
   @if (status() === 'loading') {
-    <section class="game-play-state"><span class="game-play-spinner" aria-hidden="true"></span><p>{{ copy.loading }}</p></section>
+    <app-page-skeleton variant="detail" [label]="copy.loading" />
   } @else if (status() === 'error') {
     <section class="game-play-state"><h1>{{ gamesCopy.title }}</h1><p>{{ error() }}</p><button type="button" (click)="load()">{{ gamesCopy.retry }}</button></section>
   } @else if (state()) {

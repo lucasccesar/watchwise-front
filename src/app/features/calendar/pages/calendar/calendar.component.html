@@ -24,7 +24,7 @@
   </section>
 
   @if (status() === 'loading') {
-    <div class="calendar-state" role="status">{{ copy.loading }}</div>
+    <app-page-skeleton variant="calendar" [label]="copy.loading" />
   } @else if (status() === 'error') {
     <section class="calendar-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="loadMonth()">{{ copy.retry }}</button></section>
   } @else {

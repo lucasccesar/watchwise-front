@@ -1,9 +1,14 @@
 :host {
-  display: block;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   min-width: 0;
 }
 
 .connections-page {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   min-height: min(720px, calc(100vh - 82px));
   padding: 32px var(--content-margin) 72px;
   color: var(--color-text);
@@ -11,6 +16,9 @@
 }
 
 .connections-content {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   width: min(100%, 920px);
   margin: 0 auto;
 }
@@ -203,9 +211,13 @@
   font-size: 30px;
 }
 
+.connections-empty .connections-empty-icon { display: none; }
+.connections-empty.ww-empty-panel { min-height: 144px; margin-block: auto; padding: 28px 16px; }
+
 .connections-empty h2 {
-  margin: 18px 0 8px;
-  font-size: 20px;
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
 }
 
 .connections-empty p,
@@ -214,6 +226,8 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
+
+.connections-empty p { color: var(--color-text-tertiary); }
 
 .connections-state--error {
   gap: 16px;

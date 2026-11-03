@@ -41,7 +41,7 @@
           <h3>Prévia</h3>
           <div class="settings-profile-preview" [style.background-image]="bannerImage() ? 'linear-gradient(180deg, transparent, rgba(10, 12, 17, .84)), url(' + bannerImage() + ')' : null">
             @if (profilePhoto()) { <img class="settings-preview-avatar" [src]="profilePhoto()" alt="" /> }
-            @else { <span class="settings-preview-avatar settings-preview-avatar--fallback">{{ (displayName() || username() || 'W').slice(0, 1).toUpperCase() }}</span> }
+            @else { <img class="settings-preview-avatar" src="/default-user-avatar.png" alt="" /> }
             <strong>{{ displayName() || 'Seu nome' }}</strong>
             <span>@{{ username() || 'seuusuario' }}</span>
           </div>
@@ -84,7 +84,7 @@
         <div class="settings-panel settings-list-panel">
           <header><div><h3>Solicitações para seguir</h3><p>Quem pediu para seguir você. Ao aceitar, a pessoa poderá ver sua atividade.</p></div><span>{{ followRequestCount() }} {{ followRequestCount() === 1 ? 'pendente' : 'pendentes' }}</span></header>
           @if (followRequestsStatus() === 'loading') {
-            <p class="settings-empty" role="status">Carregando solicitações…</p>
+            <app-page-skeleton variant="rows" [compact]="true" label="Carregando solicitações para seguir…" />
           } @else if (followRequestsStatus() === 'error') {
             <p class="settings-empty" role="alert">{{ followRequestsError() }}</p><button class="settings-secondary-button" type="button" (click)="retryFollowRequests()">Tentar novamente</button>
           } @else if (followRequests().length) {
@@ -92,7 +92,7 @@
               @for (request of followRequests(); track request.id) {
                 <article class="settings-connection-row">
                   <a class="settings-connection-user" [routerLink]="['/users', request.username]">
-                    <span class="settings-connection-avatar">@if (request.profilePicture) { <img [src]="request.profilePicture" alt="" /> } @else { {{ connectionInitial(request.name, request.username) }} }</span>
+                    <span class="settings-connection-avatar">@if (request.profilePicture) { <img [src]="request.profilePicture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span>
                     <span><strong>{{ connectionName(request.name, request.username) }}</strong><small>@{{ request.username }} · Solicitou {{ requestDate(request.createdAt) }}</small></span>
                   </a>
                   <div class="settings-connection-actions">
@@ -113,7 +113,7 @@
         <div class="settings-panel settings-list-panel">
           <header><div><h3>Usuários bloqueados</h3><p>Pessoas bloqueadas não podem seguir você nem responder aos seus comentários. Elas não recebem aviso quando você as bloqueia ou desbloqueia.</p></div><span>{{ blockedUserCount() }} {{ blockedUserCount() === 1 ? 'bloqueado' : 'bloqueados' }}</span></header>
           @if (blockedUsersStatus() === 'loading') {
-            <p class="settings-empty" role="status">Carregando usuários bloqueados…</p>
+            <app-page-skeleton variant="rows" [compact]="true" label="Carregando usuários bloqueados…" />
           } @else if (blockedUsersStatus() === 'error') {
             <p class="settings-empty" role="alert">{{ blockedUsersError() }}</p><button class="settings-secondary-button" type="button" (click)="retryBlockedUsers()">Tentar novamente</button>
           } @else if (blockedUsers().length) {
@@ -121,7 +121,7 @@
               @for (record of blockedUsers(); track record.user.id) {
                 <article class="settings-connection-row">
                   <a class="settings-connection-user" [routerLink]="['/users', record.user.username]">
-                    <span class="settings-connection-avatar">@if (record.user.profilePicture) { <img [src]="record.user.profilePicture" alt="" /> } @else { {{ connectionInitial(record.user.name, record.user.username) }} }</span>
+                    <span class="settings-connection-avatar">@if (record.user.profilePicture) { <img [src]="record.user.profilePicture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span>
                     <span><strong>{{ connectionName(record.user.name, record.user.username) }}</strong><small>@{{ record.user.username }} · Bloqueado {{ requestDate(record.createdAt) }}</small></span>
                   </a>
                   <div class="settings-connection-actions"><button class="settings-secondary-button" type="button" [disabled]="!!blockedUserActionId()" (click)="unblockUser(record)">{{ blockedUserActionId() === record.user.id ? 'Desbloqueando…' : 'Desbloquear' }}</button></div>

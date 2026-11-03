@@ -1,4 +1,8 @@
 .notifications-page {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
   min-height: 100%;
   padding-bottom: var(--space-16);
   background: var(--color-surface);
@@ -17,15 +21,6 @@
   overflow: hidden;
   --responsive-banner-position: center 40%;
   text-align: center;
-}
-
-.notifications-heading::before {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  background: linear-gradient(180deg, rgb(16 16 18 / 44%) 0%, rgb(16 16 18 / 58%) 62%, #181818 100%);
-  content: '';
-  pointer-events: none;
 }
 
 .notifications-title-row {
@@ -72,6 +67,9 @@
 }
 
 .notifications-content {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   width: 70%;
   box-sizing: border-box;
   margin: 0 auto;
@@ -413,6 +411,9 @@
   gap: var(--space-3);
   text-align: center;
 }
+
+.notifications-empty.ww-empty-panel { min-height: 144px; padding: 28px 16px; }
+.notifications-empty.ww-empty-panel .notifications-empty-icon { display: none; }
 
 .notifications-empty-icon {
   display: grid;

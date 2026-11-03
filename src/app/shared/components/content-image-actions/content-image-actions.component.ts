@@ -9,7 +9,7 @@ import {
   ViewChild,
 } from '@angular/core';
 
-export type ContentImageActionIcon = 'check' | 'star' | 'eye' | 'trash';
+export type ContentImageActionIcon = 'check' | 'star' | 'eye' | 'trash' | 'ban' | 'rewatch' | 'share' | 'bookmark' | 'bookmark-filled' | 'list';
 
 export interface ContentImageAction {
   id: string;

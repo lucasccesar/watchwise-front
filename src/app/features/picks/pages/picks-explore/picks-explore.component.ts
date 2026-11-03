@@ -6,6 +6,7 @@ import { forkJoin } from 'rxjs';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksApiService, PicksOrigin, PicksTemplatePage, PicksTemplatePreview, PicksTemplateSort } from '../../data-access/picks-api.service';
 import { PicksPageHeroComponent } from '../../shared/picks-page-hero.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type PicksSection = 'explore' | 'all';
 type PicksLoadState = 'loading' | 'ready' | 'error';
@@ -13,7 +14,7 @@ type PicksLoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'app-picks-explore',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, NgTemplateOutlet, PicksPageHeroComponent],
+  imports: [RouterLink, DecimalPipe, NgTemplateOutlet, PicksPageHeroComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-explore.component.html',
   styleUrls: ['./picks-explore.component.css', '../../shared/picks-shared.css'],

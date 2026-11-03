@@ -14,6 +14,7 @@ import {
 } from '../../data-access/notifications-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type NotificationFilter = 'all' | 'unread' | 'read';
 type LoadStatus = 'loading' | 'ready' | 'error';
@@ -28,7 +29,7 @@ interface NotificationGroup {
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [RouterLink, ResponsiveBannerComponent],
+  imports: [RouterLink, ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.css',
@@ -153,10 +154,6 @@ export class NotificationsComponent {
 
   protected actorName(item: NotificationView): string {
     return item.latestActor?.name || item.latestActor?.username || item.person?.name || this.fallbackActor(item.type);
-  }
-
-  protected actorInitial(item: NotificationView): string {
-    return this.actorName(item).trim().slice(0, 2).toLocaleUpperCase('pt-BR') || 'W';
   }
 
   protected message(item: NotificationView): string {

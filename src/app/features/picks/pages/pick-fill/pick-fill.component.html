@@ -1,12 +1,12 @@
 <main class="pick-fill-page">
   @if (loading()) {
-    <section class="pick-fill-state"><span class="pick-fill-spinner" aria-hidden="true"></span><p>{{ templateCopy.loading }}</p></section>
+    <app-page-skeleton variant="detail" [label]="templateCopy.loading" />
   } @else if (loadError()) {
     <section class="pick-fill-state"><h1>{{ templateCopy.errorTitle }}</h1><p>{{ loadError() }}</p><button type="button" (click)="loadTemplate()">{{ picksCopy.retry }}</button></section>
   } @else if (template(); as template) {
     <nav class="pick-fill-breadcrumb" aria-label="{{ copy.breadcrumb }}"><a routerLink="/picks">{{ picksCopy.title }}</a><span>/</span><a [routerLink]="categoryRoute()">{{ template.name }}</a><span>/</span><span>{{ copy.title }}</span></nav>
     <header class="pick-fill-header">
-      <a class="pick-fill-author" [routerLink]="['/users', template.creator?.username ?? '']"><span class="pick-fill-avatar">@if (template.creator?.profilePicture) { <img [src]="template.creator?.profilePicture" alt="" /> } @else { {{ (template.creator?.name || template.creator?.username || picksCopy.unknownCreator).slice(0, 1).toLocaleUpperCase('pt-BR') }} }</span><span>@{{ template.creator?.username || templateCopy.unknownUser }}</span></a>
+      <a class="pick-fill-author" [routerLink]="['/users', template.creator?.username ?? '']"><span class="pick-fill-avatar">@if (template.creator?.profilePicture) { <img [src]="template.creator?.profilePicture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span><span>@{{ template.creator?.username || templateCopy.unknownUser }}</span></a>
       <div class="pick-fill-heading"><div><h1>{{ template.name }}</h1><p>{{ template.description || template.instructions || '' }}</p></div><span class="pick-fill-progress-label">{{ copy.progress.replace('{answered}', answeredCount().toString()).replace('{total}', categoriesCount().toString()) }}</span></div>
       <div class="pick-fill-progress" role="progressbar" [attr.aria-valuenow]="answeredCount()" [attr.aria-valuemin]="0" [attr.aria-valuemax]="categoriesCount()" aria-label="{{ copy.progress.replace('{answered}', answeredCount().toString()).replace('{total}', categoriesCount().toString()) }}"><span [style.width.%]="categoriesCount() ? answeredCount() / categoriesCount() * 100 : 0"></span></div>
       <section class="pick-fill-publish" aria-label="{{ copy.whoCanSee }}">

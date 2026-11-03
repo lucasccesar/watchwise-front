@@ -10,7 +10,34 @@
   </section>
 
   @if (status() === 'loading') {
-    <div class="social-loading" role="status" aria-live="polite">{{ copy.loading }}</div>
+    <section class="social-feed social-feed--loading" role="status" aria-live="polite" aria-busy="true" [attr.aria-label]="copy.loading">
+      <span class="tr-skeleton social-skeleton-day" aria-hidden="true"></span>
+      <ol class="social-activity-list social-skeleton-list" aria-hidden="true">
+        @for (item of loadingItems; track item) {
+          <li class="social-activity-card social-skeleton-card">
+            <div class="social-skeleton-author">
+              <span class="tr-skeleton social-skeleton-avatar"></span>
+              <div class="social-skeleton-author-copy">
+                <span class="tr-skeleton social-skeleton-line social-skeleton-author-primary"></span>
+                <span class="tr-skeleton social-skeleton-line social-skeleton-author-secondary"></span>
+              </div>
+            </div>
+            <div class="social-skeleton-content">
+              <span class="tr-skeleton social-skeleton-poster"></span>
+              <div class="social-skeleton-copy">
+                <span class="tr-skeleton social-skeleton-line social-skeleton-title"></span>
+                <span class="tr-skeleton social-skeleton-line social-skeleton-meta"></span>
+                <span class="tr-skeleton social-skeleton-line social-skeleton-review"></span>
+              </div>
+            </div>
+            <div class="social-skeleton-actions">
+              <span class="tr-skeleton social-skeleton-line social-skeleton-action"></span>
+              <span class="tr-skeleton social-skeleton-line social-skeleton-action"></span>
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
   } @else if (status() === 'error') {
     <section class="social-state" role="alert">
       <h2>{{ copy.errorTitle }}</h2>
@@ -24,21 +51,18 @@
           <img [src]="avatar" alt="" loading="lazy" />
         }
         @if (avatarStack().length === 0) {
-          <span class="social-stack-avatar">{{ viewer()?.name?.charAt(0) || 'W' }}</span>
-          <span class="social-stack-avatar social-stack-avatar--muted">{{ viewer()?.username?.charAt(0) || 'W' }}</span>
+          <img class="social-stack-avatar" [src]="viewer()?.profilePicture || '/default-user-avatar.png'" alt="" loading="lazy" />
         }
       </div>
       <p>{{ followingLabel() }}</p>
     </section>
 
     @if (actionError()) { <p class="social-action-error" role="alert">{{ actionError() }}</p> }
+    @if (actionNotice()) { <p class="social-action-notice" role="status">{{ actionNotice() }}</p> }
 
     <section class="social-feed" aria-label="{{ copy.title }}">
       @if (summary.content.length === 0) {
-        <div class="social-empty">
-          <span class="social-empty-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-          </span>
+        <div class="social-empty ww-empty-panel">
           <h2>{{ copy.emptyTitle }}</h2>
           <p>{{ copy.emptyDescription }}</p>
         </div>
@@ -63,13 +87,33 @@
                       <span>{{ activity.user.username ? '@' + activity.user.username + ' · ' : '' }}{{ relativeDate(activity.createdAt) }}</span>
                     </div>
                     <div class="social-activity-options">
-                      <button class="social-more-button" type="button" [attr.aria-label]="homeCopy.contentOptions" aria-haspopup="menu" [attr.aria-expanded]="activityMenuOpen(activity.id)" (click)="toggleActivityMenu(activity.id, $event)">
+                      <button class="social-more-button" type="button" [attr.aria-label]="copy.activityOptions" aria-haspopup="menu" [attr.aria-expanded]="activityMenuOpen(activity.id)" (click)="toggleActivityMenu(activity.id, $event)">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
                       </button>
                       @if (activityMenuOpen(activity.id)) {
                         <div class="social-activity-menu" role="menu">
-                          @if (activity.user.username) { <a role="menuitem" [routerLink]="['/users', activity.user.username]" (click)="closeActivityMenu($event)">{{ copy.viewProfile }}</a> }
-                          @if (activityLink(activity); as activityRoute) { <a role="menuitem" [routerLink]="activityRoute" (click)="closeActivityMenu($event)">{{ copy.openActivity }}</a> }
+                          @if (isOtherUser(activity)) {
+                            <button type="button" role="menuitem" class="social-menu-item" [disabled]="!activity.user.id || busyUserActionIds().has(activity.user.id)" (click)="unfollowActivityUser(activity, $event)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1v6m-3-3h6" /></svg>
+                              <span>{{ userActionLabel(copy.unfollowUser, activity) }}</span>
+                            </button>
+                            <div class="social-menu-separator" role="separator"></div>
+                            @if (canReportReview(activity)) {
+                              <button type="button" role="menuitem" class="social-menu-item social-menu-item--danger" (click)="openReport(activity, 'review', $event)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6 4-10-4-16 0" /></svg>
+                                <span>{{ copy.reportReview }}</span>
+                              </button>
+                            }
+                            <button type="button" role="menuitem" class="social-menu-item social-menu-item--danger" [disabled]="!activity.user.id || busyUserActionIds().has(activity.user.id)" (click)="openReport(activity, 'user', $event)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6 4-10-4-16 0" /></svg>
+                              <span>{{ userActionLabel(copy.reportUser, activity) }}</span>
+                            </button>
+                            <div class="social-menu-separator" role="separator"></div>
+                            <button type="button" role="menuitem" class="social-menu-item social-menu-item--danger" [disabled]="!activity.user.id || busyUserActionIds().has(activity.user.id)" (click)="blockActivityUser(activity, $event)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m5.6 5.6 12.8 12.8" /></svg>
+                              <span>{{ userActionLabel(copy.blockUser, activity) }}</span>
+                            </button>
+                          }
                         </div>
                       }
                     </div>
@@ -78,17 +122,15 @@
                   <div class="social-content-row">
                     @if (poster) {
                       @if (link) {
-                        @let rating = posterRating(activity);
-                        <a class="social-poster content-image-card" [routerLink]="link" [attr.aria-label]="activityTitle(activity)"><img [src]="poster" alt="" loading="lazy" /><app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating?.label ?? ''" [optionsLabel]="homeCopy.contentOptions + ': ' + activityTitle(activity)" [actions]="posterActions" (actionSelected)="openContent(activity)" /></a>
+                        <a class="social-poster" [routerLink]="link" [attr.aria-label]="activityTitle(activity)"><img [src]="poster" alt="" loading="lazy" /></a>
                       } @else {
-                        @let rating = posterRating(activity);
-                        <span class="social-poster" [class.content-image-card]="posterCanOpen(activity)"><img [src]="poster" alt="" loading="lazy" />@if (posterCanOpen(activity)) { <app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating?.label ?? ''" [optionsLabel]="homeCopy.contentOptions + ': ' + activityTitle(activity)" [actions]="posterActions" (actionSelected)="openContent(activity)" /> }</span>
+                        <span class="social-poster"><img [src]="poster" alt="" loading="lazy" /></span>
                       }
                     } @else {
                       <span class="social-poster social-poster--empty">{{ copy.previewUnavailable }}</span>
                     }
                     <div class="social-content-copy">
-                      <div>
+                      <div class="social-content-heading">
                         <h3>
                           @if (link) {
                             <a [routerLink]="link">{{ activityTitle(activity) }}</a>
@@ -96,18 +138,18 @@
                             {{ activityTitle(activity) }}
                           }
                         </h3>
-                        <span>{{ activitySubtitle(activity) }}</span>
+                        <span class="social-content-meta">{{ activitySubtitle(activity) }}</span>
+                        @if (activity.score !== null && activity.score !== undefined) {
+                          <span class="social-rating-chip" [attr.aria-label]="copy.rating">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>
+                            {{ activity.score }} / 10
+                          </span>
+                        }
                       </div>
-                      @if (activity.targetLabel && activity.targetLabel !== activity.card?.title) {
-                        <p class="social-target-label">{{ activity.targetLabel }}</p>
+                      @if (activity.comment?.trim()) {
+                        <p class="social-review">{{ activity.comment }}</p>
                       }
                     </div>
-                    @if (activity.score !== null && activity.score !== undefined) {
-                      <span class="social-rating-chip" [attr.aria-label]="copy.rating">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" /></svg>
-                        {{ activity.score }} / 10
-                      </span>
-                    }
                   </div>
 
                   <div class="social-activity-actions" aria-label="{{ copy.title }}">
@@ -122,31 +164,87 @@
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
                       {{ formatCount(likeCount(activity)) }}
                     </button>
-                    <button class="social-action-button" type="button" [attr.aria-expanded]="commentsExpanded(activity.id)" (click)="toggleComments(activity.id)">
+                    <span class="social-comment-count">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" /></svg>
                       {{ formatCount(commentCount(activity)) }} {{ copy.comments }}
-                    </button>
+                    </span>
                     @if (link) {
                       <a class="social-view-activity" [routerLink]="link">{{ copy.viewActivity }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></a>
                     }
                   </div>
 
-                  @if (commentsExpanded(activity.id)) {
-                    <div class="social-comment-panel">
-                      @for (comment of comments(activity); track comment.id) {
-                        <p class="social-comment-preview"><strong>{{ comment.user.name || comment.user.username || copy.unknownUser }}</strong> @if (comment.containsSpoiler) { <span>{{ copy.spoilerHidden }}</span> } @else { {{ comment.text }} }</p>
+                  @if (comments(activity).length || hasMoreComments(activity)) {
+                    <section class="social-comments" [attr.aria-label]="copy.comments">
+                      @if (hasMoreComments(activity)) {
+                        <a class="social-view-all-comments" [routerLink]="commentThreadLink(activity)">{{ viewCommentsLabel(activity) }}</a>
                       }
-                      @if (!comments(activity).length) {
-                        <p>{{ canComment(activity) ? copy.noComments : copy.commentUnavailable }}</p>
+                      @if (comments(activity).length) {
+                        <ol class="social-comment-list">
+                          @for (comment of comments(activity).slice(0, 2); track comment.id) {
+                            <li class="social-comment-preview">
+                              <app-comment-item [authorName]="comment.user.name || comment.user.username || copy.unknownUser" [authorUsername]="comment.user.username || null" [authorPicture]="comment.user.profilePicture" [createdAt]="comment.createdAt || null" [timeLabel]="comment.createdAt ? relativeDate(comment.createdAt) : null">
+                                <div comment-body>
+                                @if (isCommentEditing(comment.id)) {
+                                  <form class="social-comment-edit-form" (submit)="saveCommentEdit($event, activity, comment)">
+                                    <textarea maxlength="280" [value]="commentEditDraft()" (input)="setCommentEditDraft($event)" [attr.aria-label]="copy.editComment" [disabled]="isCommentActionBusy(comment.id)"></textarea>
+                                    <div class="social-comment-edit-actions">
+                                      <button class="social-report-cancel" type="button" [disabled]="isCommentActionBusy(comment.id)" (click)="cancelCommentEdit()">{{ copy.cancelCommentEdit }}</button>
+                                      <button class="social-user-action-confirm" type="submit" [disabled]="!commentEditDraft().trim() || commentEditDraft().trim().length > 280 || isCommentActionBusy(comment.id)">{{ isCommentActionBusy(comment.id) ? copy.savingCommentEdit : copy.saveCommentEdit }}</button>
+                                    </div>
+                                  </form>
+                                } @else {
+                                  <p class="social-comment-copy">@if (comment.containsSpoiler) { <span>{{ copy.spoilerHidden }}</span> } @else { {{ comment.text }} }</p>
+                                }
+                                @if (commentActionError(comment.id); as error) { <p class="social-comment-error" role="alert">{{ error }}</p> }
+                                </div>
+                              <div comment-menu class="social-comment-options">
+                                <button class="social-comment-more" type="button" [attr.aria-label]="copy.commentOptions" aria-haspopup="menu" [attr.aria-expanded]="commentMenuOpen(comment.id)" (click)="toggleCommentMenu(comment, $event)">
+                                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
+                                </button>
+                                @if (commentMenuOpen(comment.id)) {
+                                  <div class="social-activity-menu social-comment-menu" role="menu">
+                                    @if (isOwnComment(comment)) {
+                                      <button type="button" role="menuitem" class="social-menu-item" [disabled]="isCommentActionBusy(comment.id)" (click)="startCommentEdit(comment, $event)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4 4 16.5Zm10.9-10.9 3.5 3.5" /></svg>
+                                        <span>{{ copy.editComment }}</span>
+                                      </button>
+                                      <button type="button" role="menuitem" class="social-menu-item social-menu-item--danger" [disabled]="isCommentActionBusy(comment.id)" (click)="deleteSocialComment(activity, comment, $event)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18m-2 0-.9 14H5.9L5 6m4 0V4h6v2m-5 4v6m4-6v6" /></svg>
+                                        <span>{{ copy.deleteComment }}</span>
+                                      </button>
+                                    } @else {
+                                      <button type="button" role="menuitem" class="social-menu-item" [disabled]="isCommentUserActionBusy(comment)" (click)="toggleFollowCommentAuthor(comment, $event)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1v6m-3-3h6" /></svg>
+                                        <span>{{ commentFollowActionLabel(comment) }}</span>
+                                      </button>
+                                      <div class="social-menu-separator" role="separator"></div>
+                                      <button type="button" role="menuitem" class="social-menu-item social-menu-item--danger" [disabled]="isCommentUserActionBusy(comment)" (click)="blockCommentAuthor(comment, $event)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m5.6 5.6 12.8 12.8" /></svg>
+                                        <span>{{ userActionLabel(copy.blockUser, comment) }}</span>
+                                      </button>
+                                      <button type="button" role="menuitem" class="social-menu-item social-menu-item--danger" (click)="reportComment(comment, $event)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0" /></svg>
+                                        <span>{{ copy.reportComment }}</span>
+                                      </button>
+                                    }
+                                  </div>
+                                }
+                              </div>
+                              </app-comment-item>
+                            </li>
+                          }
+                        </ol>
                       }
-                      @if (canComment(activity)) {
-                        <form (submit)="submitComment($event, activity)">
-                          <input type="text" maxlength="500" [value]="commentDraft(activity.id)" (input)="setCommentDraft(activity.id, $event)" [placeholder]="copy.commentPlaceholder" [attr.aria-label]="copy.commentPlaceholder" [disabled]="isCommentBusy(activity.id)" />
-                          <button type="submit" [disabled]="!commentDraft(activity.id).trim() || isCommentBusy(activity.id)">{{ isCommentBusy(activity.id) ? copy.commentPosting : copy.postComment }}</button>
-                        </form>
-                        @if (commentError(activity.id); as error) { <p class="social-comment-error" role="alert">{{ error }}</p> }
-                      }
-                    </div>
+                    </section>
+                  }
+
+                  @if (canComment(activity)) {
+                    <form class="social-comment-form" (submit)="submitComment($event, activity)">
+                      <img class="social-comment-form-avatar" [src]="viewer()?.profilePicture || '/default-user-avatar.png'" alt="" />
+                      <input type="text" maxlength="500" [value]="commentDraft(activity.id)" (input)="setCommentDraft(activity.id, $event)" [placeholder]="copy.commentPlaceholder" [attr.aria-label]="copy.commentPlaceholder" [disabled]="isCommentBusy(activity.id)" />
+                      <button type="submit" [disabled]="!commentDraft(activity.id).trim() || isCommentBusy(activity.id)">{{ isCommentBusy(activity.id) ? copy.commentPosting : copy.postComment }}</button>
+                    </form>
+                    @if (commentError(activity.id); as error) { <p class="social-comment-error" role="alert">{{ error }}</p> }
                   }
                 </li>
               }
@@ -162,3 +260,70 @@
     </section>
   }
 </main>
+
+@if (reportTarget()) {
+  <div class="social-dialog-backdrop social-dialog-backdrop--report" (click)="closeReportFromBackdrop($event)">
+    <section class="social-report-dialog" role="dialog" aria-modal="true" aria-labelledby="social-report-title" [attr.aria-busy]="reportBusy()">
+      <form (submit)="submitReport($event)">
+        <header class="social-report-header">
+          <span class="social-report-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0" /></svg></span>
+          <div class="social-report-heading">
+            <h2 id="social-report-title">{{ reportTitle() }}</h2>
+            <p>{{ reportAnonymousNotice() }}</p>
+          </div>
+          <button class="social-report-close" type="button" [attr.aria-label]="copy.reportClose" [disabled]="reportBusy()" (click)="cancelReport()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+        </header>
+
+        <div class="social-report-evidence">
+          <span>{{ reportTarget()?.evidenceLabel }}</span>
+          <p>{{ reportTarget()?.evidenceText }}</p>
+        </div>
+
+        <fieldset class="social-report-reasons" [attr.aria-busy]="reportBusy()">
+          <legend>{{ reportQuestion() }}</legend>
+          @for (reason of reportReasons(); track reason) {
+            <label class="social-report-reason" [class.social-report-reason--selected]="reportReason() === reason">
+              <input type="radio" name="social-report-reason" [value]="reason" [checked]="reportReason() === reason" [disabled]="reportBusy()" (change)="selectReportReason(reason)" />
+              <span class="social-report-reason-copy">
+                <strong>{{ reportReasonLabel(reason) }}</strong>
+                <small>{{ reportReasonDescription(reason) }}</small>
+              </span>
+            </label>
+          }
+        </fieldset>
+
+        <div class="social-report-details">
+          <label for="social-report-details">{{ copy.reportDetails }}</label>
+          <textarea id="social-report-details" maxlength="280" [value]="reportDetails()" (input)="setReportDetails($event)" [placeholder]="copy.reportDetailsPlaceholder" [disabled]="reportBusy()"></textarea>
+          <span class="social-report-character-count" aria-live="polite">{{ reportDetails().length }} / 280</span>
+        </div>
+
+        @if (hasBlockableReportedUser()) {
+          <label class="social-report-block-option">
+            <input type="checkbox" [checked]="reportBlockUser()" [disabled]="reportBusy()" (change)="setReportBlockUser($event)" />
+            <span><strong>{{ reportBlockLabel() }}</strong><small>{{ copy.reportBlockDescription }}</small></span>
+          </label>
+        }
+
+        @if (reportError()) { <p class="social-report-error" role="alert">{{ reportError() }}</p> }
+        <footer class="social-report-actions">
+          <button class="social-report-cancel" type="button" [disabled]="reportBusy()" (click)="cancelReport()">{{ copy.reportCancel }}</button>
+          <button class="social-report-submit" type="submit" [disabled]="!reportReason() || reportBusy()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0" /></svg>{{ reportBusy() ? copy.reportSubmitting : copy.reportSubmit }}</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}
+
+@if (pendingUserAction()) {
+  <div class="social-dialog-backdrop" (click)="closeUserActionFromBackdrop($event)">
+    <section class="social-report-dialog social-user-action-dialog" role="dialog" aria-modal="true" aria-labelledby="social-user-action-title" [attr.aria-busy]="userActionConfirmationBusy()">
+      <h2 id="social-user-action-title">{{ userActionConfirmationTitle() }}</h2>
+      <p>{{ copy.userActionConfirmPrompt }}</p>
+      <div class="social-report-actions">
+        <button class="social-report-cancel" type="button" [disabled]="userActionConfirmationBusy()" (click)="cancelUserActionConfirmation()">{{ copy.confirmCancel }}</button>
+        <button class="social-user-action-confirm" [class.social-user-action-confirm--danger]="isBlockConfirmation()" type="button" [disabled]="userActionConfirmationBusy()" (click)="confirmUserAction()">{{ userActionConfirmButtonLabel() }}</button>
+      </div>
+    </section>
+  </div>
+}

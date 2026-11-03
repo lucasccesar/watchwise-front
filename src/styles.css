@@ -92,6 +92,59 @@
   box-sizing: border-box;
 }
 
+.ww-empty-message,
+.profile-empty {
+  display: block;
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+  padding: 28px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  text-align: center;
+}
+
+.ww-empty-panel {
+  display: flex;
+  width: min(1334px, calc(100vw - 64px));
+  max-width: 100%;
+  min-height: 144px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  margin: auto;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.product-main > * {
+  min-width: 0;
+  flex: 1 0 auto;
+}
+
+.ww-empty-panel h2,
+.ww-empty-panel h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+}
+
+.ww-empty-panel p {
+  max-width: 480px;
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
 html,
 body {
   min-width: 320px;
@@ -123,6 +176,10 @@ input:focus-visible {
 @media (max-width: 767px) {
   :root {
     --content-margin: 16px;
+  }
+
+  .ww-empty-panel {
+    width: calc(100vw - 32px);
   }
 }
 
@@ -374,4 +431,75 @@ input:focus-visible {
   html:has(.series-page)::-webkit-scrollbar {
     display: none;
   }
+}
+/* Reusable cinema toggle used by movie logging, review editing, and Trending. */
+.ww-theater-toggle {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.ww-theater-toggle > svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.ww-theater-toggle > span {
+  flex: 1;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: var(--line-height-sm);
+}
+
+.ww-theater-toggle > span > strong { font-weight: inherit; }
+
+.ww-theater-toggle > input[type='checkbox'][role='switch'] {
+  appearance: none;
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex: 0 0 44px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  cursor: pointer;
+}
+
+.ww-theater-toggle > input[type='checkbox'][role='switch']:checked {
+  background: var(--color-primary);
+}
+
+.ww-theater-toggle > input[type='checkbox'][role='switch']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s ease;
+}
+
+.ww-theater-toggle > input[type='checkbox'][role='switch']:checked::after {
+  transform: translateX(20px);
+}
+
+.ww-theater-toggle:focus-within { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.ww-theater-toggle > input[type='checkbox'][role='switch']:disabled { cursor: not-allowed; opacity: .55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-theater-toggle > input[type='checkbox'][role='switch']::after { transition: none; }
 }

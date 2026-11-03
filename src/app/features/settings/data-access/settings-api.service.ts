@@ -110,6 +110,10 @@ export class SettingsApiService {
     return this.http.get<SettingsPage<BlockedUserRecord>>('/api/v1/users/me/blocked', { params });
   }
 
+  blockUser(userId: string): Observable<void> {
+    return this.http.post<void>(`/api/v1/users/me/blocked/${encodeURIComponent(userId)}`, null);
+  }
+
   unblockUser(userId: string): Observable<void> {
     return this.http.delete<void>(`/api/v1/users/me/blocked/${encodeURIComponent(userId)}`);
   }

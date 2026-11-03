@@ -85,7 +85,7 @@
 .pick-comment-spoiler { filter: blur(5px); cursor: pointer; }
 .pick-comment-spoiler:hover { filter: none; }
 .pick-comment-error { margin: 0; color: #ff8888; font-size: var(--font-size-xs); }
-.pick-template-empty { margin: 0; padding: 24px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); color: var(--color-text-tertiary); font-size: var(--font-size-sm); text-align: center; }
+.pick-template-empty { margin: 0; padding: 28px 16px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); color: var(--color-text-tertiary); font-size: var(--font-size-sm); line-height: var(--line-height-sm); text-align: center; }
 .pick-template-state { display: flex; min-height: 420px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--color-text-secondary); text-align: center; }
 .pick-template-state h1 { color: var(--color-text); font-size: var(--font-size-xl); }
 .pick-template-state button { min-height: 38px; padding: 0 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; cursor: pointer; }

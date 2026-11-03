@@ -1,4 +1,4 @@
-.list-progress-page { min-height: 100%; padding-bottom: var(--space-16); background: var(--color-surface); color: var(--color-text); }
+.list-progress-page { display: flex; flex: 1 0 auto; flex-direction: column; min-width: 0; min-height: 100%; padding-bottom: var(--space-16); background: var(--color-surface); color: var(--color-text); }
 .list-progress-heading { display: flex; min-height: 214px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 38px var(--content-margin); text-align: center; }
 .list-progress-breadcrumb { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .list-progress-breadcrumb a { color: var(--color-text-secondary); text-decoration: none; }
@@ -62,6 +62,7 @@
 .list-progress-mark:disabled { opacity: .5; cursor: default; }
 .list-progress-caught-up { margin: 14px 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
 .list-progress-state { display: flex; min-height: 290px; flex-direction: column; align-items: center; justify-content: center; padding: 34px 20px; color: var(--color-text-secondary); text-align: center; }
+.list-progress-empty.ww-empty-panel { min-height: 144px; padding: 28px 16px; }
 .list-progress-state h2 { margin: 0; color: var(--color-text); font-size: var(--font-size-lg); }
 .list-progress-state p { max-width: 460px; margin: 10px 0 0; }
 .list-progress-state > button { min-height: 40px; margin-top: 14px; padding: 0 15px; border: 0; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text); font: inherit; cursor: pointer; }

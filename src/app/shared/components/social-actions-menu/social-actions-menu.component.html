@@ -1,0 +1,91 @@
+@if (!isOwnAuthor) {
+  <div class="ww-social-actions-menu">
+    <button class="ww-social-actions-trigger" type="button" [attr.aria-label]="mode === 'comment' ? copy.commentOptions : copy.activityOptions" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu($event)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
+    @if (menuOpen()) {
+      <div class="ww-social-actions-dropdown" role="menu" (click)="$event.stopPropagation()">
+        <button class="ww-social-actions-item" type="button" role="menuitem" [disabled]="userActionBusy || busy()" (click)="followOrUnfollow($event)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1v6m-3-3h6"/></svg>
+          <span>{{ followActionLabel }}</span>
+        </button>
+        @if (mode === 'review') {
+          <div class="ww-social-actions-separator" role="separator"></div>
+          @if (itemText.trim()) {
+            <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" (click)="openReport('review', $event)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>
+              <span>{{ copy.reportReview }}</span>
+            </button>
+          }
+          <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" (click)="openReport('user', $event)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>
+            <span>{{ copy.reportUser.replace('{user}', authorName) }}</span>
+          </button>
+          <div class="ww-social-actions-separator" role="separator"></div>
+        } @else {
+          <div class="ww-social-actions-separator" role="separator"></div>
+        }
+        <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" [disabled]="busy()" (click)="blockAuthor($event)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>
+          <span>{{ copy.blockUser.replace('{user}', authorName) }}</span>
+        </button>
+        @if (mode === 'comment') {
+          <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" (click)="openReport('comment', $event)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>
+            <span>{{ copy.reportComment }}</span>
+          </button>
+        }
+      </div>
+    }
+    @if (error()) { <span class="ww-social-actions-feedback" role="alert">{{ error() }}</span> }
+    @if (statusMessage()) { <span class="ww-social-actions-feedback" role="status">{{ statusMessage() }}</span> }
+  </div>
+}
+
+@if (pendingAction()) {
+  <div class="ww-social-actions-backdrop" (click)="cancelUserAction()">
+    <section class="ww-social-actions-dialog" role="alertdialog" appModalFocus aria-modal="true" aria-labelledby="ww-social-action-confirm-title" [attr.aria-busy]="busy()" (modalDismiss)="cancelUserAction()" (click)="$event.stopPropagation()">
+      <h2 id="ww-social-action-confirm-title">{{ confirmationTitle }}</h2>
+      <p>{{ copy.userActionConfirmPrompt }}</p>
+      @if (error()) { <p class="ww-social-actions-error" role="alert">{{ error() }}</p> }
+      <div class="ww-social-actions-dialog-buttons">
+        <button type="button" [disabled]="busy()" (click)="cancelUserAction()">{{ copy.confirmCancel }}</button>
+        <button class="ww-social-actions-confirm" [class.ww-social-actions-confirm--danger]="pendingAction() === 'block'" type="button" [disabled]="busy()" (click)="confirmUserAction()">{{ confirmationButtonLabel }}</button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (reportTarget()) {
+  <div class="ww-social-actions-backdrop ww-social-actions-backdrop--report" (click)="reportBackdropClick($event)">
+    <section class="ww-social-report-dialog" role="dialog" appModalFocus aria-modal="true" aria-labelledby="ww-social-report-title" [attr.aria-busy]="busy()" (modalDismiss)="cancelReport()" (click)="$event.stopPropagation()">
+      <form (submit)="submitReport($event)">
+        <header class="ww-social-report-header">
+          <span class="ww-social-report-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg></span>
+          <div><h2 id="ww-social-report-title">{{ reportTitle }}</h2><p>{{ copy.reportAnonymous.replace('{user}', reportHandle) }}</p></div>
+          <button class="ww-social-report-close" type="button" [attr.aria-label]="copy.reportClose" [disabled]="busy()" (click)="cancelReport()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </header>
+        <div class="ww-social-report-evidence"><span>{{ reportEvidenceLabel }}</span><p>{{ reportEvidenceText }}</p></div>
+        <fieldset class="ww-social-report-reasons" [attr.aria-busy]="busy()">
+          <legend>{{ reportQuestion }}</legend>
+          @for (reason of reportReasons; track reason) {
+            <label class="ww-social-report-reason" [class.ww-social-report-reason--selected]="reportReason() === reason">
+              <input type="radio" name="ww-social-report-reason" [value]="reason" [checked]="reportReason() === reason" [disabled]="busy()" (change)="selectReportReason(reason)" />
+              <span><strong>{{ reportReasonLabel(reason) }}</strong><small>{{ reportReasonDescription(reason) }}</small></span>
+            </label>
+          }
+        </fieldset>
+        <div class="ww-social-report-details">
+          <label for="ww-social-report-details">{{ copy.reportDetails }}</label>
+          <textarea id="ww-social-report-details" maxlength="280" [value]="reportDetails()" (input)="setReportDetails($event)" [placeholder]="copy.reportDetailsPlaceholder" [disabled]="busy()"></textarea>
+          <span>{{ reportDetails().length }} / 280</span>
+        </div>
+        @if (reportError()) { <p class="ww-social-actions-error" role="alert">{{ reportError() }}</p> }
+        <footer class="ww-social-report-actions">
+          <button type="button" [disabled]="busy()" (click)="cancelReport()">{{ copy.reportCancel }}</button>
+          <button class="ww-social-report-submit" type="submit" [disabled]="!reportReason() || busy()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>{{ busy() ? copy.reportSubmitting : copy.reportSubmit }}</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}

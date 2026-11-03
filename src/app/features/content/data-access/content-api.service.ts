@@ -4,6 +4,18 @@ import { Observable, map } from 'rxjs';
 
 export type ReviewSort = 'POPULAR' | 'RECENT' | 'FOLLOWING';
 export type ContentReviewSource = 'DIARY' | 'DROPPED' | 'CONTENT_REVIEW';
+export type ContentImageSelectionType = 'MOVIE' | 'SERIES';
+export type ContentImageSelectionKind = 'posters' | 'backdrops';
+
+export interface ContentImageSelection {
+  url: string;
+  width: number | null;
+  height: number | null;
+  aspectRatio: number | null;
+  language: string | null;
+  voteAverage: number | null;
+  voteCount: number | null;
+}
 
 export interface ContentReference {
   id: string;
@@ -464,6 +476,11 @@ export interface CommentCreationRequest {
   containsSpoiler?: boolean;
 }
 
+export interface CommentUpdateRequest {
+  text: string;
+  containsSpoiler?: boolean;
+}
+
 export interface SeriesDiaryBulkRequest {
   content:
     | { type: 'SERIES'; tmdbId: string }
@@ -486,6 +503,16 @@ export interface SeriesDiaryRequest {
 @Injectable({ providedIn: 'root' })
 export class ContentApiService {
   constructor(private readonly http: HttpClient) {}
+
+  getContentImages(
+    type: ContentImageSelectionType,
+    tmdbId: string,
+    kind: ContentImageSelectionKind,
+  ): Observable<ContentImageSelection[]> {
+    return this.http.get<ContentImageSelection[]>(
+      `/api/v1/contents/selection/${type}/${encodeURIComponent(tmdbId)}/${kind}`,
+    );
+  }
 
   getSeriesSeasons(seriesTmdbId: string): Observable<ContentSeasonSelection[]> {
     return this.http.get<ContentSeasonSelection[]>(`/api/v1/contents/selection/series/${encodeURIComponent(seriesTmdbId)}/seasons`);
@@ -649,15 +676,16 @@ export class ContentApiService {
     return this.http.post('/api/v1/diary', request);
   }
 
-  updateDiaryEntry(diaryEntryId: string, request: MovieDiaryRequest): Observable<unknown> {
+  updateDiaryEntry(diaryEntryId: string, request: MovieDiaryRequest): Observable<DiaryEntryRecord> {
     const update = {
       score: request.score,
       comment: request.comment,
       watchedDate: request.watchedDate,
       watchedInTheater: request.watchedInTheater,
+      isRewatch: request.isRewatch,
       watchedWith: request.watchedWith,
     };
-    return this.http.patch(
+    return this.http.patch<DiaryEntryRecord>(
       `/api/v1/diary/${encodeURIComponent(diaryEntryId)}`,
       update,
     );
@@ -739,6 +767,13 @@ export class ContentApiService {
 
   deleteComment(commentId: string): Observable<void> {
     return this.http.delete<void>(`/api/v1/comments/${encodeURIComponent(commentId)}`);
+  }
+
+  updateComment(commentId: string, request: CommentUpdateRequest): Observable<ContentComment> {
+    return this.http.patch<ContentComment>(
+      `/api/v1/comments/${encodeURIComponent(commentId)}`,
+      request,
+    );
   }
 
   setReviewLike(reviewId: string, source: ContentReviewSource, liked: boolean): Observable<void> {

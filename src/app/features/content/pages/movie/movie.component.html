@@ -1,10 +1,7 @@
 <ng-template #ratingStar><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.283 3.453c.23-.467.345-.7.502-.775a.5.5 0 0 1 .431 0c.156.075.271.308.501.775l2.187 4.43c.068.138.102.207.152.26a.7.7 0 0 0 .45.178l4.891.714c.515.076.772.113.891.239a.5.5 0 0 1 .132.408c-.022.171-.209.353-.581.716L17.3 13.844c-.11.107-.165.161-.2.225a.7.7 0 0 0-.03.482l.835 4.866c.088.513.132.77.049.922a.5.5 0 0 1-.358.253c-.17.031-.4-.09-.861-.332l-4.373-2.3a.7.7 0 0 0-.467-.134.7.7 0 0 0-.276.134l-4.373 2.3c-.461.242-.691.363-.861.332a.5.5 0 0 1-.348-.253c-.083-.152-.039-.409.049-.922l.835-4.866a.7.7 0 0 0-.03-.482c-.035-.064-.09-.118-.2-.225l-3.539-3.446c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.163.891-.239l4.891-.714a.7.7 0 0 0 .45-.178c.05-.053.084-.122.152-.26l2.186-4.43Z" /></svg></ng-template>
 <main class="movie-page">
   @if (pageStatus() === 'loading') {
-    <div class="movie-state movie-state--loading" role="status">
-      <span class="movie-spinner" aria-hidden="true"></span>
-      <span>{{ copy.loading }}</span>
-    </div>
+    <app-page-skeleton variant="content" [label]="copy.loading" />
   } @else if (pageStatus() === 'error') {
     <section class="movie-state movie-state--error" role="alert">
       <h1>{{ pageError() }}</h1>
@@ -352,7 +349,7 @@
               <div id="movie-lists-panel" class="movie-lists-panel" [attr.aria-label]="copy.listSelectTitle">
                 <strong class="movie-lists-panel-title">{{ copy.yourLists }}</strong>
                 @if (userListsStatus() === 'loading') {
-                  <p class="movie-empty-inline" role="status">{{ copy.loading }}</p>
+                  <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loading" />
                 } @else if (userListsStatus() === 'error') {
                   <p class="movie-field-error" role="alert">{{ userListsError() || copy.listLoadError }}</p>
                   <button class="movie-text-button" type="button" (click)="loadUserLists(1)">{{ copy.retry }}</button>
@@ -368,7 +365,7 @@
                     <button class="movie-text-button movie-lists-panel-more" type="button" (click)="loadMoreLists()">{{ copy.moreLists }}</button>
                   }
                 } @else {
-                  <p class="movie-empty-inline">{{ copy.listEmpty }}</p>
+                  <p class="movie-empty-inline ww-empty-message">{{ copy.listEmpty }}</p>
                 }
                 @if (listCreateOpen()) {
                   <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createMovieList()">
@@ -511,7 +508,7 @@
       </div>
 
       @if (reviewStatus() === 'loading') {
-        <p class="movie-section-state" role="status">{{ copy.reviewLoading }}</p>
+        <app-page-skeleton variant="rows" [compact]="true" [label]="copy.reviewLoading" />
       } @else if (reviewStatus() === 'error') {
         <div class="movie-section-state" role="alert">
           <p>{{ reviewError() }}</p>
@@ -556,7 +553,7 @@
           </button>
         }
       } @else {
-        <p class="movie-section-state">{{ copy.reviewsEmpty }}</p>
+        <p class="movie-section-state ww-empty-message">{{ copy.reviewsEmpty }}</p>
       }
     </section>
 
@@ -568,12 +565,27 @@
       @if (commentError()) {
         <p class="movie-field-error" role="alert">{{ commentError() }}</p>
       }
+      <ng-template #contentCommentNode let-node let-depth="depth">
+        @let comment = node.comment;
+        <app-comment-item [authorName]="commentAuthorName(comment)" [authorUsername]="comment.user.username" [authorPicture]="comment.user.profilePicture" [createdAt]="comment.createdAt" [timeLabel]="formatDate(comment.createdAt)" [depth]="depth" [hasReplies]="node.replies.length > 0" [commentId]="'comment-' + comment.id">
+          <div comment-body>
+            @if (comment.containsSpoiler) { <details class="movie-spoiler"><summary>{{ copy.commentSpoiler }}</summary><p>{{ comment.text }}</p></details> }
+            @else { <p>{{ comment.text }}</p> }
+          </div>
+          <div comment-actions>
+            <button type="button" class="ww-comment-like" [class.is-liked]="comment.likedByMe" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.6c0 4.4-8.8 10.2-8.8 10.2S3.2 13 3.2 8.6A4.4 4.4 0 0 1 12 6.1a4.4 4.4 0 0 1 8.8 2.5Z" /></svg><span>{{ formatNumber(comment.likesCount, 0) }}</span></button>
+            <button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>
+            @if (isOwnComment(comment)) { <button type="button" (click)="deleteComment(comment)">{{ copy.commentDelete }}</button> }
+          </div>
+          @if (node.replies.length) { <div comment-replies>@for (reply of node.replies; track reply.comment.id) { <ng-container [ngTemplateOutlet]="contentCommentNode" [ngTemplateOutletContext]="{$implicit: reply, depth: depth + 1}"></ng-container> }</div> }
+        </app-comment-item>
+      </ng-template>
       <form class="movie-comment-form" (submit)="$event.preventDefault(); submitComment()">
         <div class="movie-comment-composer-avatar" aria-hidden="true">
           @if (session.user()?.profilePicture; as avatar) {
             <img [src]="avatar" alt="" />
           } @else {
-            <span>{{ (session.user()?.name || session.user()?.username || 'W').slice(0, 1) }}</span>
+            <img src="/default-user-avatar.png" alt="" />
           }
         </div>
         <div class="movie-comment-composer-body">
@@ -607,48 +619,16 @@
         </div>
       </form>
       @if (commentStatus() === 'loading') {
-        <p class="movie-section-state" role="status">{{ copy.commentsLoading }}</p>
+        <app-page-skeleton variant="rows" [compact]="true" [label]="copy.commentsLoading" />
       } @else if (commentStatus() === 'error') {
         <div class="movie-section-state" role="alert">
           <p>{{ commentError() }}</p>
           <button class="movie-text-button" type="button" (click)="retriesComments()">{{ copy.retrySection }}</button>
         </div>
       } @else if (comments().length) {
-        <div class="movie-comment-list">
-          @for (comment of comments(); track comment.id) {
-            <article class="movie-comment" [class.movie-comment--reply]="comment.parentCommentId">
-              <div class="movie-review-avatar movie-comment-avatar">
-                @if (comment.user.profilePicture; as avatar) {
-                  <img [src]="avatar" alt="" loading="lazy" />
-                } @else {
-                  <span aria-hidden="true">{{ commentAuthorName(comment).slice(0, 1) }}</span>
-                }
-              </div>
-              <div class="movie-comment-body">
-                <div class="movie-comment-heading">
-                  <strong>{{ commentAuthorName(comment) }}</strong>
-                  <time [attr.datetime]="comment.createdAt">{{ formatDate(comment.createdAt) }}</time>
-                </div>
-                @if (comment.containsSpoiler) {
-                  <details class="movie-spoiler">
-                    <summary>{{ copy.commentSpoiler }}</summary>
-                    <p>{{ comment.text }}</p>
-                  </details>
-                } @else {
-                  <p>{{ comment.text }}</p>
-                }
-                <div class="movie-review-actions">
-                  <button type="button" [attr.aria-pressed]="comment.likedByMe" (click)="toggleCommentLike(comment)">
-                    <span aria-hidden="true">{{ comment.likedByMe ? '♥' : '♡' }}</span>{{ comment.likedByMe ? copy.unlike : copy.like }}
-                    <span>{{ formatNumber(comment.likesCount, 0) }}</span>
-                  </button>
-                  <button type="button" (click)="setReplyTo(comment)">{{ copy.reply }}</button>
-                  @if (isOwnComment(comment)) {
-                    <button type="button" (click)="deleteComment(comment)">{{ copy.commentDelete }}</button>
-                  }
-                </div>
-              </div>
-            </article>
+        <div class="movie-comment-list ww-comment-list">
+          @for (thread of commentThreads(); track thread.comment.id) {
+            <ng-container [ngTemplateOutlet]="contentCommentNode" [ngTemplateOutletContext]="{$implicit: thread, depth: 0}"></ng-container>
           }
         </div>
         @if (commentPage()?.hasNext) {
@@ -657,7 +637,7 @@
           </button>
         }
       } @else {
-        <p class="movie-section-state">{{ copy.commentsEmpty }}</p>
+        <p class="movie-section-state ww-empty-message">{{ copy.commentsEmpty }}</p>
       }
     </section>
   }
@@ -667,6 +647,11 @@
   }
 
   @if (dialog(); as currentDialog) {
+    @if (currentDialog === 'share') {
+      @if (shareModel(); as model) {
+        <app-share-review-dialog [model]="model" [copy]="copy" [returnFocusTarget]="modalOpener" (closed)="closeDialog()" />
+      }
+    } @else {
     <div class="movie-modal-backdrop" (click)="closeDialog()">
       <section
         #movieDialog
@@ -674,16 +659,14 @@
         role="dialog"
         aria-modal="true"
         tabindex="-1"
-        [attr.aria-labelledby]="currentDialog === 'watch' ? 'movie-watch-title' : currentDialog === 'videos' ? 'movie-videos-title' : currentDialog === 'share' ? 'movie-share-title' : 'movie-lists-title'"
+        [attr.aria-labelledby]="currentDialog === 'watch' ? 'movie-watch-title' : currentDialog === 'videos' ? 'movie-videos-title' : 'movie-lists-title'"
         (click)="$event.stopPropagation()"
       >
         <header class="movie-dialog-header">
           <div class="movie-dialog-heading">
-          <h2 [id]="currentDialog === 'watch' ? 'movie-watch-title' : currentDialog === 'videos' ? 'movie-videos-title' : currentDialog === 'share' ? 'movie-share-title' : 'movie-lists-title'">
+          <h2 [id]="currentDialog === 'watch' ? 'movie-watch-title' : currentDialog === 'videos' ? 'movie-videos-title' : 'movie-lists-title'">
             @if (currentDialog === 'videos') {
               {{ copy.videos }}
-            } @else if (currentDialog === 'share') {
-              {{ copy.shareTitle }}
             } @else if (currentDialog === 'lists') {
               {{ copy.listSelectTitle }}
             } @else {
@@ -696,7 +679,6 @@
           @if (currentDialog === 'videos' && page(); as videoPage) {
             <p class="movie-videos-subtitle">{{ videoPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(videoPage.details.videos.length, 0)) }}</p>
           }
-          @if (currentDialog === 'share') { <p class="movie-share-description">{{ copy.shareDescription }}</p> }
           </div>
           <button class="movie-icon-button" type="button" [attr.aria-label]="copy.closeDialog" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
         </header>
@@ -748,7 +730,7 @@
               <p class="movie-field-error" role="alert">{{ copy.invalid }}</p>
             }
 
-            <label class="movie-watch-theater" for="movie-watch-theater">
+            <label class="movie-watch-theater ww-theater-toggle" for="movie-watch-theater">
               <svg class="movie-watch-theater-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7C3 5.9 3.9 5 5 5h14c1.1 0 2 .9 2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v2c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-2c1.66 0 3-1.34 3-3S4.66 9 3 9Z"/><path d="M14 5v2m0 4v2m0 4v2"/></svg>
               <span class="movie-watch-theater-copy"><strong>{{ copy.theaterLabel }}</strong></span>
               <input id="movie-watch-theater" type="checkbox" role="switch" formControlName="watchedInTheater" />
@@ -832,61 +814,6 @@
               </button>
             </div>
           </form>
-        } @else if (currentDialog === 'share') {
-          @if (page(); as moviePage) {
-            <div class="movie-share-layout">
-              <div class="movie-share-preview" role="img" [attr.aria-label]="copy.shareImageAlt.replace('{title}', moviePage.details.title || copy.untitled)" (wheel)="shareWheel($event)" (pointerdown)="shareDragStart($event)" (pointermove)="shareDragMove($event)" (pointerup)="shareDragEnd()" (pointercancel)="shareDragEnd()">
-                <div class="movie-share-canvas">
-                  <div class="movie-share-backdrop" [style.background-image]="'url(' + (shareImageUrl() || backdropUrl() || posterUrl() || '') + ')'" [style.background-size]="'auto ' + shareZoom() + '%'" [style.background-position]="shareX() + '% ' + shareY() + '%'" aria-hidden="true"></div>
-                  <div class="movie-share-scrim" aria-hidden="true"></div>
-                  <div class="movie-share-card-content">
-                    <div class="movie-share-author"><img [src]="session.user()?.profilePicture || '/default-user-avatar.png'" alt="" /><span>{{ '@' + (session.user()?.username || '') }}</span></div>
-                    @if (sharePosterUrl() || posterUrl(); as poster) { <img class="movie-share-poster" [src]="poster" alt="" /> }
-                    <h3>{{ moviePage.details.title || copy.untitled }} @if (moviePage.details.releaseDate) { <small>{{ moviePage.details.releaseDate.slice(0, 4) }}</small> }</h3>
-                    @if (moviePage.viewerState.myRating) { <strong class="movie-share-rating"><span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span> {{ moviePage.viewerState.myRating }}<small>/10</small></strong> }
-                    @if (shareShowReview() && moviePage.viewerState.myReview) { <p>“{{ moviePage.viewerState.myReview }}”</p> }
-                    <span class="movie-share-brand">ON <img src="/watchwise-logo.svg" alt="Watchwise" /></span>
-                  </div>
-                </div>
-              </div>
-              <div class="movie-share-side-controls">
-                <div class="movie-share-control-group">
-                  <strong>{{ copy.shareImages }}</strong>
-                  <div class="movie-share-image-actions">
-                    <label class="movie-button movie-button--secondary movie-share-image-picker">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
-                      {{ copy.shareChangeImage }}
-                      <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangeImage" (change)="onShareImageChanged($event)" />
-                    </label>
-                    <label class="movie-button movie-button--secondary movie-share-image-picker">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
-                      {{ copy.shareChangePoster }}
-                      <input type="file" accept="image/*" [attr.aria-label]="copy.shareChangePoster" (change)="onSharePosterChanged($event)" />
-                    </label>
-                  </div>
-                  @if (shareImageUrl() || sharePosterUrl()) { <button class="movie-share-reset-link" type="button" (click)="resetShareImages()">{{ copy.shareOriginalImages }}</button> }
-                </div>
-                <div class="movie-share-control-group">
-                  <label for="movie-share-zoom">{{ copy.shareZoom }}</label>
-                  <div class="movie-share-zoom">
-                    <button type="button" [attr.aria-label]="copy.zoomOut" (click)="changeShareZoom(-10)">−</button>
-                    <input id="movie-share-zoom" type="range" min="100" max="250" step="5" [value]="shareZoom()" (input)="shareZoom.set(+$any($event.target).value)" />
-                    <button type="button" [attr.aria-label]="copy.zoomIn" (click)="changeShareZoom(10)">+</button>
-                    <span>{{ shareZoom() }}%</span>
-                  </div>
-                </div>
-                <div class="movie-share-control-group">
-                  <strong>{{ copy.sharePosition }}</strong>
-                  <label class="movie-share-position">{{ copy.shareHorizontal }}<input type="range" min="0" max="100" step="1" [value]="shareX()" (input)="shareX.set(+$any($event.target).value)" /></label>
-                  <label class="movie-share-position">{{ copy.shareVertical }}<input type="range" min="0" max="100" step="1" [value]="shareY()" (input)="shareY.set(+$any($event.target).value)" /></label>
-                  @if (shareZoom() === 100) { <small>{{ copy.sharePositionHint }}</small> }
-                  <button class="movie-button movie-button--secondary movie-share-reset" type="button" (click)="resetShareBackground()">{{ copy.shareResetBackground }}</button>
-                </div>
-                <div class="movie-share-review-toggle"><span><strong>{{ copy.shareShowReview }}</strong><small>{{ shareShowReview() ? copy.shareReviewVisible : copy.shareReviewHidden }}</small></span><button type="button" role="switch" [attr.aria-checked]="shareShowReview()" [attr.aria-label]="copy.shareShowReview" [class.movie-share-switch--on]="shareShowReview()" (click)="shareShowReview.set(!shareShowReview())"><span></span></button></div>
-                <div class="movie-share-controls"><button class="movie-button movie-button--secondary" type="button" (click)="closeDialog()">{{ copy.cancel }}</button><button class="movie-button movie-button--primary" type="button" (click)="downloadShareImage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v2a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-2m14-5-5 5-5-5m5 5V3" /></svg>{{ copy.shareDownload }}</button></div>
-              </div>
-            </div>
-          }
         } @else if (currentDialog === 'videos') {
           @if (selectedVideo(); as video) {
             <div class="movie-video-feature">
@@ -929,7 +856,7 @@
           }
         } @else {
           @if (userListsStatus() === 'loading') {
-            <p class="movie-section-state" role="status">{{ copy.loading }}</p>
+            <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loading" />
           } @else if (userListsStatus() === 'error') {
             <div class="movie-section-state" role="alert">
               <p>{{ userListsError() || copy.listLoadError }}</p>
@@ -967,7 +894,7 @@
               </button>
             }
           } @else {
-            <p class="movie-empty-inline">{{ copy.listEmpty }}</p>
+            <p class="movie-empty-inline ww-empty-message">{{ copy.listEmpty }}</p>
           }
           @if (listCreateOpen()) {
             <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createMovieList()">
@@ -981,5 +908,6 @@
         }
       </section>
     </div>
+    }
   }
 </main>

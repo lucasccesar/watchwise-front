@@ -54,6 +54,12 @@
     </button>
   </div>
 
+  @if (actionFeedback(); as feedback) {
+    <p class="tr-action-feedback" [class.tr-action-feedback--error]="feedback.error" [attr.role]="feedback.error ? 'alert' : 'status'">
+      {{ feedback.message }}
+    </p>
+  }
+
   @if (status() === 'error') {
     <div class="tr-page-state" role="alert">
       <h2>{{ copy.errorTitle }}</h2>
@@ -106,9 +112,72 @@
                         [ratingValue]="rating?.value ?? null"
                         [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''"
                         [optionsLabel]="footerCopy.contentOptions"
-                        [actions]="posterActions"
-                        (actionSelected)="openContent(card)"
+                        [actions]="posterActionsFor(card)"
+                        (actionSelected)="handlePosterAction(card, $event)"
                       />
+                      @if (listDialogCard()?.tmdbId === card.tmdbId && listDialogCard()?.type === card.type) {
+                        <section
+                          class="tr-list-picker"
+                          role="dialog"
+                          aria-labelledby="tr-list-picker-title"
+                          [style.top.px]="listPickerPosition()?.top ?? null"
+                          [style.right.px]="listPickerPosition()?.right ?? 0"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <header>
+                            <h3 id="tr-list-picker-title">{{ copy.yourLists }}</h3>
+                            <button type="button" [attr.aria-label]="copy.closeListDialog" [disabled]="busyListId() !== null" (click)="closeListDialog()">×</button>
+                          </header>
+
+                          @if (listActionError()) { <p class="tr-list-picker-error" role="alert">{{ listActionError() }}</p> }
+                          @if (userListsError() && userListsStatus() !== 'error') { <p class="tr-list-picker-error" role="alert">{{ userListsError() }}</p> }
+
+                          @if (userListsStatus() === 'loading') {
+                            <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loadingLists" />
+                          } @else if (userListsStatus() === 'error') {
+                            <div class="tr-list-picker-state" role="alert"><p>{{ userListsError() }}</p><button type="button" (click)="retryUserLists()">{{ copy.retry }}</button></div>
+                          } @else if (userLists().length === 0) {
+                            <p class="tr-list-picker-state ww-empty-message">{{ copy.emptyLists }}</p>
+                          } @else {
+                            <ul class="tr-user-lists">
+                              @for (list of userLists(); track list.id) {
+                                <li>
+                                  <label [class.tr-user-list-disabled]="busyListId() !== null || !canToggleList(list)">
+                                    <input
+                                      type="checkbox"
+                                      [checked]="list.containsContent === true"
+                                      [disabled]="busyListId() !== null || !canToggleList(list)"
+                                      [attr.aria-label]="list.name"
+                                      (change)="addCardToList(list)"
+                                    />
+                                    <span class="tr-user-list-name">{{ list.name }}</span>
+                                    <small>{{ list.itemsCount ?? 0 }}</small>
+                                  </label>
+                                  @if (busyListId() === list.id) { <span class="tr-user-list-busy" role="status">{{ copy.loading }}</span> }
+                                  @else if (!canToggleList(list)) { <span class="tr-user-list-busy">{{ copy.incompatibleList }}</span> }
+                                </li>
+                              }
+                            </ul>
+                            @if (userListsPage()?.hasNext) {
+                              <button class="tr-lists-load-more" type="button" [disabled]="userListsLoadingMore()" (click)="loadMoreUserLists()">
+                                {{ userListsLoadingMore() ? copy.loadingMore : copy.loadMoreLists }}
+                              </button>
+                            }
+                          }
+
+                          <div class="tr-list-picker-create">
+                            @if (listCreateOpen()) {
+                              <form (submit)="$event.preventDefault(); createListWithCard()">
+                                <label class="visually-hidden" for="tr-new-list-name">{{ copy.newListName }}</label>
+                                <input id="tr-new-list-name" type="text" maxlength="120" [value]="listDraftName()" [placeholder]="copy.newListName" [disabled]="busyListId() !== null" (input)="updateListDraft($event)" />
+                                <button type="submit" [disabled]="!listDraftName().trim() || busyListId() !== null">{{ busyListId() === 'new-list' ? copy.loading : copy.createList }}</button>
+                              </form>
+                            } @else {
+                              <button type="button" [disabled]="busyListId() !== null" (click)="openListCreate()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</button>
+                            }
+                          </div>
+                        </section>
+                      }
                       @if (upcomingRelease(card); as release) {
                         <span
                           class="tr-upcoming-release"
@@ -196,7 +265,7 @@
               }
             </ol>
           } @else if (status() === 'ready') {
-            <p class="tr-empty">{{ copy.noTitles }}</p>
+            <p class="tr-empty ww-empty-message">{{ copy.noTitles }}</p>
           }
           @if (section(type).error) {
             <p class="tr-section-error" role="alert">{{ copy.moreError }}</p>
@@ -297,5 +366,107 @@
         }
       </div>
     </div>
+  }
+
+  @if (watchDialogCard(); as card) {
+    <app-dialog-backdrop placement="top" (dismiss)="closeWatchedDialog()">
+      <section
+        class="watch-log-dialog ww-dialog-panel"
+        role="dialog"
+        appModalFocus
+        [modalReturnFocus]="listDialogOpener()"
+        (modalDismiss)="closeWatchedDialog()"
+        aria-modal="true"
+        aria-labelledby="tr-watch-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="watch-log-header">
+          <div>
+            <h2 id="tr-watch-dialog-title">{{ card.viewerState?.watchStatus === 'WATCHED' ? copy.watchAgain : footerCopy.markWatched }}</h2>
+            <span>{{ cardTitle(card) }}<span aria-hidden="true"> · </span>{{ card.type === 'MOVIE' ? footerCopy.movie : footerCopy.series }}</span>
+          </div>
+          <button class="watch-log-close" type="button" [attr.aria-label]="footerCopy.closeDialog" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </header>
+
+        <div class="watch-log-controls">
+          <div class="watch-date-picker">
+            <button class="watch-date-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="watchDialogCalendarOpen()" [disabled]="watchDialogSaving()" (click)="toggleWatchDialogCalendar()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+              <span><span>{{ footerCopy.watchedOn }}</span> {{ watchDialogDateLabel() }}</span>
+              <svg class="watch-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            @if (watchDialogCalendarOpen()) {
+              <div class="watch-calendar" role="dialog" [attr.aria-label]="footerCopy.chooseWatchDate">
+                <div class="watch-calendar-header">
+                  <button type="button" [attr.aria-label]="footerCopy.previousMonth" (click)="changeWatchDialogMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  <span>{{ watchDialogMonthLabel() }}</span>
+                  <button type="button" [attr.aria-label]="footerCopy.nextMonth" [disabled]="!canAdvanceWatchDialogCalendar()" (click)="changeWatchDialogMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                </div>
+                <div class="watch-calendar-grid watch-calendar-weekdays" aria-hidden="true">
+                  @for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }
+                </div>
+                <div class="watch-calendar-grid">
+                  @for (day of watchDialogDays(); track day.date) {
+                    @if (day.inMonth) {
+                      <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled || watchDialogSaving()" [class.watch-calendar-day--selected]="day.selected" (click)="selectWatchDialogDate(day.date)">{{ day.day }}</button>
+                    } @else { <span aria-hidden="true"></span> }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          @if (card.type === 'MOVIE') {
+            <label class="watch-rewatch-option">
+              <input type="checkbox" [checked]="watchDialogRewatch()" [disabled]="watchDialogSaving()" (change)="setWatchedRewatch($event)" />
+              {{ footerCopy.watchedBefore }}
+            </label>
+          } @else if (card.viewerState?.watchStatus === 'WATCHED') {
+            <label class="watch-rewatch-option"><input type="checkbox" checked disabled />{{ footerCopy.watchedBefore }}</label>
+          }
+        </div>
+
+        @if (card.type === 'MOVIE') {
+          <label class="ww-theater-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7C3 5.9 3.9 5 5 5h14c1.1 0 2 .9 2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v2c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-2c1.66 0 3-1.34 3-3S4.66 9 3 9Z"/><path d="M14 5v2m0 4v2m0 4v2"/></svg>
+            <span>{{ copy.theaterLabel }}</span>
+            <input type="checkbox" role="switch" [checked]="watchDialogWatchedInTheater()" [disabled]="watchDialogSaving()" (change)="setWatchedInTheater($event)" />
+          </label>
+        }
+
+        <div class="watch-log-companions" role="group" [attr.aria-label]="footerCopy.watchedWith">
+          <span>{{ footerCopy.watchedWith }}</span>
+          <div>
+            <span class="watch-log-just-you">{{ footerCopy.justYou }}</span>
+            <button type="button" disabled [title]="footerCopy.actionUnavailableShort"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ footerCopy.addPerson }}</button>
+          </div>
+        </div>
+
+        @if (card.type === 'MOVIE') {
+          <div class="watch-rating" role="group" [attr.aria-label]="footerCopy.yourRating">
+            <span>{{ footerCopy.yourRating }}</span>
+            <div>
+              @for (rating of ratingOptions; track rating) {
+                <button type="button" [disabled]="watchDialogSaving()" [attr.aria-label]="footerCopy.rateWith + ' ' + rating + ' ' + footerCopy.outOfTen" [attr.aria-pressed]="watchDialogScore() === rating" (click)="setWatchedRating(rating)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="watchDialogScore() !== null && rating <= watchDialogScore()!"><path d="m11.283 3.453.933-1.89.933 1.89 2.187 4.43c.068.138.102.207.152.26.044.048.097.086.155.113.067.031.143.042.295.065l4.891.714c.515.075.772.113.891.239.103.109.152.259.132.408-.022.171-.209.353-.581.716l-3.539 3.45c-.11.107-.165.161-.2.225a.48.48 0 0 0-.055.187c-.007.073.006.148.032.3l.835 4.872c.088.513.132.77.05.922a.5.5 0 0 1-.36.261c-.17.028-.4-.093-.86-.335l-4.375-2.3c-.136-.072-.204-.108-.276-.122a.5.5 0 0 0-.198 0c-.072.014-.14.05-.276.122l-4.375 2.3c-.46.242-.69.363-.86.335a.5.5 0 0 1-.36-.261c-.082-.153-.038-.409.05-.922l.835-4.873c.026-.151.039-.226.032-.299a.5.5 0 0 0-.055-.187c-.035-.064-.09-.118-.2-.225l-3.539-3.45c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.164.891-.239l4.891-.714c.152-.023.228-.034.295-.065a.5.5 0 0 0 .155-.113c.05-.053.084-.122.152-.26l2.187-4.43Z" /></svg>
+                  <span>{{ rating }}</span>
+                </button>
+              }
+            </div>
+          </div>
+          <label class="watch-review">
+            <span>{{ footerCopy.yourReview }} <span>{{ footerCopy.optional }}</span></span>
+            <textarea rows="5" maxlength="5000" [placeholder]="footerCopy.reviewPlaceholder" [value]="watchDialogReview()" [disabled]="watchDialogSaving()" (input)="updateWatchedReview($event)"></textarea>
+          </label>
+        }
+
+        <footer class="watch-log-actions">
+          @if (watchDialogError()) { <p class="watch-log-save-error" role="alert">{{ watchDialogError() }}</p> }
+          <button class="watch-log-cancel" type="button" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()">{{ footerCopy.cancel }}</button>
+          <button class="watch-log-save" type="button" [disabled]="watchDialogSaving() || !watchDialogDate()" (click)="saveWatchedCard()">{{ watchDialogSaving() ? footerCopy.saving : footerCopy.save }}</button>
+        </footer>
+      </section>
+    </app-dialog-backdrop>
   }
 </div>

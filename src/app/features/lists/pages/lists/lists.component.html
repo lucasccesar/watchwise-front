@@ -41,9 +41,9 @@
     </div>
   </section>
 
-  @if (status() === 'loading') { <div class="lists-state" role="status">{{ copy.loading }}</div> }
+  @if (status() === 'loading') { <app-page-skeleton variant="cards" [label]="copy.loading" /> }
   @else if (status() === 'error') { <section class="lists-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section> }
-  @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty"><h2>{{ isCommunity ? copy.communityEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity) { <a routerLink="/lists/create">{{ copy.createList }}</a> }</section> }
+  @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty ww-empty-panel"><h2>{{ isCommunity ? copy.communityEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity) { <a routerLink="/lists/create">{{ copy.createList }}</a> }</section> }
   @else {
     <div class="lists-pagination-bar"><nav class="lists-pagination" [attr.aria-label]="copy.pagination"><button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>@for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.lists-page-active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }<button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button></nav><p class="lists-page-label">{{ copy.pageLabel.replace('{page}', page().toString()).replace('{total}', totalPages().toString()) }}</p></div>
     <section class="lists-grid" [attr.aria-label]="isCommunity ? copy.communityLists : copy.myLists">
@@ -74,7 +74,7 @@
                 </span>
                 <span class="list-item-count">{{ itemCountLabel(list) }}</span>
               </div>
-              <div class="list-card-owner"><span class="list-owner-avatar">@if (list.user.profilePicture) { <img [src]="list.user.profilePicture" alt="" loading="lazy" /> } @else { {{ list.user.name.slice(0, 1) }} }</span><span>{{ copy.by }} <a [routerLink]="['/users', list.user.username]">{{ list.user.name }}</a></span><span aria-hidden="true">·</span><span>{{ copy.updated }} {{ updatedLabel(list.updatedAt) }}</span></div>
+              <div class="list-card-owner"><span class="list-owner-avatar">@if (list.user.profilePicture) { <img [src]="list.user.profilePicture" alt="" loading="lazy" /> } @else { <img src="/default-user-avatar.png" alt="" loading="lazy" /> }</span><span>{{ copy.by }} <a [routerLink]="['/users', list.user.username]">{{ list.user.name }}</a></span><span aria-hidden="true">·</span><span>{{ copy.updated }} {{ updatedLabel(list.updatedAt) }}</span></div>
               @if (list.description) { <p class="list-card-description">{{ list.description }}</p> }
             </div>
             <aside class="list-card-side" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)">

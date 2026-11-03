@@ -24,6 +24,7 @@ type WatchlistUpcomingMode = 'ALL' | 'FADE' | 'HIDE';
 export class WatchlistComponent implements OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].watchlistPage;
   protected readonly homeCopy = messageCatalog['pt-BR'].home;
+  protected readonly trendingCopy = messageCatalog['pt-BR'].trendingPage;
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly error = signal('');
   protected readonly loadingPlaceholders = Array.from({ length: 12 }, (_, index) => index);
@@ -143,7 +144,7 @@ export class WatchlistComponent implements OnDestroy {
       size: this.pageSize,
     }).subscribe({
       next: (view) => {
-        const backdropPath = view.backdropPath;
+        const backdropPath = view.backdropPath ?? null;
         this.heroBackdropPath.set(backdropPath);
         this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
         this.heroBackdropFailed.set(false);
@@ -281,21 +282,34 @@ export class WatchlistComponent implements OnDestroy {
     return item.status === 'UPCOMING';
   }
 
-  protected watchProgress(item: WatchlistCard): number {
-    const watched = item.card.viewerState?.watchedEpisodeCount;
-    const released = item.card.viewerState?.releasedEpisodeCount;
-    if (watched === null || watched === undefined || released === null || released === undefined || released === 0) return 0;
-    return Math.max(0, Math.min(100, Math.round(watched * 100 / released)));
+  protected cardMeta(item: WatchlistCard): string {
+    if (this.isUpcoming(item) && item.releaseDate) {
+      return `${this.trendingCopy.releaseDatePrefix} ${this.releaseDateLong(item.releaseDate)}`;
+    }
+    return [item.card.releaseYear, ...(item.card.genres ?? []).slice(0, 2)].filter(Boolean).join(' · ');
+  }
+
+  protected releaseDateShort(value: string): string {
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+    return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(year, month - 1, day));
+  }
+
+  private releaseDateLong(value: string): string {
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+    return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+      .format(new Date(year, month - 1, day));
   }
 
   protected runtimeLabel(item: WatchlistCard): string {
-    if (item.card.type === 'SERIES') return `${item.card.numberOfEpisodes ?? 0} ${this.copy.episodesShort}`;
+    if (item.card.type === 'SERIES') {
+      const episodes = item.card.numberOfEpisodes;
+      return episodes ? `${episodes} ${this.copy.episodesShort}` : '';
+    }
     const minutes = item.card.runtimeMinutes;
-    if (minutes === null || minutes === undefined || minutes <= 0) return '—';
+    if (minutes === null || minutes === undefined || minutes <= 0) return '';
     const hours = Math.floor(minutes / 60);
     const remainder = minutes % 60;
-    if (hours && remainder) return `${hours}h ${remainder}m`;
-    return hours ? `${hours}h` : `${remainder}m`;
+    return hours ? `${hours}h${remainder ? ` ${remainder}min` : ''}` : `${remainder}min`;
   }
 
   private imageUrl(path: string | null | undefined): string | null {

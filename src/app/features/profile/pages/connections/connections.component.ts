@@ -11,13 +11,14 @@ import {
 import { ProfileApiService } from '../../data-access/profile-api.service';
 import { SearchApiService } from '../../../search-content/data-access/search-api.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
+import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type ConnectionsMode = 'followers' | 'following';
 
 @Component({
   selector: 'app-profile-connections',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, PageSkeletonComponent],
   templateUrl: './connections.component.html',
   styleUrl: './connections.component.css',
 })
@@ -133,10 +134,6 @@ export class ConnectionsComponent {
           hasNext: current.page < totalPages,
         });
       });
-  }
-
-  protected userInitial(user: FollowingUser): string {
-    return (user.name?.trim() || user.username.trim()).charAt(0).toLocaleUpperCase('pt-BR') || '?';
   }
 
   private loadForUsername(

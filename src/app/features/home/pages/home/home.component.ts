@@ -21,6 +21,8 @@ import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
+import { ContentApiService } from '../../../content/data-access/content-api.service';
+import { FeedApiService } from '../../../social/data-access/feed-api.service';
 import {
   ContentImageAction,
   ContentImageActionSelection,
@@ -63,15 +65,17 @@ interface UpcomingDateGroup {
 }
 
 interface WatchLogDialogTarget {
+  dialogTitle: string;
   title: string;
   subtitle: string;
-  episode: NextEpisode;
+  content: DiaryEntryCreationRequest['content'];
 }
 
 interface RatingDialogTarget {
   title: string;
   subtitle: string;
   diaryEntryId: string;
+  editing: boolean;
 }
 
 interface WatchCalendarDay {
@@ -95,21 +99,22 @@ const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].home;
+  protected readonly socialCopy = messageCatalog['pt-BR'].socialPage;
   protected readonly copyrightYear = new Date().getFullYear();
   protected readonly contentRoute = homeContentRoute;
-  protected readonly posterContentActions: readonly ContentImageAction[] = [
-    { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
+  protected readonly upcomingContentActions: readonly ContentImageAction[] = [
+    { id: 'drop-series', label: this.copy.dropSeries, icon: 'ban' },
   ];
-  protected readonly episodeContentActions: readonly ContentImageAction[] = [
+  protected readonly socialContentActions: readonly ContentImageAction[] = [
     { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
-  ];
-  protected readonly recentContentActions: readonly ContentImageAction[] = [
-    { id: 'rate', label: this.copy.rate, icon: 'star' },
   ];
   protected readonly summary = signal<HomeSummary | null>(null);
+  protected readonly socialActivityDetailsLoaded = signal(false);
+  protected readonly busySocialLikeIds = signal<ReadonlySet<string>>(new Set());
   protected readonly hoveredChartDayIndex = signal<number | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly actionFeedback = signal<{ message: string; error: boolean } | null>(null);
   protected readonly openContentMenuId = signal<string | null>(null);
   protected readonly watchLogTarget = signal<WatchLogDialogTarget | null>(null);
   protected readonly ratingTarget = signal<RatingDialogTarget | null>(null);
@@ -159,6 +164,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private activeDialogOpener: HTMLElement | null = null;
   private genreLabelObserver: ResizeObserver | null = null;
   private genreLabelChanges?: Subscription;
+  private socialDetailsRequestSequence = 0;
 
   @ViewChildren('genreItemLabel')
   private genreItemLabels!: QueryList<ElementRef<HTMLElement>>;
@@ -172,6 +178,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private readonly api: HomeApiService,
+    private readonly contentApi: ContentApiService,
+    private readonly feedApi: FeedApiService,
     private readonly session: AuthSessionService,
     private readonly shellState: AppShellStateService,
     private readonly router: Router,
@@ -206,10 +214,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.status.set('loading');
     this.errorMessage.set(null);
+    this.actionFeedback.set(null);
+    this.socialActivityDetailsLoaded.set(false);
+    this.socialDetailsRequestSequence += 1;
     this.shellState.clearHomeState();
     this.api.getHomeSummary(userId).subscribe({
       next: (summary) => {
         this.summary.set(summary);
+        this.loadSocialActivityDetails(summary.socialActivities);
         this.shellState.updateHomeState(
           summary.viewer,
           summary.hasUnreadNotifications,
@@ -301,9 +313,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     episode: NextEpisode,
     selection: ContentImageActionSelection,
   ): void {
-    if (selection.action.id === 'open-content') {
-      this.openContentMenuId.set(null);
-      void this.router.navigate(['/content/series', episode.seriesTmdbId]);
+    if (selection.action.id === 'mark-watched') {
+      this.openWatchLogForEpisode(episode, selection.event);
+    } else if (selection.action.id === 'drop-series') {
+      this.abandonSeries(episode.seriesTmdbId);
     }
   }
 
@@ -320,15 +333,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     release: UpcomingRelease,
     selection: ContentImageActionSelection,
   ): void {
-    if (selection.action.id !== 'open-content') return;
-    this.openContentMenuId.set(null);
-    this.navigateToContent(
-      release.eventType,
-      release.content.tmdbId ?? null,
-      release.content.seriesTmdbId ?? null,
-      release.content.seasonNumber ?? null,
-      release.content.episodeNumber ?? null,
-    );
+    if (selection.action.id !== 'drop-series') return;
+    const seriesTmdbId = this.upcomingSeriesTmdbId(release);
+    if (seriesTmdbId) this.abandonSeries(seriesTmdbId);
   }
 
   protected handleSocialContentAction(
@@ -357,12 +364,106 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ): void {
     if (selection.action.id === 'rate') {
       this.openRatingModal(entry, selection.event);
+    } else if (selection.action.id === 'rewatch') {
+      this.openRecentRewatch(entry, selection.event);
+    } else if (selection.action.id === 'share-review') {
+      this.shareRecentReview(entry);
     }
   }
 
-  protected openWatchLogForEpisode(episode: NextEpisode): void {
+  protected continueContentActions(episode: NextEpisode): readonly ContentImageAction[] {
+    return [
+      {
+        id: 'mark-watched',
+        label: this.copy.markWatched,
+        icon: 'check',
+        disabled: !this.diaryContentForEpisode(episode),
+      },
+      { id: 'drop-series', label: this.copy.dropSeries, icon: 'ban' },
+    ];
+  }
+
+  protected recentContentActions(entry: HomeRecentlyWatched): readonly ContentImageAction[] {
+    return [
+      {
+        id: 'rate',
+        label: entry.score === null ? this.copy.rate : this.copy.editRating,
+        icon: 'star',
+      },
+      {
+        id: 'rewatch',
+        label: this.copy.rewatch,
+        icon: 'rewatch',
+        disabled: !this.diaryContentForEntry(entry),
+      },
+      {
+        id: 'share-review',
+        label: this.copy.shareReview,
+        icon: 'share',
+        disabled: !this.contentRoute(entry.content),
+      },
+    ];
+  }
+
+  protected upcomingSeriesTmdbId(release: UpcomingRelease): string | null {
+    if (release.eventType === 'MOVIE') return null;
+    return release.eventType === 'SERIES'
+      ? release.content.tmdbId ?? release.content.seriesTmdbId ?? null
+      : release.content.seriesTmdbId ?? null;
+  }
+
+  protected openWatchLogForEpisode(episode: NextEpisode, event?: MouseEvent): void {
+    const content = this.diaryContentForEpisode(episode);
+    if (!content) return;
+    this.showWatchLog({
+      dialogTitle: this.copy.markWatched,
+      title: episode.seriesTitle || this.copy.titleUnavailable,
+      subtitle: `${this.episodeLabel(episode)} · ${episode.episodeTitle || this.copy.episode}`,
+      content,
+    }, event);
+  }
+
+  protected openRecentRewatch(entry: HomeRecentlyWatched, event?: MouseEvent): void {
+    const content = this.diaryContentForEntry(entry);
+    if (!content) return;
+    this.showWatchLog({
+      dialogTitle: this.copy.rewatch,
+      title: entry.content.type === 'EPISODE'
+        ? this.recentEpisodeSeriesTitle(entry)
+        : entry.card?.title || this.copy.titleUnavailable,
+      subtitle: entry.content.type === 'EPISODE'
+        ? `${this.episodeLabelForEntry(entry)} · ${this.recentEpisodeTitle(entry)}`
+        : this.copy.movie,
+      content,
+    }, event);
+    this.watchLogRewatch.set(true);
+  }
+
+  protected shareRecentReview(entry: HomeRecentlyWatched): void {
+    const route = this.contentRoute(entry.content);
+    if (!route) return;
     this.openContentMenuId.set(null);
-    this.showWatchLog(episode);
+    void this.router.navigate(route, {
+      state: { openShareReview: true, shareReturnUrl: this.router.url },
+    });
+  }
+
+  protected abandonSeries(seriesTmdbId: string): void {
+    if (this.isSaving()) return;
+    this.openContentMenuId.set(null);
+    this.isSaving.set(true);
+    this.actionFeedback.set(null);
+    this.contentApi.markSeriesDropped(seriesTmdbId).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.loadSummary();
+        this.actionFeedback.set({ message: this.copy.seriesDropped, error: false });
+      },
+      error: (error: unknown) => {
+        this.isSaving.set(false);
+        this.actionFeedback.set({ message: this.actionErrorMessage(error), error: true });
+      },
+    });
   }
 
   protected openRatingModal(entry: HomeRecentlyWatched, event?: MouseEvent): void {
@@ -381,10 +482,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       : null);
     this.activeDialogOpener = opener;
     this.watchLogTarget.set(null);
-    this.ratingTarget.set({ title, subtitle, diaryEntryId: entry.id });
+    this.ratingTarget.set({ title, subtitle, diaryEntryId: entry.id, editing: entry.score !== null });
     this.dialogErrorMessage.set(null);
     this.isSaving.set(false);
-    this.ratingModalScore.set(null);
+    this.ratingModalScore.set(entry.score);
     this.ratingModalReview.set('');
     this.watchCalendarOpen.set(false);
   }
@@ -441,13 +542,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected canSaveWatchLog(): boolean {
-    const episode = this.watchLogTarget()?.episode;
-    return Boolean(
-      episode &&
-        episode.availableToWatch !== false &&
-        episode.maxSeasonNumber !== null &&
-        episode.maxEpisodeNumber !== null,
-    );
+    return Boolean(this.watchLogTarget()?.content);
   }
 
   protected canSaveRating(): boolean {
@@ -456,24 +551,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected saveWatchLog(): void {
     const target = this.watchLogTarget();
-    const episode = target?.episode;
-    if (
-      !target ||
-      !episode ||
-      episode.availableToWatch === false ||
-      episode.maxSeasonNumber === null ||
-      episode.maxEpisodeNumber === null
-    ) {
-      return;
-    }
+    if (!target) return;
 
     const request: DiaryEntryCreationRequest = {
-      content: {
-        type: 'EPISODE',
-        seriesTmdbId: episode.seriesTmdbId,
-        seasonNumber: episode.maxSeasonNumber,
-        episodeNumber: episode.maxEpisodeNumber,
-      },
+      content: target.content,
       watchedDate: this.watchLogDate(),
       isRewatch: this.watchLogRewatch(),
     };
@@ -574,17 +655,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private showWatchLog(episode: NextEpisode): void {
-    const opener = document.querySelector<HTMLElement>(
+  private showWatchLog(target: WatchLogDialogTarget, event?: MouseEvent): void {
+    const menuTrigger = (event?.currentTarget as HTMLElement | null)
+      ?.closest('.content-menu-anchor')
+      ?.querySelector<HTMLElement>('.content-menu-trigger');
+    this.activeDialogOpener = menuTrigger ?? document.querySelector<HTMLElement>(
       '.content-menu-trigger[aria-expanded="true"]',
     );
-    this.activeDialogOpener = opener;
+    this.openContentMenuId.set(null);
     this.ratingTarget.set(null);
-    this.watchLogTarget.set({
-      title: episode.seriesTitle || this.copy.titleUnavailable,
-      subtitle: `${this.episodeLabel(episode)} · ${episode.episodeTitle || this.copy.episode}`,
-      episode,
-    });
+    this.watchLogTarget.set(target);
     this.dialogErrorMessage.set(null);
     this.isSaving.set(false);
     this.watchLogDate.set(this.toDateKey(new Date()));
@@ -593,6 +673,41 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.watchLogReview.set('');
     this.watchCalendarMonth.set(this.firstOfMonth(new Date()));
     this.watchCalendarOpen.set(false);
+  }
+
+  private diaryContentForEpisode(episode: NextEpisode): DiaryEntryCreationRequest['content'] | null {
+    if (
+      episode.availableToWatch === false ||
+      episode.maxSeasonNumber === null ||
+      episode.maxEpisodeNumber === null
+    ) return null;
+    return {
+      type: 'EPISODE',
+      seriesTmdbId: episode.seriesTmdbId,
+      seasonNumber: episode.maxSeasonNumber,
+      episodeNumber: episode.maxEpisodeNumber,
+    };
+  }
+
+  private diaryContentForEntry(entry: HomeRecentlyWatched): DiaryEntryCreationRequest['content'] | null {
+    if (entry.content.type === 'MOVIE') {
+      const tmdbId = entry.content.tmdbId || entry.card?.tmdbId;
+      return tmdbId ? { type: 'MOVIE', tmdbId } : null;
+    }
+    if (
+      entry.content.type === 'EPISODE' &&
+      entry.content.seriesTmdbId &&
+      entry.content.seasonNumber !== null &&
+      entry.content.episodeNumber !== null
+    ) {
+      return {
+        type: 'EPISODE',
+        seriesTmdbId: entry.content.seriesTmdbId,
+        seasonNumber: entry.content.seasonNumber,
+        episodeNumber: entry.content.episodeNumber,
+      };
+    }
+    return null;
   }
 
   private submitDiaryAction(request: Observable<unknown>): void {
@@ -817,6 +932,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected recentPoster(entry: HomeRecentlyWatched): string | null {
+    if (entry.content.type === 'MOVIE') {
+      const backdrop = this.imageUrl(entry.card?.backdropPath, 'w780');
+      if (backdrop) {
+        return backdrop;
+      }
+    }
+
     return this.imageUrl(entry.customPosterUrl, 'w780') ?? this.posterFor(entry.card, 'w780');
   }
 
@@ -1003,13 +1125,62 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     return activity.user.name || activity.user.username || this.copy.someone;
   }
 
+  protected socialLikeUnavailable(activity: HomeSocialActivity): boolean {
+    return !this.socialActivityDetailsLoaded() || activity.likedByMe == null;
+  }
+
+  protected socialLikeBusy(activity: HomeSocialActivity): boolean {
+    return this.busySocialLikeIds().has(activity.id);
+  }
+
+  protected toggleDiaryLike(activity: HomeSocialActivity): void {
+    if (
+      activity.eventType !== 'DIARY_ENTRY' ||
+      this.socialLikeUnavailable(activity) ||
+      this.socialLikeBusy(activity)
+    ) {
+      return;
+    }
+
+    const nextLiked = !activity.likedByMe;
+    this.busySocialLikeIds.update((current) => new Set(current).add(activity.id));
+    this.actionFeedback.set(null);
+    this.contentApi.setReviewLike(activity.id, 'DIARY', nextLiked).subscribe({
+      next: () => {
+        this.summary.update((current) => current ? {
+          ...current,
+          socialActivities: current.socialActivities.map((item) => item.id === activity.id
+            ? {
+                ...item,
+                likedByMe: nextLiked,
+                likesCount: Math.max(0, (item.likesCount ?? 0) + (nextLiked ? 1 : -1)),
+              }
+            : item),
+        } : current);
+        this.busySocialLikeIds.update((current) => {
+          const next = new Set(current);
+          next.delete(activity.id);
+          return next;
+        });
+      },
+      error: () => {
+        this.busySocialLikeIds.update((current) => {
+          const next = new Set(current);
+          next.delete(activity.id);
+          return next;
+        });
+        this.actionFeedback.set({ message: this.socialCopy.likeError, error: true });
+      },
+    });
+  }
+
   protected socialSubtitle(activity: HomeSocialActivity): string {
     if (!activity.content) {
       return activity.targetLabel || '';
     }
     if (activity.content.type === 'EPISODE') {
       const parts = [
-        activity.card?.type === 'SERIES' ? activity.card.title : null,
+        activity.seriesTitle || (activity.card?.type === 'SERIES' ? activity.card.title : null),
         activity.content.seasonNumber === null ? null : `${this.copy.seasonShort}${activity.content.seasonNumber}`,
         activity.content.episodeNumber === null ? null : `${this.copy.episodeShort}${activity.content.episodeNumber}`,
       ].filter((part): part is string => Boolean(part));
@@ -1020,6 +1191,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       : activity.card?.type === 'MOVIE'
         ? this.copy.movie
         : activity.targetLabel || '';
+  }
+
+  protected socialActivityTitle(activity: HomeSocialActivity): string {
+    if (activity.eventType === 'DIARY_ENTRY' && activity.content?.type === 'EPISODE') {
+      return activity.episodeTitle || activity.card?.title || activity.targetLabel || this.copy.titleUnavailable;
+    }
+    return activity.card?.title || activity.targetLabel || this.copy.titleUnavailable;
   }
 
   protected relativeActivityDate(value: string): string {
@@ -1044,6 +1222,77 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       return message.replace('{count}', this.formatNumber(days));
     }
     return this.formatLongDate(value);
+  }
+
+  private loadSocialActivityDetails(activities: HomeSocialActivity[]): void {
+    const requestSequence = ++this.socialDetailsRequestSequence;
+    if (!activities.some((activity) => activity.eventType === 'DIARY_ENTRY')) {
+      this.socialActivityDetailsLoaded.set(true);
+      return;
+    }
+
+    this.socialActivityDetailsLoaded.set(false);
+    this.feedApi.getFeed({ size: 3 }).subscribe({
+      next: (feed) => {
+        if (requestSequence !== this.socialDetailsRequestSequence) return;
+        const detailsById = new Map(feed.content.map((activity) => [activity.id, activity] as const));
+        this.summary.update((current) => current ? {
+          ...current,
+          socialActivities: current.socialActivities.map((activity) => {
+            const details = detailsById.get(activity.id);
+            return details ? {
+              ...activity,
+              user: {
+                ...activity.user,
+                profilePicture: details.user.profilePicture ?? activity.user.profilePicture,
+              },
+              score: details.score,
+              comment: details.comment,
+              likedByMe: details.likedByMe,
+              likesCount: details.likesCount,
+              commentsCount: details.commentsCount,
+            } : activity;
+          }),
+        } : current);
+        this.loadEpisodeActivityTitles(feed.content, requestSequence);
+        this.socialActivityDetailsLoaded.set(true);
+      },
+      error: () => {
+        if (requestSequence === this.socialDetailsRequestSequence) {
+          this.socialActivityDetailsLoaded.set(false);
+        }
+      },
+    });
+  }
+
+  private loadEpisodeActivityTitles(activities: HomeSocialActivity[], requestSequence: number): void {
+    for (const activity of activities) {
+      const contentId = activity.content?.id;
+      if (
+        activity.eventType !== 'DIARY_ENTRY' ||
+        activity.content?.type !== 'EPISODE' ||
+        !contentId
+      ) {
+        continue;
+      }
+
+      this.contentApi.getEpisodePage(contentId).subscribe({
+        next: (page) => {
+          if (requestSequence !== this.socialDetailsRequestSequence) return;
+          this.summary.update((current) => current ? {
+            ...current,
+            socialActivities: current.socialActivities.map((item) => item.id === activity.id
+              ? {
+                  ...item,
+                  episodeTitle: page.details.title,
+                  seriesTitle: page.details.parentTitle,
+                }
+              : item),
+          } : current);
+        },
+        error: () => {},
+      });
+    }
   }
 
   protected watchActivitySummary(): string {
