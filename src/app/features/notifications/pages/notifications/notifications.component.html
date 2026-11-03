@@ -26,9 +26,6 @@
       }
     </div>
 
-    @if (actionError()) { <p class="notifications-error" role="alert">{{ actionError() }}</p> }
-    @if (actionMessage()) { <p class="notifications-feedback" role="status">{{ actionMessage() }}</p> }
-
     @if (status() === 'loading') {
       <app-page-skeleton variant="list" [label]="copy.loading" />
     } @else if (status() === 'error') {

@@ -56,7 +56,6 @@
       </div>
     </section>
 
-    @if (actionMessage()) { <div class="profile-feedback" role="status">{{ actionMessage() }}</div> }
     <div class="profile-private-message-area">
       <section class="profile-private-notice" aria-labelledby="private-profile-title">
         <h2 id="private-profile-title">{{ copy.privateProfile }}</h2>
@@ -133,7 +132,6 @@
       </div>
     </section>
 
-    @if (actionMessage()) { <div class="profile-feedback" role="status">{{ actionMessage() }}</div> }
 
     <div class="profile-type-switch" role="group" [attr.aria-label]="copy.type">
       <button type="button" [class.profile-type-active]="mode() === 'MOVIE'" [attr.aria-pressed]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">

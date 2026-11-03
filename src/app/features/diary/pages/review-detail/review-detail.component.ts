@@ -20,6 +20,7 @@ import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { SocialActionsMenuComponent, SocialActionMenuEvent, SocialActionMenuUser } from '../../../../shared/components/social-actions-menu/social-actions-menu.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -51,6 +52,7 @@ interface ReviewCalendarDay {
 })
 export class DiaryReviewDetailComponent {
   private readonly session = inject(AuthSessionService);
+  private readonly toasts = inject(ToastNotificationsService);
   protected readonly entry = signal<DiaryEntryRecord | null>(null);
   protected readonly comments = signal<ContentComment[]>([]);
   protected readonly commentThreads = computed<ReviewCommentThread[]>(() => {
@@ -88,7 +90,6 @@ export class DiaryReviewDetailComponent {
   protected readonly errorMessage = signal('');
   protected readonly commentError = signal('');
   protected readonly commentDraft = signal('');
-  protected readonly replyError = signal('');
   protected readonly replyDraft = signal('');
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly commentMenuId = signal<string | null>(null);
@@ -96,7 +97,6 @@ export class DiaryReviewDetailComponent {
   protected readonly sharePreviewOpen = signal(false);
   protected readonly shareMenuOpener = signal<HTMLElement | null>(null);
   protected readonly shareCopy = movieMessages['pt-BR'];
-  protected readonly copiedLink = signal(false);
   protected readonly pendingComments = signal(false);
   protected readonly editReviewOpen = signal(false);
   protected readonly editReviewScore = signal(0);
@@ -108,7 +108,6 @@ export class DiaryReviewDetailComponent {
   protected readonly editReviewCalendarMonth = signal(this.firstOfMonth(new Date()));
   protected readonly editReviewWatchedWith = signal<UserPreview[]>([]);
   protected readonly editReviewBusy = signal(false);
-  protected readonly editReviewError = signal('');
   protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly calendarCopy = messageCatalog['pt-BR'].home;
   protected readonly calendarWeekdays = this.calendarCopy.calendarWeekdays.split(' ');
@@ -279,8 +278,6 @@ export class DiaryReviewDetailComponent {
     const text = (parentComment ? this.replyDraft() : this.commentDraft()).trim();
     if (!entry || !text || this.pendingComments()) return;
     this.pendingComments.set(true);
-    if (parentComment) this.replyError.set('');
-    else this.commentError.set('');
     this.api.createDiaryComment(entry.id, { text, parentCommentId: parentComment?.id ?? null }).subscribe({
       next: (comment) => {
         this.comments.update((items) => [...items, comment]);
@@ -294,8 +291,7 @@ export class DiaryReviewDetailComponent {
         this.pendingComments.set(false);
       },
       error: (error: unknown) => {
-        if (parentComment) this.replyError.set(this.requestError(error));
-        else this.commentError.set(this.requestError(error));
+        this.toasts.error(this.requestError(error));
         this.pendingComments.set(false);
       },
     });
@@ -311,11 +307,14 @@ export class DiaryReviewDetailComponent {
       likesCount: Math.max(0, (current.likesCount ?? 0) + (nextLiked ? 1 : -1)),
     } : current);
     this.api.setReviewLike(entry.id, 'DIARY', nextLiked).subscribe({
-      error: () => this.entry.update((current) => current ? {
-        ...current,
-        likedByMe: !nextLiked,
-        likesCount: Math.max(0, (current.likesCount ?? 0) + (nextLiked ? -1 : 1)),
-      } : current),
+      error: (error: unknown) => {
+        this.entry.update((current) => current ? {
+          ...current,
+          likedByMe: !nextLiked,
+          likesCount: Math.max(0, (current.likesCount ?? 0) + (nextLiked ? -1 : 1)),
+        } : current);
+        this.toasts.error(this.requestError(error));
+      },
     });
   }
 
@@ -336,7 +335,6 @@ export class DiaryReviewDetailComponent {
     this.editReviewRewatch.set((entry.watchNumber ?? 1) > 1);
     this.editReviewWatchedInTheater.set(entry.watchedInTheater ?? false);
     this.editReviewWatchedWith.set([...(entry.watchedWith ?? [])]);
-    this.editReviewError.set('');
     this.editReviewOpen.set(true);
     this.shareMenuOpen.set(false);
   }
@@ -400,7 +398,6 @@ export class DiaryReviewDetailComponent {
     const entry = this.entry();
     if (!entry || !this.canEditReview() || this.editReviewBusy()) return;
     this.editReviewBusy.set(true);
-    this.editReviewError.set('');
     const score = this.editReviewScore() || null;
     const comment = this.editReviewText().trim() || null;
     this.api.updateDiaryEntry(entry.id, {
@@ -417,7 +414,7 @@ export class DiaryReviewDetailComponent {
         this.editReviewOpen.set(false);
       },
       error: (error: unknown) => {
-        this.editReviewError.set(this.requestError(error));
+        this.toasts.error(this.requestError(error));
         this.editReviewBusy.set(false);
       },
     });
@@ -455,14 +452,12 @@ export class DiaryReviewDetailComponent {
   protected startReply(comment: ContentComment): void {
     this.replyTo.set(comment);
     this.replyDraft.set('');
-    this.replyError.set('');
     requestAnimationFrame(() => document.getElementById(`diary-review-reply-${comment.id}`)?.focus());
   }
 
   protected cancelReply(): void {
     this.replyTo.set(null);
     this.replyDraft.set('');
-    this.replyError.set('');
   }
 
   protected toggleCommentMenu(commentId: string): void {
@@ -480,9 +475,9 @@ export class DiaryReviewDetailComponent {
   protected async copyReviewLink(): Promise<void> {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      this.copiedLink.set(true);
+      this.toasts.success('Link copiado.');
     } catch {
-      this.copiedLink.set(false);
+      this.toasts.error('Não foi possível copiar o link.');
     }
     this.shareMenuOpen.set(false);
   }
@@ -490,8 +485,9 @@ export class DiaryReviewDetailComponent {
   protected async copyCommentLink(comment: ContentComment): Promise<void> {
     try {
       await navigator.clipboard.writeText(`${window.location.href}#comment-${comment.id}`);
+      this.toasts.success('Link copiado.');
     } catch {
-      this.commentError.set('Não foi possível copiar o link agora.');
+      this.toasts.error('Não foi possível copiar o link agora.');
     }
     this.commentMenuId.set(null);
   }

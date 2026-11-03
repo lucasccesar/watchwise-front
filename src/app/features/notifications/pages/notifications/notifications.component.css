@@ -444,20 +444,6 @@
   color: var(--color-text-tertiary);
 }
 
-.notifications-error,
-.notifications-feedback {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.notifications-error {
-  color: var(--color-danger, #f87171);
-}
-
-.notifications-feedback {
-  color: var(--color-primary);
-}
-
 @media (min-width: 600px) and (max-width: 800px) {
   .notifications-content {
     width: calc(100% - 64px);

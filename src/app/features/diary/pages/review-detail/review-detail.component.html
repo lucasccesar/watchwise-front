@@ -39,7 +39,7 @@
               @if (shareMenuOpen()) {
                 <div class="review-detail-share-menu" role="menu">
                   <button type="button" role="menuitem" (click)="openReviewEditor()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z" /></svg>Editar resenha</button>
-                  <button type="button" role="menuitem" (click)="copyReviewLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4m3 7a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19" /></svg>{{ copiedLink() ? 'Link copiado' : 'Copiar link da resenha' }}</button>
+                  <button type="button" role="menuitem" (click)="copyReviewLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4m3 7a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19" /></svg>Copiar link da resenha</button>
                   <button type="button" role="menuitem" (click)="shareReviewPreview($event)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21" /></svg>Compartilhar prévia</button>
                 </div>
               }
@@ -65,7 +65,6 @@
                   <div class="review-comment-compose">
                     <div class="review-reply-context"><span>Respondendo a {{ comment.user.name || comment.user.username }}</span></div>
                     <div class="review-comment-entry-row"><div class="review-comment-input-wrap"><textarea [id]="'diary-review-reply-' + comment.id" [attr.aria-label]="'Resposta para ' + (comment.user.name || comment.user.username)" [value]="replyDraft()" (input)="setReplyDraft($event)" placeholder="Escreva uma resposta…" maxlength="500"></textarea><small class="review-comment-character-count">{{ replyDraft().length }}/500</small></div></div>
-                    @if (replyError()) { <p class="review-comment-error" role="alert">{{ replyError() }}</p> }
                     <div class="review-comment-submit"><button type="button" class="review-comment-cancel" (click)="cancelReply()">Cancelar</button><button type="submit" [attr.aria-label]="pendingComments() ? 'Publicando resposta' : 'Responder'" [disabled]="!replyDraft().trim() || pendingComments()"><span class="review-submit-label">{{ pendingComments() ? 'Publicando…' : 'Responder' }}</span></button></div>
                   </div>
                 </form>
@@ -159,7 +158,6 @@
         </div>
         <fieldset class="review-edit-score"><legend>Sua nota</legend><div role="radiogroup" aria-label="Nota de 1 a 10">@for (score of ratingOptions; track score) { <button type="button" role="radio" [attr.aria-label]="'Nota ' + score + ' de 10'" [attr.aria-checked]="editReviewScore() === score" (click)="setEditReviewScore(score)"><svg viewBox="0 0 24 24" aria-hidden="true" [class.review-edit-star--selected]="editReviewScore() !== 0 && score <= editReviewScore()"><path d="m11.283 3.453.933-1.89.933 1.89 2.187 4.43c.068.138.102.207.152.26.044.048.097.086.155.113.067.031.143.042.295.065l4.891.714c.515.075.772.113.891.239.103.109.152.259.132.408-.022.171-.209.353-.581.716l-3.539 3.45c-.11.107-.165.161-.2.225a.48.48 0 0 0-.055.187c-.007.073.006.148.032.3l.835 4.872c.088.513.132.77.05.922a.5.5 0 0 1-.36.261c-.17.028-.4-.093-.86-.335l-4.375-2.3c-.136-.072-.204-.108-.276-.122a.5.5 0 0 0-.198 0c-.072.014-.14.05-.276.122l-4.375 2.3c-.46.242-.69.363-.86.335a.5.5 0 0 1-.36-.261c-.082-.153-.038-.409-.05-.922l.835-4.873c.026-.151.039-.226.032-.299a.5.5 0 0 0-.055-.187c-.035-.064-.09-.118-.2-.225l-3.539-3.45c-.372-.363-.559-.545-.581-.716a.5.5 0 0 1 .132-.408c.119-.126.376-.164.891-.239l4.891-.714c.152-.023.228-.034.295-.065a.5.5 0 0 0 .155-.113c.05-.053.084-.122.152-.26l2.187-4.43Z" /></svg><span>{{ score }}</span></button> }</div></fieldset>
         <label class="review-edit-review" for="review-edit-text"><span>Sua resenha</span><textarea id="review-edit-text" [value]="editReviewText()" (input)="setEditReviewText($event)" maxlength="20000"></textarea></label>
-        @if (editReviewError()) { <p class="review-edit-error" role="alert">{{ editReviewError() }}</p> }
         <footer><button type="button" [disabled]="editReviewBusy()" (click)="editReviewOpen.set(false)">Cancelar</button><button class="review-edit-save" type="button" [disabled]="editReviewBusy()" (click)="saveReviewEdit()">{{ editReviewBusy() ? 'Salvando…' : 'Salvar resenha' }}</button></footer>
       </section>
     </app-dialog-backdrop>

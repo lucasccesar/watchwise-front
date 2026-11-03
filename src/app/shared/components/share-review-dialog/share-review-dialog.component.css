@@ -73,7 +73,6 @@
 .movie-share-review-toggle button.movie-share-switch--on { justify-content: flex-end; background: var(--color-primary); }
 .movie-share-review-toggle button span { width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--color-text); box-shadow: var(--shadow-sm); }
 .movie-share-error { margin: 0; color: var(--color-error); font-size: var(--font-size-sm); }
-.movie-share-success { margin: 0; color: var(--color-success); font-size: var(--font-size-sm); }
 .movie-share-controls { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: auto; padding-top: var(--space-6); border-top: 1px solid var(--color-border); }
 .movie-share-controls .movie-button--secondary { background: var(--color-surface); }
 @media (max-width: 700px) { .movie-share-layout { flex-direction: column; align-items: center; } .movie-share-preview { width: min(324px, 100%); max-width: 324px; height: auto; flex: 0 0 auto; aspect-ratio: 9 / 16; } .movie-share-side-controls { width: 100%; } }

@@ -19,6 +19,7 @@ import {
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -55,11 +56,11 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly commentText = signal('');
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly busy = signal(false);
-  protected readonly toast = signal('');
   protected readonly sharePreviewOpen = signal(false);
   protected readonly tmdbId = signal('');
   protected readonly seasonNumber = signal(0);
   protected readonly episodeNumber = signal(0);
+  private readonly toasts = inject(ToastNotificationsService);
   protected readonly backdrop = computed(() => {
     const path = this.page()?.details.backdropPath || this.series()?.details.backdropPath;
     return this.imageUrl(path, 'w1280');
@@ -186,7 +187,6 @@ export class EpisodeComponent implements OnDestroy {
     const page = this.page();
     if (!page || !this.selectedRating() || this.busy()) return;
     this.busy.set(true);
-    this.actionError.set('');
     const diaryEntryId = page.viewerState.latestDiaryEntryId;
     // Omitting watchedDate from PATCH preserves the original event date on the server.
     const request = diaryEntryId
@@ -199,7 +199,7 @@ export class EpisodeComponent implements OnDestroy {
         });
     request.subscribe({
       next: () => { this.ratingOpen.set(false); this.busy.set(false); this.showToast('Avaliação salva.'); this.reload(); },
-      error: (error: unknown) => { this.actionError.set(this.errorText(error)); this.busy.set(false); },
+      error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
     });
   }
 
@@ -207,14 +207,13 @@ export class EpisodeComponent implements OnDestroy {
     const page = this.page();
     if (!page || this.busy()) return;
     this.busy.set(true);
-    this.actionError.set('');
     this.api.createSeriesDiaryEntry({
       content: { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber: this.seasonNumber(), episodeNumber: this.episodeNumber(), runtimeMinutes: page.details.runtimeMinutes ?? undefined },
       watchedDate: new Date().toISOString().slice(0, 10),
       isRewatch: this.alreadyWatched(),
     }).subscribe({
       next: () => { this.busy.set(false); this.showToast(this.alreadyWatched() ? 'Reassistida.' : 'Episódio marcado como assistido.'); this.reload(); },
-      error: (error: unknown) => { this.actionError.set(this.errorText(error)); this.busy.set(false); },
+      error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
     });
   }
 
@@ -226,7 +225,7 @@ export class EpisodeComponent implements OnDestroy {
     this.busy.set(true);
     this.api.createComment(page.details.contentId, { text, parentCommentId: this.replyTo()?.id ?? null }).subscribe({
       next: (comment) => { this.mergeComments([comment]); this.commentText.set(''); this.replyTo.set(null); this.busy.set(false); },
-      error: (error: unknown) => { this.actionError.set(this.errorText(error)); this.busy.set(false); },
+      error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
     });
   }
 
@@ -292,8 +291,7 @@ export class EpisodeComponent implements OnDestroy {
   }
 
   protected showToast(message: string): void {
-    this.toast.set(message);
-    setTimeout(() => this.toast.set(''), 3000);
+    this.toasts.success(message);
   }
 
   private load(tmdbId: string, seasonNumber: number, episodeNumber: number): void {

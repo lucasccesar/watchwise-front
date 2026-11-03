@@ -9,6 +9,7 @@ import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksOptionView, Pic
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type PickTemplateStatus = 'loading' | 'ready' | 'error';
 type CommunitySort = 'RECENT' | 'POPULAR';
@@ -40,7 +41,6 @@ export class PickTemplateComponent {
   protected readonly commentSpoiler = signal(false);
   protected readonly postingComment = signal(false);
   protected readonly error = signal('');
-  protected readonly commentError = signal('');
   protected readonly optionActions: readonly ContentImageAction[] = [{ id: 'open-option', label: this.copy.openOption, icon: 'eye' }];
   protected readonly categoryGroups = computed(() => ({
     primary: (this.detail()?.categories ?? []).filter((category) => category.group === 'PRIMARY').sort((a, b) => a.displayOrder - b.displayOrder),
@@ -49,6 +49,7 @@ export class PickTemplateComponent {
 
   private readonly api = inject(PicksApiService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
 
   constructor() { if (this.templateId) this.load(); else void this.router.navigateByUrl('/picks'); }
 
@@ -117,10 +118,10 @@ export class PickTemplateComponent {
   protected submitComment(event: Event): void {
     event.preventDefault(); const text = this.commentText().trim();
     if (!text || this.postingComment()) return;
-    this.postingComment.set(true); this.commentError.set('');
+    this.postingComment.set(true);
     this.api.createTemplateComment(this.templateId, { text, containsSpoiler: this.commentSpoiler() }).subscribe({
       next: (comment) => { this.comments.update((items) => [comment, ...items]); this.commentText.set(''); this.commentSpoiler.set(false); this.postingComment.set(false); },
-      error: () => { this.postingComment.set(false); this.commentError.set(this.copy.commentError); },
+      error: () => { this.postingComment.set(false); this.toasts.error(this.copy.commentError); },
     });
   }
   protected updateComment(event: Event): void { this.commentText.set((event.target as HTMLTextAreaElement).value); }

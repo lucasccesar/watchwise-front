@@ -17,6 +17,7 @@ import { DialogBackdropComponent } from '../../../../shared/components/dialog-ba
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
 import { ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveEntry } from '../../data-access/profile-api.service';
@@ -82,6 +83,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
   styleUrl: './profile.component.css',
 })
 export class ProfileComponent {
+  private readonly toasts = inject(ToastNotificationsService);
   @ViewChild('profileMenuButton') protected profileMenuTrigger?: ElementRef<HTMLElement>;
   protected readonly shareReturnFocus = signal<HTMLElement | null>(null);
   protected openSharePreview(event?: Event): void {
@@ -165,9 +167,7 @@ export class ProfileComponent {
   protected readonly followsViewer = signal(false);
   protected readonly profileMenuOpen = signal(false);
   protected readonly sharePreviewOpen = signal(false);
-  protected readonly actionMessage = signal('');
   protected readonly savingProgressSeriesId = signal<string | null>(null);
-  protected readonly progressActionError = signal('');
   protected readonly currentPage = signal(1);
 
   @ViewChild('summaryGrid') private summaryGrid?: ElementRef<HTMLElement>;
@@ -533,7 +533,6 @@ export class ProfileComponent {
     const next = item.nextEpisode;
     if (this.followState() !== 'SELF' || this.savingProgressSeriesId() || !next || next.availableToWatch === false) return;
     this.savingProgressSeriesId.set(item.seriesTmdbId);
-    this.progressActionError.set('');
     this.contentApi.createSeriesDiaryEntry({
       content: {
         type: 'EPISODE',
@@ -550,7 +549,7 @@ export class ProfileComponent {
       },
       error: () => {
         this.savingProgressSeriesId.set(null);
-        this.progressActionError.set(this.progressCopy.markWatchedError);
+        this.toasts.error(this.progressCopy.markWatchedError);
       },
     });
   }
@@ -816,7 +815,7 @@ export class ProfileComponent {
         this.followBusy.set(false);
       },
       error: () => {
-        this.actionMessage.set(this.copy.loadError);
+        this.toasts.error(this.copy.loadError);
         this.followBusy.set(false);
       },
     });
@@ -825,15 +824,15 @@ export class ProfileComponent {
   protected async copyProfileLink(): Promise<void> {
     try {
       await navigator.clipboard.writeText(window.location.origin + '/users/' + encodeURIComponent(this.username()));
-      this.actionMessage.set(this.copy.copySuccess);
+      this.toasts.success(this.copy.copySuccess);
     } catch {
-      this.actionMessage.set(this.copy.copyError);
+      this.toasts.error(this.copy.copyError);
     }
     this.profileMenuOpen.set(false);
   }
 
   protected openProfileAction(action: 'report' | 'block'): void {
-    this.actionMessage.set(action === 'report' ? 'A denúncia ficará disponível nesta tela.' : 'O bloqueio ficará disponível nesta tela.');
+    this.toasts.info(action === 'report' ? 'A denúncia ficará disponível nesta tela.' : 'O bloqueio ficará disponível nesta tela.');
     this.profileMenuOpen.set(false);
   }
 
@@ -1396,7 +1395,6 @@ export class ProfileComponent {
     this.yearReview.set(null);
     this.allTime.set(null);
     this.allTimeEdition.set(null);
-    this.actionMessage.set('');
   }
 
   private loadEpisodeStillPaths(entries: readonly DiaryRecord[]): void {

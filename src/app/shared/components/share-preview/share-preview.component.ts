@@ -1,5 +1,6 @@
 import { DecimalPipe, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild, inject, input, output } from '@angular/core';
+import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 
 export type ShareCardKind = 'episode' | 'profile' | 'ratings-map' | 'list' | 'picks';
 
@@ -55,8 +56,7 @@ export class SharePreviewComponent implements OnDestroy {
   readonly shareUrl = input('');
   readonly returnFocusTarget = input<HTMLElement | null>(null);
   protected readonly closed = output<void>();
-  protected readonly copied = signal(false);
-  protected readonly copyError = signal(false);
+  private readonly toasts = inject(ToastNotificationsService);
   private readonly document = inject(DOCUMENT);
   private readonly opener = this.document.activeElement as HTMLElement | null;
   private dialogElement?: HTMLElement;
@@ -135,11 +135,9 @@ export class SharePreviewComponent implements OnDestroy {
     if (!link) return;
     try {
       await navigator.clipboard.writeText(link);
-      this.copied.set(true);
-      this.copyError.set(false);
-      window.setTimeout(() => this.copied.set(false), 1800);
+      this.toasts.success('Link copiado.');
     } catch {
-      this.copyError.set(true);
+      this.toasts.error('Não foi possível copiar o link.');
     }
   }
 

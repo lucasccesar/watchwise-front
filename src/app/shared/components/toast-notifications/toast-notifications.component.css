@@ -1,0 +1,64 @@
+.toast-notification-region {
+  position: fixed;
+  z-index: 2000;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  display: flex;
+  width: min(440px, calc(100vw - 32px));
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.toast-notification {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 20px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: toast-notification-enter 180ms ease-out both;
+}
+
+.toast-notification--success { border-color: var(--color-success); background: var(--color-success-soft); }
+.toast-notification--error { border-color: var(--color-error); background: var(--color-error-soft); }
+.toast-notification--warning { border-color: var(--color-warning); background: var(--color-warning-soft); }
+.toast-notification--info { border-color: var(--color-primary); background: var(--color-surface-secondary); }
+.toast-notification--success .toast-notification-icon { color: var(--color-success); }
+.toast-notification--error .toast-notification-icon { color: var(--color-error); }
+.toast-notification--warning .toast-notification-icon { color: var(--color-warning); }
+.toast-notification--info .toast-notification-icon { color: var(--color-primary); }
+
+.toast-notification-icon,
+.toast-notification-icon svg { display: block; width: 20px; height: 20px; }
+.toast-notification-message { min-width: 0; margin: 0; color: var(--color-text); font-size: var(--font-size-sm); line-height: var(--line-height-sm); overflow-wrap: anywhere; }
+.toast-notification-dismiss { display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.toast-notification-dismiss:hover { background: color-mix(in srgb, var(--color-text) 10%, transparent); color: var(--color-text); }
+.toast-notification-dismiss:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.toast-notification-dismiss svg { width: 18px; height: 18px; }
+.toast-notification--leaving { animation: toast-notification-exit 180ms ease-in both; }
+
+@keyframes toast-notification-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-notification-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+@media (max-width: 600px) {
+  .toast-notification-region { right: 16px; bottom: 16px; left: 16px; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-notification,
+  .toast-notification--leaving { animation-duration: 1ms; }
+}

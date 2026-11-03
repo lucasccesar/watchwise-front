@@ -13,6 +13,7 @@ import { ReportApiService, SocialReportReason, SocialReportTargetType } from '..
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 interface ActivityGroup {
   key: string;
@@ -68,15 +69,11 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected readonly busyLikeIds = signal<ReadonlySet<string>>(new Set());
   protected readonly busyCommentIds = signal<ReadonlySet<string>>(new Set());
   protected readonly commentDrafts = signal<ReadonlyMap<string, string>>(new Map());
-  protected readonly commentErrors = signal<ReadonlyMap<string, string>>(new Map());
-  protected readonly commentActionErrors = signal<ReadonlyMap<string, string>>(new Map());
   protected readonly commentActionBusyIds = signal<ReadonlySet<string>>(new Set());
   protected readonly commentEditId = signal<string | null>(null);
   protected readonly commentEditDraft = signal('');
   protected readonly commentFollowStates = signal<ReadonlyMap<string, CommentFollowState>>(new Map());
   protected readonly loadError = signal('');
-  protected readonly actionError = signal('');
-  protected readonly actionNotice = signal('');
   protected readonly activeActivityMenu = signal<string | null>(null);
   protected readonly activeCommentMenu = signal<string | null>(null);
   protected readonly busyUserActionIds = signal<ReadonlySet<string>>(new Set());
@@ -85,7 +82,6 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected readonly reportReason = signal<SocialReportReason | null>(null);
   protected readonly reportDetails = signal('');
   protected readonly reportBusy = signal(false);
-  protected readonly reportError = signal('');
   protected readonly reportBlockUser = signal(false);
   protected readonly groups = computed(() => this.groupActivities(this.data()?.content ?? []));
   protected readonly availableReportReasons: readonly SocialReportReason[] = [
@@ -99,6 +95,7 @@ export class SocialComponent implements OnInit, OnDestroy {
 
   private request?: Subscription;
   private readonly document = inject(DOCUMENT);
+  private readonly toasts = inject(ToastNotificationsService);
 
   constructor(
     private readonly feedApi: FeedApiService,
@@ -147,8 +144,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     this.heroBackdropLoading.set(true);
     this.heroBackdropFailed.set(false);
     this.loadError.set('');
-    this.actionError.set('');
-    this.actionNotice.set('');
     this.request = this.feedApi.getFeed({ size: 20 }).subscribe({
       next: (feed) => {
         const backdropPath = feed.backdropPath ?? null;
@@ -300,7 +295,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     const request = this.likeRequest(activity, nextLiked);
     if (!request) return;
     this.busyLikeIds.update((current) => new Set(current).add(activity.id));
-    this.actionError.set('');
     request.subscribe({
       next: () => {
         this.busyLikeIds.update((current) => { const next = new Set(current); next.delete(activity.id); return next; });
@@ -308,7 +302,7 @@ export class SocialComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.busyLikeIds.update((current) => { const next = new Set(current); next.delete(activity.id); return next; });
-        this.actionError.set(this.copy.likeError);
+        this.toasts.error(this.copy.likeError);
       },
     });
   }
@@ -384,18 +378,16 @@ export class SocialComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.actionError.set('');
-    this.actionNotice.set('');
     this.setUserActionBusy(userId, true);
     this.profileApi.setFollow(userId, true).subscribe({
       next: () => {
         this.setCommentFollowState(userId, 'FOLLOWING');
         this.addFollowedCommentUser(comment);
-        this.actionNotice.set(this.userActionLabel(this.copy.followSuccess, comment));
+        this.toasts.success(this.userActionLabel(this.copy.followSuccess, comment));
         this.setUserActionBusy(userId, false);
       },
       error: () => {
-        this.actionError.set(this.userActionLabel(this.copy.followError, comment));
+        this.toasts.error(this.userActionLabel(this.copy.followError, comment));
         this.setUserActionBusy(userId, false);
       },
     });
@@ -430,7 +422,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     if (this.isCommentActionBusy(comment.id)) return;
     this.commentEditId.set(comment.id);
     this.commentEditDraft.set(comment.text);
-    this.setCommentActionError(comment.id, '');
   }
 
   protected isCommentEditing(commentId: string): boolean {
@@ -452,16 +443,11 @@ export class SocialComponent implements OnInit, OnDestroy {
     return this.commentActionBusyIds().has(commentId);
   }
 
-  protected commentActionError(commentId: string): string | null {
-    return this.commentActionErrors().get(commentId) ?? null;
-  }
-
   protected saveCommentEdit(event: Event, activity: FeedActivity, comment: FeedCommentPreview): void {
     event.preventDefault();
     const text = this.commentEditDraft().trim();
     if (!text || text.length > 280 || this.isCommentActionBusy(comment.id)) return;
     this.setCommentActionBusy(comment.id, true);
-    this.setCommentActionError(comment.id, '');
     this.contentApi.updateComment(comment.id, { text, containsSpoiler: comment.containsSpoiler ?? false }).subscribe({
       next: (updated) => {
         this.updateCommentInFeed(activity.id, this.toFeedComment(updated));
@@ -470,7 +456,7 @@ export class SocialComponent implements OnInit, OnDestroy {
         this.setCommentActionBusy(comment.id, false);
       },
       error: () => {
-        this.setCommentActionError(comment.id, this.copy.commentEditError);
+        this.toasts.error(this.copy.commentEditError);
         this.setCommentActionBusy(comment.id, false);
       },
     });
@@ -482,16 +468,15 @@ export class SocialComponent implements OnInit, OnDestroy {
     this.activeCommentMenu.set(null);
     if (this.isCommentActionBusy(comment.id)) return;
     this.setCommentActionBusy(comment.id, true);
-    this.setCommentActionError(comment.id, '');
     this.contentApi.deleteComment(comment.id).subscribe({
       next: () => {
         this.removeCommentFromFeed(activity.id, comment.id);
         if (this.commentEditId() === comment.id) this.cancelCommentEdit();
         this.setCommentActionBusy(comment.id, false);
-        this.actionNotice.set(this.copy.commentDeleteSuccess);
+        this.toasts.success(this.copy.commentDeleteSuccess);
       },
       error: () => {
-        this.setCommentActionError(comment.id, this.copy.commentDeleteError);
+        this.toasts.error(this.copy.commentDeleteError);
         this.setCommentActionBusy(comment.id, false);
       },
     });
@@ -517,20 +502,10 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected setCommentDraft(activityId: string, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.commentDrafts.update((current) => new Map(current).set(activityId, value));
-    this.commentErrors.update((current) => {
-      if (!current.has(activityId)) return current;
-      const next = new Map(current);
-      next.delete(activityId);
-      return next;
-    });
   }
 
   protected isCommentBusy(activityId: string): boolean {
     return this.busyCommentIds().has(activityId);
-  }
-
-  protected commentError(activityId: string): string | null {
-    return this.commentErrors().get(activityId) ?? null;
   }
 
   protected submitComment(event: Event, activity: FeedActivity): void {
@@ -541,11 +516,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     if (!request) return;
 
     this.busyCommentIds.update((current) => new Set(current).add(activity.id));
-    this.commentErrors.update((current) => {
-      const next = new Map(current);
-      next.delete(activity.id);
-      return next;
-    });
     request.subscribe({
       next: (created) => {
         this.addCommentToFeed(activity.id, this.toFeedComment(created));
@@ -566,7 +536,7 @@ export class SocialComponent implements OnInit, OnDestroy {
           next.delete(activity.id);
           return next;
         });
-        this.commentErrors.update((current) => new Map(current).set(activity.id, this.copy.commentError));
+        this.toasts.error(this.copy.commentError);
       },
     });
   }
@@ -623,8 +593,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     const pending = this.pendingUserAction();
     if (!pending || this.busyUserActionIds().has(pending.userId)) return;
 
-    this.actionError.set('');
-    this.actionNotice.set('');
     this.setUserActionBusy(pending.userId, true);
     const request = pending.kind === 'unfollow'
       ? this.profileApi.setFollow(pending.userId, false)
@@ -639,13 +607,13 @@ export class SocialComponent implements OnInit, OnDestroy {
           if (pending.kind === 'block') this.removeCommentAuthorFromFeed(pending.userId);
         }
         const success = pending.kind === 'unfollow' ? this.copy.unfollowSuccess : this.copy.blockSuccess;
-        this.actionNotice.set(this.userActionLabel(success, pending.subject));
+        this.toasts.success(this.userActionLabel(success, pending.subject));
         this.pendingUserAction.set(null);
         this.setUserActionBusy(pending.userId, false);
       },
       error: () => {
         const failure = pending.kind === 'unfollow' ? this.copy.unfollowError : this.copy.blockError;
-        this.actionError.set(this.userActionLabel(failure, pending.subject));
+        this.toasts.error(this.userActionLabel(failure, pending.subject));
         this.pendingUserAction.set(null);
         this.setUserActionBusy(pending.userId, false);
       },
@@ -673,8 +641,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     this.activeCommentMenu.set(null);
     const userId = subject.user.id;
     if (!userId || this.busyUserActionIds().has(userId)) return;
-    this.actionError.set('');
-    this.actionNotice.set('');
     this.pendingUserAction.set({ kind, subject, source, userId });
   }
 
@@ -763,7 +729,6 @@ export class SocialComponent implements OnInit, OnDestroy {
 
   protected selectReportReason(reason: SocialReportReason): void {
     this.reportReason.set(reason);
-    this.reportError.set('');
   }
 
   protected reportQuestion(): string {
@@ -812,9 +777,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     const reason = this.reportReason();
     if (!target || !reason || this.reportBusy()) return;
     this.reportBusy.set(true);
-    this.reportError.set('');
-    this.actionError.set('');
-    this.actionNotice.set('');
     const details = this.reportDetails().trim();
     this.reportApi.createReport({
       targetType: target.targetType,
@@ -825,7 +787,8 @@ export class SocialComponent implements OnInit, OnDestroy {
       next: () => this.finishReport(target),
       error: () => {
         this.reportBusy.set(false);
-        this.reportError.set(this.copy.reportError);
+        this.reportBusy.set(false);
+        this.toasts.error(this.copy.reportError);
       },
     });
   }
@@ -858,7 +821,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     const current = this.data();
     if (!current?.hasNext || !current.nextCursor || this.busyMore()) return;
     this.busyMore.set(true);
-    this.actionError.set('');
     this.feedApi.getFeed({ cursor: current.nextCursor, size: 20 }).subscribe({
       next: (nextPage) => {
         this.data.update((page) => page ? {
@@ -871,7 +833,7 @@ export class SocialComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.busyMore.set(false);
-        this.actionError.set(this.copy.moreError);
+        this.toasts.error(this.copy.moreError);
       },
     });
   }
@@ -904,7 +866,6 @@ export class SocialComponent implements OnInit, OnDestroy {
   private resetReportDialog(): void {
     this.reportReason.set(null);
     this.reportDetails.set('');
-    this.reportError.set('');
     this.reportBlockUser.set(false);
   }
 
@@ -921,7 +882,7 @@ export class SocialComponent implements OnInit, OnDestroy {
     const userId = target.reportedUserId;
     if (!this.reportBlockUser() || !userId) {
       this.closeReportDialog();
-      this.actionNotice.set(this.copy.reportSuccess);
+      this.toasts.success(this.copy.reportSuccess);
       return;
     }
 
@@ -933,12 +894,11 @@ export class SocialComponent implements OnInit, OnDestroy {
         this.setCommentFollowState(userId, 'NOT_FOLLOWING');
         this.removeCommentAuthorFromFeed(userId);
         this.closeReportDialog();
-        this.actionNotice.set(this.copy.reportSuccessAndBlocked.replace('{user}', target.reportedUserName));
+        this.toasts.success(this.copy.reportSuccessAndBlocked.replace('{user}', target.reportedUserName));
       },
       error: () => {
         this.closeReportDialog();
-        this.actionNotice.set(this.copy.reportSuccess);
-        this.actionError.set(this.copy.reportBlockError.replace('{user}', target.reportedUserName));
+        this.toasts.warning(`${this.copy.reportSuccess} ${this.copy.reportBlockError.replace('{user}', target.reportedUserName)}`);
       },
     });
   }
@@ -968,15 +928,6 @@ export class SocialComponent implements OnInit, OnDestroy {
     this.commentActionBusyIds.update((current) => {
       const next = new Set(current);
       if (busy) next.add(commentId);
-      else next.delete(commentId);
-      return next;
-    });
-  }
-
-  private setCommentActionError(commentId: string, error: string): void {
-    this.commentActionErrors.update((current) => {
-      const next = new Map(current);
-      if (error) next.set(commentId, error);
       else next.delete(commentId);
       return next;
     });

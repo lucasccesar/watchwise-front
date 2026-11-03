@@ -81,8 +81,6 @@
           <span><strong>{{ copy().shareShowReview }}</strong><small>{{ shareShowReview() ? copy().shareReviewVisible : copy().shareReviewHidden }}</small></span>
           <button type="button" role="switch" [attr.aria-checked]="shareShowReview()" [attr.aria-label]="copy().shareShowReview" [class.movie-share-switch--on]="shareShowReview()" (click)="shareShowReview.set(!shareShowReview())"><span></span></button>
         </div>
-        @if (shareError()) { <p class="movie-share-error" role="alert">{{ shareError() }}</p> }
-        @if (shareCopySuccess()) { <p class="movie-share-success" role="status">{{ shareCopySuccess() }}</p> }
         <div class="movie-share-controls">
           <button class="movie-button movie-button--secondary" type="button" (click)="close()">{{ copy().cancel }}</button>
           <button class="movie-button movie-button--primary" type="button" [disabled]="shareCopyPending()" (click)="copyShareImage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>{{ shareCopyPending() ? copy().shareCopying : copy().shareCopyImage }}</button>

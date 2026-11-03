@@ -82,8 +82,6 @@
 .episode-state a { color: #94adff; font-size: 13px; }
 .episode-spinner { width: 26px; height: 26px; border: 2px solid #393941; border-top-color: #4678f5; border-radius: 50%; animation: episode-spin .8s linear infinite; }
 @keyframes episode-spin { to { transform: rotate(360deg); } }
-.episode-error { margin: 14px auto; color: #f19b9c; text-align: center; font-size: 12px; }
-.episode-toast { position: fixed; z-index: 100; right: 22px; bottom: 24px; padding: 12px 16px; border: 1px solid #395db1; border-radius: 8px; background: #202943; color: #f4f5fa; box-shadow: 0 10px 30px rgba(0,0,0,.35); font-size: 13px; }
 .episode-rating-modal { width: min(460px,100%); padding: 24px; }
 .episode-modal-close { position: absolute; top: 12px; right: 14px; border: 0; background: none; color: #aaaab2; font-size: 24px; cursor: pointer; }
 .episode-modal-kicker { color: #9999a2; font-size: 11px; }
@@ -141,5 +139,4 @@
   .episode-cast-list img, .episode-cast-fallback { width: 32px; height: 40px; flex-basis: 32px; }
   .episode-cast-list strong { font-size: 10px; }
   .episode-review-card > p { font-size: 12px; }
-  .episode-toast { right: 12px; bottom: 18px; left: 12px; text-align: center; }
 }

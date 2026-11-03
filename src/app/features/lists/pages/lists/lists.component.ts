@@ -8,6 +8,7 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type ListMenu = 'source' | 'type' | 'sort' | null;
 type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
@@ -38,7 +39,6 @@ export class ListsComponent {
   protected readonly activeMenu = signal<ListMenu>(null);
   protected readonly activeCardMenu = signal<string | null>(null);
   protected readonly activePreviewMenu = signal<string | null>(null);
-  protected readonly shareNoticeId = signal<string | null>(null);
   protected readonly reorderMode = signal(false);
   protected readonly totalPages = computed(() => Math.max(1, this.pageData()?.totalPages ?? 1));
   protected readonly pageNumbers = computed(() => Array.from({ length: this.totalPages() }, (_, index) => index + 1));
@@ -49,6 +49,7 @@ export class ListsComponent {
   private readonly api = inject(ListsApiService);
   private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
   private request?: Subscription;
 
   constructor() {
@@ -138,7 +139,7 @@ export class ListsComponent {
     const position = list.rank ?? 1;
     const target = Math.max(1, Math.min(this.currentCount(), position + offset));
     if (target === position) return;
-    this.api.updateList(list.id, { rank: target }).subscribe({ next: () => this.load(), error: () => this.error.set(this.copy.reorderError) });
+    this.api.updateList(list.id, { rank: target }).subscribe({ next: () => this.load(), error: () => this.toasts.error(this.copy.reorderError) });
   }
 
   protected typeLabel(): string {
@@ -202,10 +203,9 @@ export class ListsComponent {
   protected share(list: UserListCard, event?: MouseEvent): void {
     event?.stopPropagation();
     const url = `${window.location.origin}/lists/${encodeURIComponent(list.id)}`;
-    void navigator.clipboard.writeText(url).then(() => {
-      this.shareNoticeId.set(list.id);
-      window.setTimeout(() => this.shareNoticeId.set(null), 1800);
-    });
+    void navigator.clipboard.writeText(url)
+      .then(() => this.toasts.success(this.copy.copied))
+      .catch(() => this.toasts.error('Não foi possível copiar o link.'));
   }
 
   private imageUrl(path: string | null | undefined): string | null {

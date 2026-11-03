@@ -5,6 +5,7 @@ import { ContentApiService, ContentEpisodeSelection, ContentSeasonSelection } fr
 import { ListsApiService, ListContentReference, ListVisibility } from '../../data-access/lists-api.service';
 import { SearchApiService, SearchContentView } from '../../../search-content/data-access/search-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type ListCreateKind = 'MOVIES_AND_SERIES' | 'SEASONS' | 'EPISODES';
 type ListComposerItem = {
@@ -62,6 +63,7 @@ export class ListCreateComponent implements OnDestroy {
   private readonly listsApi = inject(ListsApiService);
   private readonly searchApi = inject(SearchApiService);
   private readonly contentApi = inject(ContentApiService);
+  private readonly toasts = inject(ToastNotificationsService);
   private searchTimer?: ReturnType<typeof setTimeout>;
   private searchRequest?: Subscription;
   private selectionRequest?: Subscription;
@@ -268,7 +270,7 @@ export class ListCreateComponent implements OnDestroy {
       },
       error: () => {
         this.creating.set(false);
-        this.formError.set(this.copy.createError);
+        this.toasts.error(this.copy.createError);
       },
     });
   }

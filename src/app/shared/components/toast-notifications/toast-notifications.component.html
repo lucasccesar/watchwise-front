@@ -1,0 +1,36 @@
+@if (notifications.current(); as toast) {
+  <aside class="toast-notification-region" aria-label="Notificações">
+    <section
+      class="toast-notification"
+      [class.toast-notification--success]="toast.type === 'success'"
+      [class.toast-notification--error]="toast.type === 'error'"
+      [class.toast-notification--warning]="toast.type === 'warning'"
+      [class.toast-notification--info]="toast.type === 'info'"
+      [class.toast-notification--leaving]="notifications.leaving()"
+      [attr.role]="toast.type === 'error' ? 'alert' : 'status'"
+      [attr.aria-live]="toast.type === 'error' ? 'assertive' : 'polite'"
+      aria-atomic="true"
+    >
+      <span class="toast-notification-icon" aria-hidden="true">
+        @switch (toast.type) {
+          @case ('success') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg>
+          }
+          @case ('error') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3h.01" /></svg>
+          }
+          @case ('warning') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4m0 3h.01" /></svg>
+          }
+          @default {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg>
+          }
+        }
+      </span>
+      <p class="toast-notification-message">{{ toast.message }}</p>
+      <button type="button" class="toast-notification-dismiss" aria-label="Dispensar notificação" (click)="notifications.dismiss(toast.id)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </section>
+  </aside>
+}

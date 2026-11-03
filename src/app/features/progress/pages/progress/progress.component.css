@@ -491,12 +491,6 @@
   opacity: 0.6;
 }
 
-.progress-action-error {
-  margin: 0;
-  color: var(--color-error);
-  font-size: var(--font-size-xs);
-}
-
 .progress-state {
   display: flex;
   min-height: 320px;

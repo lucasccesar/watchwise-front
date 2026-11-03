@@ -43,6 +43,7 @@ import { PageSkeletonComponent } from '../../../../shared/components/page-skelet
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'watch' | 'videos' | 'lists' | 'share' | null;
@@ -142,7 +143,6 @@ export class MovieComponent implements OnInit, OnDestroy {
     return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1`);
   });
   protected readonly detailsExpanded = signal(false);
-  protected readonly toast = signal('');
   protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly maxWatchedDate: string;
   protected readonly watchForm: WatchForm;
@@ -168,7 +168,6 @@ export class MovieComponent implements OnInit, OnDestroy {
   private requestSubscriptions = new Subscription();
   private watchHydrationSubscription = new Subscription();
   protected modalOpener: HTMLElement | null = null;
-  private messageTimeout?: ReturnType<typeof setTimeout>;
   private movieStylesheet: HTMLLinkElement | null = null;
   private openShareReviewAfterLoad = false;
   private shareReturnUrl: string | null = null;
@@ -176,6 +175,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly title = inject(Title);
+  private readonly toasts = inject(ToastNotificationsService);
 
   @ViewChild('movieDialog')
   private movieDialog?: ElementRef<HTMLElement>;
@@ -233,7 +233,6 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
     this.requestSubscriptions.unsubscribe();
     this.watchHydrationSubscription.unsubscribe();
-    if (this.messageTimeout) clearTimeout(this.messageTimeout);
     if (this.movieStylesheet) {
       this.renderer.removeChild(this.document.head, this.movieStylesheet);
     }
@@ -663,7 +662,7 @@ export class MovieComponent implements OnInit, OnDestroy {
     if (!details) return;
     const movieTmdbId = this.tmdbId().trim();
     if (!movieTmdbId) {
-      this.showToast(this.copy.invalid);
+      this.showToast(this.copy.invalid, 'warning');
       return;
     }
 
@@ -673,7 +672,7 @@ export class MovieComponent implements OnInit, OnDestroy {
       value.watchedDate > this.maxWatchedDate ||
       (releaseDate && value.watchedDate < releaseDate)
     ) {
-      this.showToast(this.copy.invalid);
+      this.showToast(this.copy.invalid, 'warning');
       return;
     }
     const request = {
@@ -760,7 +759,7 @@ export class MovieComponent implements OnInit, OnDestroy {
           error: (error: unknown) => {
             this.commentPending.set(false);
             if (this.handleSessionError(error)) return;
-            this.commentError.set(this.errorMessage(error));
+            this.showToast(this.errorMessage(error), 'error');
           },
         }),
     );
@@ -1004,7 +1003,7 @@ export class MovieComponent implements OnInit, OnDestroy {
         error: (error: unknown) => {
           this.actionPending.set(false);
           if (this.handleSessionError(error)) return;
-          this.showToast(this.errorMessage(error));
+          this.showToast(this.errorMessage(error), 'error');
         },
       }),
     );
@@ -1017,7 +1016,7 @@ export class MovieComponent implements OnInit, OnDestroy {
       this.api.getPage(contentId).subscribe({
         next: (page) => this.page.set(page),
         error: (error: unknown) => {
-          if (!this.handleSessionError(error)) this.showToast(this.errorMessage(error));
+          if (!this.handleSessionError(error)) this.showToast(this.errorMessage(error), 'error');
         },
       }),
     );
@@ -1092,10 +1091,8 @@ export class MovieComponent implements OnInit, OnDestroy {
     return this.copy.actionUnavailable;
   }
 
-  private showToast(message: string): void {
-    this.toast.set(message);
-    if (this.messageTimeout) clearTimeout(this.messageTimeout);
-    this.messageTimeout = setTimeout(() => this.toast.set(''), 3500);
+  private showToast(message: string, type: ToastNotificationType = 'success'): void {
+    this.toasts[type](message);
   }
 
   private localDate(date: Date): string {

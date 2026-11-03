@@ -18,6 +18,7 @@ import {
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type ProgressSort = 'watched' | 'remaining';
 
@@ -30,6 +31,7 @@ type ProgressSort = 'watched' | 'remaining';
   styleUrl: './progress.component.css',
 })
 export class ProgressComponent {
+  private readonly toasts = inject(ToastNotificationsService);
   protected readonly copy = messageCatalog['pt-BR'].progressPage;
   protected readonly homeCopy = messageCatalog['pt-BR'].home;
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
@@ -50,7 +52,6 @@ export class ProgressComponent {
   ];
   protected readonly expandedIds = signal<ReadonlySet<string>>(new Set());
   protected readonly savingSeriesId = signal<string | null>(null);
-  protected readonly actionError = signal('');
 
   private readonly api = inject(DiaryApiService);
   private readonly contentApi = inject(ContentApiService);
@@ -198,7 +199,6 @@ export class ProgressComponent {
     const next = episode.nextEpisode;
     if (this.savingSeriesId() || !next || next.availableToWatch === false) return;
     this.savingSeriesId.set(episode.seriesTmdbId);
-    this.actionError.set('');
     this.contentApi.createSeriesDiaryEntry({
       content: {
         type: 'EPISODE',
@@ -214,7 +214,7 @@ export class ProgressComponent {
       },
       error: () => {
         this.savingSeriesId.set(null);
-        this.actionError.set(this.copy.markWatchedError);
+        this.toasts.error(this.copy.markWatchedError);
       },
     });
   }

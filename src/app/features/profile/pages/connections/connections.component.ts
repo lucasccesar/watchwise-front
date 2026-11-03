@@ -12,6 +12,7 @@ import { ProfileApiService } from '../../data-access/profile-api.service';
 import { SearchApiService } from '../../../search-content/data-access/search-api.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type ConnectionsMode = 'followers' | 'following';
 
@@ -29,6 +30,7 @@ export class ConnectionsComponent {
   private readonly profileApi = inject(ProfileApiService);
   private readonly searchApi = inject(SearchApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly toasts = inject(ToastNotificationsService);
 
   protected readonly mode = signal<ConnectionsMode>('followers');
   protected readonly username = signal('');
@@ -106,13 +108,12 @@ export class ConnectionsComponent {
   protected unfollow(user: FollowingUser): void {
     if (this.mode() !== 'following' || this.unfollowingId()) return;
     this.unfollowingId.set(user.id);
-    this.errorMessage.set('');
     this.profileApi.setFollow(user.id, false)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(() => {
           this.unfollowingId.set(null);
-          this.errorMessage.set('Não foi possível deixar de seguir esta pessoa. Tente novamente.');
+          this.toasts.error('Não foi possível deixar de seguir esta pessoa. Tente novamente.');
           return EMPTY;
         }),
       )

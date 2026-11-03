@@ -8,6 +8,7 @@ import { ContentApiService, ContentEpisodeSelection, ContentSeasonSelection } fr
 import { SearchApiService, SearchContentView, SearchPersonView, SearchView } from '../../../search-content/data-access/search-api.service';
 import { PicksApiService, PickCreationSelection, PicksTemplateCategoryInput } from '../../data-access/picks-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type PickType = 'MOVIE' | 'SERIES' | 'EPISODE' | 'PERSON';
 type CategoryGroup = 'PRIMARY' | 'SECONDARY';
@@ -58,6 +59,7 @@ export class PickCreateComponent implements OnDestroy {
   private readonly api = inject(PicksApiService);
   private readonly searchApi = inject(SearchApiService);
   private readonly contentApi = inject(ContentApiService);
+  private readonly toasts = inject(ToastNotificationsService);
   private nextCategoryId = 0;
   private nextOptionId = 0;
 
@@ -149,7 +151,7 @@ export class PickCreateComponent implements OnDestroy {
     this.creating.set(true); this.formError.set('');
     this.api.createTemplate({ name, description: this.description().trim() || null, coverImage: this.coverImage().trim() || null, eligibilityStartDate: this.limitByDate() ? this.eligibilityStartDate() || null : null, eligibilityEndDate: this.limitByDate() ? this.eligibilityEndDate() || null : null, categories: requestCategories }).subscribe({
       next: (template) => { this.creating.set(false); void this.router.navigate(['/picks/templates', template.id]); },
-      error: (error: unknown) => { this.creating.set(false); this.formError.set(error instanceof HttpErrorResponse && error.status === 0 ? this.picksCopy.connectionError : this.copy.createError); },
+      error: (error: unknown) => { this.creating.set(false); this.toasts.error(error instanceof HttpErrorResponse && error.status === 0 ? this.picksCopy.connectionError : this.copy.createError); },
     });
   }
 

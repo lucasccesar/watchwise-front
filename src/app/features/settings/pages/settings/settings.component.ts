@@ -1,6 +1,7 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -45,6 +46,7 @@ export class SettingsComponent {
   private readonly notificationsApi = inject(NotificationsApiService);
   private readonly settingsApi = inject(SettingsApiService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
 
   protected readonly sections = SETTINGS_SECTIONS;
   protected readonly activeSection = signal<SettingsSection | null>(null);
@@ -69,8 +71,6 @@ export class SettingsComponent {
   protected readonly newPassword = signal('');
   protected readonly confirmPassword = signal('');
   protected readonly deleteAccountPassword = signal('');
-  protected readonly notice = signal('');
-  protected readonly noticeKind = signal<'error' | 'success'>('error');
   protected readonly dialog = signal<SettingsDialog>(null);
   protected readonly busy = signal(false);
   protected readonly followRequests = signal<FollowRequestUser[]>([]);
@@ -81,7 +81,6 @@ export class SettingsComponent {
   protected readonly loadingMoreFollowRequests = signal(false);
   protected readonly followRequestActionId = signal<string | null>(null);
   protected readonly followRequestsError = signal('');
-  protected readonly followRequestsMessage = signal('');
   protected readonly blockedUsers = signal<BlockedUserRecord[]>([]);
   protected readonly blockedUserCount = signal(0);
   protected readonly blockedUsersStatus = signal<ConnectionLoadState>('loading');
@@ -90,7 +89,6 @@ export class SettingsComponent {
   protected readonly loadingMoreBlockedUsers = signal(false);
   protected readonly blockedUserActionId = signal<string | null>(null);
   protected readonly blockedUsersError = signal('');
-  protected readonly blockedUsersMessage = signal('');
   protected readonly settingsBaseline = signal<SettingsView | null>(null);
   protected readonly isProfileDirty = computed(() => {
     const baseline = this.settingsBaseline();
@@ -148,7 +146,7 @@ export class SettingsComponent {
       },
       error: () => {
         this.loadingMoreFollowRequests.set(false);
-        this.followRequestsError.set('Não foi possível carregar mais solicitações. Tente novamente.');
+        this.toasts.error('Não foi possível carregar mais solicitações. Tente novamente.');
       },
     });
   }
@@ -157,7 +155,6 @@ export class SettingsComponent {
     if (this.followRequestActionId()) return;
     this.followRequestActionId.set(request.id);
     this.followRequestsError.set('');
-    this.followRequestsMessage.set('');
     const action = decision === 'accepted'
       ? this.notificationsApi.acceptFollowRequest(request.id)
       : this.notificationsApi.rejectFollowRequest(request.id);
@@ -166,11 +163,11 @@ export class SettingsComponent {
         this.followRequests.update((current) => current.filter((user) => user.id !== request.id));
         this.followRequestCount.update((count) => Math.max(0, count - 1));
         this.followRequestActionId.set(null);
-        this.followRequestsMessage.set(decision === 'accepted' ? 'Solicitação aceita.' : 'Solicitação recusada.');
+        this.toasts.success(decision === 'accepted' ? 'Solicitação aceita.' : 'Solicitação recusada.');
       },
       error: () => {
         this.followRequestActionId.set(null);
-        this.followRequestsError.set('Não foi possível atualizar a solicitação. Tente novamente.');
+        this.toasts.error('Não foi possível atualizar a solicitação. Tente novamente.');
       },
     });
   }
@@ -193,7 +190,7 @@ export class SettingsComponent {
       },
       error: () => {
         this.loadingMoreBlockedUsers.set(false);
-        this.blockedUsersError.set('Não foi possível carregar mais usuários bloqueados. Tente novamente.');
+        this.toasts.error('Não foi possível carregar mais usuários bloqueados. Tente novamente.');
       },
     });
   }
@@ -202,17 +199,16 @@ export class SettingsComponent {
     if (this.blockedUserActionId()) return;
     this.blockedUserActionId.set(record.user.id);
     this.blockedUsersError.set('');
-    this.blockedUsersMessage.set('');
     this.settingsApi.unblockUser(record.user.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.blockedUsers.update((current) => current.filter((item) => item.user.id !== record.user.id));
         this.blockedUserCount.update((count) => Math.max(0, count - 1));
         this.blockedUserActionId.set(null);
-        this.blockedUsersMessage.set('Usuário desbloqueado.');
+        this.toasts.success('Usuário desbloqueado.');
       },
       error: () => {
         this.blockedUserActionId.set(null);
-        this.blockedUsersError.set('Não foi possível desbloquear este usuário. Tente novamente.');
+        this.toasts.error('Não foi possível desbloquear este usuário. Tente novamente.');
       },
     });
   }
@@ -237,7 +233,6 @@ export class SettingsComponent {
 
   protected openSection(section: SettingsSection): void {
     this.activeSection.set(section);
-    this.notice.set('');
     if (window.matchMedia('(max-width: 760px)').matches) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -247,7 +242,6 @@ export class SettingsComponent {
 
   protected closeMobileSection(): void {
     this.activeSection.set(null);
-    this.notice.set('');
   }
 
   protected onPhotoSelected(event: Event, target: 'profile' | 'banner'): void {
@@ -265,8 +259,7 @@ export class SettingsComponent {
         this.bannerImage.set(url);
         this.removeBannerRequested.set(false);
       }
-      this.noticeKind.set('success');
-      this.notice.set('Imagem disponível apenas na prévia; esta API não oferece envio de arquivos.');
+      this.toasts.warning('Imagem disponível apenas na prévia; esta API não oferece envio de arquivos.');
     };
     reader.readAsDataURL(file);
   }
@@ -306,17 +299,17 @@ export class SettingsComponent {
     }
 
     this.busy.set(true);
-    this.notice.set('');
     const finish = (message: string, kind: 'success' | 'error' = 'success'): void => {
       if (hasLocalOnlyMedia) {
         this.profilePhoto.set(photoDraft);
         if (!removeBanner) this.bannerImage.set(bannerDraft);
       }
       this.busy.set(false);
-      this.noticeKind.set(kind);
-      this.notice.set(hasLocalOnlyMedia && kind === 'success'
+      const fullMessage = hasLocalOnlyMedia && kind === 'success'
         ? `${message} A imagem escolhida continua apenas na prévia porque a API não oferece envio de arquivos.`
-        : message);
+        : message;
+      if (kind === 'success') this.toasts.success(fullMessage);
+      else this.toasts.error(fullMessage);
     };
     const finishAfterRefresh = (message: string, kind: 'success' | 'error' = 'success'): void => {
       this.loadSettings(() => finish(message, kind));
@@ -346,7 +339,7 @@ export class SettingsComponent {
       },
       error: (error: unknown) => {
         this.busy.set(false);
-        this.showUnavailable(this.errorMessage(error, 'Não foi possível salvar o perfil.'));
+        this.showUnavailable(this.errorMessage(error, 'Não foi possível salvar o perfil.'), 'error');
       },
     });
   }
@@ -395,7 +388,6 @@ export class SettingsComponent {
     }
     if (password !== this.confirmPassword()) return this.showUnavailable('A confirmação da nova senha não corresponde.');
     this.busy.set(true);
-    this.notice.set('');
     this.settingsApi.updateUser({ password, currentPassword }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.session.clear();
@@ -403,7 +395,7 @@ export class SettingsComponent {
       },
       error: (error: unknown) => {
         this.busy.set(false);
-        this.showUnavailable(this.errorMessage(error, 'Não foi possível atualizar a senha.'));
+        this.showUnavailable(this.errorMessage(error, 'Não foi possível atualizar a senha.'), 'error');
       },
     });
   }
@@ -417,7 +409,6 @@ export class SettingsComponent {
     this.profilePhoto.set(baseline.profile.profilePicture);
     this.bannerImage.set(baseline.profile.banner);
     this.removeBannerRequested.set(false);
-    this.notice.set('');
   }
 
   protected logoutHere(): void {
@@ -434,8 +425,7 @@ export class SettingsComponent {
           void this.router.navigateByUrl('/login');
           return;
         }
-        this.noticeKind.set('error');
-        this.notice.set('Não foi possível encerrar esta sessão. Tente novamente.');
+        this.toasts.error('Não foi possível encerrar esta sessão. Tente novamente.');
         this.busy.set(false);
       },
     });
@@ -456,7 +446,6 @@ export class SettingsComponent {
     const password = this.deleteAccountPassword();
     if (!password) return this.showUnavailable('Informe sua senha atual para confirmar a exclusão.');
     this.busy.set(true);
-    this.notice.set('');
     this.settingsApi.deleteAccount(password).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.session.clear();
@@ -465,14 +454,14 @@ export class SettingsComponent {
       },
       error: (error: unknown) => {
         this.busy.set(false);
-        this.showUnavailable(this.errorMessage(error, 'Não foi possível excluir a conta.'));
+        this.showUnavailable(this.errorMessage(error, 'Não foi possível excluir a conta.'), 'error');
       },
     });
   }
 
-  protected showUnavailable(message = 'A API atual não oferece esta operação; nenhuma alteração foi salva.'): void {
-    this.noticeKind.set('error');
-    this.notice.set(message);
+  protected showUnavailable(message = 'A API atual não oferece esta operação; nenhuma alteração foi salva.', type: 'warning' | 'error' = 'warning'): void {
+    if (type === 'error') this.toasts.error(message);
+    else this.toasts.warning(message);
   }
 
   private loadFollowRequests(): void {
@@ -501,7 +490,7 @@ export class SettingsComponent {
       },
       error: () => {
         if (onLoaded) onLoaded();
-        else this.showUnavailable('Não foi possível carregar suas configurações. Tente novamente.');
+        else this.showUnavailable('Não foi possível carregar suas configurações. Tente novamente.', 'error');
       },
     });
   }
@@ -587,18 +576,16 @@ export class SettingsComponent {
     afterSuccess?: (updated: UserSettingsUpdate) => void,
   ): void {
     this.busy.set(true);
-    this.notice.set('');
     this.settingsApi.updateUser(patch).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (updated) => {
         this.applyUpdatedUser(updated);
         afterSuccess?.(updated);
         this.busy.set(false);
-        this.noticeKind.set('success');
-        this.notice.set(successMessage);
+        this.toasts.success(successMessage);
       },
       error: (error: unknown) => {
         this.busy.set(false);
-        this.showUnavailable(this.errorMessage(error, 'Não foi possível salvar as configurações.'));
+        this.showUnavailable(this.errorMessage(error, 'Não foi possível salvar as configurações.'), 'error');
       },
     });
   }

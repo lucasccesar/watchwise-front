@@ -11,6 +11,7 @@ import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksPickView } from
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 
@@ -37,11 +38,8 @@ export class PickDetailComponent {
   protected readonly commentText = signal('');
   protected readonly commentSpoiler = signal(false);
   protected readonly postingComment = signal(false);
-  protected readonly commentError = signal('');
   protected readonly selectedVisibility = signal<PickVisibility>('PUBLIC');
   protected readonly savingVisibility = signal(false);
-  protected readonly visibilityNotice = signal('');
-  protected readonly visibilityError = signal('');
   protected readonly sharePreviewOpen = signal(false);
   protected readonly openMenu = signal('');
   protected readonly imageActions: readonly ContentImageAction[] = [{ id: 'open', label: this.copy.answerUnavailable, icon: 'eye' }];
@@ -69,6 +67,7 @@ export class PickDetailComponent {
   private readonly api = inject(PicksApiService);
   private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
 
   constructor() {
     if (!this.pickId) { this.status.set('error'); this.error.set(this.copy.loadError); return; }
@@ -102,19 +101,19 @@ export class PickDetailComponent {
   protected updateSpoiler(event: Event): void { this.commentSpoiler.set((event.target as HTMLInputElement).checked); }
   protected postComment(event: Event): void {
     event.preventDefault(); const text = this.commentText().trim(); if (!text || this.postingComment()) return;
-    this.postingComment.set(true); this.commentError.set('');
+    this.postingComment.set(true);
     this.api.createPickComment(this.pickId, { text, containsSpoiler: this.commentSpoiler() }).subscribe({
       next: (comment) => { this.comments.update((items) => [comment, ...items]); this.pick.update((current) => current ? { ...current, commentsCount: current.commentsCount + 1 } : current); this.commentText.set(''); this.commentSpoiler.set(false); this.postingComment.set(false); },
-      error: () => { this.postingComment.set(false); this.commentError.set(this.copy.commentError); },
+      error: () => { this.postingComment.set(false); this.toasts.error(this.copy.commentError); },
     });
   }
-  protected changeVisibility(value: PickVisibility): void { this.selectedVisibility.set(value); this.visibilityNotice.set(''); this.visibilityError.set(''); }
+  protected changeVisibility(value: PickVisibility): void { this.selectedVisibility.set(value); }
   protected saveVisibility(): void {
     const pick = this.pick(); if (!pick || !this.isOwner() || this.savingVisibility() || pick.visibility === this.selectedVisibility()) return;
-    this.savingVisibility.set(true); this.visibilityNotice.set(''); this.visibilityError.set('');
+    this.savingVisibility.set(true);
     this.api.updatePickVisibility(pick.id, this.selectedVisibility()).subscribe({
-      next: () => { this.pick.update((current) => current ? { ...current, visibility: this.selectedVisibility() } : current); this.savingVisibility.set(false); this.visibilityNotice.set(this.copy.visibilityUpdated); },
-      error: () => { this.savingVisibility.set(false); this.visibilityError.set(this.copy.visibilityError); },
+      next: () => { this.pick.update((current) => current ? { ...current, visibility: this.selectedVisibility() } : current); this.savingVisibility.set(false); this.toasts.success(this.copy.visibilityUpdated); },
+      error: () => { this.savingVisibility.set(false); this.toasts.error(this.copy.visibilityError); },
     });
   }
   protected answeredLabel(): string { const item = this.pick(); return item ? this.copy.answered.replace('{answered}', String(item.answeredCategoriesCount)).replace('{total}', String(item.totalCategoriesCount)) : ''; }

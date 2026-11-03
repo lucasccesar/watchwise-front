@@ -7,6 +7,7 @@ import {
   OnInit,
   ViewChild,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -21,6 +22,7 @@ import {
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ContentApiService, ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import {
   TrendingApiService,
@@ -36,11 +38,9 @@ interface SectionState {
   page: TrendingSectionPage | null;
   visibleCount: number;
   loading: boolean;
-  error: boolean;
 }
 
 type Sections = Record<TrendingType, SectionState>;
-interface TrendingActionFeedback { message: string; error: boolean; }
 interface TrendingCalendarDay {
   date: string;
   day: number;
@@ -59,7 +59,6 @@ function emptySection(loading = false): SectionState {
     page: null,
     visibleCount: INITIAL_SECTION_SIZE,
     loading,
-    error: false,
   };
 }
 
@@ -82,7 +81,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly errorMessage = signal('');
   protected readonly sections = signal<Sections>({ MOVIE: emptySection(), SERIES: emptySection() });
-  protected readonly actionFeedback = signal<TrendingActionFeedback | null>(null);
+  private readonly toasts = inject(ToastNotificationsService);
   protected readonly busyCardActionIds = signal<ReadonlySet<string>>(new Set());
   protected readonly listDialogCard = signal<TrendingCard | null>(null);
   protected readonly listPickerPosition = signal<{ top: number; right: number } | null>(null);
@@ -93,7 +92,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly userListsStatus = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly userListsLoadingMore = signal(false);
   protected readonly userListsError = signal('');
-  protected readonly listActionError = signal('');
   protected readonly busyListId = signal<string | null>(null);
   protected readonly listCreateOpen = signal(false);
   protected readonly listDraftName = signal('');
@@ -106,7 +104,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly watchDialogCalendarOpen = signal(false);
   protected readonly watchDialogCalendarMonth = signal(this.firstOfMonth(new Date()));
   protected readonly watchDialogSaving = signal(false);
-  protected readonly watchDialogError = signal('');
   protected readonly ratingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
   protected readonly calendarWeekdays = this.footerCopy.calendarWeekdays.split(' ');
   protected readonly watchDialogDays = computed(() =>
@@ -182,14 +179,12 @@ export class TrendingComponent implements OnInit, OnDestroy {
             page: response.moviesPage,
             visibleCount: INITIAL_SECTION_SIZE,
             loading: false,
-            error: false,
           },
           SERIES: {
             cards: response.series,
             page: response.seriesPage,
             visibleCount: INITIAL_SECTION_SIZE,
             loading: false,
-            error: false,
           },
         });
         this.status.set('ready');
@@ -323,7 +318,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
     const firstExpandedPage = state.page?.size === INITIAL_SECTION_SIZE;
     const nextPage = firstExpandedPage ? 1 : (state.page?.page ?? 0) + 1;
     if (nextPage > 500 || (!firstExpandedPage && !state.page?.hasNext)) return;
-    this.updateSection(type, { loading: true, error: false });
+    this.updateSection(type, { loading: true });
     this.sectionRequests[type]?.unsubscribe();
     this.sectionRequests[type] = this.api.getSection(type, this.period(), nextPage).subscribe({
       next: (response) => {
@@ -341,7 +336,8 @@ export class TrendingComponent implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         if (this.handleSessionError(error)) return;
-        this.updateSection(type, { loading: false, error: true });
+        this.updateSection(type, { loading: false });
+        this.toasts.error(this.copy.moreError);
       },
     });
   }
@@ -402,7 +398,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     const removing = list.containsContent === true;
     if (!card || (!removing && !this.canAddToList(list)) || this.busyListId()) return;
     this.busyListId.set(list.id);
-    this.listActionError.set('');
     const request = removing
       ? this.findCardInList(list.id, card).pipe(
           switchMap((itemId) => itemId
@@ -418,13 +413,12 @@ export class TrendingComponent implements OnInit, OnDestroy {
         this.userLists.update((lists) => lists.map((item) => item.id === list.id
           ? { ...item, containsContent: !removing, itemsCount: Math.max(0, (item.itemsCount ?? 0) + (removing ? -1 : 1)) }
           : item));
-        this.listActionError.set('');
-        this.actionFeedback.set({ message: removing ? this.copy.listRemoved : this.copy.listAdded, error: false });
+        this.toasts.success(removing ? this.copy.listRemoved : this.copy.listAdded);
       },
       error: (error: unknown) => {
         this.busyListId.set(null);
         if (this.handleSessionError(error)) return;
-        this.listActionError.set(this.copy.actionError);
+        this.toasts.error(this.copy.actionError);
       },
     }));
   }
@@ -485,10 +479,8 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.userListsStatus.set('loading');
     this.userListsLoadingMore.set(false);
     this.userListsError.set('');
-    this.listActionError.set('');
     this.listCreateOpen.set(false);
     this.listDraftName.set('');
-    this.actionFeedback.set(null);
     this.listRequests.unsubscribe();
     this.listRequests = new Subscription();
 
@@ -525,7 +517,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.watchDialogWatchedInTheater.set(false);
     this.watchDialogCalendarOpen.set(false);
     this.watchDialogCalendarMonth.set(this.firstOfMonth(new Date()));
-    this.watchDialogError.set('');
     this.watchDialogSaving.set(false);
   }
 
@@ -533,7 +524,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     if (this.watchDialogSaving()) return;
     this.watchDialogCard.set(null);
     this.watchDialogCalendarOpen.set(false);
-    this.watchDialogError.set('');
     this.listDialogOpener()?.focus();
   }
 
@@ -598,21 +588,17 @@ export class TrendingComponent implements OnInit, OnDestroy {
           watchedDate,
         }, crypto.randomUUID());
     this.watchDialogSaving.set(true);
-    this.watchDialogError.set('');
     this.cardActionRequests.add(request.subscribe({
       next: () => {
         this.watchDialogSaving.set(false);
         this.updateCardViewerState(card, { watchStatus: 'WATCHED', lastWatchedDate: watchedDate });
-        this.actionFeedback.set({
-          message: this.watchDialogRewatch() ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess,
-          error: false,
-        });
+        this.toasts.success(this.watchDialogRewatch() ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
         this.closeWatchedDialog();
       },
       error: (error: unknown) => {
         this.watchDialogSaving.set(false);
         if (this.handleSessionError(error)) return;
-        this.watchDialogError.set(this.copy.actionError);
+        this.toasts.error(this.copy.actionError);
       },
     }));
   }
@@ -661,7 +647,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     const name = this.listDraftName().trim();
     if (!card || !name || this.busyListId()) return;
     this.busyListId.set('new-list');
-    this.listActionError.set('');
     const request = card.type === 'MOVIE'
       ? this.contentApi.createMovieList(name, card.tmdbId)
       : this.contentApi.createSeriesList(name, card.tmdbId);
@@ -670,13 +655,13 @@ export class TrendingComponent implements OnInit, OnDestroy {
         this.busyListId.set(null);
         this.listCreateOpen.set(false);
         this.listDraftName.set('');
-        this.actionFeedback.set({ message: this.copy.listAdded, error: false });
+        this.toasts.success(this.copy.listAdded);
         this.loadUserLists(1);
       },
       error: (error: unknown) => {
         this.busyListId.set(null);
         if (this.handleSessionError(error)) return;
-        this.listActionError.set(this.copy.actionError);
+        this.toasts.error(this.copy.actionError);
       },
     }));
   }
@@ -763,7 +748,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     const key = this.cardActionKey(card);
     if (this.busyCardActionIds().has(key)) return;
     this.busyCardActionIds.update((ids) => new Set(ids).add(key));
-    this.actionFeedback.set(null);
     this.cardActionRequests.add(request.subscribe({
       next: () => {
         this.busyCardActionIds.update((ids) => {
@@ -772,7 +756,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
           return next;
         });
         onSuccess();
-        this.actionFeedback.set({ message: successMessage, error: false });
+        this.toasts.success(successMessage);
       },
       error: (error: unknown) => {
         this.busyCardActionIds.update((ids) => {
@@ -781,7 +765,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
           return next;
         });
         if (this.handleSessionError(error)) return;
-        this.actionFeedback.set({ message: this.copy.actionError, error: true });
+        this.toasts.error(this.copy.actionError);
       },
     }));
   }

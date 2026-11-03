@@ -105,9 +105,8 @@
 .review-comment-actions .review-comment-like { color: #fff; }
 .review-comment-actions .review-comment-like svg { width: 15px; height: 15px; fill: none; stroke: #ff667c; stroke-width: 1.8; }
 .review-comment-actions .review-comment-like.is-liked svg { fill: #ff667c; }
-.review-comment-state, .review-comment-error { color: #9a9aa2; font-size: 13px; }
+.review-comment-state { color: #9a9aa2; font-size: 13px; }
 .review-comment-state.ww-empty-message { color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
-.review-comment-error { color: #f28f91; }
 .review-detail-state { display: flex; min-height: 55vh; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px; color: #e9e9ed; text-align: center; }
 .review-detail-state h1 { margin: 0; font-size: 24px; }
 .review-detail-state p { color: #aaaab2; }
@@ -240,5 +239,4 @@
 .review-edit-dialog footer button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); font-weight: 600; cursor: pointer; }
 .review-edit-dialog footer .review-edit-save { padding: 0 16px; border-color: transparent; background: var(--color-primary); }
 .review-edit-dialog footer button:disabled { opacity: .6; cursor: wait; }
-.review-edit-error { flex: 1 0 100%; margin: 0; color: var(--color-error); font-size: var(--font-size-sm); }
 @media (max-width: 800px) { .review-edit-dialog { max-height: calc(100dvh - 48px); padding: var(--space-5); } .review-edit-score button svg { width: 26px; height: 26px; } }

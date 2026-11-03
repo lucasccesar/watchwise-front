@@ -8,6 +8,7 @@ import { ContentApiService } from '../../../content/data-access/content-api.serv
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ListProgressData, ListSeriesProgress, ListsApiService } from '../../data-access/lists-api.service';
 
 type ProgressSort = 'watched' | 'remaining' | 'title';
@@ -32,7 +33,6 @@ export class ListProgressComponent {
   protected readonly descending = signal(true);
   protected readonly expanded = signal<ReadonlySet<string>>(new Set());
   protected readonly savingSeriesId = signal<string | null>(null);
-  protected readonly actionError = signal('');
   protected readonly seriesItems = computed(() => {
     const items = (this.data()?.items ?? []).filter((item) => item.content.type === 'SERIES' && item.seriesProgress);
     const ordered = [...items];
@@ -55,6 +55,7 @@ export class ListProgressComponent {
   private readonly contentApi = inject(ContentApiService);
   private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
   private request?: Subscription;
 
   constructor() {
@@ -69,7 +70,6 @@ export class ListProgressComponent {
     this.request?.unsubscribe();
     this.status.set('loading');
     this.errorMessage.set('');
-    this.actionError.set('');
     this.request = this.api.getProgress(this.listId).subscribe({
       next: (data) => {
         this.data.set(data);
@@ -161,7 +161,7 @@ export class ListProgressComponent {
       watchedDate: new Date().toISOString().slice(0, 10),
     }).subscribe({
       next: () => { this.savingSeriesId.set(null); this.load(); },
-      error: () => { this.savingSeriesId.set(null); this.actionError.set(this.copy.actionError); },
+      error: () => { this.savingSeriesId.set(null); this.toasts.error(this.copy.actionError); },
     });
   }
   protected progressHasRows(): boolean { return this.seriesItems().length > 0 || (this.data()?.movieProgress.totalItems ?? 0) > 0; }

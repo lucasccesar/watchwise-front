@@ -4,6 +4,7 @@ import { SocialActionsMenuComponent, SocialActionMenuEvent } from '../../../../s
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -54,13 +55,10 @@ export class ListDetailComponent {
   protected readonly editDescription = signal('');
   protected readonly editVisibility = signal<ListVisibility>('PUBLIC');
   protected readonly savingEdit = signal(false);
-  protected readonly editError = signal('');
   protected readonly deleteListDialogOpen = signal(false);
   protected readonly deletingList = signal(false);
   protected readonly deleteItem = signal<ListDetailItem | null>(null);
   protected readonly deletingItemId = signal<string | null>(null);
-  protected readonly actionError = signal('');
-  protected readonly copied = signal(false);
   protected readonly shareDialogOpen = signal(false);
   protected readonly comments = signal<ListComment[]>([]);
   protected readonly commentsPage = signal(1);
@@ -109,6 +107,7 @@ export class ListDetailComponent {
   private readonly api = inject(ListsApiService);
   private readonly contentApi = inject(ContentApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly toasts = inject(ToastNotificationsService);
   private readonly route = inject(ActivatedRoute);
   protected readonly router = inject(Router);
   private request?: Subscription;
@@ -303,16 +302,15 @@ export class ListDetailComponent {
     const liked = !current.likedByMe;
     this.api.setLiked(current.id, liked).subscribe({
       next: () => this.detail.update((value) => value ? { ...value, likedByMe: liked, likesCount: (value.likesCount ?? 0) + (liked ? 1 : -1) } : value),
-      error: () => this.actionError.set(this.copy.actionError),
+      error: () => this.toasts.error(this.copy.actionError),
     });
   }
 
   protected copyLink(): void {
     const link = `${window.location.origin}/lists/${encodeURIComponent(this.listId())}`;
-    void navigator.clipboard.writeText(link).then(() => {
-      this.copied.set(true);
-      window.setTimeout(() => this.copied.set(false), 1800);
-    }).catch(() => this.actionError.set(this.copy.actionError));
+    void navigator.clipboard.writeText(link)
+      .then(() => this.toasts.success(this.copy.copied))
+      .catch(() => this.toasts.error(this.copy.actionError));
     this.listMenuOpen.set(false);
   }
 
@@ -325,7 +323,6 @@ export class ListDetailComponent {
     this.editName.set(current.name);
     this.editDescription.set(current.description ?? '');
     this.editVisibility.set(current.visibility);
-    this.editError.set('');
     this.editDialogOpen.set(true);
     this.listMenuOpen.set(false);
   }
@@ -335,14 +332,13 @@ export class ListDetailComponent {
     const name = this.editName().trim();
     if (!current || !name || this.savingEdit()) return;
     this.savingEdit.set(true);
-    this.editError.set('');
     this.api.updateList(current.id, {
       name,
       description: this.editDescription().trim(),
       visibility: this.editVisibility(),
     }).subscribe({
       next: () => { this.savingEdit.set(false); this.editDialogOpen.set(false); this.load(); },
-      error: () => { this.savingEdit.set(false); this.editError.set(this.copy.updateError); },
+      error: () => { this.savingEdit.set(false); this.toasts.error(this.copy.updateError); },
     });
   }
 
@@ -351,7 +347,7 @@ export class ListDetailComponent {
     this.deletingList.set(true);
     this.api.deleteList(this.listId()).subscribe({
       next: () => { this.deletingList.set(false); this.deleteListDialogOpen.set(false); void this.router.navigateByUrl('/lists'); },
-      error: () => { this.deletingList.set(false); this.actionError.set(this.copy.actionError); },
+      error: () => { this.deletingList.set(false); this.toasts.error(this.copy.actionError); },
     });
   }
 
@@ -361,7 +357,7 @@ export class ListDetailComponent {
     this.deletingItemId.set(item.id);
     this.api.removeItem(this.listId(), item.id).subscribe({
       next: () => { this.deletingItemId.set(null); this.deleteItem.set(null); this.load(); },
-      error: () => { this.deletingItemId.set(null); this.actionError.set(this.copy.deleteError); },
+      error: () => { this.deletingItemId.set(null); this.toasts.error(this.copy.deleteError); },
     });
   }
 
@@ -372,7 +368,7 @@ export class ListDetailComponent {
     if (currentIndex < 0 || targetIndex < 0 || targetIndex >= pageContent.length) return;
     this.api.updateItem(this.listId(), item.id, { position: item.position + offset }).subscribe({
       next: () => this.load(),
-      error: () => this.actionError.set(this.copy.actionError),
+      error: () => this.toasts.error(this.copy.actionError),
     });
   }
 
@@ -393,7 +389,7 @@ export class ListDetailComponent {
         this.replyingTo.set(null);
         this.postingComment.set(false);
       },
-      error: () => { this.postingComment.set(false); this.commentsError.set(true); },
+      error: () => { this.postingComment.set(false); this.toasts.error(this.copy.actionError); },
     });
   }
 
@@ -450,7 +446,7 @@ export class ListDetailComponent {
         this.commentDeleteTarget.set(null);
         this.deletingComment.set(false);
       },
-      error: () => { this.deletingComment.set(false); this.commentsError.set(true); },
+      error: () => { this.deletingComment.set(false); this.toasts.error(this.copy.actionError); },
     });
   }
 
@@ -490,7 +486,6 @@ export class ListDetailComponent {
     this.deleteListDialogOpen.set(false);
     this.deleteItem.set(null);
     this.deletingItemId.set(null);
-    this.actionError.set('');
     this.comments.set([]);
     this.commentsPage.set(1);
     this.commentsHasNext.set(false);

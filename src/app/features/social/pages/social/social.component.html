@@ -57,8 +57,6 @@
       <p>{{ followingLabel() }}</p>
     </section>
 
-    @if (actionError()) { <p class="social-action-error" role="alert">{{ actionError() }}</p> }
-    @if (actionNotice()) { <p class="social-action-notice" role="status">{{ actionNotice() }}</p> }
 
     <section class="social-feed" aria-label="{{ copy.title }}">
       @if (summary.content.length === 0) {
@@ -195,7 +193,6 @@
                                 } @else {
                                   <p class="social-comment-copy">@if (comment.containsSpoiler) { <span>{{ copy.spoilerHidden }}</span> } @else { {{ comment.text }} }</p>
                                 }
-                                @if (commentActionError(comment.id); as error) { <p class="social-comment-error" role="alert">{{ error }}</p> }
                                 </div>
                               <div comment-menu class="social-comment-options">
                                 <button class="social-comment-more" type="button" [attr.aria-label]="copy.commentOptions" aria-haspopup="menu" [attr.aria-expanded]="commentMenuOpen(comment.id)" (click)="toggleCommentMenu(comment, $event)">
@@ -244,7 +241,6 @@
                       <input type="text" maxlength="500" [value]="commentDraft(activity.id)" (input)="setCommentDraft(activity.id, $event)" [placeholder]="copy.commentPlaceholder" [attr.aria-label]="copy.commentPlaceholder" [disabled]="isCommentBusy(activity.id)" />
                       <button type="submit" [disabled]="!commentDraft(activity.id).trim() || isCommentBusy(activity.id)">{{ isCommentBusy(activity.id) ? copy.commentPosting : copy.postComment }}</button>
                     </form>
-                    @if (commentError(activity.id); as error) { <p class="social-comment-error" role="alert">{{ error }}</p> }
                   }
                 </li>
               }
@@ -305,7 +301,6 @@
           </label>
         }
 
-        @if (reportError()) { <p class="social-report-error" role="alert">{{ reportError() }}</p> }
         <footer class="social-report-actions">
           <button class="social-report-cancel" type="button" [disabled]="reportBusy()" (click)="cancelReport()">{{ copy.reportCancel }}</button>
           <button class="social-report-submit" type="submit" [disabled]="!reportReason() || reportBusy()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0" /></svg>{{ reportBusy() ? copy.reportSubmitting : copy.reportSubmit }}</button>

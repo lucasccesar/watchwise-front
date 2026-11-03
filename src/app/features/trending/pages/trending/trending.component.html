@@ -54,11 +54,6 @@
     </button>
   </div>
 
-  @if (actionFeedback(); as feedback) {
-    <p class="tr-action-feedback" [class.tr-action-feedback--error]="feedback.error" [attr.role]="feedback.error ? 'alert' : 'status'">
-      {{ feedback.message }}
-    </p>
-  }
 
   @if (status() === 'error') {
     <div class="tr-page-state" role="alert">
@@ -129,7 +124,6 @@
                             <button type="button" [attr.aria-label]="copy.closeListDialog" [disabled]="busyListId() !== null" (click)="closeListDialog()">×</button>
                           </header>
 
-                          @if (listActionError()) { <p class="tr-list-picker-error" role="alert">{{ listActionError() }}</p> }
                           @if (userListsError() && userListsStatus() !== 'error') { <p class="tr-list-picker-error" role="alert">{{ userListsError() }}</p> }
 
                           @if (userListsStatus() === 'loading') {
@@ -266,9 +260,6 @@
             </ol>
           } @else if (status() === 'ready') {
             <p class="tr-empty ww-empty-message">{{ copy.noTitles }}</p>
-          }
-          @if (section(type).error) {
-            <p class="tr-section-error" role="alert">{{ copy.moreError }}</p>
           }
           @if (canShowMore(type)) {
             <button
@@ -462,7 +453,6 @@
         }
 
         <footer class="watch-log-actions">
-          @if (watchDialogError()) { <p class="watch-log-save-error" role="alert">{{ watchDialogError() }}</p> }
           <button class="watch-log-cancel" type="button" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()">{{ footerCopy.cancel }}</button>
           <button class="watch-log-save" type="button" [disabled]="watchDialogSaving() || !watchDialogDate()" (click)="saveWatchedCard()">{{ watchDialogSaving() ? footerCopy.saving : footerCopy.save }}</button>
         </footer>

@@ -5,6 +5,7 @@ import { SettingsApiService } from '../../../features/settings/data-access/setti
 import { ReportApiService, SocialReportReason, SocialReportTargetType } from '../../../features/social/data-access/report-api.service';
 import { messageCatalog } from '../../i18n/messages';
 import { ModalFocusDirective } from '../../directives/modal-focus.directive';
+import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 
 export interface SocialActionMenuUser {
   id: string;
@@ -48,9 +49,6 @@ export class SocialActionsMenuComponent {
   protected readonly reportReason = signal<SocialReportReason | null>(null);
   protected readonly reportDetails = signal('');
   protected readonly busy = signal(false);
-  protected readonly error = signal('');
-  protected readonly statusMessage = signal('');
-  protected readonly reportError = signal('');
   protected readonly reportReasons: readonly SocialReportReason[] = [
     'SPAM_OR_MISLEADING',
     'HARASSMENT_OR_BULLYING',
@@ -64,6 +62,7 @@ export class SocialActionsMenuComponent {
   private readonly profileApi = inject(ProfileApiService);
   private readonly settingsApi = inject(SettingsApiService);
   private readonly reportApi = inject(ReportApiService);
+  private readonly toasts = inject(ToastNotificationsService);
 
   protected get authorName(): string {
     return this.author?.name?.trim() || this.author?.username?.trim() || 'usuário';
@@ -135,8 +134,6 @@ export class SocialActionsMenuComponent {
     event.stopPropagation();
     const opening = !this.menuOpen();
     this.menuOpen.set(opening);
-    this.error.set('');
-    this.statusMessage.set('');
     if (opening) this.ensureFollowState();
   }
 
@@ -167,7 +164,6 @@ export class SocialActionsMenuComponent {
     this.reportTarget.set(target);
     this.reportReason.set(null);
     this.reportDetails.set('');
-    this.reportError.set('');
   }
 
   protected confirmUserAction(): void {
@@ -175,7 +171,6 @@ export class SocialActionsMenuComponent {
     const userId = this.author?.id;
     if (!action || !userId || this.busy()) return;
     this.busy.set(true);
-    this.error.set('');
     const request = action === 'unfollow'
       ? this.profileApi.setFollow(userId, false)
       : this.settingsApi.blockUser(userId);
@@ -185,13 +180,13 @@ export class SocialActionsMenuComponent {
         else this.followState.set('not-following');
         this.pendingAction.set(null);
         this.busy.set(false);
-        this.statusMessage.set(action === 'unfollow'
+        this.toasts.success(action === 'unfollow'
           ? this.copy.unfollowSuccess.replace('{user}', this.authorName)
           : this.copy.blockSuccess.replace('{user}', this.authorName));
         this.actionCompleted.emit({ action: action === 'unfollow' ? 'unfollowed' : 'blocked', userId });
       },
       error: () => {
-        this.error.set(action === 'unfollow'
+        this.toasts.error(action === 'unfollow'
           ? this.copy.unfollowError.replace('{user}', this.authorName)
           : this.copy.blockError.replace('{user}', this.authorName));
         this.pendingAction.set(null);
@@ -206,7 +201,6 @@ export class SocialActionsMenuComponent {
 
   protected selectReportReason(reason: SocialReportReason): void {
     this.reportReason.set(reason);
-    this.reportError.set('');
   }
 
   protected reportReasonLabel(reason: SocialReportReason): string {
@@ -246,16 +240,15 @@ export class SocialActionsMenuComponent {
       : target === 'user' ? 'USER' : this.reviewTargetType;
     const details = this.reportDetails().trim();
     this.busy.set(true);
-    this.reportError.set('');
     this.reportApi.createReport({ targetType, targetId, reason, ...(details ? { details } : {}) }).subscribe({
       next: () => {
         this.reportTarget.set(null);
         this.busy.set(false);
-        this.statusMessage.set(this.copy.reportSuccess);
+        this.toasts.success(this.copy.reportSuccess);
         this.actionCompleted.emit({ action: 'reported', userId: this.author.id });
       },
       error: () => {
-        this.reportError.set(this.copy.reportError);
+        this.toasts.error(this.copy.reportError);
         this.busy.set(false);
       },
     });
@@ -296,16 +289,15 @@ export class SocialActionsMenuComponent {
     const userId = this.author?.id;
     if (!userId || this.busy()) return;
     this.busy.set(true);
-    this.error.set('');
     this.profileApi.setFollow(userId, following).subscribe({
       next: () => {
         this.followState.set(following ? 'following' : 'not-following');
         this.busy.set(false);
-        this.statusMessage.set(this.copy.followSuccess.replace('{user}', this.authorName));
+        this.toasts.success(this.copy.followSuccess.replace('{user}', this.authorName));
         this.actionCompleted.emit({ action: 'followed', userId });
       },
       error: () => {
-        this.error.set(this.copy.followError.replace('{user}', this.authorName));
+        this.toasts.error(this.copy.followError.replace('{user}', this.authorName));
         this.busy.set(false);
       },
     });

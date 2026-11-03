@@ -56,7 +56,7 @@
             @if (listMenuOpen()) {
               <div class="list-detail-menu" role="menu" [attr.aria-label]="copy.actions">
                 <button type="button" role="menuitem" (click)="openProgress()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7" /></svg>{{ copy.progress }}</button>
-                <button type="button" role="menuitem" (click)="copyLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7m2.7 6.4a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7" /></svg>{{ copied() ? copy.copied : copy.copyLink }}</button>
+                <button type="button" role="menuitem" (click)="copyLink()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7m2.7 6.4a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7" /></svg>{{ copy.copyLink }}</button>
                 <button type="button" role="menuitem" (click)="openSharePreview()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" /></svg>{{ copy.sharePreview }}</button>
                 @if (canManage()) {
                   <span class="list-detail-menu-separator" role="separator"></span>
@@ -133,7 +133,7 @@
 </main>
 
 @if (editDialogOpen()) {
-  <div class="list-detail-modal-layer" (click)="editDialogOpen.set(false)"><section class="list-detail-modal" role="dialog" appModalFocus [modalReturnFocus]="listMenuTrigger?.nativeElement ?? null" (modalDismiss)="editDialogOpen.set(false)" aria-modal="true" aria-labelledby="edit-list-title" (click)="$event.stopPropagation()"><button class="list-detail-modal-close" type="button" [attr.aria-label]="copy.close" (click)="editDialogOpen.set(false)">×</button><h2 id="edit-list-title">{{ copy.editTitle }}</h2><label>{{ copy.name }}<input maxlength="255" [value]="editName()" (input)="updateEditName($event)" /></label><label>{{ copy.description }}<textarea maxlength="400" [value]="editDescription()" (input)="updateEditDescription($event)"></textarea></label><label>{{ copy.visibility }}<select [value]="editVisibility()" (change)="setVisibility($event)"><option value="PUBLIC">{{ copy.public }}</option><option value="FOLLOWERS">{{ copy.followersOnly }}</option><option value="PRIVATE">{{ copy.private }}</option></select></label>@if (editError()) { <p class="list-detail-modal-error" role="alert">{{ editError() }}</p> }<div class="list-detail-modal-actions"><button type="button" (click)="editDialogOpen.set(false)">{{ copy.cancel }}</button><button type="button" [disabled]="!editName().trim() || savingEdit()" (click)="saveEdit()">{{ savingEdit() ? copy.saving : copy.save }}</button></div></section></div>
+  <div class="list-detail-modal-layer" (click)="editDialogOpen.set(false)"><section class="list-detail-modal" role="dialog" appModalFocus [modalReturnFocus]="listMenuTrigger?.nativeElement ?? null" (modalDismiss)="editDialogOpen.set(false)" aria-modal="true" aria-labelledby="edit-list-title" (click)="$event.stopPropagation()"><button class="list-detail-modal-close" type="button" [attr.aria-label]="copy.close" (click)="editDialogOpen.set(false)">×</button><h2 id="edit-list-title">{{ copy.editTitle }}</h2><label>{{ copy.name }}<input maxlength="255" [value]="editName()" (input)="updateEditName($event)" /></label><label>{{ copy.description }}<textarea maxlength="400" [value]="editDescription()" (input)="updateEditDescription($event)"></textarea></label><label>{{ copy.visibility }}<select [value]="editVisibility()" (change)="setVisibility($event)"><option value="PUBLIC">{{ copy.public }}</option><option value="FOLLOWERS">{{ copy.followersOnly }}</option><option value="PRIVATE">{{ copy.private }}</option></select></label><div class="list-detail-modal-actions"><button type="button" (click)="editDialogOpen.set(false)">{{ copy.cancel }}</button><button type="button" [disabled]="!editName().trim() || savingEdit()" (click)="saveEdit()">{{ savingEdit() ? copy.saving : copy.save }}</button></div></section></div>
 }
 
 @if (deleteListDialogOpen()) {
@@ -151,5 +151,3 @@
 @if (shareDialogOpen()) {
   <app-share-preview [returnFocusTarget]="listMenuTrigger?.nativeElement ?? null" [model]="shareModel()" [shareUrl]="shareLink()" (closed)="shareDialogOpen.set(false)" />
 }
-
-@if (actionError()) { <p class="list-detail-toast" role="alert">{{ actionError() }}<button type="button" [attr.aria-label]="copy.close" (click)="actionError.set('')">×</button></p> }

@@ -37,8 +37,6 @@
         }
       </div>
     }
-    @if (error()) { <span class="ww-social-actions-feedback" role="alert">{{ error() }}</span> }
-    @if (statusMessage()) { <span class="ww-social-actions-feedback" role="status">{{ statusMessage() }}</span> }
   </div>
 }
 
@@ -47,7 +45,6 @@
     <section class="ww-social-actions-dialog" role="alertdialog" appModalFocus aria-modal="true" aria-labelledby="ww-social-action-confirm-title" [attr.aria-busy]="busy()" (modalDismiss)="cancelUserAction()" (click)="$event.stopPropagation()">
       <h2 id="ww-social-action-confirm-title">{{ confirmationTitle }}</h2>
       <p>{{ copy.userActionConfirmPrompt }}</p>
-      @if (error()) { <p class="ww-social-actions-error" role="alert">{{ error() }}</p> }
       <div class="ww-social-actions-dialog-buttons">
         <button type="button" [disabled]="busy()" (click)="cancelUserAction()">{{ copy.confirmCancel }}</button>
         <button class="ww-social-actions-confirm" [class.ww-social-actions-confirm--danger]="pendingAction() === 'block'" type="button" [disabled]="busy()" (click)="confirmUserAction()">{{ confirmationButtonLabel }}</button>
@@ -80,7 +77,6 @@
           <textarea id="ww-social-report-details" maxlength="280" [value]="reportDetails()" (input)="setReportDetails($event)" [placeholder]="copy.reportDetailsPlaceholder" [disabled]="busy()"></textarea>
           <span>{{ reportDetails().length }} / 280</span>
         </div>
-        @if (reportError()) { <p class="ww-social-actions-error" role="alert">{{ reportError() }}</p> }
         <footer class="ww-social-report-actions">
           <button type="button" [disabled]="busy()" (click)="cancelReport()">{{ copy.reportCancel }}</button>
           <button class="ww-social-report-submit" type="submit" [disabled]="!reportReason() || busy()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>{{ busy() ? copy.reportSubmitting : copy.reportSubmit }}</button>

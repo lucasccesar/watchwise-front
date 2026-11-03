@@ -9,10 +9,6 @@
     </div>
   </header>
 
-  @if (notice()) {
-    <div class="settings-notice settings-notice--{{ noticeKind() }}" role="status">{{ notice() }}</div>
-  }
-
   <div class="settings-page-width settings-layout">
     <nav class="settings-section-nav" aria-label="Seções de configurações">
       @for (section of sections; track section.id) {
@@ -104,7 +100,6 @@
             </div>
             @if (followRequestsHasNext()) { <button class="settings-load-more" type="button" [disabled]="loadingMoreFollowRequests()" (click)="loadMoreFollowRequests()">{{ loadingMoreFollowRequests() ? 'Carregando…' : 'Carregar mais solicitações' }}</button> }
             @if (followRequestsError()) { <p class="settings-inline-error" role="alert">{{ followRequestsError() }}</p> }
-            @if (followRequestsMessage()) { <p class="settings-inline-message" role="status">{{ followRequestsMessage() }}</p> }
           } @else {
             <p class="settings-empty">Você não tem solicitações pendentes.</p>
           }
@@ -130,7 +125,6 @@
             </div>
             @if (blockedUsersHasNext()) { <button class="settings-load-more" type="button" [disabled]="loadingMoreBlockedUsers()" (click)="loadMoreBlockedUsers()">{{ loadingMoreBlockedUsers() ? 'Carregando…' : 'Carregar mais usuários' }}</button> }
             @if (blockedUsersError()) { <p class="settings-inline-error" role="alert">{{ blockedUsersError() }}</p> }
-            @if (blockedUsersMessage()) { <p class="settings-inline-message" role="status">{{ blockedUsersMessage() }}</p> }
           } @else {
             <p class="settings-empty">Você não bloqueou ninguém.</p>
           }

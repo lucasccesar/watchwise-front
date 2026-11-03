@@ -8,6 +8,7 @@ import { interval, Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { GamesApiService, DailyGameEpisodeOption, DailyGameInfoFeedback, DailyGameMediaRef, DailyGamePlayView, DailyGameSeasonOption, DailyGameSearchResult, DailyGameType } from '../../data-access/games-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 
 type PageStatus = 'loading' | 'ready' | 'error';
@@ -46,6 +47,7 @@ export class GamePlayComponent {
   protected readonly howToPlayOpen = signal(false);
   protected readonly giveUpOpen = signal(false);
   protected readonly actionError = signal('');
+  private readonly toasts = inject(ToastNotificationsService);
   protected readonly selectedFrameSlot = signal<string | null>(null);
   protected readonly clockTick = signal(0);
   protected readonly statusCompleted = computed(() => ['COMPLETED', 'FAILED'].includes(this.state()?.status ?? ''));
@@ -175,7 +177,7 @@ export class GamePlayComponent {
     this.submitting.set(true); this.actionError.set('');
     this.api.submitPlayAttempt(this.gameType, request, this.majorRoles()).subscribe({
       next: (result) => { this.state.set(result.state); this.selectedFrameSlot.set(null); this.submitting.set(false); this.clearSelection(); },
-      error: (error: unknown) => { this.submitting.set(false); this.actionError.set(error instanceof HttpErrorResponse && error.status === 429 ? this.copy.attemptLimitError : this.copy.guessError); },
+      error: (error: unknown) => { this.submitting.set(false); this.toasts.error(error instanceof HttpErrorResponse && error.status === 429 ? this.copy.attemptLimitError : this.copy.guessError); },
     });
   }
   protected confirmGiveUp(): void { this.giveUpOpen.set(true); }
@@ -185,7 +187,7 @@ export class GamePlayComponent {
     this.submitting.set(true); this.actionError.set('');
     this.api.giveUp(this.gameType, this.majorRoles()).subscribe({
       next: (result) => { this.state.set(result.state); this.submitting.set(false); this.giveUpOpen.set(false); },
-      error: () => { this.submitting.set(false); this.actionError.set(this.copy.guessError); },
+      error: () => { this.submitting.set(false); this.toasts.error(this.copy.guessError); },
     });
   }
   protected toggleMajorRoles(event: Event): void { this.majorRoles.set((event.target as HTMLInputElement).checked); this.load(); }

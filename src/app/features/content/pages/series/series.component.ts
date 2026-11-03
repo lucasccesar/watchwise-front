@@ -38,6 +38,7 @@ import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils'
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
+import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'bulk' | 'lists' | 'rating' | 'videos' | null;
@@ -112,7 +113,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly watchDate = signal(this.localDate(new Date()));
   protected readonly ratingTarget = signal<RatingTarget | null>(null);
   protected readonly ratingScore = signal(0);
-  protected readonly toast = signal('');
   protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly episodes = computed(() => {
     const current = this.page();
@@ -151,7 +151,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   private requests = new Subscription();
   private modalOpener: HTMLElement | null = null;
   private stylesheet: HTMLLinkElement | null = null;
-  private messageTimeout?: ReturnType<typeof setTimeout>;
+  private readonly toasts = inject(ToastNotificationsService);
 
   @ViewChild('seriesDialog')
   private seriesDialog?: ElementRef<HTMLElement>;
@@ -187,7 +187,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
     this.requests.unsubscribe();
     if (this.stylesheet) this.renderer.removeChild(this.document.head, this.stylesheet);
-    if (this.messageTimeout) clearTimeout(this.messageTimeout);
   }
 
   protected loadSeries(tmdbId: string, knownContentId = ''): void {
@@ -465,7 +464,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
       ? this.page()?.sections.seasons.find(card => card.seasonNumber === target.season.seasonNumber)
       : null;
     if (target.type === 'SEASON' && (!season?.contentId || !season.seasonNumber || season.seasonNumber < 1)) {
-      this.showToast('Esta temporada não está disponível para avaliação.');
+      this.showToast('Esta temporada não está disponível para avaliação.', 'warning');
       return;
     }
     const request = target.type === 'SEASON'
@@ -574,7 +573,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
     if (!series || !viewer || this.actionPending()) return;
     if (viewer.inWatchlist) {
       if (!viewer.watchlistEntryId) {
-        this.showToast(this.copy.actionUnavailable);
+        this.showToast(this.copy.actionUnavailable, 'warning');
         this.reload();
         return;
       }
@@ -587,11 +586,11 @@ export class SeriesComponent implements OnInit, OnDestroy {
     }, (error) => {
       if (error instanceof HttpErrorResponse && error.status === 409 &&
         error.error?.message === 'Content already has watched activity') {
-        this.showToast('Não é possível adicionar esta série à watchlist porque ela já tem episódios assistidos.');
+        this.showToast('Não é possível adicionar esta série à watchlist porque ela já tem episódios assistidos.', 'warning');
         this.reload();
         return;
       }
-      this.showToast(this.errorMessage(error));
+      this.showToast(this.errorMessage(error), 'error');
     });
   }
 
@@ -622,7 +621,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         this.commentPending.set(false);
-        if (!this.handleSessionError(error)) this.commentError.set(this.errorMessage(error));
+        if (!this.handleSessionError(error)) this.showToast(this.errorMessage(error), 'error');
       },
     }));
   }
@@ -738,7 +737,9 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected shareSeries(): void {
     const title = this.page()?.details.title ?? 'Watchwise';
     if (navigator.share) void navigator.share({ title, url: window.location.href }).catch(() => undefined);
-    else void navigator.clipboard?.writeText(window.location.href).then(() => this.showToast('Link copiado.')).catch(() => undefined);
+    else void navigator.clipboard?.writeText(window.location.href)
+      .then(() => this.showToast('Link copiado.'))
+      .catch(() => this.showToast('Não foi possível copiar o link.', 'error'));
   }
 
   private calculateWatchProgress(series: SeriesPage | null): { watchedEpisodeCount: number; percentage: number } {
@@ -992,7 +993,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
         this.actionPending.set(false);
         if (this.handleSessionError(error)) return;
         if (failure) failure(error);
-        else this.showToast(this.errorMessage(error));
+        else this.showToast(this.errorMessage(error), 'error');
       },
     }));
   }
@@ -1023,10 +1024,8 @@ export class SeriesComponent implements OnInit, OnDestroy {
     return 'Não foi possível concluir esta ação.';
   }
 
-  private showToast(message: string): void {
-    this.toast.set(message);
-    if (this.messageTimeout) clearTimeout(this.messageTimeout);
-    this.messageTimeout = setTimeout(() => this.toast.set(''), 3500);
+  private showToast(message: string, type: ToastNotificationType = 'success'): void {
+    this.toasts[type](message);
   }
 
   private localDate(date: Date): string {

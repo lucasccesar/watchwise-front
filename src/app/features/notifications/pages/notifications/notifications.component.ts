@@ -15,6 +15,7 @@ import {
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type NotificationFilter = 'all' | 'unread' | 'read';
 type LoadStatus = 'loading' | 'ready' | 'error';
@@ -47,8 +48,6 @@ export class NotificationsComponent {
   protected readonly loadingMore = signal(false);
   protected readonly markingAllRead = signal(false);
   protected readonly loadError = signal('');
-  protected readonly actionError = signal('');
-  protected readonly actionMessage = signal('');
   protected readonly heroBackdropPath = signal<string | null | undefined>(undefined);
   protected readonly followDecisions = signal<ReadonlyMap<string, FollowDecision>>(new Map());
   protected readonly groups = computed(() => this.groupByDay(this.notifications()));
@@ -57,6 +56,7 @@ export class NotificationsComponent {
   private readonly shellState = inject(AppShellStateService);
   private readonly session = inject(AuthSessionService);
   private readonly homeApi = inject(HomeApiService);
+  private readonly toasts = inject(ToastNotificationsService);
 
   constructor(private readonly api: NotificationsApiService) {}
 
@@ -84,33 +84,30 @@ export class NotificationsComponent {
     if (!this.hasNext() || this.loadingMore()) return;
     const page = this.page() + 1;
     this.loadingMore.set(true);
-    this.loadError.set('');
     this.api.getView({ page, size: 20, ...this.readFilter() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => this.applyPage(result, false),
         error: () => {
           this.loadingMore.set(false);
-          this.loadError.set(this.copy.loadError);
+          this.toasts.error(this.copy.loadError);
         },
       });
   }
 
   protected markRead(item: NotificationView): void {
     if (item.isRead) return;
-    this.actionError.set('');
     this.api.markAsRead(item.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.load(),
-        error: () => this.actionError.set(this.copy.actionError),
+        error: () => this.toasts.error(this.copy.actionError),
       });
   }
 
   protected markAllRead(): void {
     if (!this.unreadCount() || this.markingAllRead()) return;
     this.markingAllRead.set(true);
-    this.actionError.set('');
     this.unreadPages()
       .pipe(
         switchMap((ids) => ids.length ? forkJoin(ids.map((id) => this.api.markAsRead(id))) : of([])),
@@ -123,7 +120,7 @@ export class NotificationsComponent {
         },
         error: () => {
           this.markingAllRead.set(false);
-          this.actionError.set(this.copy.actionError);
+          this.toasts.error(this.copy.actionError);
         },
       });
   }
@@ -131,7 +128,6 @@ export class NotificationsComponent {
   protected decideFollow(item: NotificationView, decision: FollowDecision): void {
     const requesterId = item.latestActor?.id;
     if (!requesterId || this.followDecisions().has(item.id)) return;
-    this.actionError.set('');
     const request = decision === 'accepted'
       ? this.api.acceptFollowRequest(requesterId)
       : this.api.rejectFollowRequest(requesterId);
@@ -141,10 +137,10 @@ export class NotificationsComponent {
     ).subscribe({
       next: () => {
         this.followDecisions.update((current) => new Map(current).set(item.id, decision));
-        this.actionMessage.set(decision === 'accepted' ? this.copy.acceptedMessage : this.copy.declinedMessage);
+        this.toasts.success(decision === 'accepted' ? this.copy.acceptedMessage : this.copy.declinedMessage);
         this.load();
       },
-      error: () => this.actionError.set(this.copy.actionError),
+      error: () => this.toasts.error(this.copy.actionError),
     });
   }
 
@@ -283,7 +279,6 @@ export class NotificationsComponent {
     this.status.set('loading');
     this.notifications.set([]);
     this.loadError.set('');
-    this.actionError.set('');
     this.api.getView({ page: 1, size: 20, ...this.readFilter() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

@@ -642,10 +642,6 @@
     </section>
   }
 
-  @if (toast(); as message) {
-    <div class="movie-toast" role="status" aria-live="polite">{{ message }}</div>
-  }
-
   @if (dialog(); as currentDialog) {
     @if (currentDialog === 'share') {
       @if (shareModel(); as model) {

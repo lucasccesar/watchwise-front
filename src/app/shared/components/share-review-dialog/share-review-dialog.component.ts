@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, effect, injec
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionKind, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
 import { ModalFocusDirective } from '../../directives/modal-focus.directive';
+import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 
 export interface ShareReviewDialogModel {
   title: string;
@@ -71,8 +72,6 @@ export class ShareReviewDialogComponent implements OnDestroy {
   protected readonly shareX = signal(50);
   protected readonly shareY = signal(30);
   protected readonly shareShowReview = signal(true);
-  protected readonly shareError = signal('');
-  protected readonly shareCopySuccess = signal('');
   protected readonly shareCopyPending = signal(false);
   protected readonly activeImagePicker = signal<ContentImageSelectionKind | null>(null);
   protected readonly posterOptions = signal<ContentImageSelection[]>([]);
@@ -87,6 +86,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
   private readonly contentApi = inject(ContentApiService);
+  private readonly toasts = inject(ToastNotificationsService);
 
   constructor() {
     effect((onCleanup) => {
@@ -121,7 +121,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
     const file = input.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      this.shareError.set(this.copy().shareImageTypeError);
+      this.toasts.warning(this.copy().shareImageTypeError);
       input.value = '';
       return;
     }
@@ -131,8 +131,6 @@ export class ShareReviewDialogComponent implements OnDestroy {
     this.shareX.set(50);
     this.shareY.set(50);
     this.shareZoom.set(120);
-    this.shareError.set('');
-    this.shareCopySuccess.set('');
   }
 
   protected onSharePosterChanged(event: Event): void {
@@ -140,15 +138,13 @@ export class ShareReviewDialogComponent implements OnDestroy {
     const file = input.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      this.shareError.set(this.copy().shareImageTypeError);
+      this.toasts.warning(this.copy().shareImageTypeError);
       input.value = '';
       return;
     }
     this.revokeUrl(this.sharePosterUrl());
     this.sharePosterUrl.set(URL.createObjectURL(file));
     this.selectedPosterUrl.set(null);
-    this.shareError.set('');
-    this.shareCopySuccess.set('');
   }
 
   protected onCustomImageChanged(kind: ContentImageSelectionKind, event: Event): void {
@@ -199,8 +195,6 @@ export class ShareReviewDialogComponent implements OnDestroy {
       this.selectedBackdropUrl.set(image.url);
     }
     this.activeImagePicker.set(null);
-    this.shareError.set('');
-    this.shareCopySuccess.set('');
   }
 
   protected isSelectedImage(kind: ContentImageSelectionKind, image: ContentImageSelection): boolean {
@@ -238,8 +232,6 @@ export class ShareReviewDialogComponent implements OnDestroy {
     this.selectedBackdropUrl.set(null);
     this.activeImagePicker.set(null);
     this.resetShareBackground();
-    this.shareError.set('');
-    this.shareCopySuccess.set('');
   }
 
   protected shareDragStart(event: PointerEvent): void {
@@ -263,8 +255,6 @@ export class ShareReviewDialogComponent implements OnDestroy {
   protected async copyShareImage(): Promise<void> {
     if (this.shareCopyPending()) return;
     this.shareCopyPending.set(true);
-    this.shareCopySuccess.set('');
-    this.shareError.set('');
     try {
       const clipboard = navigator.clipboard;
       if (!clipboard?.write || typeof ClipboardItem === 'undefined') {
@@ -272,9 +262,9 @@ export class ShareReviewDialogComponent implements OnDestroy {
       }
       const imageBlob = this.createShareImageBlob();
       await clipboard.write([new ClipboardItem({ 'image/png': imageBlob })]);
-      this.shareCopySuccess.set(this.copy().shareImageCopied);
+      this.toasts.success(this.copy().shareImageCopied);
     } catch {
-      this.shareError.set(this.copy().shareError);
+      this.toasts.error(this.copy().shareError);
     } finally {
       this.shareCopyPending.set(false);
     }

@@ -12,6 +12,7 @@ import { AuthApiService } from '../features/auth/data-access/auth-api.service';
 import { HeaderSearchComponent } from '../features/search-content/components/header-search/header-search.component';
 import { HomeFooterComponent } from '../shared/components/home-footer/home-footer.component';
 import { messageCatalog } from '../shared/i18n/messages';
+import { ToastNotificationsService } from '../shared/components/toast-notifications/toast-notifications.service';
 
 @Component({
   imports: [HeaderSearchComponent, HomeFooterComponent, RouterLink, RouterLinkActive, RouterOutlet],
@@ -24,8 +25,8 @@ export class AuthenticatedLayoutComponent {
   protected readonly isMenuOpen = signal(false);
   protected readonly isAccountMenuOpen = signal(false);
   protected readonly isSigningOut = signal(false);
-  protected readonly signOutError = signal<string | null>(null);
   protected readonly shellState = inject(AppShellStateService);
+  private readonly toasts = inject(ToastNotificationsService);
 
   protected get currentViewer() {
     return this.shellState.viewer() ?? this.session.user();
@@ -81,7 +82,6 @@ export class AuthenticatedLayoutComponent {
 
   protected closeAccountMenu(): void {
     this.isAccountMenuOpen.set(false);
-    this.signOutError.set(null);
   }
 
   protected signOut(): void {
@@ -90,7 +90,6 @@ export class AuthenticatedLayoutComponent {
     }
 
     this.isSigningOut.set(true);
-    this.signOutError.set(null);
     this.authApi
       .logout()
       .pipe(finalize(() => this.isSigningOut.set(false)))
@@ -100,7 +99,7 @@ export class AuthenticatedLayoutComponent {
           this.closeAccountMenu();
           void this.router.navigateByUrl('/login', { replaceUrl: true });
         },
-        error: () => this.signOutError.set(this.copy.signOutError),
+        error: () => this.toasts.error(this.copy.signOutError),
       });
   }
 

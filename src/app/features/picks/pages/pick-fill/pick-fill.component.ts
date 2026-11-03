@@ -10,6 +10,7 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PickCreationSelection, PicksApiService, PicksOptionView, PicksTargetSearch, PicksTemplateCategory, PicksTemplateDetail } from '../../data-access/picks-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 type PickAnswerState = { target: PickCreationSelection['target']; label: string; image: string | null; subtitle: string | null; option?: PicksOptionView };
@@ -60,6 +61,7 @@ export class PickFillComponent implements OnDestroy {
   private readonly searchApi = inject(SearchApiService);
   private readonly contentApi = inject(ContentApiService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
 
   constructor() {
     if (!this.templateId) { void this.router.navigateByUrl('/picks'); return; }
@@ -133,7 +135,7 @@ export class PickFillComponent implements OnDestroy {
     const selections: PickCreationSelection[] = [...this.answers()].map(([categoryId, answer]) => ({ categoryId, target: answer.target }));
     this.api.createPick(this.templateId, { visibility: this.visibility(), selections }).subscribe({
       next: (result) => { this.publishing.set(false); void this.router.navigate(['/picks', result.id]); },
-      error: () => { this.publishing.set(false); this.publishError.set(this.copy.publishError); },
+      error: () => { this.publishing.set(false); this.toasts.error(this.copy.publishError); },
     });
   }
   protected optionLabel(option: PicksOptionView): string { return option.preview.contentCard?.title || option.preview.person?.name || this.copy.searchEmpty; }

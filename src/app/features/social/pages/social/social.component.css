@@ -681,24 +681,6 @@
   background: var(--color-secondary);
 }
 
-.social-comment-error {
-  margin: 0;
-  color: var(--color-error) !important;
-}
-
-.social-action-error {
-  margin: 0 auto var(--space-4);
-  color: var(--color-error);
-  font-size: var(--font-size-sm);
-}
-
-.social-action-notice {
-  margin: 0 auto var(--space-4);
-  color: var(--color-success);
-  font-size: var(--font-size-sm);
-  text-align: center;
-}
-
 .social-dialog-backdrop {
   position: fixed;
   z-index: 1000;
@@ -950,13 +932,6 @@
 
 .social-report-block-option input {
   margin-top: 2px;
-}
-
-.social-report-error {
-  margin: 0;
-  color: var(--color-error);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-md);
 }
 
 .social-report-actions {

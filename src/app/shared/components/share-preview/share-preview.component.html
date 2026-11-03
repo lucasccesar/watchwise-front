@@ -19,7 +19,6 @@
       @if (model().description && model().kind !== 'profile') { <p class="share-card-description">{{ model().description }}</p> }
       <footer><span>ON 🟦 Watchwise</span><small>Filmes e séries, do seu jeito.</small></footer>
     </article>
-    @if (copyError()) { <p class="share-copy-error" role="alert">Não foi possível copiar o link.</p> }
-    <div class="share-actions"><button class="share-copy" type="button" [disabled]="!shareUrl()" (click)="copyLink()">{{ copied() ? 'Link copiado' : 'Copiar link' }}</button><button class="share-download" type="button" (click)="downloadCard()">Baixar cartão</button></div>
+    <div class="share-actions"><button class="share-copy" type="button" [disabled]="!shareUrl()" (click)="copyLink()">Copiar link</button><button class="share-download" type="button" (click)="downloadCard()">Baixar cartão</button></div>
   </section>
 </div>

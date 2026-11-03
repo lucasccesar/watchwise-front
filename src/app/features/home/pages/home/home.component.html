@@ -59,11 +59,6 @@
       </button>
     </section>
   } @else if (summary(); as data) {
-    @if (actionFeedback(); as feedback) {
-      <p class="home-action-feedback" [class.home-action-feedback--error]="feedback.error" [attr.role]="feedback.error ? 'alert' : 'status'">
-        {{ feedback.message }}
-      </p>
-    }
     <section class="home-hero" aria-labelledby="home-title">
       <app-responsive-banner
         [path]="data.latestWatchedBackdropPath"
@@ -769,9 +764,6 @@
           </label>
 
           <footer class="watch-log-actions">
-            @if (dialogErrorMessage(); as error) {
-              <p class="watch-log-save-error" role="alert">{{ error }}</p>
-            }
             <button class="watch-log-cancel" type="button" [disabled]="isSaving()" (click)="closeDialog()">{{ copy.cancel }}</button>
             <button
               class="watch-log-save"
@@ -842,9 +834,6 @@
           </label>
 
           <footer class="watch-log-actions">
-            @if (dialogErrorMessage(); as error) {
-              <p class="watch-log-save-error" role="alert">{{ error }}</p>
-            }
             <button class="watch-log-cancel" type="button" [disabled]="isSaving()" (click)="closeDialog()">{{ copy.cancel }}</button>
             <button
               class="watch-log-save"

@@ -57,5 +57,4 @@
 .share-actions button { min-height: 40px; padding: 0 15px; border: 1px solid #3d3d45; border-radius: 7px; background: #25252b; color: #f3f4f6; cursor: pointer; font: inherit; font-size: 12px; font-weight: 650; }
 .share-actions .share-download { border-color: #2f66e8; background: #2f66e8; }
 .share-actions button:disabled { opacity: .45; cursor: default; }
-.share-copy-error { margin: -8px 0 0; color: #ef9b9b; font-size: 12px; }
 @media (max-width: 600px) { .share-layer { align-items: end; padding: 8px; } .share-dialog { width: 100%; max-height: 96vh; gap: 12px; padding: 16px; border-radius: 16px 16px 10px 10px; } .share-card { height: min(70vh, 600px); padding: 18px; } .share-card-items { gap: 6px; } .share-card-items--list { grid-template-columns: repeat(4,minmax(0,1fr)); } .share-card-title h3 { font-size: 22px; } .share-actions button { flex: 1; padding-inline: 8px; } }

@@ -10,12 +10,14 @@ import {
   ViewChild,
   ViewChildren,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
@@ -114,12 +116,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly hoveredChartDayIndex = signal<number | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly actionFeedback = signal<{ message: string; error: boolean } | null>(null);
+  private readonly toasts = inject(ToastNotificationsService);
   protected readonly openContentMenuId = signal<string | null>(null);
   protected readonly watchLogTarget = signal<WatchLogDialogTarget | null>(null);
   protected readonly ratingTarget = signal<RatingDialogTarget | null>(null);
   protected readonly isSaving = signal(false);
-  protected readonly dialogErrorMessage = signal<string | null>(null);
   protected readonly watchLogDate = signal(this.toDateKey(new Date()));
   protected readonly watchLogRewatch = signal(false);
   protected readonly watchLogRating = signal<number | null>(null);
@@ -214,7 +215,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.status.set('loading');
     this.errorMessage.set(null);
-    this.actionFeedback.set(null);
     this.socialActivityDetailsLoaded.set(false);
     this.socialDetailsRequestSequence += 1;
     this.shellState.clearHomeState();
@@ -452,16 +452,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isSaving()) return;
     this.openContentMenuId.set(null);
     this.isSaving.set(true);
-    this.actionFeedback.set(null);
     this.contentApi.markSeriesDropped(seriesTmdbId).subscribe({
       next: () => {
         this.isSaving.set(false);
         this.loadSummary();
-        this.actionFeedback.set({ message: this.copy.seriesDropped, error: false });
+        this.toasts.success(this.copy.seriesDropped);
       },
       error: (error: unknown) => {
         this.isSaving.set(false);
-        this.actionFeedback.set({ message: this.actionErrorMessage(error), error: true });
+        this.toasts.error(this.actionErrorMessage(error));
       },
     });
   }
@@ -483,7 +482,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.activeDialogOpener = opener;
     this.watchLogTarget.set(null);
     this.ratingTarget.set({ title, subtitle, diaryEntryId: entry.id, editing: entry.score !== null });
-    this.dialogErrorMessage.set(null);
     this.isSaving.set(false);
     this.ratingModalScore.set(entry.score);
     this.ratingModalReview.set('');
@@ -596,7 +594,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.watchLogTarget.set(null);
     this.ratingTarget.set(null);
     this.watchCalendarOpen.set(false);
-    this.dialogErrorMessage.set(null);
     if (opener) {
       window.setTimeout(() => {
         if (opener.isConnected) {
@@ -665,7 +662,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.openContentMenuId.set(null);
     this.ratingTarget.set(null);
     this.watchLogTarget.set(target);
-    this.dialogErrorMessage.set(null);
     this.isSaving.set(false);
     this.watchLogDate.set(this.toDateKey(new Date()));
     this.watchLogRewatch.set(false);
@@ -715,7 +711,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     this.isSaving.set(true);
-    this.dialogErrorMessage.set(null);
     request.subscribe({
       next: () => {
         this.isSaving.set(false);
@@ -724,7 +719,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (error: unknown) => {
         this.isSaving.set(false);
-        this.dialogErrorMessage.set(this.actionErrorMessage(error));
+        this.toasts.error(this.actionErrorMessage(error));
       },
     });
   }
@@ -1144,7 +1139,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const nextLiked = !activity.likedByMe;
     this.busySocialLikeIds.update((current) => new Set(current).add(activity.id));
-    this.actionFeedback.set(null);
     this.contentApi.setReviewLike(activity.id, 'DIARY', nextLiked).subscribe({
       next: () => {
         this.summary.update((current) => current ? {
@@ -1169,7 +1163,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           next.delete(activity.id);
           return next;
         });
-        this.actionFeedback.set({ message: this.socialCopy.likeError, error: true });
+        this.toasts.error(this.socialCopy.likeError);
       },
     });
   }

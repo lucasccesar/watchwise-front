@@ -8,6 +8,7 @@ import { ContentApiService } from '../../../content/data-access/content-api.serv
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { WatchlistApiService, WatchlistCard, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../data-access/watchlist-api.service';
 
 type WatchlistMenu = 'genre' | 'sort' | 'visibility' | null;
@@ -60,6 +61,7 @@ export class WatchlistComponent implements OnDestroy {
   private readonly api = inject(WatchlistApiService);
   private readonly contentApi = inject(ContentApiService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
   private request?: Subscription;
   private genreRequest?: Subscription;
   private genreUserId = '';
@@ -242,7 +244,7 @@ export class WatchlistComponent implements OnDestroy {
       : this.contentApi.removeSeriesFromWatchlist(item.id);
     remove.subscribe({
       next: () => { this.busyId.set(null); this.load(); },
-      error: () => { this.busyId.set(null); this.error.set(this.copy.removeError); },
+      error: () => { this.busyId.set(null); this.toasts.error(this.copy.removeError); },
     });
   }
 
