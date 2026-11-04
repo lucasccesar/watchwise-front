@@ -84,56 +84,78 @@
       <aside class="legal-toc">
         <strong class="legal-toc-title">Nesta página</strong>
         <button class="legal-toc-toggle" type="button" [attr.aria-expanded]="tocOpen()" (click)="toggleToc()"><span>Nesta página</span><svg viewBox="0 0 24 24" [class.is-open]="tocOpen()" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-        <nav aria-label="Seções do documento" [class.is-open]="tocOpen()"><ol>@for (section of sections; track section.id) { <li><a [href]="'#' + section.id">{{ section.title }}</a></li> }<li><a href="#referencias">Referências relevantes</a></li></ol></nav>
+        <nav aria-label="Seções do documento" [class.is-open]="tocOpen()"><ol>@for (section of legalDocument.sections; track section.id) { <li><a [href]="'#' + section.id">{{ section.title }}</a></li> }</ol></nav>
       </aside>
 
       <article class="legal-document">
         <div class="legal-document-header">
           <h1 id="public-info-title">{{ title() }}</h1>
           <dl class="legal-meta">
-            <div class="legal-meta-entry"><dt>Atualizado em</dt><dd>21 de outubro de 2026</dd></div>
-            <div class="legal-meta-entry"><dt>{{ page === 'privacy' ? 'Controlador dos dados' : page === 'guidelines' ? 'Responsável pela aplicação' : 'Responsável pelo serviço' }}</dt><dd><mark>{{ page === 'privacy' ? '[PREENCHER: nome empresarial ou pessoa controladora, país e endereço de contato]' : page === 'terms' ? '[PREENCHER: nome empresarial ou pessoa responsável e país de estabelecimento]' : page === 'guidelines' ? '[PREENCHER: pessoa ou entidade]' : '[A preencher: nome ou entidade responsável e país de estabelecimento]' }}</mark></dd></div>
-            <div class="legal-meta-entry"><dt>{{ page === 'privacy' ? 'Contato de privacidade' : page === 'guidelines' ? 'Denúncias e recursos' : 'Contato' }}</dt><dd><mark>{{ page === 'privacy' ? '[PREENCHER: e-mail ou canal para pedidos de titulares]' : page === 'terms' ? '[PREENCHER: canal de contato jurídico]' : '[PREENCHER: canal de contato]' }}</mark></dd></div>
-            @if (page === 'privacy') { <div class="legal-meta-entry"><dt>Encarregado ou representante, quando exigido</dt><dd><mark>[PREENCHER: nome e contato, ou fundamento para eventual dispensa]</mark></dd></div> }
+            <div class="legal-meta-entry"><dt>Atualizado em</dt><dd>{{ legalDocument.updatedAt }}</dd></div>
+            <div class="legal-meta-entry"><dt>{{ legalDocument.responsibleLabel }}</dt><dd>{{ legalDocument.responsible }}</dd></div>
+            <div class="legal-meta-entry"><dt>{{ legalDocument.contactLabel }}</dt><dd><a [href]="'mailto:' + legalDocument.contact">{{ legalDocument.contact }}</a></dd></div>
           </dl>
-          <aside class="draft-alert legal-draft" role="note"><svg class="draft-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9V13M12 17H12.01M10.615 3.892L2.39 18.098C1.934 18.886 1.706 19.28 1.74 19.604C1.769 19.886 1.917 20.142 2.146 20.309C2.409 20.5 2.864 20.5 3.775 20.5H20.225C21.135 20.5 21.59 20.5 21.853 20.309C22.083 20.142 22.231 19.886 22.26 19.604C22.294 19.28 22.066 18.886 21.61 18.098L13.385 3.892C12.93 3.107 12.703 2.714 12.406 2.582C12.147 2.467 11.853 2.467 11.594 2.582C11.298 2.714 11.07 3.107 10.615 3.892Z"/></svg><div><strong>Rascunho — não publicar</strong><p>{{ draftMessage() }}</p></div></aside>
         </div>
+
         <div class="legal-inline-toc">
           <button class="legal-toc-toggle" type="button" [attr.aria-expanded]="tocOpen()" (click)="toggleToc()"><span>Nesta página</span><svg viewBox="0 0 24 24" [class.is-open]="tocOpen()" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-          <nav aria-label="Seções do documento" [class.is-open]="tocOpen()"><ol>@for (section of sections; track section.id) { <li><a [href]="'#' + section.id">{{ section.title }}</a></li> }<li><a href="#referencias">Referências relevantes</a></li></ol></nav>
+          <nav aria-label="Seções do documento" [class.is-open]="tocOpen()"><ol>@for (section of legalDocument.sections; track section.id) { <li><a [href]="'#' + section.id">{{ section.title }}</a></li> }</ol></nav>
         </div>
-        <section class="legal-introduction">
-          @if (page === 'guidelines') {
-            <p class="legal-intro"><span class="legal-copy-desktop">{{ introduction[0] }}</span><span class="legal-copy-mobile">No Watchwise, converse sobre filmes e séries, registre o que assistiu, crie listas, preencha Picks e interaja com outras pessoas. Esperamos respeito e publicações que não coloquem ninguém em risco.</span></p>
-            <p class="legal-intro">Estas Diretrizes complementam os <a routerLink="/terms">Termos de Uso</a> e a <a routerLink="/privacy">Política de Privacidade</a>. Elas descrevem comportamentos não permitidos e como denúncias podem ser tratadas.</p>
-          } @else {
-            @for (paragraph of introduction; track $index) {
-              <p class="legal-intro">@for (segment of legalParagraphSegments(paragraph); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</p>
-            }
-          }
-        </section>
 
-        @for (section of sections; track section.id) {
-          <section class="legal-section" [id]="section.id">
-            <h2>@if (section.mobileTitle) { <span class="legal-copy-desktop">{{ section.title }}</span><span class="legal-copy-mobile">{{ section.mobileTitle }}</span> } @else { {{ section.title }} }</h2>
-            @for (paragraph of section.paragraphs; track $index) {
-              <p>@for (segment of legalParagraphSegments(paragraph); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</p>
-            }
-            @if (section.bullets?.length) { <ul>@for (bullet of section.bullets; track bullet) { <li>@for (segment of legalParagraphSegments(bullet); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</li> }</ul> }
-            @if (section.table; as table) {
-              <div class="legal-table-scroll"><table><thead><tr>@for (header of table.headers; track header) { <th scope="col">{{ header }}</th> }</tr></thead><tbody>@for (row of table.rows; track $index) { <tr>@for (cell of row; track $index) { <td>{{ cell }}</td> }</tr> }</tbody></table></div>
-              <div class="legal-table-cards">@for (row of table.rows; track $index) { <article class="legal-table-card">@for (cell of row; track $index; let columnIndex = $index) { <div class="legal-table-field"><span>{{ table.headers[columnIndex] }}</span><p>@for (segment of legalTextSegments(cell); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else { {{ segment.text }} } }</p></div> }</article> }</div>
-            }
-            @for (subsection of section.subsections ?? []; track subsection.title) {
-              <div class="legal-subsection"><h3>@if (subsection.mobileTitle) { <span class="legal-copy-desktop">{{ subsection.title }}</span><span class="legal-copy-mobile">{{ subsection.mobileTitle }}</span> } @else { {{ subsection.title }} }</h3>@for (paragraph of subsection.paragraphs; track $index) { <p>@for (segment of legalParagraphSegments(paragraph); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</p> }@if (subsection.quote) { <blockquote>{{ subsection.quote }}</blockquote> }@if (subsection.bullets?.length) { <ul>@for (bullet of subsection.bullets; track bullet) { <li>@for (segment of legalParagraphSegments(bullet); track $index) { @if (segment.isDraft) { <mark>{{ segment.text }}</mark> } @else if (segment.href) { <a [routerLink]="segment.href">{{ segment.text }}</a> } @else { {{ segment.text }} } }</li> }</ul> }</div>
-            }
+        @if (legalDocument.introduction.length) {
+          <section class="legal-introduction">
+            <ng-container [ngTemplateOutlet]="legalBlocks" [ngTemplateOutletContext]="{ $implicit: legalDocument.introduction }"></ng-container>
           </section>
         }
 
-        <section class="legal-section legal-references" id="referencias"><h2>{{ page === 'privacy' || page === 'guidelines' ? 'Referências oficiais' : 'Referências relevantes' }}</h2><ul>
-          @for (reference of references; track reference.href) { <li><a [href]="reference.href" target="_blank" rel="noopener noreferrer">{{ reference.title }}</a></li> }
-        </ul></section>
+        @for (section of legalDocument.sections; track section.id) {
+          <section class="legal-section" [id]="section.id">
+            <h2>{{ section.title }}</h2>
+            <ng-container [ngTemplateOutlet]="legalBlocks" [ngTemplateOutletContext]="{ $implicit: section.blocks }"></ng-container>
+          </section>
+        }
       </article>
     </div>
   </main>
+
+  <ng-template #legalInline let-segments>
+    @for (segment of segments; track $index) {
+      @if (segment.routerLink) {
+        <a [routerLink]="segment.routerLink">{{ segment.text }}</a>
+      } @else if (segment.href) {
+        <a [href]="segment.href" [attr.target]="segment.external ? '_blank' : null" [attr.rel]="segment.external ? 'noopener noreferrer' : null">{{ segment.text }}</a>
+      } @else if (segment.bold) {
+        <strong>{{ segment.text }}</strong>
+      } @else {
+        {{ segment.text }}
+      }
+    }
+  </ng-template>
+
+  <ng-template #legalBlocks let-blocks>
+    @for (block of blocks; track $index) {
+      @switch (block.type) {
+        @case ('paragraph') {
+          <p><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: block.segments }"></ng-container></p>
+        }
+        @case ('heading') {
+          <h3><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: block.segments }"></ng-container></h3>
+        }
+        @case ('quote') {
+          <blockquote><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: block.segments }"></ng-container></blockquote>
+        }
+        @case ('list') {
+          @if (block.ordered) {
+            <ol>@for (item of block.items; track $index) { <li><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container></li> }</ol>
+          } @else {
+            <ul>@for (item of block.items; track $index) { <li><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container></li> }</ul>
+          }
+        }
+        @case ('table') {
+          <div class="legal-table-scroll"><table><thead><tr>@for (header of block.headers; track $index) { <th scope="col"><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: header }"></ng-container></th> }</tr></thead><tbody>@for (row of block.rows; track $index) { <tr>@for (cell of row; track $index) { <td><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: cell }"></ng-container></td> }</tr> }</tbody></table></div>
+          <div class="legal-table-cards">@for (row of block.rows; track $index) { <article class="legal-table-card">@for (cell of row; track $index; let columnIndex = $index) { <div class="legal-table-field"><span><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: block.headers[columnIndex] }"></ng-container></span><p><ng-container [ngTemplateOutlet]="legalInline" [ngTemplateOutletContext]="{ $implicit: cell }"></ng-container></p></div> }</article> }</div>
+        }
+      }
+    }
+  </ng-template>
 }
