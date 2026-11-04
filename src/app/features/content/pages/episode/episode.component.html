@@ -5,7 +5,7 @@
 } @else if (page(); as episode) {
   <main class="episode-page">
     <header class="episode-hero">
-      <app-responsive-banner [path]="backdrop()" fallbackPath="" />
+      <app-responsive-banner [path]="backdrop()" fallbackPath="" appearance="episode-detail" />
       <div class="episode-hero-inner">
         <a class="episode-back" [routerLink]="['/content/series', tmdbId()]">‹ Voltar para {{ seriesTitle() }}</a>
         <div class="episode-hero-copy"><span class="episode-eyebrow">{{ seriesTitle() }} · Temporada {{ seasonNumber() }} · Episódio {{ episodeNumber() }}</span><h1 class="ww-detail-hero-title">{{ episodeTitle() }}</h1>

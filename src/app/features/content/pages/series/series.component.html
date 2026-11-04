@@ -10,7 +10,7 @@
   } @else if (page(); as seriesPage) {
     <section class="movie-overview" aria-labelledby="series-title">
       <div class="movie-backdrop-frame" aria-hidden="true">
-        <app-responsive-banner [path]="backdropUrl()" fallbackPath="" />
+        <app-responsive-banner [path]="backdropUrl()" fallbackPath="" appearance="content-detail" />
       </div>
 
       <div class="movie-overview-grid">
