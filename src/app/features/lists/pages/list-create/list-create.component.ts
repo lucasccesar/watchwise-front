@@ -1,19 +1,24 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { concatMap, from, Subscription, toArray } from 'rxjs';
 import { ContentApiService, ContentEpisodeSelection, ContentSeasonSelection } from '../../../content/data-access/content-api.service';
-import { ListsApiService, ListContentReference, ListVisibility } from '../../data-access/lists-api.service';
+import { ListsApiService, ListCardPreview, ListContentReference, ListDetailItem, ListDetailView, ListVisibility } from '../../data-access/lists-api.service';
 import { SearchApiService, SearchContentView } from '../../../search-content/data-access/search-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { AuthSessionService } from '../../../../core/session/session.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type ListCreateKind = 'MOVIES_AND_SERIES' | 'SEASONS' | 'EPISODES';
 type ListComposerItem = {
   key: string;
-  reference: ListContentReference;
+  reference?: ListContentReference;
   title: string;
+  inlineInfo?: string;
   year: string | number | null;
   imageUrl: string | null;
+  existingListItemId?: string;
+  nestedListId?: string;
 };
 
 @Component({
@@ -26,25 +31,58 @@ type ListComposerItem = {
 })
 export class ListCreateComponent implements OnDestroy {
   protected readonly copy = messageCatalog['pt-BR'].listsPage;
+  protected readonly detailCopy = messageCatalog['pt-BR'].listDetailPage;
   protected readonly name = signal('');
   protected readonly description = signal('');
   protected readonly visibility = signal<ListVisibility>('PUBLIC');
   protected readonly kind = signal<ListCreateKind>('MOVIES_AND_SERIES');
   protected readonly searchQuery = signal('');
   protected readonly searchResults = signal<SearchContentView[]>([]);
-  protected readonly highlightedResult = signal<SearchContentView | null>(null);
   protected readonly selectedSeries = signal<SearchContentView | null>(null);
   protected readonly seasons = signal<ContentSeasonSelection[]>([]);
   protected readonly selectedSeason = signal<number | null>(null);
   protected readonly episodes = signal<ContentEpisodeSelection[]>([]);
+  protected readonly selectedEpisode = signal<number | null>(null);
   protected readonly selectedItems = signal<ListComposerItem[]>([]);
+  private readonly itemDraftsByKind = signal<ReadonlyMap<ListCreateKind, ListComposerItem[]>>(new Map());
+  protected readonly editListId = signal<string | null>(null);
+  protected readonly loadingList = signal(false);
+  protected readonly loadError = signal('');
+  protected readonly nestedListEdit = signal(false);
+  protected readonly originalItemIds = signal<ReadonlySet<string>>(new Set());
   protected readonly searching = signal(false);
   protected readonly creating = signal(false);
   protected readonly searchError = signal('');
   protected readonly formError = signal('');
   protected readonly nameLength = computed(() => this.name().length);
   protected readonly itemCount = computed(() => this.selectedItems().length);
-  protected readonly itemCountLabel = computed(() => (this.itemCount() === 1 ? this.copy.singleTitleCount : this.copy.titleCount).replace('{count}', this.itemCount().toString()));
+  protected readonly itemCountLabel = computed(() => {
+    const count = this.itemCount().toString();
+    return this.nestedListEdit()
+      ? this.copy.listCount.replace('{count}', count)
+      : (this.itemCount() === 1 ? this.copy.singleTitleCount : this.copy.titleCount).replace('{count}', count);
+  });
+  protected readonly selectionCountLabel = computed(() => {
+    if (this.kind() === 'SEASONS' && this.selectedSeries()) return `${this.seasons().length} ${this.copy.seasons.toLowerCase()}`;
+    if (this.kind() === 'EPISODES' && this.selectedSeason() !== null) return `${this.episodes().length} ${this.copy.episodes.toLowerCase()}`;
+    return this.itemCountLabel();
+  });
+  protected readonly canAddSelection = computed(() => {
+    if (this.searching() || this.itemCount() >= 100) return false;
+    const series = this.selectedSeries();
+    if (!series) return false;
+    if (this.kind() === 'SEASONS') {
+      const season = this.seasons().find((option) => option.seasonNumber === this.selectedSeason());
+      return !!season && !this.isAlreadyAdded({ type: 'SEASON', seriesTmdbId: series.tmdbId, seasonNumber: season.seasonNumber! });
+    }
+    if (this.kind() === 'EPISODES') {
+      const episode = this.episodes().find((option) => option.episodeNumber === this.selectedEpisode());
+      return !!episode && !this.isAlreadyAdded({ type: 'EPISODE', seriesTmdbId: series.tmdbId, seasonNumber: episode.seasonNumber!, episodeNumber: episode.episodeNumber! });
+    }
+    return false;
+  });
+  protected readonly itemsTitle = computed(() => this.isEditing() && this.nestedListEdit() ? this.copy.nestedLists : this.typeTitle());
+  protected readonly selectedItemsTitle = computed(() => this.nestedListEdit() ? this.copy.nestedLists : this.copy.selected);
   protected readonly typeTitle = computed(() => {
     const labels: Record<ListCreateKind, string> = {
       MOVIES_AND_SERIES: this.copy.moviesAndSeries,
@@ -58,16 +96,29 @@ export class ListCreateComponent implements OnDestroy {
     if (this.kind() === 'EPISODES') return this.copy.searchSeriesForEpisodes;
     return this.copy.searchMoviesAndSeries;
   });
+  protected readonly isEditing = computed(() => this.editListId() !== null);
+  protected readonly cancelRoute = computed(() => this.editListId() ? ['/lists', this.editListId()!] : ['/lists']);
 
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly listsApi = inject(ListsApiService);
   private readonly searchApi = inject(SearchApiService);
   private readonly contentApi = inject(ContentApiService);
+  private readonly session = inject(AuthSessionService);
   private readonly toasts = inject(ToastNotificationsService);
   private searchTimer?: ReturnType<typeof setTimeout>;
   private searchRequest?: Subscription;
   private selectionRequest?: Subscription;
+  private listRequest?: Subscription;
   private nextItemKey = 0;
+
+  constructor() {
+    const listId = this.route.pathFromRoot.map((route) => route.snapshot.paramMap.get('listId')).find((value) => value !== null) ?? null;
+    if (!listId) return;
+    this.editListId.set(listId);
+    this.loadingList.set(true);
+    this.loadExistingList(listId, 1, []);
+  }
 
   protected updateName(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value.slice(0, 100));
@@ -82,7 +133,6 @@ export class ListCreateComponent implements OnDestroy {
     const query = (event.target as HTMLInputElement).value;
     this.searchQuery.set(query);
     this.searchResults.set([]);
-    this.highlightedResult.set(null);
     this.searchError.set('');
     this.searchRequest?.unsubscribe();
     if (this.searchTimer) clearTimeout(this.searchTimer);
@@ -95,13 +145,16 @@ export class ListCreateComponent implements OnDestroy {
 
   protected setKind(kind: ListCreateKind): void {
     if (this.kind() === kind) return;
+    const currentKind = this.kind();
+    this.itemDraftsByKind.update((drafts) => new Map(drafts).set(currentKind, this.selectedItems()));
+    this.selectedItems.set(this.itemDraftsByKind().get(kind) ?? []);
     this.kind.set(kind);
     this.searchResults.set([]);
-    this.highlightedResult.set(null);
     this.selectedSeries.set(null);
     this.seasons.set([]);
     this.selectedSeason.set(null);
     this.episodes.set([]);
+    this.selectedEpisode.set(null);
     this.searchError.set('');
     this.searchRequest?.unsubscribe();
     this.selectionRequest?.unsubscribe();
@@ -115,33 +168,23 @@ export class ListCreateComponent implements OnDestroy {
   }
 
   protected selectSearchResult(result: SearchContentView): void {
-    this.highlightedResult.set(result);
-  }
-
-  protected canAddHighlightedResult(): boolean {
-    const result = this.highlightedResult();
-    return Boolean(result && this.kind() === 'MOVIES_AND_SERIES' && this.itemCount() < 100 && !this.isAlreadyAdded({ type: result.type, tmdbId: result.tmdbId }));
-  }
-
-  protected addHighlightedResult(): void {
-    const result = this.highlightedResult();
-    if (!result || this.kind() !== 'MOVIES_AND_SERIES') return;
+    if (this.kind() !== 'MOVIES_AND_SERIES') return;
     this.addItem({
       reference: { type: result.type, tmdbId: result.tmdbId },
       title: result.title || this.copy.titleUnavailable,
       year: result.releaseYear ?? null,
-      imageUrl: result.posterUrl ?? null,
+      imageUrl: this.imageUrl(result.posterUrl),
     });
-    this.highlightedResult.set(null);
+    this.clearSearch();
   }
 
   protected selectSeries(series: SearchContentView): void {
     this.searchResults.set([]);
-    this.highlightedResult.set(null);
     this.selectedSeries.set(series);
     this.seasons.set([]);
     this.episodes.set([]);
     this.selectedSeason.set(null);
+    this.selectedEpisode.set(null);
     this.searching.set(true);
     this.searchError.set('');
     this.selectionRequest?.unsubscribe();
@@ -162,6 +205,7 @@ export class ListCreateComponent implements OnDestroy {
   protected setSelectedSeason(seasonNumber: number): void {
     this.selectedSeason.set(seasonNumber);
     this.episodes.set([]);
+    this.selectedEpisode.set(null);
     const series = this.selectedSeries();
     if (!series || this.kind() !== 'EPISODES') return;
     this.selectionRequest?.unsubscribe();
@@ -174,38 +218,71 @@ export class ListCreateComponent implements OnDestroy {
   }
 
   protected changeSelectedSeason(event: Event): void {
-    const value = Number((event.target as HTMLSelectElement).value);
+    const rawValue = (event.target as HTMLSelectElement).value;
+    if (!rawValue) {
+      this.selectedSeason.set(null);
+      this.episodes.set([]);
+      this.selectedEpisode.set(null);
+      this.selectionRequest?.unsubscribe();
+      this.searching.set(false);
+      return;
+    }
+    const value = Number(rawValue);
     if (Number.isInteger(value)) this.setSelectedSeason(value);
   }
 
-  protected addSeason(season: ContentSeasonSelection): void {
+  protected changeSelectedEpisode(event: Event): void {
+    const rawValue = (event.target as HTMLSelectElement).value;
+    const value = Number(rawValue);
+    this.selectedEpisode.set(rawValue && Number.isInteger(value) ? value : null);
+  }
+
+  protected addSelectedOption(): void {
+    if (!this.canAddSelection()) return;
+    if (this.kind() === 'SEASONS') {
+      const season = this.seasons().find((option) => option.seasonNumber === this.selectedSeason());
+      if (season && this.addSeason(season)) this.selectedSeason.set(null);
+      return;
+    }
+    if (this.kind() === 'EPISODES') {
+      const episode = this.episodes().find((option) => option.episodeNumber === this.selectedEpisode());
+      if (episode && this.addEpisode(episode)) this.selectedEpisode.set(null);
+    }
+  }
+
+  protected addSeason(season: ContentSeasonSelection): boolean {
     const series = this.selectedSeries();
-    if (!series || season.seasonNumber === null) return;
-    this.addItem({
+    if (!series || season.seasonNumber === null) return false;
+    return this.addItem({
       reference: { type: 'SEASON', seriesTmdbId: series.tmdbId, seasonNumber: season.seasonNumber },
-      title: `${series.title || this.copy.series} · ${season.name || `${this.copy.season} ${season.seasonNumber}`}`,
+      title: series.title || this.copy.series,
+      inlineInfo: season.name || `T${season.seasonNumber}`,
       year: this.yearFromDate(season.releaseDate),
-      imageUrl: season.posterUrl ?? series.posterUrl ?? null,
+      imageUrl: this.imageUrl(season.posterUrl || series.posterUrl),
     });
   }
 
-  protected addEpisode(episode: ContentEpisodeSelection): void {
+  protected addEpisode(episode: ContentEpisodeSelection): boolean {
     const series = this.selectedSeries();
-    if (!series || episode.seasonNumber === null || episode.episodeNumber === null) return;
-    const episodeCode = `T${episode.seasonNumber} E${episode.episodeNumber}`;
-    this.addItem({
+    if (!series || episode.seasonNumber === null || episode.episodeNumber === null) return false;
+    return this.addItem({
       reference: { type: 'EPISODE', seriesTmdbId: series.tmdbId, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber },
-      title: `${series.title || this.copy.series} · ${episodeCode}${episode.name ? ` · ${episode.name}` : ''}`,
+      title: series.title || this.copy.series,
+      inlineInfo: `T${episode.seasonNumber} · E${episode.episodeNumber}`,
       year: this.yearFromDate(episode.airDate),
-      imageUrl: episode.stillUrl ?? series.posterUrl ?? null,
+      imageUrl: this.imageUrl(episode.stillUrl || series.posterUrl),
     });
   }
 
   protected returnToSeriesSearch(): void {
+    this.selectionRequest?.unsubscribe();
     this.selectedSeries.set(null);
     this.seasons.set([]);
     this.selectedSeason.set(null);
     this.episodes.set([]);
+    this.selectedEpisode.set(null);
+    this.searching.set(false);
+    this.searchError.set('');
     if (this.searchQuery().trim().length >= 2) this.searchTimer = setTimeout(() => this.runSearch(), 0);
   }
 
@@ -216,7 +293,7 @@ export class ListCreateComponent implements OnDestroy {
 
   protected isAlreadyAdded(reference: ListContentReference): boolean {
     const key = this.referenceKey(reference);
-    return this.selectedItems().some((item) => this.referenceKey(item.reference) === key);
+    return this.selectedItems().some((item) => item.reference && this.referenceKey(item.reference) === key);
   }
 
   protected onImportFile(event: Event): void {
@@ -233,7 +310,7 @@ export class ListCreateComponent implements OnDestroy {
       if (!imported.length || imported.some((item) => item === null)) throw new Error('Invalid items');
       const merged = [...this.selectedItems()];
       for (const item of imported as Array<NonNullable<(typeof imported)[number]>>) {
-        if (!merged.some((existing) => this.referenceKey(existing.reference) === this.referenceKey(item.reference))) {
+        if (!merged.some((existing) => existing.reference && this.referenceKey(existing.reference) === this.referenceKey(item.reference!))) {
           merged.push({ ...item, key: `item-${++this.nextItemKey}` });
         }
       }
@@ -255,14 +332,18 @@ export class ListCreateComponent implements OnDestroy {
     if (name.length > 100 || this.creating()) return;
     const request = {
       name,
-      description: this.description().trim() || undefined,
+      description: this.description().trim(),
       visibility: this.visibility(),
     };
     this.creating.set(true);
     this.formError.set('');
+    if (this.isEditing()) {
+      this.saveExistingList(this.editListId()!, request);
+      return;
+    }
     const createRequest = this.selectedItems().length
-      ? this.listsApi.createListWithItems({ ...request, items: this.selectedItems().map((item) => item.reference) })
-      : this.listsApi.createList(request);
+      ? this.listsApi.createListWithItems({ ...request, description: request.description || undefined, items: this.selectedItems().map((item) => item.reference!) })
+      : this.listsApi.createList({ ...request, description: request.description || undefined });
     createRequest.subscribe({
       next: (list) => {
         this.creating.set(false);
@@ -275,10 +356,140 @@ export class ListCreateComponent implements OnDestroy {
     });
   }
 
+  protected retryLoadList(): void {
+    const listId = this.editListId();
+    if (!listId) return;
+    this.loadError.set('');
+    this.loadingList.set(true);
+    this.loadExistingList(listId, 1, []);
+  }
+
   ngOnDestroy(): void {
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchRequest?.unsubscribe();
     this.selectionRequest?.unsubscribe();
+    this.listRequest?.unsubscribe();
+  }
+
+  private loadExistingList(listId: string, page: number, accumulated: ListDetailItem[], firstPage?: ListDetailView): void {
+    this.listRequest?.unsubscribe();
+    this.listRequest = this.listsApi.getDetail(listId, { page, size: 30, sortBy: 'position', sortDirection: 'asc' }).subscribe({
+      next: (detail) => {
+        const initial = firstPage ?? detail;
+        if (page === 1) {
+          if (detail.owner.id !== this.session.user()?.id) {
+            this.loadingList.set(false);
+            this.toasts.error(this.copy.loadListError);
+            void this.router.navigate(['/lists', listId]);
+            return;
+          }
+          this.name.set(detail.name);
+          this.description.set(detail.description ?? '');
+          this.visibility.set(detail.visibility);
+          if (detail.itemScope === 'SEASON') this.kind.set('SEASONS');
+          else if (detail.itemScope === 'EPISODE') this.kind.set('EPISODES');
+        }
+        const items = [...accumulated, ...detail.items.content];
+        if (detail.items.hasNext) {
+          this.loadExistingList(listId, page + 1, items, initial);
+          return;
+        }
+        const composerItems = items.map((item) => this.toComposerItem(item)).filter((item): item is ListComposerItem => item !== null);
+        this.originalItemIds.set(new Set(items.map((item) => item.id)));
+        this.selectedItems.set(composerItems);
+        this.nestedListEdit.set(initial.itemScope === 'LIST' || composerItems.some((item) => item.nestedListId));
+        this.loadingList.set(false);
+      },
+      error: () => {
+        this.loadingList.set(false);
+        this.loadError.set(this.copy.loadListError);
+      },
+    });
+  }
+
+  private toComposerItem(item: ListDetailItem): ListComposerItem {
+    const card = item.card;
+    if (card) {
+      return {
+        key: `existing-${item.id}`,
+        reference: this.referenceFromCard(card) ?? undefined,
+        existingListItemId: item.id,
+        title: card.title || this.copy.titleUnavailable,
+        inlineInfo: card.type === 'SEASON' && card.seasonNumber !== null
+          ? `T${card.seasonNumber}`
+          : card.type === 'EPISODE' && card.seasonNumber !== null && card.episodeNumber !== null
+            ? `T${card.seasonNumber} · E${card.episodeNumber}`
+            : undefined,
+        year: card.releaseYear,
+        imageUrl: this.imageUrl(item.customPosterUrl || card.customPosterUrl || card.posterPath),
+      };
+    }
+    if (item.nestedList) {
+      const preview = item.nestedList.previewCards[0];
+      return {
+        key: `existing-${item.id}`,
+        existingListItemId: item.id,
+        nestedListId: item.nestedList.id,
+        title: item.nestedList.name,
+        year: null,
+        imageUrl: preview ? this.imageUrl(preview.customPosterUrl || preview.posterPath) : null,
+      };
+    }
+    return {
+      key: `existing-${item.id}`,
+      existingListItemId: item.id,
+      title: this.copy.titleUnavailable,
+      year: null,
+      imageUrl: this.imageUrl(item.customPosterUrl),
+    };
+  }
+
+  private referenceFromCard(card: ListCardPreview): ListContentReference | null {
+    if ((card.type === 'MOVIE' || card.type === 'SERIES') && card.tmdbId) return { type: card.type, tmdbId: card.tmdbId };
+    if (card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) {
+      return { type: 'SEASON', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber };
+    }
+    if (card.type === 'EPISODE' && card.seriesTmdbId && card.seasonNumber !== null && card.episodeNumber !== null) {
+      return { type: 'EPISODE', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, episodeNumber: card.episodeNumber };
+    }
+    return null;
+  }
+
+  private saveExistingList(listId: string, request: { name: string; description: string; visibility: ListVisibility }): void {
+    this.listsApi.updateList(listId, request).subscribe({
+      next: () => {
+        const selectedExistingIds = new Set(this.selectedItems().flatMap((item) => item.existingListItemId ? [item.existingListItemId] : []));
+        const removedIds = [...this.originalItemIds()].filter((id) => !selectedExistingIds.has(id));
+        const newReferences = this.selectedItems().flatMap((item) => !item.existingListItemId && item.reference ? [item.reference] : []);
+        const changes = [
+          ...removedIds.map((id) => this.listsApi.removeItem(listId, id)),
+          ...newReferences.map((reference) => this.listsApi.addItem(listId, reference)),
+        ];
+        from(changes).pipe(concatMap((change) => change), toArray()).subscribe({
+          next: () => {
+            this.creating.set(false);
+            this.toasts.success(this.copy.listSaved);
+            void this.router.navigate(['/lists', listId]);
+          },
+          error: () => {
+            this.creating.set(false);
+            this.toasts.error(this.copy.updateListError);
+          },
+        });
+      },
+      error: () => {
+        this.creating.set(false);
+        this.toasts.error(this.copy.updateListError);
+      },
+    });
+  }
+
+  protected responsiveImageUrl(path: string | null | undefined, size: 'w780' | 'w1280'): string | null {
+    return tmdbImageUrl(path, size);
+  }
+
+  protected imageUrl(path: string | null | undefined): string | null {
+    return tmdbImageUrl(path, 'w500');
   }
 
   private runSearch(): void {
@@ -301,15 +512,27 @@ export class ListCreateComponent implements OnDestroy {
     });
   }
 
-  private addItem(item: Omit<ListComposerItem, 'key'>): void {
+  private addItem(item: Omit<ListComposerItem, 'key'>): boolean {
     const items = this.selectedItems();
-    if (items.some((existing) => this.referenceKey(existing.reference) === this.referenceKey(item.reference))) return;
+    if (item.reference && items.some((existing) => existing.reference && this.referenceKey(existing.reference) === this.referenceKey(item.reference!))) return false;
     if (items.length >= 100) {
       this.formError.set(this.copy.itemLimit);
-      return;
+      return false;
     }
     this.selectedItems.set([...items, { ...item, key: `item-${++this.nextItemKey}` }]);
     this.formError.set('');
+    return true;
+  }
+
+  private clearSearch(): void {
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.searchError.set('');
+    this.searching.set(false);
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchTimer = undefined;
+    this.searchRequest?.unsubscribe();
+    this.searchRequest = undefined;
   }
 
   private parseImportedItem(value: unknown): Omit<ListComposerItem, 'key'> | null {
@@ -334,7 +557,7 @@ export class ListCreateComponent implements OnDestroy {
       reference,
       title: typeof row['title'] === 'string' ? row['title'] : `${type} · ${tmdbId ?? seriesTmdbId}`,
       year: typeof row['releaseYear'] === 'number' || typeof row['releaseYear'] === 'string' ? row['releaseYear'] : null,
-      imageUrl: typeof row['posterUrl'] === 'string' ? row['posterUrl'] : null,
+      imageUrl: typeof row['posterUrl'] === 'string' ? this.imageUrl(row['posterUrl']) : null,
     };
   }
 

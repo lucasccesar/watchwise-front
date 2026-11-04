@@ -19,10 +19,13 @@ import {
   ContentImageActionSelection,
   ContentImageActionsComponent,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
-import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { tmdbImageUrl as buildTmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { ContentApiService, ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import {
   TrendingApiService,
@@ -65,7 +68,7 @@ function emptySection(loading = false): SectionState {
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, PageSkeletonComponent],
+  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, ResponsiveBannerComponent, CheckIconComponent],
   templateUrl: './trending.component.html',
   styleUrl: './trending.component.css',
 })
@@ -88,6 +91,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly listDialogOpener = signal<HTMLElement | null>(null);
   protected readonly listContentId = signal('');
   protected readonly userLists = signal<UserListSummary[]>([]);
+  protected readonly listSkeletonRows = [0, 1, 2];
   protected readonly userListsPage = signal<ContentPageResult<UserListSummary> | null>(null);
   protected readonly userListsStatus = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly userListsLoadingMore = signal(false);
@@ -133,9 +137,12 @@ export class TrendingComponent implements OnInit, OnDestroy {
   private listRequests = new Subscription();
   private filterOpener: HTMLElement | null = null;
 
+  protected posterImage(path: string | null | undefined): string | null {
+    return buildTmdbImageUrl(path, 'w500');
+  }
+
   private tmdbImageUrl(path: string): string {
-    if (/^https?:\/\//i.test(path)) return path;
-    return `https://image.tmdb.org/t/p/w1920${path.startsWith('/') ? path : `/${path}`}`;
+    return buildTmdbImageUrl(path, 'w1920') ?? '';
   }
 
   @ViewChild('filterCloseButton')
@@ -413,6 +420,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
         this.userLists.update((lists) => lists.map((item) => item.id === list.id
           ? { ...item, containsContent: !removing, itemsCount: Math.max(0, (item.itemsCount ?? 0) + (removing ? -1 : 1)) }
           : item));
+        this.closeListDialog();
         this.toasts.success(removing ? this.copy.listRemoved : this.copy.listAdded);
       },
       error: (error: unknown) => {

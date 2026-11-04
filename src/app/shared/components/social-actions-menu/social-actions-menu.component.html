@@ -1,23 +1,23 @@
 @if (!isOwnAuthor) {
   <div class="ww-social-actions-menu">
-    <button class="ww-social-actions-trigger" type="button" [attr.aria-label]="mode === 'comment' ? copy.commentOptions : copy.activityOptions" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu($event)">
+    <button class="ww-social-actions-trigger" type="button" [attr.aria-label]="mode === 'comment' ? copy.commentOptions : copy.activityOptions" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu($event)" data-ww-ellipsis-trigger>
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
     </button>
     @if (menuOpen()) {
-      <div class="ww-social-actions-dropdown" role="menu" (click)="$event.stopPropagation()">
-        <button class="ww-social-actions-item" type="button" role="menuitem" [disabled]="userActionBusy || busy()" (click)="followOrUnfollow($event)">
+      <div class="ww-social-actions-dropdown" role="menu" data-ww-menu (click)="$event.stopPropagation()">
+        <button class="ww-social-actions-item" type="button" role="menuitem" data-ww-menu-item [disabled]="userActionBusy || busy()" (click)="followOrUnfollow($event)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1v6m-3-3h6"/></svg>
           <span>{{ followActionLabel }}</span>
         </button>
         @if (mode === 'review') {
           <div class="ww-social-actions-separator" role="separator"></div>
           @if (itemText.trim()) {
-            <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" (click)="openReport('review', $event)">
+            <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" data-ww-menu-item (click)="openReport('review', $event)">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>
               <span>{{ copy.reportReview }}</span>
             </button>
           }
-          <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" (click)="openReport('user', $event)">
+          <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" data-ww-menu-item (click)="openReport('user', $event)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>
             <span>{{ copy.reportUser.replace('{user}', authorName) }}</span>
           </button>
@@ -25,12 +25,12 @@
         } @else {
           <div class="ww-social-actions-separator" role="separator"></div>
         }
-        <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" [disabled]="busy()" (click)="blockAuthor($event)">
+        <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" data-ww-menu-item [disabled]="busy()" (click)="blockAuthor($event)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>
           <span>{{ copy.blockUser.replace('{user}', authorName) }}</span>
         </button>
         @if (mode === 'comment') {
-          <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" (click)="openReport('comment', $event)">
+          <button class="ww-social-actions-item ww-social-actions-item--danger" type="button" role="menuitem" data-ww-menu-item (click)="openReport('comment', $event)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>
             <span>{{ copy.reportComment }}</span>
           </button>
@@ -47,7 +47,7 @@
       <p>{{ copy.userActionConfirmPrompt }}</p>
       <div class="ww-social-actions-dialog-buttons">
         <button type="button" [disabled]="busy()" (click)="cancelUserAction()">{{ copy.confirmCancel }}</button>
-        <button class="ww-social-actions-confirm" [class.ww-social-actions-confirm--danger]="pendingAction() === 'block'" type="button" [disabled]="busy()" (click)="confirmUserAction()">{{ confirmationButtonLabel }}</button>
+        <button class="ww-social-actions-confirm" [class.ww-social-actions-confirm--danger]="pendingAction() === 'block'" type="button" [disabled]="busy()" (click)="confirmUserAction()" [attr.data-ww-button]="pendingAction() === 'block' ? 'danger' : 'primary'">{{ confirmationButtonLabel }}</button>
       </div>
     </section>
   </div>
@@ -79,7 +79,7 @@
         </div>
         <footer class="ww-social-report-actions">
           <button type="button" [disabled]="busy()" (click)="cancelReport()">{{ copy.reportCancel }}</button>
-          <button class="ww-social-report-submit" type="submit" [disabled]="!reportReason() || busy()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>{{ busy() ? copy.reportSubmitting : copy.reportSubmit }}</button>
+          <button class="ww-social-report-submit" type="submit" [disabled]="!reportReason() || busy()" data-ww-button="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>{{ busy() ? copy.reportSubmitting : copy.reportSubmit }}</button>
         </footer>
       </form>
     </section>

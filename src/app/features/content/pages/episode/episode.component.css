@@ -1,7 +1,7 @@
 :host { display: block; min-height: 100vh; background: #111113; color: #f5f5f7; }
 .episode-page { position: relative; padding-bottom: 48px; }
-.episode-hero { min-height: 390px; background-color: #19191c; background-position: center 35%; background-size: cover; }
-.episode-hero-inner { display: flex; width: min(1200px, calc(100% - 64px)); min-height: 390px; flex-direction: column; justify-content: space-between; margin: 0 auto; padding: 22px 0 34px; box-sizing: border-box; }
+.episode-hero { position: relative; isolation: isolate; min-height: 390px; overflow: hidden; background-color: #19191c; }
+.episode-hero-inner { position: relative; z-index: 2; display: flex; width: min(1200px, calc(100% - 64px)); min-height: 390px; flex-direction: column; justify-content: space-between; margin: 0 auto; padding: 22px 0 34px; box-sizing: border-box; }
 .episode-back { color: #dedee3; font-size: 13px; text-decoration: none; }
 .episode-back:hover { color: #fff; }
 .episode-hero-copy { max-width: 770px; padding: 30px 0 0; }
@@ -12,6 +12,7 @@
 .episode-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
 .episode-actions button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 1px solid #4a4a52; border-radius: 7px; background: rgba(28,28,32,.92); color: #f2f2f5; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .episode-actions .episode-watch-button { border-color: #2e69ef; background: #2d66e8; color: white; }
+.episode-watch-button app-check-icon { padding: 2px; border-radius: 50%; background: #fff; }
 .episode-actions .episode-share-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .episode-watch-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .episode-rate-button > span { color: #f4ad26; font-size: 17px; }
@@ -97,7 +98,7 @@
 .episode-rating-modal footer button:disabled { opacity: .5; cursor: default; }
 
 @media (max-width: 800px) {
-  .episode-hero { min-height: 390px; background-position: 60% center; }
+  .episode-hero { min-height: 390px; }
   .episode-hero-inner { width: calc(100% - 36px); min-height: 390px; padding: 17px 0 24px; }
   .episode-hero-copy { max-width: 100%; padding-top: 14px; }
   .episode-hero h1 { font-size: 39px; }

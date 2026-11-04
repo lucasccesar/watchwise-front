@@ -3,6 +3,10 @@ app-trending {
 }
 
 .trending-page {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
   min-height: 100%;
   background: var(--color-surface);
 }
@@ -16,18 +20,6 @@ app-trending {
   padding: var(--space-16) var(--content-margin);
   background: var(--color-surface);
   text-align: center;
-}
-.tr-hero::before {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgb(24 24 24 / 45%),
-    rgb(24 24 24 / 80%) 62%,
-    var(--color-surface)
-  );
-  content: '';
 }
 .tr-hero-content {
   position: relative;
@@ -106,6 +98,8 @@ app-trending {
 .tr-section {
   padding: var(--space-12) var(--content-margin);
 }
+.tr-section-empty,
+.tr-section-empty .tr-section-inner { display: flex; flex: 1; flex-direction: column; }
 .tr-section-series {
   background: var(--color-surface-secondary);
 }
@@ -114,6 +108,7 @@ app-trending {
   flex-direction: column;
   gap: var(--space-6);
 }
+.tr-section-empty .tr-empty { display: grid; flex: 1; place-items: center; }
 .tr-section-heading {
   display: flex;
   align-items: center;
@@ -257,6 +252,7 @@ app-trending {
   background: var(--color-primary);
   transform: translate(-50%, -50%);
 }
+.tr-state-marker--watched { background: var(--color-surface-secondary); }
 .tr-state-marker svg {
   width: 12px;
   height: 12px;
@@ -709,7 +705,10 @@ app-trending {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tr-spinner {
+  .tr-spinner,
+  .tr-list-skeleton-check,
+  .tr-list-skeleton-name,
+  .tr-list-skeleton-count {
     animation: none;
   }
 }
@@ -774,6 +773,30 @@ app-trending {
   position: relative;
   border-bottom: 1px solid var(--color-border);
 }
+.tr-user-lists li:last-child { border-bottom: 0; }
+.tr-user-lists--loading li {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tr-list-skeleton-check,
+.tr-list-skeleton-name,
+.tr-list-skeleton-count {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-surface), var(--color-secondary), var(--color-surface));
+  background-size: 200% 100%;
+  animation: tr-list-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.tr-list-skeleton-check { width: 20px; height: 20px; }
+.tr-list-skeleton-name { width: 74%; height: 14px; }
+.tr-user-lists--loading li:nth-child(3n + 2) .tr-list-skeleton-name { width: 88%; }
+.tr-user-lists--loading li:nth-child(3n) .tr-list-skeleton-name { width: 61%; }
+.tr-list-skeleton-count { width: 18px; height: 12px; justify-self: end; }
+@keyframes tr-list-skeleton-shimmer { to { background-position: -200% 0; } }
 .tr-user-lists label {
   display: grid;
   min-height: 44px;
@@ -953,8 +976,10 @@ app-trending {
 .watch-rating button { display: flex; width: 44px; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); cursor: pointer; font-family: inherit; font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
 .watch-rating button:hover { background: var(--color-surface); }
 .watch-rating button:disabled { cursor: not-allowed; opacity: 0.55; }
-.watch-rating button svg { width: 32px; height: 32px; fill: none; stroke: var(--color-text-tertiary); stroke-linejoin: round; stroke-width: 1.5; }
-.watch-rating button svg.watch-rating-star--selected { fill: var(--color-accent); stroke: var(--color-accent); }
+.watch-rating button svg { width: 32px; height: 32px; fill: none; stroke: var(--color-text-tertiary); stroke-linejoin: round; stroke-width: 2; }
+.watch-rating button svg path { fill: none; stroke: var(--color-text-tertiary); }
+.watch-rating button svg.watch-rating-star--selected { opacity: 1; fill: var(--color-accent); stroke: var(--color-accent); }
+.watch-rating button svg.watch-rating-star--selected path { fill: var(--color-accent); stroke: var(--color-accent); }
 .watch-review > span:first-child > span { color: var(--color-text-tertiary); font-weight: 400; }
 .watch-review textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font-family: inherit; font-size: var(--font-size-md); line-height: var(--line-height-md); resize: vertical; }
 .watch-review textarea:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }

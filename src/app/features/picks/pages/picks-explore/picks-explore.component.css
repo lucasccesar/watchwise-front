@@ -1,4 +1,4 @@
-.picks-page { min-height: 100%; padding-bottom: var(--space-16); background: var(--color-surface); }
+.picks-page { display: flex; flex: 1 0 auto; flex-direction: column; min-width: 0; min-height: 100%; padding-bottom: var(--space-16); background: var(--color-surface); }
 .picks-toolbar, .picks-feed { width: min(1280px, calc(100% - 64px)); box-sizing: border-box; margin-inline: auto; }
 .picks-toolbar { display: flex; min-height: 72px; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; margin-bottom: 12px; }
 .picks-sort-label { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); font-size: var(--font-size-xs); }
@@ -12,6 +12,8 @@
 .picks-origins button { min-height: 30px; padding: 0 11px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); font-weight: 600; cursor: pointer; }
 .picks-origins button.active { background: var(--color-primary); color: var(--color-text); }
 .picks-results-count { margin-left: auto; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.picks-catalog-feed--empty { display: flex; flex: 1 0 auto; flex-direction: column; }
+.picks-catalog-feed--empty .picks-empty { flex: 1 0 auto; }
 .picks-section { margin-top: 30px; }
 .picks-section-heading { display: flex; min-height: 44px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .picks-section-heading h2 { margin: 0; font-size: var(--font-size-lg); font-weight: 650; }
@@ -42,6 +44,12 @@
 .picks-card-footer button svg, .picks-comment-count svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 .picks-card-footer button.liked { color: #f06c83; }
 .picks-my-answer { color: var(--color-primary); font-weight: 600; text-decoration: none; }
+.picks-catalog-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px auto; }
+.picks-catalog-pagination button { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); cursor: pointer; }
+.picks-catalog-pagination button:hover:not(:disabled) { color: var(--color-primary); }
+.picks-catalog-pagination button:disabled { color: var(--color-text-tertiary); cursor: default; }
+.picks-catalog-pagination button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.picks-catalog-pagination span { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @media (max-width: 1100px) { .picks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {

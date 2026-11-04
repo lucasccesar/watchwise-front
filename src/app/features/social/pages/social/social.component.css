@@ -10,7 +10,6 @@
 .social-hero {
   position: relative;
   isolation: isolate;
-  --responsive-banner-position: center 30%;
   display: grid;
   min-height: 292px;
   place-items: center;

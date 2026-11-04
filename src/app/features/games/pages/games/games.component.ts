@@ -8,6 +8,8 @@ import { interval } from 'rxjs';
 import { GamesApiService, DailyGameHistory, DailyGameOverviewCard, DailyGameType, DailyGamesOverview } from '../../data-access/games-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 
 type GamesStatus = 'loading' | 'ready' | 'error';
 type GamesGroup = 'image' | 'info' | 'actor';
@@ -25,7 +27,7 @@ interface CalendarDay { date: string; day: number; played: boolean; today: boole
 @Component({
   selector: 'app-games',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, PageSkeletonComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, PageSkeletonComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './games.component.html',
   styleUrl: './games.component.css',
@@ -148,7 +150,7 @@ export class GamesComponent {
       default: return this.copy.notStarted;
     }
   }
-  protected imageUrl(card: DailyGameOverviewCard | undefined): string | null { return card?.visibleImageUrls?.[0] ?? card?.imageUrl ?? null; }
+  protected imageUrl(card: DailyGameOverviewCard | undefined): string | null { return tmdbImageUrl(card?.visibleImageUrls?.[0] ?? card?.imageUrl, 'w500'); }
   protected infoPreviewCellClass(index: number): string {
     const column = index % 8;
     const row = Math.floor(index / 8);

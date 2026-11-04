@@ -80,6 +80,10 @@ export class SignupComponent {
       nonNullable: true,
       validators: [Validators.requiredTrue],
     }),
+    ageConfirmation: new FormControl(false, {
+      nonNullable: true,
+      validators: [Validators.requiredTrue],
+    }),
   });
 
   constructor(
@@ -130,6 +134,13 @@ export class SignupComponent {
     const control = this.form.controls.terms;
     return this.shouldShowError(control) && control.hasError('required')
       ? this.copy.termsRequired
+      : null;
+  }
+
+  protected ageConfirmationError(): string | null {
+    const control = this.form.controls.ageConfirmation;
+    return this.shouldShowError(control) && control.hasError('required')
+      ? this.copy.ageConfirmationRequired
       : null;
   }
 

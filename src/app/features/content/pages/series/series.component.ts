@@ -36,9 +36,13 @@ import {
 import { movieMessages } from '../../i18n/movie.messages';
 import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'bulk' | 'lists' | 'rating' | 'videos' | null;
@@ -50,7 +54,7 @@ type RatingTarget =
 @Component({
   selector: 'app-series-content',
   standalone: true,
-  imports: [NgTemplateOutlet, ContentImageActionsComponent, PageSkeletonComponent, CommentItemComponent],
+  imports: [NgTemplateOutlet, ContentImageActionsComponent, PageSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, ModalScrollLockDirective, CheckIconComponent],
   templateUrl: './series.component.html',
 })
 export class SeriesComponent implements OnInit, OnDestroy {
@@ -292,9 +296,8 @@ export class SeriesComponent implements OnInit, OnDestroy {
     this.loadReviews(1);
   }
 
-  protected imageUrl(path: string | null | undefined, size = 'w500'): string | null {
-    if (!path) return null;
-    return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/${size}${path.startsWith('/') ? path : `/${path}`}`;
+  protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w500'): string | null {
+    return tmdbImageUrl(path, size);
   }
 
   protected posterUrl(): string | null {

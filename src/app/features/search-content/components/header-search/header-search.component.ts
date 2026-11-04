@@ -22,6 +22,9 @@ import {
   SearchView,
 } from '../../data-access/search-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type SearchSuggestionKind = 'content' | 'person' | 'list' | 'template' | 'user';
 
@@ -49,7 +52,7 @@ type SearchResult =
   | null;
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, ModalScrollLockDirective, CheckIconComponent],
   host: { '[class.header-search-host--open]': 'isOpen()' },
   selector: 'app-header-search',
   standalone: true,
@@ -262,7 +265,7 @@ export class HeaderSearchComponent {
       tmdbId: content.tmdbId,
       title: content.title || this.copy.searchTitleUnavailable,
       meta: `${label}${year}`,
-      imageUrl: content.posterUrl ?? null,
+      imageUrl: tmdbImageUrl(content.posterUrl, 'w342'),
       imageShape: 'poster',
       initials: '',
     };
@@ -276,7 +279,7 @@ export class HeaderSearchComponent {
       scope: 'PERSON',
       title,
       meta: this.copy.searchPerson,
-      imageUrl: person.photoUrl ?? null,
+      imageUrl: tmdbImageUrl(person.photoUrl, 'w185'),
       imageShape: 'avatar',
       initials: this.getInitials(title),
     };
@@ -291,7 +294,7 @@ export class HeaderSearchComponent {
       scope: 'LIST',
       title: list.name,
       meta: `${owner}${list.itemsCount} ${countLabel}`,
-      imageUrl: list.previewCards[0]?.posterUrl ?? null,
+      imageUrl: tmdbImageUrl(list.previewCards[0]?.posterUrl, 'w342'),
       imageShape: list.previewCards[0]?.posterUrl ? 'poster' : 'icon',
       initials: '',
     };

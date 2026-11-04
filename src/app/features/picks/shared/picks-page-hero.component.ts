@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageCatalog } from '../../../shared/i18n/messages';
 import { tmdbImageUrl } from '../../../shared/utils/tmdb-image-url';
+import { ResponsiveBannerComponent } from '../../../shared/components/responsive-banner/responsive-banner.component';
 
 const PICKS_BACKDROP_FALLBACK = '/eVYChqJavS1DCXFeJE2lzVUMLKp.jpg';
 
 @Component({
   selector: 'app-picks-page-hero',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-page-hero.component.html',
   styleUrl: './picks-page-hero.component.css',

@@ -12,6 +12,7 @@ import { PageSkeletonComponent } from '../../../../shared/components/page-skelet
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 
@@ -120,11 +121,10 @@ export class PickDetailComponent {
   protected date(value: string): string { return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value)); }
   protected visibilityLabel(value: string): string { return value === 'PUBLIC' ? this.copy.public : value === 'FOLLOWERS' ? this.copy.followers : this.copy.private; }
   protected answerLabel(answer: PicksAnswer): string { return answer.preview?.contentCard?.title || answer.preview?.person?.name || this.copy.answerUnavailable; }
-  protected answerImage(answer: PicksAnswer): string | null { const preview = answer.preview; return preview?.contentCard?.customPosterUrl || preview?.contentCard?.posterPath || preview?.person?.profileUrl || preview?.contextCard?.posterPath || null; }
+  protected answerImage(answer: PicksAnswer): string | null { const preview = answer.preview; return tmdbImageUrl(preview?.contentCard?.customPosterUrl || preview?.contentCard?.posterPath || preview?.person?.profileUrl || preview?.contextCard?.posterPath, 'w500'); }
   protected shareImage(answer: PicksAnswer): string | null {
     const path = this.answerImage(answer);
-    if (!path) return null;
-    return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/w500${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, 'w500');
   }
   protected shareLink(): string { return `${window.location.origin}/picks/${encodeURIComponent(this.pickId)}`; }
   protected answerRating(answer: PicksAnswer): string | null { const rating = answer.preview?.contentCard?.stats?.averageScore; return rating === null || rating === undefined ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
@@ -133,6 +133,7 @@ export class PickDetailComponent {
   protected menuExpanded(answer: PicksAnswer): boolean { return this.openMenu() === this.answerMenuKey(answer); }
   protected toggleAnswerMenu(answer: PicksAnswer, event: MouseEvent): void { event.stopPropagation(); const key = this.answerMenuKey(answer); this.openMenu.update((current) => current === key ? '' : key); }
   protected answerAction(answer: PicksAnswer, event: ContentImageActionSelection): void {
+    this.openMenu.set('');
     if (event.action.id !== 'open') return;
     const content = answer.preview?.contentCard;
     if (content?.tmdbId && content.type === 'MOVIE') void this.router.navigate(['/content/movie', content.tmdbId]);

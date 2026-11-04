@@ -65,18 +65,20 @@
             <button
               type="button"
               [disabled]="connectionsPage.page <= 1 || status() === 'loading'"
+              aria-label="Página anterior"
               (click)="goToPage(connectionsPage.page - 1)"
-            >Anterior</button>
+            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
             <span>Página {{ connectionsPage.page }} de {{ connectionsPage.totalPages }}</span>
             <button
               type="button"
               [disabled]="!connectionsPage.hasNext || status() === 'loading'"
+              aria-label="Próxima página"
               (click)="goToPage(connectionsPage.page + 1)"
-            >Próxima</button>
+            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
           </nav>
         }
       } @else {
-        <div class="connections-empty ww-empty-panel">
+        <div class="connections-empty ww-empty-panel ww-empty-panel--page">
           <span class="connections-empty-icon" aria-hidden="true">◎</span>
           <h2>{{ mode() === 'followers' ? 'Ainda não há seguidores' : 'Você ainda não segue ninguém' }}</h2>
           <p>{{ mode() === 'followers' ? 'Quando alguém seguir este perfil, aparecerá aqui.' : 'As pessoas que você seguir aparecerão aqui.' }}</p>

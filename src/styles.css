@@ -3,6 +3,7 @@
 @import './app/features/search-content/components/header-search/header-search.component.css';
 @import './app/shared/components/dialog-backdrop/dialog-panel.css';
 @import './app/shared/hero-media.css';
+@import './app/shared/design-system-controls.css';
 
 :root {
   color-scheme: dark;
@@ -107,26 +108,39 @@
   text-align: center;
 }
 
+body .ww-filter-surface {
+  background-color: var(--color-surface-secondary);
+}
+
 .ww-empty-panel {
   display: flex;
   width: min(1334px, calc(100vw - 64px));
   max-width: 100%;
   min-height: 144px;
+  flex: 0 1 auto;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-6) var(--space-4);
-  margin: auto;
+  margin: 0 auto;
+  align-self: stretch;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text-tertiary);
   text-align: center;
 }
 
-.product-main > * {
+.ww-empty-panel--page {
+  flex: 1 0 auto;
+  margin-block: 0;
+}
+
+.product-main > :not(router-outlet) {
+  display: flex;
   min-width: 0;
   flex: 1 0 auto;
+  flex-direction: column;
 }
 
 .ww-empty-panel h2,
@@ -502,4 +516,19 @@ input:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .ww-theater-toggle > input[type='checkbox'][role='switch']::after { transition: none; }
+}
+.movie-watch-star:not(.movie-watch-star--selected) svg path,
+.series-rating-options button:not(.series-rating-selected) svg path {
+  fill: none;
+  stroke: var(--color-text-tertiary);
+}
+
+.movie-watch-star--selected svg path,
+.series-rating-options .series-rating-selected svg path {
+  fill: var(--color-accent);
+  stroke: var(--color-accent);
+}
+
+.ww-progress-icon {
+  transform: rotate(90deg);
 }

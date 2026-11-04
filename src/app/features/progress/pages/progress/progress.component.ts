@@ -19,6 +19,7 @@ import {
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type ProgressSort = 'watched' | 'remaining';
 
@@ -153,10 +154,11 @@ export class ProgressComponent {
 
   protected poster(episode: SeriesInProgressRecord): string | null {
     const path = episode.customPosterUrl || episode.posterPath || episode.seriesPosterPath;
-    if (!path) return null;
-    return /^https?:\/\//i.test(path)
-      ? path
-      : `https://image.tmdb.org/t/p/w500${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, 'w500');
+  }
+
+  protected episodeStill(path: string | null | undefined): string | null {
+    return tmdbImageUrl(path, 'w500');
   }
 
   protected seriesRoute(episode: SeriesInProgressRecord): string[] {

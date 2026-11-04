@@ -54,7 +54,7 @@
                 <div class="pick-fill-fixed-option" role="option" tabindex="0" [attr.aria-selected]="isAnswered(category.id) && answerName(category.id) === optionLabel(option)" (click)="chooseFixed(option)" (keydown.enter)="chooseFixed(option)" (keydown.space)="pickOption($event, option)">
                   <span class="pick-fill-fixed-image content-image-card">@if (optionImage(option)) { <img [src]="optionImage(option)" alt="" /> } @else { <span class="pick-fill-person-fallback">{{ optionLabel(option).slice(0, 1).toLocaleUpperCase('pt-BR') }}</span> }
                     <app-content-image-actions [ratingValue]="optionRating(option)" [ratingLabel]="optionRatingLabel(option)" [optionsLabel]="templateCopy.optionActions.replace('{name}', optionLabel(option))" [expanded]="menuExpanded(option)" [actions]="imageActions" (toggle)="toggleOptionMenu(option, $event)" (actionSelected)="optionAction(option, $event)" />
-                  </span><span><strong>{{ optionLabel(option) }}</strong><small>{{ optionSubtitle(option) }}</small></span><span class="pick-fill-option-check" aria-hidden="true">✓</span>
+                  </span><span><strong>{{ optionLabel(option) }}</strong><small>{{ optionSubtitle(option) }}</small></span><span class="pick-fill-option-check" aria-hidden="true"><app-check-icon /></span>
                 </div>
               }
             </div>
@@ -62,8 +62,8 @@
         } @else {
           @if (category.allowedType === 'EPISODE' && selectedSeries(); as series) {
             @if (seriesSeasons().length; as page) {
-              <div class="pick-fill-series-selected"><img [src]="series.posterUrl || ''" alt="" /><div><small>{{ copy.episodeSeries }}</small><strong>{{ selectedSeriesTitle() }}</strong></div><button type="button" (click)="openCategory(category)">{{ copy.searchLabel }}</button></div>
-              <label class="pick-fill-select-label">{{ copy.season }}<select [value]="episodeSeason() ?? ''" (change)="setSeason($event)"><option value="">{{ copy.chooseSeason }}</option>@for (season of seasonChoices(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name }}</option> }</select></label>
+              <div class="pick-fill-series-selected"><img [src]="imageUrl(series.posterUrl) || ''" alt="" /><div><small>{{ copy.episodeSeries }}</small><strong>{{ selectedSeriesTitle() }}</strong></div><button type="button" (click)="openCategory(category)">{{ copy.searchLabel }}</button></div>
+              <label class="pick-fill-select-label">{{ copy.season }}<select [value]="episodeSeason() ?? ''" (change)="setSeason($event)" data-ww-select-trigger><option value="">{{ copy.chooseSeason }}</option>@for (season of seasonChoices(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name }}</option> }</select></label>
               @if (episodeSeason() !== null) { @if (currentSeriesEpisodes().length) { <div class="pick-fill-episode-list" role="listbox" [attr.aria-label]="copy.episode">@for (episode of currentSeriesEpisodes(); track episode.episodeNumber) { <button type="button" (click)="chooseEpisode(episode)">@if (episodeImage(episode); as image) { <img [src]="image" alt="" /> }<span><strong>{{ episodeLabel(episode) }}</strong><small>{{ episode.airDate || '' }}</small></span><span aria-hidden="true">›</span></button> }</div> } @else { <p class="pick-fill-empty">{{ copy.noEpisodes }}</p> } }
             }
           } @else {
@@ -71,8 +71,8 @@
             @if (searchError()) { <p class="pick-fill-error" role="alert">{{ searchError() }}</p> }
             @if (searchBusy()) { <p class="pick-fill-dialog-hint">{{ copy.searching }}</p> }
             @else if (hasOpenSearchResults()) {
-              @if (searchResults().contents.length) { <div class="pick-fill-search-results">@for (item of searchResults().contents; track item.tmdbId) { <button type="button" (click)="chooseContent(item)">@if (item.posterUrl) { <img [src]="item.posterUrl" alt="" /> }<span><strong>{{ item.title || copy.resultMovie }}</strong><small>{{ resultType(item) }} · {{ contentSubtitle(item) }}</small></span><span aria-hidden="true">›</span></button> }</div> }
-              @if (searchResults().people.length) { <div class="pick-fill-search-results">@for (person of searchResults().people; track person.tmdbId) { <button type="button" (click)="choosePerson(person)">@if (person.photoUrl) { <img class="person" [src]="person.photoUrl" alt="" /> }<span><strong>{{ person.name || copy.resultPerson }}</strong><small>{{ person.knownForDepartment || copy.resultPerson }}</small></span><span aria-hidden="true">›</span></button> }</div> }
+              @if (searchResults().contents.length) { <div class="pick-fill-search-results">@for (item of searchResults().contents; track item.tmdbId) { <button type="button" (click)="chooseContent(item)">@if (item.posterUrl) { <img [src]="imageUrl(item.posterUrl, 'w342')" alt="" /> }<span><strong>{{ item.title || copy.resultMovie }}</strong><small>{{ resultType(item) }} · {{ contentSubtitle(item) }}</small></span><span aria-hidden="true">›</span></button> }</div> }
+              @if (searchResults().people.length) { <div class="pick-fill-search-results">@for (person of searchResults().people; track person.tmdbId) { <button type="button" (click)="choosePerson(person)">@if (person.photoUrl) { <img class="person" [src]="imageUrl(person.photoUrl, 'w185')" alt="" /> }<span><strong>{{ person.name || copy.resultPerson }}</strong><small>{{ person.knownForDepartment || copy.resultPerson }}</small></span><span aria-hidden="true">›</span></button> }</div> }
             } @else if (searchQuery().trim()) { <p class="pick-fill-empty">{{ copy.searchEmpty }}</p> }
           }
         }

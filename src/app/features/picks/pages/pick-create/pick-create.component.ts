@@ -9,6 +9,7 @@ import { SearchApiService, SearchContentView, SearchPersonView, SearchView } fro
 import { PicksApiService, PickCreationSelection, PicksTemplateCategoryInput } from '../../data-access/picks-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 
 type PickType = 'MOVIE' | 'SERIES' | 'EPISODE' | 'PERSON';
 type CategoryGroup = 'PRIMARY' | 'SECONDARY';
@@ -119,11 +120,11 @@ export class PickCreateComponent implements OnDestroy {
     const category = this.activeCategory(); if (!category) return;
     if (category.allowedType === 'EPISODE') { this.loadSeries(content); return; }
     const target = { content: { type: content.type, tmdbId: content.tmdbId, seriesTmdbId: null, seasonNumber: null, episodeNumber: null } };
-    this.addOption(category, { target, label: content.title || this.copy.movie, image: content.posterUrl ?? null, subtitle: [content.releaseYear, content.genres?.slice(0, 2).join(', ')].filter(Boolean).join(' · ') });
+    this.addOption(category, { target, label: content.title || this.copy.movie, image: this.imageUrl(content.posterUrl, 'w342'), subtitle: [content.releaseYear, content.genres?.slice(0, 2).join(', ')].filter(Boolean).join(' · ') });
   }
   protected choosePerson(person: SearchPersonView): void {
     const category = this.activeCategory(); if (!category) return;
-    this.addOption(category, { target: { personTmdbId: person.tmdbId }, label: person.name || this.copy.person, image: person.photoUrl ?? null, subtitle: person.knownForDepartment ?? null });
+    this.addOption(category, { target: { personTmdbId: person.tmdbId }, label: person.name || this.copy.person, image: this.imageUrl(person.photoUrl, 'w185'), subtitle: person.knownForDepartment ?? null });
   }
   protected setSeriesSeason(event: Event): void { const raw = (event.target as HTMLSelectElement).value; this.seriesSeason.set(raw !== '' && Number.isInteger(Number(raw)) ? Number(raw) : null); this.loadSeasonEpisodes(); }
   protected seasonChoices(): Array<{ number: number; name: string }> { return this.seriesSeasons().filter((season) => season.seasonNumber !== null && season.seasonNumber >= 0).map((season) => ({ number: season.seasonNumber as number, name: season.name || `${this.copy.season} ${season.seasonNumber}` })); }
@@ -131,8 +132,9 @@ export class PickCreateComponent implements OnDestroy {
     const category = this.activeCategory(); const series = this.selectedSeries();
     if (!category || !series || episode.seasonNumber === null || episode.episodeNumber === null) return;
     const target = { content: { type: 'EPISODE' as const, tmdbId: null, seriesTmdbId: series.tmdbId, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber } };
-    this.addOption(category, { target, label: `${series.title || this.copy.series} · T${episode.seasonNumber} E${episode.episodeNumber}${episode.name ? ` · ${episode.name}` : ''}`, image: episode.stillUrl ? episode.stillUrl : series.posterUrl ?? null, subtitle: episode.airDate ?? null });
+    this.addOption(category, { target, label: `${series.title || this.copy.series} · T${episode.seasonNumber} E${episode.episodeNumber}${episode.name ? ` · ${episode.name}` : ''}`, image: this.imageUrl(episode.stillUrl || series.posterUrl, 'w500'), subtitle: episode.airDate ?? null });
   }
+  protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w342'): string | null { return tmdbImageUrl(path, size); }
   protected removeOption(categoryKey: string, optionKey: string): void { this.categories.update((items) => items.map((item) => item.key === categoryKey ? { ...item, options: item.options.filter((option) => option.key !== optionKey) } : item)); }
   protected typeLabel(value: PickType): string { return value === 'MOVIE' ? this.copy.movie : value === 'SERIES' ? this.copy.series : value === 'EPISODE' ? this.copy.episode : this.copy.person; }
   protected optionCountLabel(count: number): string { return this.copy.previewOptions.replace('{count}', String(count)); }
@@ -180,6 +182,7 @@ export class PickCreateComponent implements OnDestroy {
     this.seriesRequest?.unsubscribe(); this.episodeRequest?.unsubscribe();
     this.seasonEpisodes.set([]); this.optionSearchBusy.set(false);
   }
+
 
   private loadSeries(series: SearchContentView): void {
     this.clearEpisodeRequests(); this.seriesSeasons.set([]); this.selectedSeries.set(series);

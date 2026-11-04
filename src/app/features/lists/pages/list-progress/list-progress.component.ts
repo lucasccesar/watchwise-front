@@ -9,6 +9,7 @@ import { ContentImageAction, ContentImageActionsComponent } from '../../../../sh
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { ListProgressData, ListSeriesProgress, ListsApiService } from '../../data-access/lists-api.service';
 
 type ProgressSort = 'watched' | 'remaining' | 'title';
@@ -104,8 +105,7 @@ export class ListProgressComponent {
   protected seriesPoster(item: ListProgressItem): string | null {
     const progress = item.seriesProgress;
     const source = item.customPosterUrl || progress?.customPosterUrl || progress?.seriesPosterPath || progress?.posterPath;
-    if (!source) return null;
-    return /^https?:\/\//i.test(source) ? source : `https://image.tmdb.org/t/p/w500${source.startsWith('/') ? source : `/${source}`}`;
+    return tmdbImageUrl(source, 'w500');
   }
   protected seriesRoute(item: ListProgressItem): string[] {
     return ['/content/series', item.seriesProgress?.seriesTmdbId ?? item.content.seriesTmdbId ?? item.content.tmdbId ?? ''];
@@ -143,8 +143,7 @@ export class ListProgressComponent {
   }
   protected episodeImage(item: ListProgressItem): string | null {
     const path = item.seriesProgress?.nextEpisode?.stillPath;
-    if (!path) return null;
-    return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/w500${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, 'w500');
   }
   protected markWatched(item: ListProgressItem): void {
     const progress = item.seriesProgress;

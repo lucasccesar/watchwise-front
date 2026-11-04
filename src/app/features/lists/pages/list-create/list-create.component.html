@@ -4,14 +4,19 @@
       <nav class="list-create-breadcrumb" aria-label="Navegação estrutural">
         <a routerLink="/lists"><span aria-hidden="true">←</span> {{ copy.title }}</a>
         <span aria-hidden="true">/</span>
-        <span>{{ copy.newList }}</span>
+        <span>{{ isEditing() ? copy.editListTitle : copy.newList }}</span>
       </nav>
-      <h1 id="list-create-title">{{ copy.createTitle }}</h1>
-      <p>{{ copy.createIntro }}</p>
+      <h1 id="list-create-title">{{ isEditing() ? copy.editListTitle : copy.createTitle }}</h1>
+      <p>{{ isEditing() ? copy.editListIntro : copy.createIntro }}</p>
     </div>
   </header>
 
   <div class="list-create-shell list-create-content">
+    @if (loadingList()) {
+      <p class="list-create-state" role="status">{{ copy.loadingList }}</p>
+    } @else if (loadError()) {
+      <section class="list-create-state" role="alert"><p>{{ loadError() }}</p><button type="button" (click)="retryLoadList()">{{ copy.retry }}</button></section>
+    } @else {
     <form class="list-create-form" (submit)="submit($event)">
       <div class="list-create-field list-create-name-field">
         <label for="list-name">{{ copy.nameLabel }} <span aria-hidden="true">*</span></label>
@@ -24,7 +29,7 @@
         <textarea id="list-description" name="description" maxlength="400" rows="3" [value]="description()" [placeholder]="copy.descriptionPlaceholder" (input)="updateDescription($event)"></textarea>
       </div>
 
-      <div class="list-create-choices">
+      <div class="list-create-choices" [class.list-create-choices--single]="isEditing() && nestedListEdit()">
         <fieldset class="list-create-choice-group">
           <legend>{{ copy.visibilityLabel }}</legend>
           <div class="list-create-choice-row">
@@ -40,6 +45,7 @@
           </div>
         </fieldset>
 
+        @if (!isEditing() || !nestedListEdit()) {
         <fieldset class="list-create-choice-group">
           <legend>{{ copy.typeLabel }}</legend>
           <div class="list-create-choice-row list-create-type-row">
@@ -54,26 +60,52 @@
             </button>
           </div>
         </fieldset>
+        }
       </div>
 
       <hr class="list-create-divider" />
 
       <section class="list-create-items" aria-labelledby="list-create-items-title">
         <header class="list-create-items-heading">
-          <h2 id="list-create-items-title">{{ typeTitle() }}</h2>
-          <span>{{ itemCountLabel() }}</span>
+          <h2 id="list-create-items-title">{{ itemsTitle() }}</h2>
+          <span>{{ selectionCountLabel() }}</span>
         </header>
 
+        @if (!isEditing() || !nestedListEdit()) {
         <div class="list-create-search-row">
-          @if (kind() === 'MOVIES_AND_SERIES') {
-            <button class="list-create-add-button" type="button" [disabled]="!canAddHighlightedResult()" (click)="addHighlightedResult()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{{ copy.add }}
-            </button>
+          @if (kind() !== 'MOVIES_AND_SERIES') {
+            <button class="list-create-add-button" type="button" [disabled]="!canAddSelection()" (click)="addSelectedOption()" data-ww-button="primary"><span aria-hidden="true">+</span>{{ copy.add }}</button>
           }
-          <label class="list-create-search-box" for="list-search">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-            <input id="list-search" type="search" autocomplete="off" [value]="searchQuery()" [placeholder]="searchPlaceholder()" (input)="updateSearch($event)" />
-          </label>
+          @if (selectedSeries()) {
+            <div class="list-create-search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+              <input id="list-search" type="search" autocomplete="off" [attr.aria-label]="searchPlaceholder()" [value]="selectedSeries()?.title || copy.series" readonly />
+              <button class="list-create-change-series" type="button" [attr.aria-label]="copy.changeSeries" [title]="copy.changeSeries" (click)="returnToSeriesSearch()">×</button>
+            </div>
+          } @else {
+            <label class="list-create-search-box" for="list-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+              <input id="list-search" type="search" autocomplete="off" [value]="searchQuery()" [placeholder]="searchPlaceholder()" (input)="updateSearch($event)" />
+            </label>
+          }
+          @if (kind() !== 'MOVIES_AND_SERIES') {
+            <label class="list-create-inline-select">
+              <span>{{ copy.season }}</span>
+              <select [value]="selectedSeason() ?? ''" [disabled]="!selectedSeries() || searching() || !seasons().length" (change)="changeSelectedSeason($event)" data-ww-select-trigger>
+                <option value="">{{ copy.chooseSeason }}</option>
+                @for (season of seasons(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name || copy.season + ' ' + season.seasonNumber }}</option> }
+              </select>
+            </label>
+            @if (kind() === 'EPISODES') {
+              <label class="list-create-inline-select">
+                <span>{{ copy.episode }}</span>
+                <select [value]="selectedEpisode() ?? ''" [disabled]="!selectedSeries() || searching() || selectedSeason() === null || !episodes().length" (change)="changeSelectedEpisode($event)" data-ww-select-trigger>
+                  <option value="">{{ copy.chooseEpisode }}</option>
+                  @for (episode of episodes(); track episode.seasonNumber + ':' + episode.episodeNumber) { <option [value]="episode.episodeNumber">E{{ episode.episodeNumber }} · {{ episode.name || copy.episodes }}</option> }
+                </select>
+              </label>
+            }
+          }
           <span class="list-create-or">{{ copy.or }}</span>
           <button class="list-create-import-button" type="button" (click)="importFile.click()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4"/><path d="M5 14v5h14v-5"/></svg>{{ copy.import }}
@@ -81,24 +113,32 @@
           <input #importFile class="list-create-file-input" type="file" accept=".json,application/json" aria-label="Importar títulos de arquivo JSON" (change)="onImportFile($event)" />
         </div>
 
+        @if (selectedSeries()) {
+          <div class="list-create-selection-status" aria-live="polite">
+            @if (searching()) { <p class="list-create-hint" role="status">{{ copy.searchLoading }}</p> }
+            @else if (searchError()) { <p class="list-create-error" role="alert">{{ searchError() }}</p> }
+            @else if (!seasons().length) { <p class="list-create-hint">{{ copy.noSeasons }}</p> }
+            @else if (kind() === 'EPISODES' && selectedSeason() !== null && !episodes().length) { <p class="list-create-hint">{{ copy.noEpisodes }}</p> }
+          </div>
+        }
+
         @if (!selectedSeries()) {
           <div class="list-create-search-results" aria-live="polite">
             @if (searching()) { <p class="list-create-hint" role="status">{{ copy.searchLoading }}</p> }
             @else if (searchError()) { <p class="list-create-error" role="alert">{{ searchError() }}</p> }
-            @else if (searchQuery().trim().length < 2) { <p class="list-create-hint">{{ copy.searchPrompt }}</p> }
-            @else if (!searchResults().length) { <p class="list-create-hint">{{ copy.noSearchResults }}</p> }
-            @else {
+            @else if (searchQuery().trim().length >= 2 && !searchResults().length) { <p class="list-create-hint">{{ copy.noSearchResults }}</p> }
+            @else if (searchResults().length) {
               <div class="list-create-results-list" role="listbox" [attr.aria-label]="searchPlaceholder()">
                 @for (result of searchResults(); track result.type + ':' + result.tmdbId) {
                   @if (kind() === 'MOVIES_AND_SERIES') {
-                    <button class="list-create-result" type="button" role="option" [class.list-create-result-active]="highlightedResult()?.tmdbId === result.tmdbId && highlightedResult()?.type === result.type" [attr.aria-selected]="highlightedResult()?.tmdbId === result.tmdbId && highlightedResult()?.type === result.type" [disabled]="isAlreadyAdded({type: result.type, tmdbId: result.tmdbId})" (click)="selectSearchResult(result)">
-                      @if (result.posterUrl) { <img [src]="result.posterUrl" alt="" loading="lazy" /> } @else { <span class="list-create-result-placeholder">{{ result.title?.slice(0, 1) }}</span> }
+                    <button class="list-create-result" type="button" role="option" [attr.aria-selected]="isAlreadyAdded({type: result.type, tmdbId: result.tmdbId})" [disabled]="isAlreadyAdded({type: result.type, tmdbId: result.tmdbId})" (click)="selectSearchResult(result)">
+                      @if (result.posterUrl) { <img [src]="imageUrl(result.posterUrl)" alt="" loading="lazy" /> } @else { <span class="list-create-result-placeholder">{{ result.title?.slice(0, 1) }}</span> }
                       <span class="list-create-result-copy"><strong>{{ result.title || copy.titleUnavailable }}</strong><small>{{ result.type === 'MOVIE' ? copy.movies : copy.series }}@if (result.releaseYear) { · {{ result.releaseYear }} }</small></span>
                       @if (isAlreadyAdded({type: result.type, tmdbId: result.tmdbId})) { <span class="list-create-result-added">{{ copy.added }}</span> }
                     </button>
                   } @else {
                     <button class="list-create-result" type="button" (click)="selectSeries(result)">
-                      @if (result.posterUrl) { <img [src]="result.posterUrl" alt="" loading="lazy" /> } @else { <span class="list-create-result-placeholder">{{ result.title?.slice(0, 1) }}</span> }
+                      @if (result.posterUrl) { <img [src]="imageUrl(result.posterUrl)" alt="" loading="lazy" /> } @else { <span class="list-create-result-placeholder">{{ result.title?.slice(0, 1) }}</span> }
                       <span class="list-create-result-copy"><strong>{{ result.title || copy.titleUnavailable }}</strong><small>{{ copy.series }}@if (result.releaseYear) { · {{ result.releaseYear }} }</small></span>
                       <span class="list-create-result-open" aria-hidden="true">›</span>
                     </button>
@@ -107,82 +147,38 @@
               </div>
             }
           </div>
-        } @else {
-          <div class="list-create-series-picker">
-            <div class="list-create-series-heading">
-              <p>{{ copy.chooseSeries }}</p>
-              <button type="button" (click)="returnToSeriesSearch()">{{ copy.changeSeries }}</button>
-            </div>
-            @if (kind() === 'SEASONS') {
-              @if (searching()) { <p class="list-create-hint" role="status">{{ copy.searchLoading }}</p> }
-              @else if (searchError()) { <p class="list-create-error" role="alert">{{ searchError() }}</p> }
-              @else if (!seasons().length) { <p class="list-create-hint">{{ copy.noSeasons }}</p> }
-              @else {
-                <div class="list-create-option-grid">
-                  @for (season of seasons(); track season.seasonNumber) {
-                    <article class="list-create-option-card">
-                      @if (season.posterUrl || selectedSeries()?.posterUrl) { <img [src]="season.posterUrl || selectedSeries()?.posterUrl" alt="" loading="lazy" /> } @else { <span class="list-create-option-placeholder">{{ copy.season }} {{ season.seasonNumber }}</span> }
-                      <div><strong>{{ season.name || copy.season + ' ' + season.seasonNumber }}</strong><small>{{ season.episodeCount ?? 0 }} {{ copy.episodes.toLowerCase() }}</small></div>
-                      <button type="button" [disabled]="isAlreadyAdded({type: 'SEASON', seriesTmdbId: season.seriesTmdbId, seasonNumber: season.seasonNumber}) || itemCount() >= 100" (click)="addSeason(season)">{{ copy.add }}</button>
-                    </article>
-                  }
-                </div>
-              }
-            } @else {
-              @if (searching() && !seasons().length) { <p class="list-create-hint" role="status">{{ copy.searchLoading }}</p> }
-              @else if (searchError()) { <p class="list-create-error" role="alert">{{ searchError() }}</p> }
-              @else if (!seasons().length) { <p class="list-create-hint">{{ copy.noSeasons }}</p> }
-              @else {
-                <label class="list-create-season-select">{{ copy.chooseSeason }}
-                  <select [value]="selectedSeason() ?? ''" (change)="changeSelectedSeason($event)">
-                    @for (season of seasons(); track season.seasonNumber) { <option [value]="season.seasonNumber">{{ season.name || copy.season + ' ' + season.seasonNumber }}</option> }
-                  </select>
-                </label>
-                @if (searching()) { <p class="list-create-hint" role="status">{{ copy.searchLoading }}</p> }
-                @else if (!episodes().length) { <p class="list-create-hint">{{ copy.noEpisodes }}</p> }
-                @else {
-                  <div class="list-create-episode-list">
-                    @for (episode of episodes(); track episode.seasonNumber + ':' + episode.episodeNumber) {
-                      <article class="list-create-episode">
-                        @if (episode.stillUrl || selectedSeries()?.posterUrl) { <img [src]="episode.stillUrl || selectedSeries()?.posterUrl" alt="" loading="lazy" /> } @else { <span class="list-create-episode-placeholder">{{ episode.episodeNumber }}</span> }
-                        <div><strong>E{{ episode.episodeNumber }} · {{ episode.name || copy.episodes }}</strong><small>{{ episode.airDate || copy.season + ' ' + episode.seasonNumber }}</small></div>
-                        <button type="button" [disabled]="isAlreadyAdded({type: 'EPISODE', seriesTmdbId: episode.seriesTmdbId, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber}) || itemCount() >= 100" (click)="addEpisode(episode)">{{ copy.add }}</button>
-                      </article>
-                    }
-                  </div>
-                }
-              }
-            }
-          </div>
+        }
         }
 
         @if (selectedItems().length) {
-          <h3 class="list-create-selected-title">{{ copy.selected }}</h3>
-          <div class="list-create-selected-grid">
+          <h3 class="list-create-selected-title">{{ selectedItemsTitle() }}</h3>
+          <div class="list-create-selected-grid" [class.list-create-selected-grid--episodes]="kind() === 'EPISODES'">
             @for (item of selectedItems(); track item.key; let index = $index) {
               <article class="list-create-selected-card">
                 <div class="list-create-poster">
-                  @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" /> } @else { <span class="list-create-poster-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v18m6-18v18"/></svg></span> }
+                  @if (item.imageUrl) {
+                    @if (item.reference?.type === 'EPISODE') {
+                      <picture class="list-create-poster-picture"><source media="(max-width: 800px)" [srcset]="responsiveImageUrl(item.imageUrl, 'w780') ?? ''" /><img [src]="responsiveImageUrl(item.imageUrl, 'w1280') ?? item.imageUrl" [alt]="item.title" loading="lazy" /></picture>
+                    } @else { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" /> }
+                  } @else { <span class="list-create-poster-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v18m6-18v18"/></svg></span> }
                   <span class="list-create-order">{{ index + 1 }}</span>
                   <button type="button" [attr.aria-label]="copy.removeTitle.replace('{title}', item.title)" (click)="removeItem(item.key)"><span aria-hidden="true">×</span></button>
                 </div>
-                <strong [title]="item.title">{{ item.title }}</strong>
+                <strong [title]="item.title">{{ item.title }}@if (item.inlineInfo) { <span class="list-create-title-inline-info"> · {{ item.inlineInfo }}</span> }</strong>
                 @if (item.year) { <small>{{ item.year }}</small> }
               </article>
             }
           </div>
-        } @else {
-          <p class="list-create-empty-items">{{ copy.selectItems }}</p>
         }
       </section>
 
       @if (formError()) { <p class="list-create-error" role="alert">{{ formError() }}</p> }
-      @if (!selectedItems().length) { <p class="list-create-note">{{ copy.emptyItems }}</p> }
 
       <footer class="list-create-actions">
-        <a routerLink="/lists">{{ copy.cancel }}</a>
-        <button type="submit" [disabled]="!name().trim() || creating()">{{ creating() ? copy.creating : copy.createList }}</button>
+        <a [routerLink]="cancelRoute()">{{ copy.cancel }}</a>
+        <button type="submit" [disabled]="!name().trim() || creating()">{{ creating() ? (isEditing() ? copy.savingChanges : copy.creating) : (isEditing() ? copy.saveChanges : copy.createList) }}</button>
       </footer>
     </form>
+    }
   </div>
 </main>

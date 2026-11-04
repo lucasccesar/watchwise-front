@@ -311,6 +311,13 @@ export const routes: Routes = [
     children: [{ path: '', loadComponent: () => import('./features/lists/pages/list-progress/list-progress.component').then((module) => module.ListProgressComponent) }],
   },
   {
+    path: 'lists/:listId/edit',
+    canActivate: [authenticatedGuard],
+    title: 'Editar lista | Watchwise',
+    loadComponent: () => import('./layout/authenticated-layout.component').then((module) => module.AuthenticatedLayoutComponent),
+    children: [{ path: '', loadComponent: () => import('./features/lists/pages/list-create/list-create.component').then((module) => module.ListCreateComponent) }],
+  },
+  {
     path: 'lists/:listId',
     canActivate: [authenticatedGuard],
     title: 'Lista | Watchwise',

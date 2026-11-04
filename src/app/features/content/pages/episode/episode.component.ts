@@ -17,16 +17,19 @@ import {
   SeriesPage,
 } from '../../data-access/content-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, CommentItemComponent],
+  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',
@@ -64,12 +67,6 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly backdrop = computed(() => {
     const path = this.page()?.details.backdropPath || this.series()?.details.backdropPath;
     return this.imageUrl(path, 'w1280');
-  });
-  protected readonly heroBackground = computed(() => {
-    const backdrop = this.backdrop();
-    return backdrop
-      ? `linear-gradient(90deg, rgba(12,13,17,.96) 0%, rgba(12,13,17,.72) 46%, rgba(12,13,17,.28) 100%), linear-gradient(0deg,#111113 0%,transparent 42%), url("${backdrop}")`
-      : null;
   });
   protected readonly episodeTitle = computed(() => this.page()?.details.title || 'Episódio');
   protected readonly seriesTitle = computed(() => this.series()?.details.title || this.page()?.details.parentTitle || 'Série');
@@ -142,9 +139,8 @@ export class EpisodeComponent implements OnDestroy {
     if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
-  protected imageUrl(path: string | null | undefined, size = 'w500'): string | null {
-    if (!path) return null;
-    return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/${size}${path.startsWith('/') ? path : `/${path}`}`;
+  protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w500'): string | null {
+    return tmdbImageUrl(path, size);
   }
 
   protected formatDate(value: string | null | undefined): string {

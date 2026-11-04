@@ -1,8 +1,7 @@
 :host { display: block; min-height: 100vh; background: var(--color-surface); color: #f5f5f7; }
 .review-detail-page { width: 100%; padding-bottom: 48px; }
-.review-detail-hero { position: relative; min-height: 340px; padding: 24px var(--content-margin); box-sizing: border-box; background-color: var(--color-surface); background-size: cover; background-position: center 35%; }
-.review-detail-hero::before { position: absolute; inset: 0; content: ''; background: linear-gradient(180deg, rgba(24,24,24,.42), rgba(24,24,24,.48) 45%, var(--color-surface) 100%); }
-.review-detail-breadcrumb, .review-detail-hero-copy { position: relative; z-index: 1; }
+.review-detail-hero { position: relative; isolation: isolate; min-height: 340px; overflow: hidden; padding: 24px var(--content-margin); box-sizing: border-box; background-color: var(--color-surface); }
+.review-detail-breadcrumb, .review-detail-hero-copy { position: relative; z-index: 2; }
 .review-detail-breadcrumb { display: flex; align-items: center; gap: 9px; color: #a0a0a8; font-size: 12px; }
 .review-detail-breadcrumb a { color: #e7e7eb; text-decoration: none; }
 .review-detail-breadcrumb a:hover { color: #fff; }
@@ -117,8 +116,7 @@
 
 @media (max-width: 800px) {
   .review-detail-page { padding-bottom: 30px; }
-  .review-detail-hero { min-height: 105px; padding: 0 16px; background-position: center 37%; }
-  .review-detail-hero::before { background: linear-gradient(180deg, rgba(24,24,24,.28), var(--color-surface) 100%); }
+  .review-detail-hero { min-height: 105px; padding: 0 16px; }
   .review-detail-breadcrumb { position: relative; top: auto; right: auto; left: auto; display: flex; min-height: 38px; align-items: center; gap: 7px; margin: 0 16px; border-bottom: 1px solid #29292e; font-size: 10px; }
   .review-detail-hero-copy { min-height: 105px; }
   .review-detail-author-pill, .review-detail-kicker, .review-detail-title-desktop, .review-detail-hero-copy > p { display: none; }
@@ -230,8 +228,10 @@
 .review-edit-score button { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
 .review-edit-score button:hover { background: var(--color-surface); }
 .review-edit-score button:focus-visible, .review-edit-calendar button:focus-visible, .review-edit-close:focus-visible, .review-edit-dialog footer button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
-.review-edit-score button svg { width: 32px; height: 32px; fill: none; stroke: var(--color-text-tertiary); stroke-width: 1.5; }
-.review-edit-score button svg.review-edit-star--selected { fill: var(--color-accent); stroke: var(--color-accent); }
+.review-edit-score button svg { width: 32px; height: 32px; fill: none; stroke: var(--color-text-tertiary); stroke-width: 2; }
+.review-edit-score button svg path { fill: none; stroke: var(--color-text-tertiary); }
+.review-edit-score button svg.review-edit-star--selected { opacity: 1; fill: var(--color-accent); stroke: var(--color-accent); }
+.review-edit-score button svg.review-edit-star--selected path { fill: var(--color-accent); stroke: var(--color-accent); }
 .review-edit-review { display: flex; flex-direction: column; gap: var(--space-2); }
 .review-edit-review textarea { width: 100%; min-height: 140px; box-sizing: border-box; padding: 12px 14px; resize: vertical; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-md); line-height: var(--line-height-md); }
 .review-edit-review textarea:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }

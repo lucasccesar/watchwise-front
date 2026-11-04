@@ -22,12 +22,13 @@ import { ShareCardModel, SharePreviewComponent } from '../../../../shared/compon
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
 import { ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 
 type ProfileSection = 'profile' | 'progress' | 'history' | 'reviews' | 'lists' | 'watchlist' | 'picks' | 'episode-ratings-map' | 'episode-ratings-map-show' | 'month-in-review' | 'year-in-review' | 'all-time-stats';
 type ProfileTabKey = keyof typeof messageCatalog['pt-BR']['profilePage']['tabs'];
 type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
-type ProfileListSort = 'none' | 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
+type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
 type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; releaseYear: number | null; averageScore: number | null; contentType: 'MOVIE' | 'SERIES' };
 type RecentSeriesCard = {
   seriesTmdbId: string;
@@ -146,8 +147,8 @@ export class ProfileComponent {
   private readonly progressBackdropPath = signal<string | null>(null);
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
-  protected readonly listSort = signal<ProfileListSort>('none');
-  protected readonly listSortDirection = signal<'asc' | 'desc'>('desc');
+  protected readonly listSort = signal<ProfileListSort>('rank');
+  protected readonly listSortDirection = signal<'asc' | 'desc'>('asc');
   protected readonly listSource = signal<'ALL' | 'CREATED' | 'LIKED'>('ALL');
   protected readonly watchlist = signal<WatchlistView | null>(null);
   protected readonly watchlistType = signal<WatchlistContentType | null>(null);
@@ -363,8 +364,8 @@ export class ProfileComponent {
         this.historyDateTo.set('');
         this.historySort.set('NEWEST');
         this.listItemType.set(null);
-        this.listSort.set('none');
-        this.listSortDirection.set('desc');
+        this.listSort.set('rank');
+        this.listSortDirection.set('asc');
         this.listSource.set('ALL');
         this.watchlistType.set(null);
         this.watchlistGenre.set(null);
@@ -414,11 +415,12 @@ export class ProfileComponent {
   }
 
   protected setProfileListSort(value: string): void {
-    const sorts: ProfileListSort[] = ['none', 'updatedAt', 'rank', 'name', 'likesCount', 'itemsCount', 'commentsCount'];
+    const sorts: ProfileListSort[] = ['rank', 'updatedAt', 'name', 'likesCount', 'itemsCount', 'commentsCount'];
     if (!sorts.includes(value as ProfileListSort)) return;
     const next = value as ProfileListSort;
     if (this.listSort() === next) return;
     this.listSort.set(next);
+    if (next === 'rank') this.listSortDirection.set('asc');
     this.currentPage.set(1);
     this.loadSectionData();
   }
@@ -857,10 +859,8 @@ export class ProfileComponent {
     return total ? Math.round((count / total) * 100) + '%' : '0%';
   }
 
-  protected imageUrl(path: string | null | undefined, size = 'w342'): string | null {
-    if (!path) return null;
-    if (/^https?:\/\//i.test(path)) return path;
-    return 'https://image.tmdb.org/t/p/' + size + (path.startsWith('/') ? path : '/' + path);
+  protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w342'): string | null {
+    return tmdbImageUrl(path, size);
   }
 
   protected runtimeLabel(minutes: number | null | undefined): string {
@@ -1252,7 +1252,7 @@ export class ProfileComponent {
       this.listsApi.getUserListsView(userId, {
         page: this.currentPage(), size: this.pageSize,
         itemType: this.listItemType() ?? undefined,
-        sortBy: this.listSort() === 'none' ? undefined : this.listSort(),
+        sortBy: this.listSort(),
         sortDirection: this.listSortDirection(),
       })
         .subscribe({ next: (data) => this.lists.set(data), error: (error: unknown) => this.handleError(error) });

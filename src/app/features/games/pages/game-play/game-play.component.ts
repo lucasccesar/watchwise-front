@@ -10,6 +10,8 @@ import { GamesApiService, DailyGameEpisodeOption, DailyGameInfoFeedback, DailyGa
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 interface FeedbackCell { label: string; status: string; value: string; }
@@ -19,7 +21,7 @@ const supportedTypes: DailyGameType[] = ['MOVIE_BY_POSTER', 'SERIES_BY_POSTER', 
 @Component({
   selector: 'app-game-play',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, FormsModule, RouterLink, PageSkeletonComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, FormsModule, RouterLink, PageSkeletonComponent, ResponsiveBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-play.component.html',
   styleUrl: './game-play.component.css',
@@ -193,7 +195,8 @@ export class GamePlayComponent {
   protected toggleMajorRoles(event: Event): void { this.majorRoles.set((event.target as HTMLInputElement).checked); this.load(); }
   protected toggleShare(event: Event): void { this.shareOnCompletion.set((event.target as HTMLInputElement).checked); }
   protected closeHowToPlay(): void { this.howToPlayOpen.set(false); }
-  protected visibleImageUrl(media: DailyGameMediaRef): string { return media.url; }
+  protected visibleImageUrl(media: DailyGameMediaRef): string { return tmdbImageUrl(media.url, 'w780') ?? ''; }
+  protected imageUrl(path: string | null | undefined): string | null { return tmdbImageUrl(path, 'w500'); }
   protected mediaBlur(media: DailyGameMediaRef): boolean { return media.variant.toUpperCase().includes('BLUR'); }
   protected selectFrame(media: DailyGameMediaRef): void { if (media.revealed) this.selectedFrameSlot.set(media.slot); }
   protected frameProgressLabel(media: DailyGameMediaRef): string {

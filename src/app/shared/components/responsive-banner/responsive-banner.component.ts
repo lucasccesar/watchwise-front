@@ -13,7 +13,7 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
         <source media="(min-width: 801px) and (max-width: 1599px)" [srcset]="images.notebook" />
         <img [src]="images.desktop" alt="" (load)="imageLoaded.emit()" (error)="imageError.emit()" />
       </picture>
-      <span class="responsive-banner-shade" aria-hidden="true"></span>
+      @if (shade()) { <span class="responsive-banner-shade" aria-hidden="true"></span> }
     }
   `,
   styles: `
@@ -40,7 +40,7 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
 
     img {
       object-fit: cover;
-      object-position: var(--responsive-banner-position, center);
+      object-position: center 30%;
     }
 
     .responsive-banner-shade {
@@ -59,6 +59,7 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
 export class ResponsiveBannerComponent {
   readonly path = input<string | null | undefined>(undefined);
   readonly fallbackPath = input.required<string>();
+  readonly shade = input(true);
   readonly imageLoaded = output<void>();
   readonly imageError = output<void>();
 
@@ -72,9 +73,9 @@ export class ResponsiveBannerComponent {
     if (!path) return null;
 
     return {
-      mobile: tmdbImageUrl(path, 'w500') ?? '',
-      tablet: tmdbImageUrl(path, 'w780') ?? '',
-      notebook: tmdbImageUrl(path, 'w1280') ?? '',
+      mobile: tmdbImageUrl(path, 'w1280') ?? '',
+      tablet: tmdbImageUrl(path, 'w1280') ?? '',
+      notebook: tmdbImageUrl(path, 'w1920') ?? '',
       desktop: tmdbImageUrl(path, 'w1920') ?? '',
     };
   });

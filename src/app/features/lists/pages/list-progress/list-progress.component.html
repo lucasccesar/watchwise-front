@@ -34,7 +34,7 @@
     @if (seriesItems().length) {
       <section class="list-progress-series" aria-labelledby="list-progress-series-title">
         <header class="list-progress-section-heading"><h2 id="list-progress-series-title">{{ copy.series }}</h2><span>{{ seriesItems().length }}</span></header>
-        <div class="list-progress-controls" aria-label="Ordenação do progresso">
+        <div class="list-progress-controls ww-filter-surface" aria-label="Ordenação do progresso">
           <span>{{ copy.sort }}:</span>
           <button type="button" [class.active]="sort() === 'watched'" (click)="chooseSort('watched')">{{ copy.sortWatched }}</button>
           <button type="button" [class.active]="sort() === 'remaining'" (click)="chooseSort('remaining')">{{ copy.sortRemaining }}</button>
@@ -80,6 +80,6 @@
         }
       </section>
     }
-    @if (!progressHasRows()) { <section class="list-progress-state list-progress-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section> }
+    @if (!progressHasRows()) { <section class="list-progress-state list-progress-empty ww-empty-panel ww-empty-panel--page"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section> }
   }
 </main>

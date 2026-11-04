@@ -134,10 +134,8 @@
 /* Challenge pages follow the full-width hero and content layout from the Games prototype. */
 .game-play-page { width: 100%; margin: 0; padding: 0 0 var(--space-16); }
 .game-play-hero { position: relative; isolation: isolate; display: grid; min-height: 281px; overflow: hidden; place-items: center; padding: 58px 24px 44px; border-bottom: 1px solid var(--color-border); background: #171717; text-align: center; }
-.game-play-hero-backdrop, .game-play-hero-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
-.game-play-hero-backdrop { z-index: -2; object-fit: cover; object-position: center 34%; }
-.game-play-hero-shade { z-index: -1; background: linear-gradient(90deg, rgb(10 10 10 / 86%) 0%, rgb(10 10 10 / 57%) 42%, rgb(10 10 10 / 38%) 100%), linear-gradient(180deg, rgb(13 13 13 / 26%) 0%, rgb(16 16 16 / 50%) 66%, var(--color-surface) 100%); }
-.game-play-hero-content { position: relative; z-index: 1; width: min(760px, 100%); color: var(--color-text); }
+.game-breadcrumb, .game-play-hero-content { position: relative; z-index: 2; }
+.game-play-hero-content { width: min(760px, 100%); color: var(--color-text); }
 .game-play-hero-content h1 { margin: 0; font-size: clamp(42px, 3.3vw, 50px); font-weight: 750; letter-spacing: -.035em; line-height: 1.1; }
 .game-play-hero-content > p:last-child { max-width: 620px; margin: 18px auto 0; color: var(--color-text); font-size: var(--font-size-md); line-height: 1.5; text-wrap: balance; }
 .game-play-hero-stats { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 0; color: #ffad22; font-size: var(--font-size-md); font-weight: 700; }

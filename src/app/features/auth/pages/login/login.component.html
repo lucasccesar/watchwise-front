@@ -137,7 +137,7 @@
         <p class="form-message form-message--error" role="alert">{{ error }}</p>
       }
 
-      <button class="submit-button" type="submit" [disabled]="isSubmitting()">
+      <button class="submit-button" type="submit" [disabled]="isSubmitting()" data-ww-button="primary">
         @if (isSubmitting()) {
           <span class="auth-loading-spinner" aria-hidden="true"></span>
         }

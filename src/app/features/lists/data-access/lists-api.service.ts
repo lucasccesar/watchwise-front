@@ -260,6 +260,15 @@ export class ListsApiService {
     return this.http.post<{ id: string }>('/api/v1/users/me/lists/bulk', request);
   }
 
+  addItem(listId: string, content: ListContentReference, position: number | null = null): Observable<unknown> {
+    return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
+      content,
+      position,
+      description: null,
+      customPosterUrl: null,
+    });
+  }
+
   getDetail(listId: string, options: { page: number; size: number; type?: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE'; genre?: string; watchStatus?: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN'; sortBy?: 'position' | 'dateAdded' | 'duration' | 'episodeAvgRating' | 'globalEpisodeAvgRating' | 'contentAvgRating'; sortDirection?: 'asc' | 'desc' }): Observable<ListDetailView> {
     let params = new HttpParams().set('page', options.page).set('size', options.size);
     if (options.type) params = params.set('type', options.type);

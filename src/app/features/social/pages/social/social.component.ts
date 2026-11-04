@@ -14,6 +14,8 @@ import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 interface ActivityGroup {
   key: string;
@@ -50,7 +52,7 @@ interface SocialUserActionConfirmation {
 @Component({
   selector: 'app-social',
   standalone: true,
-  imports: [RouterLink, ResponsiveBannerComponent, CommentItemComponent],
+  imports: [RouterLink, ResponsiveBannerComponent, CommentItemComponent, ModalScrollLockDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './social.component.html',
   styleUrl: './social.component.css',
@@ -234,8 +236,7 @@ export class SocialComponent implements OnInit, OnDestroy {
   protected posterUrl(activity: FeedActivity): string | null {
     const card = this.cardForActivity(activity);
     const path = card?.customPosterUrl || card?.posterPath || activity.picksTemplate?.coverImage;
-    if (!path) return null;
-    return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/w342${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, 'w342');
   }
 
   protected profilePicture(activity: FeedActivity): string {

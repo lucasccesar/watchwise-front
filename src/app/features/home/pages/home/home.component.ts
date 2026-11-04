@@ -18,6 +18,7 @@ import { DialogBackdropComponent } from '../../../../shared/components/dialog-ba
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
@@ -313,6 +314,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     episode: NextEpisode,
     selection: ContentImageActionSelection,
   ): void {
+    this.openContentMenuId.set(null);
     if (selection.action.id === 'mark-watched') {
       this.openWatchLogForEpisode(episode, selection.event);
     } else if (selection.action.id === 'drop-series') {
@@ -333,6 +335,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     release: UpcomingRelease,
     selection: ContentImageActionSelection,
   ): void {
+    this.openContentMenuId.set(null);
     if (selection.action.id !== 'drop-series') return;
     const seriesTmdbId = this.upcomingSeriesTmdbId(release);
     if (seriesTmdbId) this.abandonSeries(seriesTmdbId);
@@ -342,8 +345,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     activity: HomeSocialActivity,
     selection: ContentImageActionSelection,
   ): void {
-    if (selection.action.id !== 'open-content' || !activity.content) return;
     this.openContentMenuId.set(null);
+    if (selection.action.id !== 'open-content' || !activity.content) return;
     this.navigateToContent(
       activity.content.type,
       activity.content.tmdbId,
@@ -362,6 +365,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     entry: HomeRecentlyWatched,
     selection: ContentImageActionSelection,
   ): void {
+    this.openContentMenuId.set(null);
     if (selection.action.id === 'rate') {
       this.openRatingModal(entry, selection.event);
     } else if (selection.action.id === 'rewatch') {
@@ -1078,13 +1082,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     path: string | null | undefined,
     size: 'w342' | 'w780' | 'w1920' = 'w342',
   ): string | null {
-    if (!path) {
-      return null;
-    }
-    if (/^https?:\/\//i.test(path)) {
-      return path;
-    }
-    return `https://image.tmdb.org/t/p/${size}${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, size);
   }
 
   protected posterFor(

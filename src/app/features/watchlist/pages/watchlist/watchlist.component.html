@@ -3,13 +3,13 @@
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton watchlist-hero-skeleton" aria-hidden="true"></div> }
     <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="https://image.tmdb.org/t/p/w{size}/dtFS7DS64umOHK6PcfabXtDaf2w.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <div class="watchlist-heading-copy">
-      <h1 id="watchlist-title">{{ copy.title }}</h1>
-      @if (updatedAt()) { <p class="watchlist-updated">{{ copy.updated }} {{ updatedAt() }}</p> }
-      <p>{{ copy.description }}</p>
+      <h1 id="watchlist-title" class="ww-page-hero-title">{{ copy.title }}</h1>
+      @if (updatedAt()) { <p class="watchlist-updated ww-page-hero-kicker">{{ copy.updated }} {{ updatedAt() }}</p> }
+      <p class="ww-page-hero-description">{{ copy.description }}</p>
     </div>
   </header>
 
-  <section class="watchlist-toolbar" aria-label="{{ copy.filters }}">
+  <section class="watchlist-toolbar ww-filter-surface" aria-label="{{ copy.filters }}">
     <div class="watchlist-toolbar-left">
       <div class="watchlist-type-tabs" role="group" aria-label="{{ copy.contentType }}">
         <button type="button" [class.watchlist-tab-active]="type() === null" [attr.aria-pressed]="type() === null" (click)="selectType(null)">{{ copy.all }}</button>
@@ -17,11 +17,11 @@
         <button type="button" [class.watchlist-tab-active]="type() === 'SERIES'" [attr.aria-pressed]="type() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}</button>
       </div>
       <div class="watchlist-control-wrap">
-        <button type="button" class="watchlist-control" [attr.aria-expanded]="activeMenu() === 'genre'" (click)="toggleMenu('genre')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a.6.6 0 0 1 0 .8Z"/><circle cx="8" cy="8" r="1"/></svg>{{ genre() || copy.allGenres }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        <button type="button" class="watchlist-control" [attr.aria-expanded]="activeMenu() === 'genre'" (click)="toggleMenu('genre')" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a.6.6 0 0 1 0 .8Z"/><circle cx="8" cy="8" r="1"/></svg>{{ genre() || copy.allGenres }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
         @if (activeMenu() === 'genre') {
-          <div class="watchlist-menu" role="menu">
-            <button type="button" role="menuitemradio" [attr.aria-checked]="genre() === null" (click)="selectGenre(null)">{{ copy.allGenres }}</button>
-            @for (option of genreOptions(); track option) { <button type="button" role="menuitemradio" [attr.aria-checked]="genre() === option" (click)="selectGenre(option)">{{ option }}</button> }
+          <div class="watchlist-menu" role="menu" data-ww-menu>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="genre() === null" (click)="selectGenre(null)">{{ copy.allGenres }}@if (genre() === null) { <app-check-icon /> }</button>
+            @for (option of genreOptions(); track option) { <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="genre() === option" (click)="selectGenre(option)">{{ option }}@if (genre() === option) { <app-check-icon /> }</button> }
           </div>
         }
       </div>
@@ -38,26 +38,26 @@
         </div>
       }
       <div class="watchlist-control-wrap">
-        <button type="button" class="watchlist-control" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        <button type="button" class="watchlist-control" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
         @if (activeMenu() === 'sort') {
-          <div class="watchlist-menu" role="menu">
-            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'DATE_ADDED'" (click)="selectSort('DATE_ADDED')">{{ copy.sortDateAdded }}</button>
-            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'RELEASE_DATE'" (click)="selectSort('RELEASE_DATE')">{{ copy.sortReleaseDate }}</button>
-            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'RUNTIME'" (click)="selectSort('RUNTIME')">{{ copy.sortRuntime }}</button>
-            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'RATING'" (click)="selectSort('RATING')">{{ copy.sortRating }}</button>
-            <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'TITLE'" (click)="selectSort('TITLE')">{{ copy.sortTitle }}</button>
+          <div class="watchlist-menu" role="menu" data-ww-menu>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'DATE_ADDED'" (click)="selectSort('DATE_ADDED')">{{ copy.sortDateAdded }}@if (sort() === 'DATE_ADDED') { <app-check-icon /> }</button>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'RELEASE_DATE'" (click)="selectSort('RELEASE_DATE')">{{ copy.sortReleaseDate }}@if (sort() === 'RELEASE_DATE') { <app-check-icon /> }</button>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'RUNTIME'" (click)="selectSort('RUNTIME')">{{ copy.sortRuntime }}@if (sort() === 'RUNTIME') { <app-check-icon /> }</button>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'RATING'" (click)="selectSort('RATING')">{{ copy.sortRating }}@if (sort() === 'RATING') { <app-check-icon /> }</button>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'TITLE'" (click)="selectSort('TITLE')">{{ copy.sortTitle }}@if (sort() === 'TITLE') { <app-check-icon /> }</button>
           </div>
         }
       </div>
       <button type="button" class="watchlist-direction" [attr.aria-label]="direction() === 'DESC' ? copy.descending : copy.ascending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="direction() === 'DESC' ? 'M12 4v16m-7-7 7 7 7-7' : 'M12 20V4m-7 7 7-7 7 7'" /></svg></button>
 
       <div class="watchlist-control-wrap">
-        <button type="button" class="watchlist-control watchlist-status-control" [attr.aria-expanded]="activeMenu() === 'visibility'" (click)="toggleMenu('visibility')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>{{ upcomingModeLabel() }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        <button type="button" class="watchlist-control watchlist-status-control" [attr.aria-expanded]="activeMenu() === 'visibility'" (click)="toggleMenu('visibility')" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>{{ upcomingModeLabel() }}<svg class="watchlist-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
         @if (activeMenu() === 'visibility') {
-          <div class="watchlist-menu watchlist-visibility-menu" role="menu">
-            <button type="button" role="menuitemradio" [attr.aria-checked]="upcomingMode() === 'ALL'" (click)="setUpcomingMode('ALL')">{{ copy.all }}</button>
-            <div class="watchlist-visibility-group"><span>{{ copy.fade }}</span><button type="button" role="menuitemradio" [attr.aria-checked]="upcomingMode() === 'FADE'" (click)="setUpcomingMode('FADE')">{{ copy.upcoming }}</button></div>
-            <div class="watchlist-visibility-group"><span>{{ copy.hide }}</span><button type="button" role="menuitemradio" [attr.aria-checked]="upcomingMode() === 'HIDE'" (click)="setUpcomingMode('HIDE')">{{ copy.upcoming }}</button></div>
+          <div class="watchlist-menu watchlist-visibility-menu" role="menu" data-ww-menu>
+            <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="upcomingMode() === 'ALL'" (click)="setUpcomingMode('ALL')">{{ copy.all }}@if (upcomingMode() === 'ALL') { <app-check-icon /> }</button>
+            <div class="watchlist-visibility-group"><span>{{ copy.fade }}</span><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="upcomingMode() === 'FADE'" (click)="setUpcomingMode('FADE')">{{ copy.upcoming }}@if (upcomingMode() === 'FADE') { <app-check-icon /> }</button></div>
+            <div class="watchlist-visibility-group"><span>{{ copy.hide }}</span><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="upcomingMode() === 'HIDE'" (click)="setUpcomingMode('HIDE')">{{ copy.upcoming }}@if (upcomingMode() === 'HIDE') { <app-check-icon /> }</button></div>
           </div>
         }
       </div>
@@ -65,17 +65,17 @@
   </section>
 
   @if (mobileFiltersOpen()) {
-    <div class="watchlist-mobile-sheet-backdrop" (click)="mobileFiltersOpen.set(false)">
+    <div class="watchlist-mobile-sheet-backdrop" appModalScrollLock (click)="mobileFiltersOpen.set(false)">
       <section class="watchlist-mobile-sheet" role="dialog" aria-modal="true" aria-labelledby="watchlist-mobile-sheet-title" (click)="$event.stopPropagation()">
         <header><span aria-hidden="true"></span><h2 id="watchlist-mobile-sheet-title">{{ copy.mobileFilters }}</h2></header>
         <div class="watchlist-mobile-options">
-          <label><span>{{ copy.view }}</span><select [value]="viewMode() === 'AUTO' ? 'LIST' : viewMode()" (change)="selectViewMode($event)"><option value="LIST">{{ copy.listView }}</option><option value="GRID">{{ copy.gridView }}</option></select></label>
-          <label><span>{{ copy.contentType }}</span><select [value]="type() ?? 'ALL'" (change)="selectMobileType($event)"><option value="ALL">{{ copy.all }}</option><option value="MOVIE">{{ copy.movies }}</option><option value="SERIES">{{ copy.series }}</option></select></label>
-          <label><span>{{ copy.genre }}</span><select [value]="genre() ?? ''" (change)="selectMobileGenre($event)"><option value="">{{ copy.allGenres }}</option>@for (option of genreOptions(); track option) { <option [value]="option">{{ option }}</option> }</select></label>
-          <label><span>{{ copy.sortBy }}</span><select [value]="sort()" (change)="selectMobileSort($event)"><option value="DATE_ADDED">{{ copy.sortDateAdded }}</option><option value="RELEASE_DATE">{{ copy.sortReleaseDate }}</option><option value="RUNTIME">{{ copy.sortRuntime }}</option><option value="RATING">{{ copy.sortRating }}</option><option value="TITLE">{{ copy.sortTitle }}</option></select></label>
-          <label><span>{{ copy.order }}</span><select [value]="direction()" (change)="selectMobileDirection($event)"><option value="DESC">{{ copy.descending }}</option><option value="ASC">{{ copy.ascending }}</option></select></label>
-          <label><span>{{ copy.upcoming }}</span><select [value]="filterStatus()" (change)="selectMobileStatus($event)"><option value="ALL">{{ copy.all }}</option><option value="NEW">{{ copy.new }}</option><option value="IN_PROGRESS">{{ copy.inProgress }}</option><option value="UPCOMING">{{ copy.upcoming }}</option></select></label>
-          <label><span>{{ copy.upcomingDisplay }}</span><select [value]="upcomingMode()" (change)="selectMobileUpcomingMode($event)"><option value="ALL">{{ copy.all }}</option><option value="FADE">{{ copy.fadeUpcoming }}</option><option value="HIDE">{{ copy.hideUpcoming }}</option></select></label>
+          <label><span>{{ copy.view }}</span><select [value]="viewMode() === 'AUTO' ? 'LIST' : viewMode()" (change)="selectViewMode($event)" data-ww-select-trigger><option value="LIST">{{ copy.listView }}</option><option value="GRID">{{ copy.gridView }}</option></select></label>
+          <label><span>{{ copy.contentType }}</span><select [value]="type() ?? 'ALL'" (change)="selectMobileType($event)" data-ww-select-trigger><option value="ALL">{{ copy.all }}</option><option value="MOVIE">{{ copy.movies }}</option><option value="SERIES">{{ copy.series }}</option></select></label>
+          <label><span>{{ copy.genre }}</span><select [value]="genre() ?? ''" (change)="selectMobileGenre($event)" data-ww-select-trigger><option value="">{{ copy.allGenres }}</option>@for (option of genreOptions(); track option) { <option [value]="option">{{ option }}</option> }</select></label>
+          <label><span>{{ copy.sortBy }}</span><select [value]="sort()" (change)="selectMobileSort($event)" data-ww-select-trigger><option value="DATE_ADDED">{{ copy.sortDateAdded }}</option><option value="RELEASE_DATE">{{ copy.sortReleaseDate }}</option><option value="RUNTIME">{{ copy.sortRuntime }}</option><option value="RATING">{{ copy.sortRating }}</option><option value="TITLE">{{ copy.sortTitle }}</option></select></label>
+          <label><span>{{ copy.order }}</span><select [value]="direction()" (change)="selectMobileDirection($event)" data-ww-select-trigger><option value="DESC">{{ copy.descending }}</option><option value="ASC">{{ copy.ascending }}</option></select></label>
+          <label><span>{{ copy.upcoming }}</span><select [value]="filterStatus()" (change)="selectMobileStatus($event)" data-ww-select-trigger><option value="ALL">{{ copy.all }}</option><option value="NEW">{{ copy.new }}</option><option value="IN_PROGRESS">{{ copy.inProgress }}</option><option value="UPCOMING">{{ copy.upcoming }}</option></select></label>
+          <label><span>{{ copy.upcomingDisplay }}</span><select [value]="upcomingMode()" (change)="selectMobileUpcomingMode($event)" data-ww-select-trigger><option value="ALL">{{ copy.all }}</option><option value="FADE">{{ copy.fadeUpcoming }}</option><option value="HIDE">{{ copy.hideUpcoming }}</option></select></label>
         </div>
         <button class="watchlist-mobile-sheet-done" type="button" (click)="mobileFiltersOpen.set(false)">{{ copy.done }}</button>
       </section>
@@ -84,7 +84,6 @@
 
   @if (status() === 'loading') {
     <div class="watchlist-loading" role="status" [attr.aria-label]="copy.loading">
-      <span class="visually-hidden">{{ copy.loading }}</span>
       <ol class="watchlist-grid watchlist-skeleton-grid" [class.watchlist-grid--list]="viewMode() === 'LIST'" [class.watchlist-grid--grid]="viewMode() === 'GRID'" aria-hidden="true">
         @for (placeholder of loadingPlaceholders; track placeholder) {
           <li class="watchlist-card watchlist-card--skeleton"><article>
@@ -97,7 +96,7 @@
   } @else if (status() === 'error') {
     <section class="watchlist-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if ((view()?.content?.length ?? 0) === 0) {
-    <section class="watchlist-state watchlist-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
+    <section class="watchlist-state watchlist-empty ww-empty-panel ww-empty-panel--page"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
   } @else {
     <div class="watchlist-pagination-row">
       <nav class="watchlist-pagination" [attr.aria-label]="copy.pagination">
@@ -117,10 +116,69 @@
             @else if (poster(item)) { <img [src]="poster(item)" alt="" loading="lazy" /> }
             @else { <span class="tr-poster-empty">{{ trendingCopy.noPoster }}</span> }
             @let rating = cardRating(item);
-            <app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="handlePosterAction(item, $event)" />
+            <app-content-image-actions [ratingValue]="rating?.value ?? null" [ratingLabel]="rating ? rating.label + ': ' + rating.value : ''" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActionsFor(item)" (actionSelected)="handlePosterAction(item, $event)" />
+            @if (listDialogCard()?.id === item.id) {
+              <section
+                class="watchlist-list-picker"
+                role="dialog"
+                aria-labelledby="watchlist-list-picker-title"
+                [style.top.px]="listPickerPosition()?.top ?? null"
+                [style.right.px]="listPickerPosition()?.right ?? 0"
+                (click)="$event.stopPropagation()"
+              >
+                <header>
+                  <h3 id="watchlist-list-picker-title">{{ trendingCopy.yourLists }}</h3>
+                  <button type="button" [attr.aria-label]="trendingCopy.closeListDialog" [disabled]="busyListId() !== null" (click)="closeListDialog()">×</button>
+                </header>
+                @if (userListsError() && userListsStatus() !== 'error') { <p class="watchlist-list-picker-error" role="alert">{{ userListsError() }}</p> }
+                @if (userListsStatus() === 'loading') {
+                  <div class="watchlist-list-skeleton" role="status" [attr.aria-label]="trendingCopy.loadingLists">
+                    <ul class="watchlist-user-lists watchlist-user-lists--loading" aria-hidden="true">
+                      @for (row of listSkeletonRows; track row) {
+                        <li><span class="watchlist-list-skeleton-check"></span><span class="watchlist-list-skeleton-name"></span><span class="watchlist-list-skeleton-count"></span></li>
+                      }
+                    </ul>
+                  </div>
+                } @else if (userListsStatus() === 'error') {
+                  <div class="watchlist-list-picker-state" role="alert"><p>{{ userListsError() }}</p><button type="button" (click)="retryUserLists()">{{ trendingCopy.retry }}</button></div>
+                } @else if (userLists().length === 0) {
+                  <p class="watchlist-list-picker-state ww-empty-message">{{ trendingCopy.emptyLists }}</p>
+                } @else {
+                  <ul class="watchlist-user-lists">
+                    @for (list of userLists(); track list.id) {
+                      <li>
+                        <label [class.watchlist-user-list-disabled]="busyListId() !== null || !canToggleList(list)">
+                          <input type="checkbox" [checked]="list.containsContent === true" [disabled]="busyListId() !== null || !canToggleList(list)" [attr.aria-label]="list.name" (change)="addCardToList(list)" />
+                          <span class="watchlist-user-list-name">{{ list.name }}</span>
+                          <small>{{ list.itemsCount ?? 0 }}</small>
+                        </label>
+                        @if (busyListId() === list.id) { <span class="watchlist-user-list-busy" role="status">{{ trendingCopy.loading }}</span> }
+                        @else if (!canToggleList(list)) { <span class="watchlist-user-list-busy">{{ trendingCopy.incompatibleList }}</span> }
+                      </li>
+                    }
+                  </ul>
+                  @if (userListsPage()?.hasNext) {
+                    <button class="watchlist-lists-load-more" type="button" [disabled]="userListsLoadingMore()" (click)="loadMoreUserLists()" data-ww-button="secondary">
+                      {{ userListsLoadingMore() ? trendingCopy.loadingMore : trendingCopy.loadMoreLists }}
+                    </button>
+                  }
+                }
+                <div class="watchlist-list-picker-create">
+                  @if (listCreateOpen()) {
+                    <form (submit)="$event.preventDefault(); createListWithCard()">
+                      <label class="visually-hidden" for="watchlist-new-list-name">{{ trendingCopy.newListName }}</label>
+                      <input id="watchlist-new-list-name" type="text" maxlength="120" [value]="listDraftName()" [placeholder]="trendingCopy.newListName" [disabled]="busyListId() !== null" (input)="updateListDraft($event)" />
+                      <button type="submit" [disabled]="!listDraftName().trim() || busyListId() !== null">{{ busyListId() === 'new-list' ? trendingCopy.loading : trendingCopy.createList }}</button>
+                    </form>
+                  } @else {
+                    <button type="button" [disabled]="busyListId() !== null" (click)="openListCreate()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ trendingCopy.createList }}</button>
+                  }
+                </div>
+              </section>
+            }
             @if (isUpcoming(item) && item.releaseDate) { <span class="tr-upcoming-release"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2V6M8 2V6M7.8 22H16.2C17.88 22 18.72 22 19.362 21.673C19.927 21.385 20.385 20.927 20.673 20.362C21 19.72 21 18.88 21 17.2V8.8C21 7.12 21 6.28 20.673 5.638C20.385 5.074 19.927 4.615 19.362 4.327C18.72 4 17.88 4 16.2 4H7.8C6.12 4 5.28 4 4.638 4.327C4.074 4.615 3.615 5.074 3.327 5.638C3 6.28 3 7.12 3 8.8V17.2C3 18.88 3 19.72 3.327 20.362C3.615 20.927 4.074 21.385 4.638 21.673C5.28 22 6.12 22 7.8 22Z"/></svg>{{ releaseDateShort(item.releaseDate) }}</span> }
             @if (item.card.viewerState?.watchStatus === 'WATCHED') {
-              <span class="tr-state-marker" [attr.aria-label]="trendingCopy.watched" [title]="trendingCopy.watched"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span>
+              <span class="tr-state-marker tr-state-marker--watched" [attr.aria-label]="trendingCopy.watched" [title]="trendingCopy.watched"><app-check-icon /></span>
             }
           </div>
           <div class="watchlist-card-copy tr-card-text">
@@ -132,5 +190,85 @@
         </li>
       }
     </ol>
+  }
+
+  @if (watchDialogCard(); as item) {
+    <app-dialog-backdrop placement="top" (dismiss)="closeWatchedDialog()">
+      <section class="watchlist-watch-log-dialog ww-dialog-panel" role="dialog" appModalFocus [modalReturnFocus]="posterMenuOpener()" (modalDismiss)="closeWatchedDialog()" aria-modal="true" aria-labelledby="watchlist-watch-dialog-title" (click)="$event.stopPropagation()">
+        <header class="watchlist-watch-log-header">
+          <div>
+            <h2 id="watchlist-watch-dialog-title">{{ item.card.viewerState?.watchStatus === 'WATCHED' ? trendingCopy.watchAgain : homeCopy.markWatched }}</h2>
+            <span>{{ title(item) }}<span aria-hidden="true"> · </span>{{ item.card.type === 'MOVIE' ? homeCopy.movie : homeCopy.series }}</span>
+          </div>
+          <button class="watchlist-watch-log-close" type="button" [attr.aria-label]="homeCopy.closeDialog" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </header>
+
+        <div class="watchlist-watch-log-controls">
+          <div class="watchlist-watch-date-picker">
+            <button class="watchlist-watch-date-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="watchDialogCalendarOpen()" [disabled]="watchDialogSaving()" (click)="toggleWatchDialogCalendar()" data-ww-select-trigger>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+              <span><span>{{ homeCopy.watchedOn }}</span> {{ watchDialogDateLabel() }}</span>
+              <svg class="watchlist-watch-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            @if (watchDialogCalendarOpen()) {
+              <div class="watchlist-watch-calendar" role="dialog" [attr.aria-label]="homeCopy.chooseWatchDate">
+                <div class="watchlist-watch-calendar-header">
+                  <button type="button" [attr.aria-label]="homeCopy.previousMonth" (click)="changeWatchDialogMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  <span>{{ watchDialogMonthLabel() }}</span>
+                  <button type="button" [attr.aria-label]="homeCopy.nextMonth" [disabled]="!canAdvanceWatchDialogCalendar()" (click)="changeWatchDialogMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                </div>
+                <div class="watchlist-watch-calendar-grid watchlist-watch-weekdays" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
+                <div class="watchlist-watch-calendar-grid">
+                  @for (day of watchDialogDays(); track day.date) {
+                    @if (day.inMonth) { <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled || watchDialogSaving()" [class.watchlist-watch-day-selected]="day.selected" (click)="selectWatchDialogDate(day.date)">{{ day.day }}</button> }
+                    @else { <span aria-hidden="true"></span> }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          @if (item.card.type === 'MOVIE') {
+            <label class="watchlist-watch-rewatch-option"><input type="checkbox" [checked]="watchDialogRewatch()" [disabled]="watchDialogSaving()" (change)="setWatchedRewatch($event)" />{{ homeCopy.watchedBefore }}</label>
+          } @else if (item.card.viewerState?.watchStatus === 'WATCHED') {
+            <label class="watchlist-watch-rewatch-option"><input type="checkbox" checked disabled />{{ homeCopy.watchedBefore }}</label>
+          }
+        </div>
+
+        @if (item.card.type === 'MOVIE') {
+          <label class="ww-theater-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7C3 5.9 3.9 5 5 5h14c1.1 0 2 .9 2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v2c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-2c1.66 0 3-1.34 3-3S4.66 9 3 9Z"/><path d="M14 5v2m0 4v2m0 4v2"/></svg>
+            <span>{{ trendingCopy.theaterLabel }}</span>
+            <input type="checkbox" role="switch" [checked]="watchDialogWatchedInTheater()" [disabled]="watchDialogSaving()" (change)="setWatchedInTheater($event)" />
+          </label>
+        }
+
+        <div class="watchlist-watch-companions" role="group" [attr.aria-label]="homeCopy.watchedWith">
+          <span>{{ homeCopy.watchedWith }}</span>
+          <div><span>{{ homeCopy.justYou }}</span><button type="button" disabled [title]="homeCopy.actionUnavailableShort"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ homeCopy.addPerson }}</button></div>
+        </div>
+
+        @if (item.card.type === 'MOVIE') {
+          <div class="watchlist-watch-rating" role="group" [attr.aria-label]="homeCopy.yourRating">
+            <span>{{ homeCopy.yourRating }}</span>
+            <div>
+              @for (rating of ratingOptions; track rating) {
+                <button type="button" [disabled]="watchDialogSaving()" [attr.aria-label]="homeCopy.rateWith + ' ' + rating + ' ' + homeCopy.outOfTen" [attr.aria-pressed]="watchDialogScore() === rating" (click)="setWatchedRating(rating)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" [class.watchlist-watch-star-selected]="watchDialogScore() !== null && rating <= watchDialogScore()!"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" /></svg>
+                  <span>{{ rating }}</span>
+                </button>
+              }
+            </div>
+          </div>
+          <label class="watchlist-watch-review"><span>{{ homeCopy.yourReview }} <span>{{ homeCopy.optional }}</span></span><textarea rows="5" maxlength="5000" [placeholder]="homeCopy.reviewPlaceholder" [value]="watchDialogReview()" [disabled]="watchDialogSaving()" (input)="updateWatchedReview($event)"></textarea></label>
+        }
+
+        <footer class="watchlist-watch-log-actions">
+          <button class="watchlist-watch-cancel" type="button" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()" data-ww-button="secondary">{{ homeCopy.cancel }}</button>
+          <button class="watchlist-watch-save" type="button" [disabled]="watchDialogSaving() || !watchDialogDate()" (click)="saveWatchedCard()" data-ww-button="primary">{{ watchDialogSaving() ? homeCopy.saving : homeCopy.save }}</button>
+        </footer>
+      </section>
+    </app-dialog-backdrop>
   }
 </main>

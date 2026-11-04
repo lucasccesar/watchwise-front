@@ -11,7 +11,6 @@
 .diary-heading {
   position: relative;
   isolation: isolate;
-  --responsive-banner-position: center 35%;
   overflow: hidden;
   display: flex;
   min-height: 294px;
@@ -365,6 +364,18 @@
 
 .diary-pagination button:hover:not(:disabled) {
   background: var(--color-secondary);
+}
+
+.diary-pagination > button:first-child,
+.diary-pagination > button:last-child {
+  border: 0;
+  background: transparent;
+}
+
+.diary-pagination > button:first-child:hover:not(:disabled),
+.diary-pagination > button:last-child:hover:not(:disabled) {
+  background: transparent;
+  color: var(--color-primary);
 }
 
 .diary-pagination button.diary-page-active {

@@ -55,7 +55,6 @@
 }
 
 .profile-hero {
-  --responsive-banner-position: center 42%;
   position: relative;
   display: flex;
   min-height: 356px;
@@ -911,6 +910,8 @@
 
 .profile-subpage-hero {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
   left: 0;
   display: grid;
   width: calc(100% + 160px);
@@ -920,7 +921,7 @@
   padding: 32px var(--content-margin);
   border-bottom: 1px solid var(--color-border);
   background-color: #222;
-  background-position: center 42%;
+  background-position: center 30%;
   background-size: cover;
   text-align: center;
 }
@@ -933,6 +934,8 @@
 }
 
 .profile-subpage-hero-copy {
+  position: relative;
+  z-index: 1;
   width: min(720px, 100%);
   text-shadow: 0 2px 16px rgb(0 0 0 / 56%);
 }
@@ -1220,6 +1223,29 @@
 .profile-sort-direction:hover,
 .profile-pagination button:hover:not(:disabled) {
   background: var(--color-secondary);
+}
+
+.profile-pagination > button:first-child,
+.profile-pagination > button:last-child {
+  border: 0;
+  background: transparent;
+}
+
+.profile-pagination > button:first-child:hover:not(:disabled),
+.profile-pagination > button:last-child:hover:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.profile-pagination svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .profile-pagination {
@@ -3310,7 +3336,6 @@
     min-height: 306px;
     margin-top: 0;
     padding: 48px 16px 0;
-    --responsive-banner-position: center 36%;
   }
 
   .profile-hero-actions {

@@ -3,9 +3,9 @@
     @if (heroBackdropLoading()) { <div class="tr-skeleton tr-hero-skeleton lists-hero-skeleton" aria-hidden="true"></div> }
     <app-responsive-banner [path]="heroBackdropFailed() ? undefined : heroBackdropPath()" fallbackPath="https://image.tmdb.org/t/p/w{size}/zb6fM1CX41D9rF9hdgclu0peUmy.jpg" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     <div class="lists-hero-copy">
-      <h1 id="lists-title">{{ isCommunity ? copy.communityTitle : copy.title }}</h1>
-      <p class="lists-hero-count">{{ listCountLabel() }}</p>
-      <p class="lists-hero-description">{{ isCommunity ? copy.communityDescription : copy.description }}</p>
+      <h1 id="lists-title" class="ww-page-hero-title">{{ isCommunity ? copy.communityTitle : copy.title }}</h1>
+      <p class="lists-hero-count ww-page-hero-kicker">{{ listCountLabel() }}</p>
+      <p class="lists-hero-description ww-page-hero-description">{{ isCommunity ? copy.communityDescription : copy.description }}</p>
     </div>
   </header>
 
@@ -16,47 +16,53 @@
     </div>
   </nav>
 
-  <section class="lists-toolbar" [attr.aria-label]="copy.filters">
+  <section class="lists-toolbar ww-filter-surface" [attr.aria-label]="copy.filters">
     <div class="lists-toolbar-actions">
-      @if (!isCommunity) { <a class="lists-create-button" routerLink="/lists/create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</a> }
-      @if (!isCommunity) { <button class="lists-reorder-button" type="button" [attr.aria-pressed]="reorderMode()" (click)="toggleReorder()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7 4-4 4 4M12 3v8m4 6-4 4-4-4m4 4v-8"/></svg>{{ reorderMode() ? copy.done : copy.reorder }}</button> }
+      @if (!isCommunity) { <a class="lists-create-button" routerLink="/lists/create" data-ww-button="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</a> }
+      @if (!isCommunity) { <button class="lists-reorder-button" [class.lists-reorder-button--active]="reorderMode()" type="button" [attr.aria-pressed]="reorderMode()" [disabled]="savingOrder()" (click)="onReorderButtonClick()" data-ww-button="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7 4-4 4 4M12 3v8m4 6-4 4-4-4m4 4v-8" /></svg>{{ copy.reorder }}</button> }
     </div>
     <div class="lists-toolbar-controls">
       @if (pageData()) { <span class="lists-count">{{ listCountLabel() }}</span> }
     @if (!isCommunity) {
       <div class="lists-control-wrap">
-        <button type="button" class="lists-control" [attr.aria-expanded]="activeMenu() === 'source'" (click)="toggleMenu('source')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>{{ sourceLabel() }}<svg class="lists-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
-        @if (activeMenu() === 'source') { <div class="lists-menu" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="source() === 'ALL'" (click)="selectSource('ALL')">{{ copy.allLists }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="source() === 'OWNED'" (click)="selectSource('OWNED')">{{ copy.myLists }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="source() === 'LIKED'" (click)="selectSource('LIKED')">{{ copy.likedLists }}</button></div> }
+        <button type="button" class="lists-control" [disabled]="reorderMode()" [attr.aria-expanded]="activeMenu() === 'source'" (click)="toggleMenu('source')" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>{{ sourceLabel() }}<svg class="lists-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+        @if (activeMenu() === 'source') { <div class="lists-menu" role="menu" data-ww-menu><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="source() === 'OWNED'" (click)="selectSource('OWNED')">{{ copy.myLists }}@if (source() === 'OWNED') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="source() === 'LIKED'" (click)="selectSource('LIKED')">{{ copy.likedLists }}@if (source() === 'LIKED') { <app-check-icon /> }</button></div> }
       </div>
     }
     <div class="lists-control-wrap">
-      <button type="button" class="lists-control" [attr.aria-expanded]="activeMenu() === 'type'" (click)="toggleMenu('type')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.5 7.2V19l-3 1v-7.8z"/></svg>{{ typeLabel() }}<svg class="lists-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
-      @if (activeMenu() === 'type') { <div class="lists-menu" role="menu"><button type="button" role="menuitemradio" [attr.aria-checked]="itemType() === null" (click)="selectType(null)">{{ copy.allTypes }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="itemType() === 'MOVIE'" (click)="selectType('MOVIE')">{{ copy.movies }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="itemType() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="itemType() === 'SEASON'" (click)="selectType('SEASON')">{{ copy.seasons }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="itemType() === 'EPISODE'" (click)="selectType('EPISODE')">{{ copy.episodes }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="itemType() === 'LIST'" (click)="selectType('LIST')">{{ copy.nestedLists }}</button></div> }
+      <button type="button" class="lists-control" [disabled]="reorderMode()" [attr.aria-expanded]="activeMenu() === 'type'" (click)="toggleMenu('type')" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.5 7.2V19l-3 1v-7.8z"/></svg>{{ typeLabel() }}<svg class="lists-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+      @if (activeMenu() === 'type') { <div class="lists-menu" role="menu" data-ww-menu><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="itemType() === null" (click)="selectType(null)">{{ copy.allTypes }}@if (itemType() === null) { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="itemType() === 'MOVIE'" (click)="selectType('MOVIE')">{{ copy.movies }}@if (itemType() === 'MOVIE') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="itemType() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}@if (itemType() === 'SERIES') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="itemType() === 'SEASON'" (click)="selectType('SEASON')">{{ copy.seasons }}@if (itemType() === 'SEASON') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="itemType() === 'EPISODE'" (click)="selectType('EPISODE')">{{ copy.episodes }}@if (itemType() === 'EPISODE') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="itemType() === 'LIST'" (click)="selectType('LIST')">{{ copy.nestedLists }}@if (itemType() === 'LIST') { <app-check-icon /> }</button></div> }
     </div>
     <div class="lists-control-wrap">
-      <button type="button" class="lists-control" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="lists-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
-      @if (activeMenu() === 'sort') { <div class="lists-menu" role="menu">@if (!isCommunity) { <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'updatedAt'" (click)="selectSort('updatedAt')">{{ copy.sortRecent }}</button> }@if (!isCommunity && source() === 'OWNED') { <button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'rank'" (click)="selectSort('rank')">{{ copy.sortManual }}</button> }<button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'name'" (click)="selectSort('name')">{{ copy.sortName }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'likesCount'" (click)="selectSort('likesCount')">{{ copy.sortLikes }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'itemsCount'" (click)="selectSort('itemsCount')">{{ copy.sortItems }}</button><button type="button" role="menuitemradio" [attr.aria-checked]="sort() === 'commentsCount'" (click)="selectSort('commentsCount')">{{ copy.sortComments }}</button></div> }
+      <button type="button" class="lists-control" [disabled]="reorderMode()" [attr.aria-expanded]="activeMenu() === 'sort'" (click)="toggleMenu('sort')" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h8"/></svg>{{ sortLabel() }}<svg class="lists-control-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg></button>
+      @if (activeMenu() === 'sort') { <div class="lists-menu" role="menu" data-ww-menu>@if (!isCommunity && source() === 'OWNED') { <button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'rank'" (click)="selectSort('rank')">{{ copy.sortDefault }}@if (sort() === 'rank') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'updatedAt'" (click)="selectSort('updatedAt')">{{ copy.sortRecent }}@if (sort() === 'updatedAt') { <app-check-icon /> }</button> }<button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'name'" (click)="selectSort('name')">{{ copy.sortName }}@if (sort() === 'name') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'likesCount'" (click)="selectSort('likesCount')">{{ copy.sortLikes }}@if (sort() === 'likesCount') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'itemsCount'" (click)="selectSort('itemsCount')">{{ copy.sortItems }}@if (sort() === 'itemsCount') { <app-check-icon /> }</button><button type="button" role="menuitemradio" data-ww-menu-item [attr.aria-checked]="sort() === 'commentsCount'" (click)="selectSort('commentsCount')">{{ copy.sortComments }}@if (sort() === 'commentsCount') { <app-check-icon /> }</button></div> }
     </div>
-    <button class="lists-sort-direction" type="button" [disabled]="sort() === 'updatedAt' && source() !== 'OWNED'" [attr.aria-label]="sortDirection() === 'desc' ? copy.descending : copy.ascending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="sort() === 'updatedAt' && source() !== 'OWNED' ? 'M12 5v14m-7-7 7-7 7 7' : sortDirection() === 'desc' ? 'M12 4v16m-7-7 7 7 7-7' : 'M12 20V4m-7 7 7-7 7 7'" /></svg></button>
+    <button class="lists-sort-direction" type="button" [disabled]="reorderMode() || isCommunity" [attr.aria-label]="sortDirection() === 'desc' ? copy.descending : copy.ascending" (click)="toggleDirection()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="sortDirection() === 'desc' ? 'M12 4v16m-7-7 7 7 7-7' : 'M12 20V4m-7 7 7-7 7 7'" /></svg></button>
     </div>
   </section>
 
   @if (status() === 'loading') { <app-page-skeleton variant="cards" [label]="copy.loading" /> }
-  @else if (status() === 'error') { <section class="lists-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section> }
-  @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty ww-empty-panel"><h2>{{ isCommunity ? copy.communityEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity) { <a routerLink="/lists/create">{{ copy.createList }}</a> }</section> }
+  @else if (status() === 'error') { <section class="lists-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="retryLoad()">{{ copy.retry }}</button></section> }
+  @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty ww-empty-panel ww-empty-panel--page"><h2>{{ isCommunity ? copy.communityEmptyTitle : source() === 'LIKED' ? copy.likedEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : source() === 'LIKED' ? copy.likedEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity && source() !== 'LIKED') { <a routerLink="/lists/create">{{ copy.createList }}</a> }</section> }
   @else {
     <div class="lists-pagination-bar"><nav class="lists-pagination" [attr.aria-label]="copy.pagination"><button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>@for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.lists-page-active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }<button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button></nav><p class="lists-page-label">{{ copy.pageLabel.replace('{page}', page().toString()).replace('{total}', totalPages().toString()) }}</p></div>
+    @if (reorderMode()) {
+      <section class="lists-reorder-banner" aria-live="polite">
+        <span class="lists-reorder-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01" /></svg></span>
+        <div><h2>{{ copy.reorderBannerTitle }}</h2><p>{{ copy.reorderBannerDescription }}</p></div>
+        <div class="lists-reorder-banner-actions"><button type="button" [disabled]="savingOrder()" (click)="cancelReorder()">{{ copy.cancel }}</button><button class="lists-reorder-save" type="button" [disabled]="savingOrder() || !reorderHasChanges()" (click)="saveReorder()" data-ww-button="primary">{{ savingOrder() ? copy.savingOrder : copy.saveOrder }}</button></div>
+      </section>
+    }
     <section class="lists-grid" [attr.aria-label]="isCommunity ? copy.communityLists : copy.myLists">
-      @for (list of pageData()?.content ?? []; track list.id) {
-        <article class="list-card">
-          <div class="list-card-previews">
+      @for (list of (reorderMode() ? reorderDraft() : pageData()?.content ?? []); track list.id) {
+        <article class="list-card" [attr.data-list-card-id]="list.id" [class.list-card--reorder]="reorderMode()" [class.list-card--drag-over]="dragOverListId() === list.id" [class.list-card--dragging]="draggedListId() === list.id" [draggable]="reorderMode()" (dragstart)="startListDrag(list, $event)" (dragover)="dragOverList(list.id, $event)" (drop)="dropList(list.id, $event)" (dragend)="finishListDrag()">
+          @if (reorderMode() && list.ownedByMe) { <div class="list-reorder-controls" [attr.aria-label]="copy.reorderControls.replace('{name}', list.name)"><button type="button" [disabled]="listPosition(list.id) <= 1 || savingOrder()" [attr.aria-label]="copy.moveUp" (click)="moveList(list.id, -1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6" /></svg></button><input type="number" min="1" [max]="reorderDraft().length" [value]="listPosition(list.id)" [attr.aria-label]="copy.positionOfList.replace('{name}', list.name)" [disabled]="savingOrder()" (change)="setListPosition(list.id, $any($event.target).value)" /><button type="button" [disabled]="listPosition(list.id) >= reorderDraft().length || savingOrder()" [attr.aria-label]="copy.moveDown" (click)="moveList(list.id, 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6" /></svg></button></div> }
+          <div class="list-card-previews" [class.list-card-previews-active]="activePreviewListId() === list.id" [class.list-card-previews--count-2]="list.previewCards.length === 2" [class.list-card-previews--count-3]="list.previewCards.length === 3" [class.list-card-previews--count-4]="list.previewCards.length === 4" (pointerleave)="clearActivePreview(list.id)" (focusin)="clearActivePreview(list.id)">
             @if (list.previewCards.length) {
               @for (card of list.previewCards.slice(0, 5); track $index) {
-                @let key = previewMenuKey(list, card, $index);
-                <div class="list-preview content-image-card">
+                <div class="list-preview" [class.list-preview-active]="activePreviewListId() === list.id && activePreviewIndex() === $index" (pointermove)="activatePreview(list.id, $index, $event)">
                   @if (previewRoute(card); as route) { <a [routerLink]="route" [attr.aria-label]="card.title ?? copy.titleUnavailable">@if (previewPoster(card)) { <img [src]="previewPoster(card)" alt="" loading="lazy" /> } @else { <span>{{ card.title ?? copy.titleUnavailable }}</span> }</a> }
                   @else if (previewPoster(card)) { <img [src]="previewPoster(card)" alt="" loading="lazy" /> }
-                  <app-content-image-actions [ratingValue]="previewRating(card)" [ratingLabel]="previewRatingLabel(card)" [optionsLabel]="homeCopy.contentOptions" [actions]="previewActions" [expanded]="activePreviewMenu() === key" (toggle)="togglePreviewMenu(key, $event)" (actionSelected)="openPreview(card, $event)" />
                 </div>
               }
             } @else if (list.nestedListPreviews.length) {
@@ -79,14 +85,24 @@
             </div>
             <aside class="list-card-side" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)">
               <div class="list-card-actions">
-                <a class="list-card-action" [routerLink]="['/lists', list.id, 'progress']" [attr.aria-label]="copy.openProgress.replace('{name}', list.name)" [title]="copy.viewProgress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/><path d="M17 17v5m-2.5-2.5h5"/></svg></a>
-                <button class="list-card-action" type="button" [attr.aria-label]="copy.shareList.replace('{name}', list.name)" [title]="copy.share" (click)="share(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" /></svg></button>
-                <button class="list-card-action list-card-more" type="button" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)" [attr.aria-expanded]="activeCardMenu() === list.id" [title]="copy.moreOptions" (click)="toggleCardMenu(list.id)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
-                @if (reorderMode() && list.ownedByMe) { <div class="list-reorder-controls"><button type="button" [disabled]="(list.rank ?? 1) <= 1" [attr.aria-label]="copy.moveUp" (click)="moveList(list, -1)">↑</button><button type="button" [disabled]="(list.rank ?? 1) >= currentCount()" [attr.aria-label]="copy.moveDown" (click)="moveList(list, 1)">↓</button></div> }
+                <a class="list-card-action list-card-action--progress" [routerLink]="['/lists', list.id, 'progress']" [attr.aria-label]="copy.openProgress.replace('{name}', list.name)" [title]="copy.viewProgress"><svg class="ww-progress-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M12 20V4M20 20V14" /></svg></a>
+                <div class="list-card-menu-wrap">
+                  <button class="list-card-action list-card-more" type="button" [attr.aria-label]="copy.moreOptions.replace('{name}', list.name)" [attr.aria-expanded]="activeCardMenu() === list.id" [title]="copy.moreOptions" (click)="toggleCardMenu(list.id); $event.stopPropagation()" data-ww-ellipsis-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+                  @if (activeCardMenu() === list.id) {
+                    <div class="list-card-menu" role="menu" data-ww-menu [attr.aria-label]="detailCopy.actions">
+                      <button type="button" role="menuitem" data-ww-menu-item (click)="openSharePreview(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" /></svg>{{ detailCopy.sharePreview }}</button>
+                      <button type="button" role="menuitem" data-ww-menu-item (click)="copyLink(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7m2.7 6.4a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7" /></svg>{{ detailCopy.copyLink }}</button>
+                      @if (list.ownedByMe) {
+                        <span class="list-card-menu-separator" role="separator"></span>
+                        <button type="button" role="menuitem" data-ww-menu-item (click)="editList(list)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" /></svg>{{ detailCopy.edit }}</button>
+                        <button class="list-card-menu-danger" type="button" role="menuitem" data-ww-menu-item (click)="requestDeleteList(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6" /></svg>{{ detailCopy.delete }}</button>
+                      }
+                    </div>
+                  }
+                </div>
               </div>
-              <div class="list-card-footer"><span [attr.aria-label]="list.likesCount + ' curtidas'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ list.likesCount }}</span><span [attr.aria-label]="list.commentsCount + ' comentários'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" /></svg>{{ list.commentsCount }}</span></div>
+              <div class="list-card-footer"><button class="list-card-like" type="button" [class.list-card-like--active]="list.likedByMe" [attr.aria-pressed]="list.likedByMe" [attr.aria-label]="(list.likedByMe ? copy.unlikeList : copy.likeList).replace('{name}', list.name)" [disabled]="likingListIds().has(list.id)" (click)="toggleListLike(list); $event.stopPropagation()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ list.likesCount }}</button><span [attr.aria-label]="list.commentsCount + ' comentários'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" /></svg>{{ list.commentsCount }}</span></div>
             </aside>
-            @if (activeCardMenu() === list.id) { <div class="list-card-menu" role="menu"><a [routerLink]="listRoute(list)" role="menuitem">{{ copy.openList }}</a><button type="button" role="menuitem" (click)="share(list); toggleCardMenu(list.id)">{{ copy.share }}</button></div> }
           </div>
         </article>
       }
@@ -94,3 +110,20 @@
   }
 
 </main>
+
+@if (sharePreviewTarget(); as list) {
+  <app-share-preview [returnFocusTarget]="sharePreviewReturnFocusTarget()" [model]="shareModel(list)" [shareUrl]="shareUrl(list)" (closed)="closeSharePreview()" />
+}
+
+@if (deleteListTarget(); as list) {
+  <div class="lists-delete-backdrop" (click)="cancelDeleteList()">
+    <section class="lists-delete-dialog" role="alertdialog" appModalFocus [modalReturnFocus]="deleteListReturnFocusTarget()" (modalDismiss)="cancelDeleteList()" aria-modal="true" aria-labelledby="lists-delete-title" [attr.aria-busy]="deletingList()" (click)="$event.stopPropagation()">
+      <h2 id="lists-delete-title">{{ detailCopy.deleteListTitle }}</h2>
+      <p>{{ detailCopy.deleteListDescription }}</p>
+      <div class="lists-delete-actions">
+        <button type="button" [disabled]="deletingList()" (click)="cancelDeleteList()">{{ detailCopy.cancel }}</button>
+        <button class="lists-delete-confirm" type="button" [disabled]="deletingList()" (click)="confirmDeleteList()" data-ww-button="danger">{{ deletingList() ? detailCopy.deleting : detailCopy.confirmDelete }}</button>
+      </div>
+    </section>
+  </div>
+}

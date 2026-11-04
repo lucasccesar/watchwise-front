@@ -10,6 +10,7 @@ import { PageSkeletonComponent } from '../../../../shared/components/page-skelet
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type PickTemplateStatus = 'loading' | 'ready' | 'error';
 type CommunitySort = 'RECENT' | 'POPULAR';
@@ -98,7 +99,7 @@ export class PickTemplateComponent {
       error: () => this.busyPickIds.update((current) => { const next = new Set(current); next.delete(pick.id); return next; }),
     });
   }
-  protected optionPoster(option: PicksOptionView): string | null { const card = option.preview?.contentCard; return card?.customPosterUrl || card?.posterPath || option.preview?.person?.profileUrl || null; }
+  protected optionPoster(option: PicksOptionView): string | null { const card = option.preview?.contentCard; return tmdbImageUrl(card?.customPosterUrl || card?.posterPath || option.preview?.person?.profileUrl, 'w342'); }
   protected optionRating(option: PicksOptionView): string | null {
     const value = option.preview?.contentCard?.stats?.averageScore;
     return value === null || value === undefined ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
@@ -110,6 +111,7 @@ export class PickTemplateComponent {
   protected readonly activeOptionMenu = signal('');
   protected toggleOptionMenu(option: PicksOptionView, event: MouseEvent): void { event.stopPropagation(); const key = this.optionMenuKey(option); this.activeOptionMenu.update((current) => current === key ? '' : key); }
   protected optionAction(option: PicksOptionView, selection: ContentImageActionSelection): void {
+    this.activeOptionMenu.set('');
     if (selection.action.id !== 'open-option') return;
     const card = option.preview.contentCard;
     if (card?.tmdbId && card.type === 'MOVIE') void this.router.navigate(['/content/movie', card.tmdbId]);

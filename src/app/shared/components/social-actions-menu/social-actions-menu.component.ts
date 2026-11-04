@@ -141,8 +141,8 @@ export class SocialActionsMenuComponent {
     event.stopPropagation();
     const state = this.followState();
     if (this.userActionBusy) return;
+    this.menuOpen.set(false);
     if (state === 'following') {
-      this.menuOpen.set(false);
       this.pendingAction.set('unfollow');
       return;
     }

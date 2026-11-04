@@ -153,6 +153,25 @@
         }
       </div>
 
+      <div class="auth-terms">
+        <div class="auth-checkbox-row">
+          <input
+            id="signup-age-confirmation"
+            type="checkbox"
+            formControlName="ageConfirmation"
+            required
+            [attr.aria-invalid]="ageConfirmationError() !== null"
+            [attr.aria-describedby]="ageConfirmationError() ? 'signup-age-confirmation-error' : null"
+          />
+          <label for="signup-age-confirmation">{{ copy.ageConfirmationLabel }}</label>
+        </div>
+        @if (ageConfirmationError(); as error) {
+          <p class="auth-field-error" id="signup-age-confirmation-error">
+            <span aria-hidden="true">!</span><span>{{ error }}</span>
+          </p>
+        }
+      </div>
+
       @if (serverError(); as error) {
         <p class="auth-form-message auth-form-message--error" role="alert">{{ error }}</p>
       }
@@ -170,7 +189,7 @@
         class="auth-submit-button"
         type="submit"
         [disabled]="isSubmitting() || registrationEmail() !== null"
-      >
+       data-ww-button="primary">
         @if (isSubmitting()) {
           <span class="auth-loading-spinner" aria-hidden="true"></span>
         }

@@ -4,6 +4,7 @@ import { SocialActionsMenuComponent, SocialActionMenuEvent } from '../../../../s
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
@@ -15,6 +16,8 @@ import { ContentApiService } from '../../../content/data-access/content-api.serv
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { ListComment, ListDetailItem, ListDetailView, ListOwner, ListsApiService, ListVisibility } from '../../data-access/lists-api.service';
 
 type ListContentType = 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE' | null;
@@ -25,7 +28,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, SocialActionsMenuComponent, CommentItemComponent],
+    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
@@ -50,11 +53,6 @@ export class ListDetailComponent {
   protected readonly listMenuOpen = signal(false);
   protected readonly activeImageMenu = signal<string | null>(null);
   protected readonly reorderMode = signal(false);
-  protected readonly editDialogOpen = signal(false);
-  protected readonly editName = signal('');
-  protected readonly editDescription = signal('');
-  protected readonly editVisibility = signal<ListVisibility>('PUBLIC');
-  protected readonly savingEdit = signal(false);
   protected readonly deleteListDialogOpen = signal(false);
   protected readonly deletingList = signal(false);
   protected readonly deleteItem = signal<ListDetailItem | null>(null);
@@ -66,6 +64,7 @@ export class ListDetailComponent {
   protected readonly commentsLoading = signal(false);
   protected readonly commentsError = signal(false);
   protected readonly commentText = signal('');
+  protected readonly replyDraft = signal('');
   protected readonly replyingTo = signal<ListComment | null>(null);
   protected readonly postingComment = signal(false);
   protected readonly expandedSpoilers = signal<ReadonlySet<string>>(new Set());
@@ -92,12 +91,14 @@ export class ListDetailComponent {
       username: user?.username,
       avatarUrl: user?.profilePicture,
       backgroundUrl: items.find((item) => item.imageUrl)?.imageUrl,
+      itemCount: detail?.items.totalElements ?? 0,
       items,
     };
   });
   protected readonly canManage = signal(false);
   protected readonly genreOptions = computed(() => [...new Set((this.detail()?.items.content ?? []).flatMap((item) => item.card?.genres ?? []))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
   protected readonly items = computed(() => this.detail()?.items.content ?? []);
+  protected readonly episodeItems = computed(() => this.detail()?.itemScope === 'EPISODE' || this.items().some((item) => item.card?.type === 'EPISODE'));
   protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly imageActions: readonly ContentImageAction[] = [
     { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
@@ -228,10 +229,10 @@ export class ListDetailComponent {
     return rating ? `${this.homeCopy.communityAverage}: ${rating}` : '';
   }
 
-  protected posterFor(item: ListDetailItem): string | null {
+  protected posterFor(item: ListDetailItem, size: 'w342' | 'w780' | 'w1280' = 'w342'): string | null {
     const path = item.customPosterUrl || item.card?.customPosterUrl || item.card?.posterPath;
     if (!path || item.card?.previewStatus === 'UNAVAILABLE') return null;
-    return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/w342${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, size);
   }
 
   protected contentRoute(item: ListDetailItem): string[] | null {
@@ -245,12 +246,12 @@ export class ListDetailComponent {
   }
 
   protected openImageAction(item: ListDetailItem, selection: ContentImageActionSelection): void {
+    this.activeImageMenu.set(null);
     if (selection.action.id === 'open-content') {
       const route = this.contentRoute(item);
       if (route) void this.router.navigate(route);
     } else if (selection.action.id === 'remove-item' && this.canManage()) {
       this.deleteItem.set(item);
-      this.activeImageMenu.set(null);
     }
   }
 
@@ -284,13 +285,9 @@ export class ListDetailComponent {
   protected listRuntime(): string { return this.durationLabel(this.detail()?.totalRuntimeMinutes); }
   protected updatedLabel(): string { return this.detail() ? this.copy.updated.replace('{date}', this.dateLabel(this.detail()!.updatedAt)) : ''; }
   protected pageLabel(): string { return this.copy.page.replace('{page}', String(this.page())).replace('{total}', String(this.totalPages())); }
-  protected heroBackground(): string {
+  protected heroBackdrop(): string | null {
     const item = this.items().find((entry) => entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath);
-    const path = item?.customPosterUrl || item?.card?.customPosterUrl || item?.card?.posterPath;
-    const image = path
-      ? `url("${/^https?:\/\//i.test(path) ? path.replace('/w342/', '/w1280/') : `https://image.tmdb.org/t/p/w1280${path.startsWith('/') ? path : `/${path}`}`}")`
-      : 'radial-gradient(ellipse at 50% 20%, #303238 0%, #1c1c1d 68%)';
-    return `linear-gradient(180deg, rgb(16 16 18 / 42%) 0%, rgb(16 16 18 / 62%) 58%, var(--color-surface) 100%), ${image}`;
+    return item?.customPosterUrl || item?.card?.customPosterUrl || item?.card?.posterPath || null;
   }
   protected visibilityLabel(visibility: ListVisibility): string {
     return visibility === 'PRIVATE' ? this.listCopy.private : visibility === 'FOLLOWERS' ? this.listCopy.followers : this.listCopy.public;
@@ -318,28 +315,9 @@ export class ListDetailComponent {
   protected shareLink(): string { return `${window.location.origin}/lists/${encodeURIComponent(this.listId())}`; }
 
   protected openEdit(): void {
-    const current = this.detail();
-    if (!current || !this.canManage()) return;
-    this.editName.set(current.name);
-    this.editDescription.set(current.description ?? '');
-    this.editVisibility.set(current.visibility);
-    this.editDialogOpen.set(true);
+    if (!this.detail() || !this.canManage()) return;
     this.listMenuOpen.set(false);
-  }
-
-  protected saveEdit(): void {
-    const current = this.detail();
-    const name = this.editName().trim();
-    if (!current || !name || this.savingEdit()) return;
-    this.savingEdit.set(true);
-    this.api.updateList(current.id, {
-      name,
-      description: this.editDescription().trim(),
-      visibility: this.editVisibility(),
-    }).subscribe({
-      next: () => { this.savingEdit.set(false); this.editDialogOpen.set(false); this.load(); },
-      error: () => { this.savingEdit.set(false); this.toasts.error(this.copy.updateError); },
-    });
+    void this.router.navigate(['/lists', this.listId(), 'edit']);
   }
 
   protected confirmDeleteList(): void {
@@ -372,21 +350,24 @@ export class ListDetailComponent {
     });
   }
 
-  protected updateEditName(event: Event): void { this.editName.set((event.target as HTMLInputElement).value); }
-  protected updateEditDescription(event: Event): void { this.editDescription.set((event.target as HTMLTextAreaElement).value); }
-  protected setVisibility(event: Event): void { this.editVisibility.set((event.target as HTMLSelectElement).value as ListVisibility); }
   protected setCommentText(event: Event): void { this.commentText.set((event.target as HTMLTextAreaElement).value); }
+  protected setReplyText(event: Event): void { this.replyDraft.set((event.target as HTMLTextAreaElement).value); }
 
-  protected submitComment(): void {
-    const text = this.commentText().trim();
+  protected submitComment(event: Event, parentComment?: ListComment): void {
+    event.preventDefault();
+    const text = (parentComment ? this.replyDraft() : this.commentText()).trim();
     if (!text || this.postingComment()) return;
     this.postingComment.set(true);
-    this.api.createComment(this.listId(), { text, parentCommentId: this.replyingTo()?.id ?? null }).subscribe({
+    this.api.createComment(this.listId(), { text, parentCommentId: parentComment?.id ?? null }).subscribe({
       next: (comment) => {
         this.comments.update((current) => [...current, comment]);
         this.detail.update((detail) => detail ? { ...detail, commentsCount: detail.commentsCount + 1 } : detail);
-        this.commentText.set('');
-        this.replyingTo.set(null);
+        if (parentComment) {
+          this.replyDraft.set('');
+          this.replyingTo.set(null);
+        } else {
+          this.commentText.set('');
+        }
         this.postingComment.set(false);
       },
       error: () => { this.postingComment.set(false); this.toasts.error(this.copy.actionError); },
@@ -394,8 +375,11 @@ export class ListDetailComponent {
   }
 
   protected repliesTo(comment: ListComment): ListComment[] { return this.comments().filter((entry) => entry.parentCommentId === comment.id); }
-  protected toggleReply(comment: ListComment): void { this.replyingTo.set(comment); this.commentText.set(''); }
-  protected cancelReply(): void { this.replyingTo.set(null); this.commentText.set(''); }
+  protected toggleReply(comment: ListComment): void {
+    this.replyDraft.set('');
+    this.replyingTo.update((current) => current?.id === comment.id ? null : comment);
+  }
+  protected cancelReply(): void { this.replyingTo.set(null); this.replyDraft.set(''); }
   protected spoilerExpanded(comment: ListComment): boolean { return this.expandedSpoilers().has(comment.id); }
   protected toggleSpoiler(comment: ListComment): void {
     this.expandedSpoilers.update((current) => {
@@ -462,6 +446,7 @@ export class ListDetailComponent {
   }
 
   protected userAvatar(user: ListOwner): string | null { return user.profilePicture; }
+  protected currentUserAvatar(): string | null { return this.session.user()?.profilePicture ?? null; }
   protected isOwnComment(comment: ListComment): boolean { return comment.user.id === this.currentUserId(); }
 
   private resetForListChange(): void {
@@ -482,7 +467,6 @@ export class ListDetailComponent {
     this.listMenuOpen.set(false);
     this.activeImageMenu.set(null);
     this.reorderMode.set(false);
-    this.editDialogOpen.set(false);
     this.deleteListDialogOpen.set(false);
     this.deleteItem.set(null);
     this.deletingItemId.set(null);
@@ -492,6 +476,7 @@ export class ListDetailComponent {
     this.commentsLoading.set(false);
     this.commentsError.set(false);
     this.commentText.set('');
+    this.replyDraft.set('');
     this.replyingTo.set(null);
     this.expandedSpoilers.set(new Set());
     this.commentDeleteTarget.set(null);

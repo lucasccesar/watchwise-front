@@ -205,6 +205,18 @@
   background: var(--color-secondary);
 }
 
+.progress-pagination > button:first-child,
+.progress-pagination > button:last-child {
+  border: 0;
+  background: transparent;
+}
+
+.progress-pagination > button:first-child:hover:not(:disabled),
+.progress-pagination > button:last-child:hover:not(:disabled) {
+  background: transparent;
+  color: var(--color-primary);
+}
+
 .progress-pagination button.progress-page-active {
   background: var(--color-primary);
 }

@@ -3,11 +3,14 @@ import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, effect, injec
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionKind, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
 import { ModalFocusDirective } from '../../directives/modal-focus.directive';
+import { WATCHWISE_STAR_PATH } from '../../utils/watchwise-star';
+import { tmdbImageUrl } from '../../utils/tmdb-image-url';
 import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 
 export interface ShareReviewDialogModel {
   title: string;
   subtitle?: string | null;
+  subtitleBelowTitle?: boolean;
   rating: number | null;
   review: string | null;
   backgroundUrl: string | null;
@@ -304,7 +307,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
 
       const poster = this.sharePosterUrl() || this.selectedPoster();
       const hasPoster = Boolean(poster);
-      const titleLines = this.wrapShareTitle(context, model.title, model.subtitle);
+      const titleLines = this.wrapShareTitle(context, model.title, model.subtitle, model.subtitleBelowTitle);
       const hasRating = model.rating !== null;
       const reviewLines = this.shareShowReview() && model.review
         ? this.wrapShareText(context, `“${model.review}”`, 402, 6)
@@ -413,7 +416,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
     if ('letterSpacing' in spacedContext) spacedContext.letterSpacing = letterSpacing;
   }
 
-  private wrapShareTitle(context: CanvasRenderingContext2D, title: string, subtitle?: string | null): Array<{ title: string; subtitle: string | null }> {
+  private wrapShareTitle(context: CanvasRenderingContext2D, title: string, subtitle?: string | null, subtitleBelowTitle = false): Array<{ title: string; subtitle: string | null }> {
     const maxWidth = 444;
     const titleFont = '700 30px Inter, sans-serif';
     const subtitleFont = '400 20px Inter, sans-serif';
@@ -435,6 +438,25 @@ export class ShareReviewDialogComponent implements OnDestroy {
 
     const cleanSubtitle = subtitle?.trim() || null;
     if (!cleanSubtitle) return lines.map((value) => ({ title: value, subtitle: null }));
+    if (subtitleBelowTitle) {
+      this.setCanvasFont(context, subtitleFont);
+      const subtitleLines: string[] = [];
+      let subtitleLine = '';
+      for (const word of cleanSubtitle.split(/\s+/)) {
+        const next = subtitleLine ? `${subtitleLine} ${word}` : word;
+        if (context.measureText(next).width > maxWidth && subtitleLine) {
+          subtitleLines.push(subtitleLine);
+          subtitleLine = word;
+        } else {
+          subtitleLine = next;
+        }
+      }
+      if (subtitleLine) subtitleLines.push(subtitleLine);
+      return [
+        ...lines.map((value) => ({ title: value, subtitle: null })),
+        ...subtitleLines.map((value) => ({ title: '', subtitle: value })),
+      ];
+    }
     const lastTitle = lines.at(-1) ?? '';
     const spaceWidth = context.measureText(' ').width;
     const titleWidth = context.measureText(lastTitle).width;
@@ -481,7 +503,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
     const score = String(rating);
     this.setCanvasFont(context, '700 30px Inter, sans-serif');
     const scoreWidth = context.measureText(score).width;
-    const starWidth = context.measureText('★').width;
+    const starWidth = 28;
     const numberGap = 6;
     this.setCanvasFont(context, '700 16px Inter, sans-serif');
     const denominatorWidth = context.measureText('/10').width;
@@ -490,8 +512,17 @@ export class ShareReviewDialogComponent implements OnDestroy {
     const baseline = top + 30;
     context.textAlign = 'left';
     context.fillStyle = '#F59E0B';
+    context.strokeStyle = '#F59E0B';
+    context.lineWidth = 2;
+    context.lineJoin = 'round';
     this.setCanvasFont(context, '700 30px Inter, sans-serif');
-    context.fillText('★', x, baseline);
+    context.save();
+    context.translate(x, baseline - 27);
+    context.scale(28 / 24, 28 / 24);
+    const starPath = new Path2D(WATCHWISE_STAR_PATH);
+    context.fill(starPath);
+    context.stroke(starPath);
+    context.restore();
     x += starWidth + numberGap;
     context.fillStyle = '#F2F7FA';
     context.fillText(score, x, baseline);
@@ -542,8 +573,13 @@ export class ShareReviewDialogComponent implements OnDestroy {
     this.setImageOptionsStatus(kind, 'loading');
     this.imageRequests.add(this.contentApi.getContentImages(type, tmdbId, kind).subscribe({
       next: (images) => {
-        if (kind === 'posters') this.posterOptions.set(images);
-        else this.backdropOptions.set(images);
+        const size = kind === 'posters' ? 'w500' : 'w1280';
+        const resolvedImages = images.map((image) => ({
+          ...image,
+          url: tmdbImageUrl(image.url, size) ?? image.url,
+        }));
+        if (kind === 'posters') this.posterOptions.set(resolvedImages);
+        else this.backdropOptions.set(resolvedImages);
         this.setImageOptionsStatus(kind, 'ready');
       },
       error: () => this.setImageOptionsStatus(kind, 'error'),

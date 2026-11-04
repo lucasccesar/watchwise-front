@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { AfterViewInit, Directive, ElementRef, HostListener, OnDestroy, inject, input, output } from '@angular/core';
+import { ModalScrollLockService } from './modal-scroll-lock.service';
 
 @Directive({ selector: '[appModalFocus]', standalone: true, host: { tabindex: '-1' } })
 export class ModalFocusDirective implements AfterViewInit, OnDestroy {
@@ -8,6 +9,7 @@ export class ModalFocusDirective implements AfterViewInit, OnDestroy {
   private static readonly stack: ModalFocusDirective[] = [];
   private readonly document = inject(DOCUMENT);
   private readonly root = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly releaseScrollLock = inject(ModalScrollLockService).acquire();
   private readonly opener = this.document.activeElement as HTMLElement | null;
   private destroyed = false;
 
@@ -40,6 +42,7 @@ export class ModalFocusDirective implements AfterViewInit, OnDestroy {
     this.destroyed = true;
     const index = ModalFocusDirective.stack.indexOf(this);
     if (index >= 0) ModalFocusDirective.stack.splice(index, 1);
+    this.releaseScrollLock();
     (this.modalReturnFocus() ?? this.opener)?.focus();
   }
 

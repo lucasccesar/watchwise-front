@@ -48,7 +48,7 @@
                 </div>
               }
               <div class="picks-my-progress">
-                <span class="picks-progress-icon" aria-hidden="true">✓</span>
+                <span class="picks-progress-icon" aria-hidden="true"><app-check-icon /></span>
                 <span>{{ progressLabel(pick) }}</span>
                 <span class="picks-progress-track" role="progressbar" [attr.aria-label]="progressLabel(pick)" [attr.aria-valuenow]="pick.answeredCategoriesCount" [attr.aria-valuemin]="0" [attr.aria-valuemax]="pick.totalCategoriesCount"><span [style.width.%]="progressPercent(pick)"></span></span>
               </div>
@@ -65,13 +65,13 @@
       </div>
       @if ((picks()?.totalPages ?? 0) > 1) {
         <nav class="picks-my-pagination" aria-label="{{ copy.catalogPagination }}">
-          <button type="button" [disabled]="page() <= 1" (click)="previousPage()">{{ copy.previousPage }}</button>
+          <button type="button" [disabled]="page() <= 1" [attr.aria-label]="copy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
           <span>{{ pageLabel() }}</span>
-          <button type="button" [disabled]="!picks()?.hasNext" (click)="nextPage()">{{ copy.nextPage }}</button>
+          <button type="button" [disabled]="!picks()?.hasNext" [attr.aria-label]="copy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
         </nav>
       }
     } @else {
-      <section class="picks-empty picks-my-empty ww-empty-panel">
+      <section class="picks-empty picks-my-empty ww-empty-panel ww-empty-panel--page">
         <div class="picks-empty-mark" aria-hidden="true">✦</div>
         <h3>{{ copy.emptyPicksTitle }}</h3>
         <p>{{ copy.emptyPicksDescription }}</p>

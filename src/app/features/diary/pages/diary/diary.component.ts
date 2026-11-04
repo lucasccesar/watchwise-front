@@ -17,7 +17,9 @@ import {
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { filterDiaryEntries, localDiaryDay, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
@@ -53,7 +55,7 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
 @Component({
   selector: 'app-diary',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diary.component.html',
   styleUrl: './diary.component.css',
@@ -301,6 +303,7 @@ export class DiaryComponent implements OnDestroy {
     this.dateFrom.set(shortcut === 'all' ? '' : localDiaryDay(start.toISOString()));
     this.dateTo.set(shortcut === 'all' ? '' : localDiaryDay(today.toISOString()));
     this.page.set(1);
+    this.closeFilter();
   }
 
   protected seriesOptions(): Array<{ id: string; title: string }> {
@@ -480,10 +483,7 @@ export class DiaryComponent implements OnDestroy {
     const type = entry.content.type?.toUpperCase();
     const path = (type === 'EPISODE' || type === 'SEASON' ? entry.seriesPosterPath : null)
       || entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath;
-    if (!path) return null;
-    return /^https?:\/\//i.test(path)
-      ? path
-      : `https://image.tmdb.org/t/p/w342${path.startsWith('/') ? path : `/${path}`}`;
+    return tmdbImageUrl(path, 'w342');
   }
 
   protected typeLabel(entry: HomeRecentlyWatched): string {

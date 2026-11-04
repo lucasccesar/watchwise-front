@@ -32,6 +32,7 @@ describe('SignupComponent', () => {
             markAsTouched(): void;
           };
           terms: { setValue(value: boolean): void };
+          ageConfirmation: { setValue(value: boolean): void };
         };
         valid: boolean;
         setValue(value: {
@@ -40,6 +41,7 @@ describe('SignupComponent', () => {
           email: string;
           password: string;
           terms: boolean;
+          ageConfirmation: boolean;
         }): void;
       };
       usernameError(): string | null;
@@ -63,6 +65,9 @@ describe('SignupComponent', () => {
     expect(signup.form.valid).toBe(false);
 
     signup.form.controls.terms.setValue(true);
+    expect(signup.form.valid).toBe(false);
+
+    signup.form.controls.ageConfirmation.setValue(true);
     expect(signup.form.valid).toBe(true);
   });
 
@@ -113,6 +118,7 @@ describe('SignupComponent', () => {
       email: 'maria@example.com',
       password: 'SecurePass1',
       terms: true,
+      ageConfirmation: true,
     });
 
     signup.submit();
@@ -135,6 +141,7 @@ describe('SignupComponent', () => {
       email: 'maria@example.com',
       password: 'SecurePass1',
       terms: true,
+      ageConfirmation: true,
     });
     signup.authApi.register.mockImplementationOnce(() =>
       throwError(() => new HttpErrorResponse({ status: 409 })),
@@ -161,6 +168,7 @@ describe('SignupComponent', () => {
       email: 'maria@example.com',
       password: 'SecurePass1',
       terms: true,
+      ageConfirmation: true,
     });
     signup.authApi.register.mockImplementationOnce(() =>
       throwError(

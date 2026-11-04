@@ -1,12 +1,11 @@
 <main class="games-page" aria-labelledby="games-title">
   <section class="games-hero" aria-labelledby="games-title">
-    @if (heroBackdrop(); as backdrop) { <img class="games-hero-backdrop" [src]="backdrop" alt="" aria-hidden="true" (load)="onHeroBackdropLoaded()" (error)="onHeroBackdropError()" /> }
+    <app-responsive-banner [path]="heroBackdrop()" fallbackPath="" (imageLoaded)="onHeroBackdropLoaded()" (imageError)="onHeroBackdropError()" />
     @if (status() === 'loading' || (heroBackdrop() && heroBackdropLoading())) { <div class="tr-skeleton tr-hero-skeleton games-hero-skeleton" aria-hidden="true"></div> }
-    <div class="games-hero-shade" aria-hidden="true"></div>
     <div class="games-hero-content">
-      <h1 id="games-title">{{ copy.title }}</h1>
-      <p class="games-hero-stats"><span aria-hidden="true"></span>{{ copy.challengeCount }}<span aria-hidden="true"></span></p>
-      <p class="games-hero-description">{{ copy.description }}</p>
+      <h1 id="games-title" class="ww-page-hero-title">{{ copy.title }}</h1>
+      <p class="games-hero-stats ww-page-hero-kicker"><span aria-hidden="true"></span>{{ copy.challengeCount }}<span aria-hidden="true"></span></p>
+      <p class="games-hero-description ww-page-hero-description">{{ copy.description }}</p>
     </div>
   </section>
 

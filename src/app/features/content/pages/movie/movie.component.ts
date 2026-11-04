@@ -40,10 +40,14 @@ import {
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'watch' | 'videos' | 'lists' | 'share' | null;
@@ -60,7 +64,7 @@ type WatchForm = FormGroup<{
 @Component({
   selector: 'app-movie-content',
   standalone: true,
-  imports: [ReactiveFormsModule, NgTemplateOutlet, PageSkeletonComponent, ShareReviewDialogComponent, CommentItemComponent],
+  imports: [ReactiveFormsModule, NgTemplateOutlet, PageSkeletonComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, CommentItemComponent, ModalScrollLockDirective, CheckIconComponent],
   templateUrl: './movie.component.html',
   styleUrl: './movie.component.css',
 })
@@ -799,10 +803,8 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.replyTo.set(null);
   }
 
-  protected imageUrl(path: string | null | undefined, size = 'w500'): string | null {
-    if (!path) return null;
-    if (/^https?:\/\//i.test(path)) return path;
-    return `https://image.tmdb.org/t/p/${size}${path.startsWith('/') ? path : `/${path}`}`;
+  protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w500'): string | null {
+    return tmdbImageUrl(path, size);
   }
 
   protected posterUrl(): string | null {

@@ -8,6 +8,7 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+import { CheckIconComponent } from '../check-icon/check-icon.component';
 
 export type ContentImageActionIcon = 'check' | 'star' | 'eye' | 'trash' | 'ban' | 'rewatch' | 'share' | 'bookmark' | 'bookmark-filled' | 'list';
 
@@ -26,6 +27,7 @@ export interface ContentImageActionSelection {
 @Component({
   selector: 'app-content-image-actions',
   standalone: true,
+  imports: [CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './content-image-actions.component.html',
   styleUrl: './content-image-actions.component.css',

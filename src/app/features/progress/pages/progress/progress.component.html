@@ -28,9 +28,9 @@
   } @else if (status() === 'error') {
     <section class="progress-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (items().length === 0) {
-    <section class="progress-state progress-empty ww-empty-panel"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
+    <section class="progress-state progress-empty ww-empty-panel ww-empty-panel--page"><h2>{{ copy.emptyTitle }}</h2><p>{{ copy.emptyDescription }}</p></section>
   } @else {
-    <section class="progress-controls" aria-label="{{ copy.controls }}">
+    <section class="progress-controls ww-filter-surface" aria-label="{{ copy.controls }}">
       <div class="progress-sort-group">
         <span>{{ copy.sortBy }}</span>
         <button type="button" [class.progress-sort-active]="sort() === 'watched'" (click)="chooseSort('watched')">{{ copy.sortWatchedDate }}</button>
@@ -84,7 +84,7 @@
             @if (next) {
               <a class="progress-next-episode" [routerLink]="episodeRoute(episode)">
                 <div class="progress-next-image">
-                  @if (next.stillPath) { <img [src]="next.stillPath.startsWith('http') ? next.stillPath : 'https://image.tmdb.org/t/p/w500' + (next.stillPath.startsWith('/') ? next.stillPath : '/' + next.stillPath)" alt="" loading="lazy" /> }
+                  @if (next.stillPath) { <img [src]="episodeStill(next.stillPath)" alt="" loading="lazy" /> }
                   @else { <span>{{ title(episode) }}</span> }
                 </div>
                 <span class="progress-next-copy"><strong>{{ episodeTitle(episode) }}</strong><small>T{{ next.seasonNumber }} · E{{ next.episodeNumber }}</small><small>{{ next.releaseDate || copy.releaseDateUnknown }} · {{ formatDuration(next.runtimeMinutes) }}</small></span>

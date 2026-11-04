@@ -5,13 +5,14 @@ import { PicksApiService, PicksMyPickCard, PicksMyPickPage } from '../../data-ac
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksPageHeroComponent } from '../../shared/picks-page-hero.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 
 type PicksLoadState = 'loading' | 'ready' | 'error';
 
 @Component({
   selector: 'app-picks-my',
   standalone: true,
-  imports: [RouterLink, PicksPageHeroComponent, PageSkeletonComponent],
+  imports: [RouterLink, PicksPageHeroComponent, PageSkeletonComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './picks-my.component.html',
   styleUrls: ['./picks-my.component.css', '../../shared/picks-shared.css'],

@@ -2,8 +2,8 @@
   <p class="not-found-code" aria-label="Erro 404">4<span>0</span>4</p>
   <div class="not-found-copy"><h1 id="not-found-title">Página não encontrada</h1><p class="not-found-description">Esta cena não entrou na versão final. A página que você procura não existe, foi movida ou o link está quebrado.</p></div>
   <div class="not-found-actions">
-    <a class="not-found-secondary" routerLink="/home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21L16 16"/></svg>Buscar títulos</a>
-    <a class="not-found-primary" routerLink="/home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5L12 3L21 10.5V20C21 20.552 20.552 21 20 21H15V14H9V21H4C3.448 21 3 20.552 3 20V10.5Z"/></svg>Voltar ao início</a>
+    <a class="not-found-secondary" routerLink="/home" data-ww-button="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21L16 16"/></svg>Buscar títulos</a>
+    <a class="not-found-primary" routerLink="/home" data-ww-button="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5L12 3L21 10.5V20C21 20.552 20.552 21 20 21H15V14H9V21H4C3.448 21 3 20.552 3 20V10.5Z"/></svg>Voltar ao início</a>
   </div>
   <nav class="not-found-suggestions" aria-label="Páginas sugeridas"><span>Ou acesse</span>@for (page of suggestedPages; track page.href; let index = $index) { @if (index > 0) { <span aria-hidden="true">·</span> }<a [routerLink]="page.href">{{ page.label }}</a> }</nav>
 </main>

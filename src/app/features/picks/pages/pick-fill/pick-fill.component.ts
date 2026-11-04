@@ -11,6 +11,8 @@ import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PickCreationSelection, PicksApiService, PicksOptionView, PicksTargetSearch, PicksTemplateCategory, PicksTemplateDetail } from '../../data-access/picks-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 type PickAnswerState = { target: PickCreationSelection['target']; label: string; image: string | null; subtitle: string | null; option?: PicksOptionView };
@@ -19,7 +21,7 @@ type SearchState = { contents: SearchContentView[]; people: SearchPersonView[] }
 @Component({
   selector: 'app-pick-fill',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, PageSkeletonComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, PageSkeletonComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pick-fill.component.html',
   styleUrl: './pick-fill.component.css',
@@ -107,12 +109,12 @@ export class PickFillComponent implements OnDestroy {
     const category = this.activeCategory(); if (!category) return;
     if (category.allowedType === 'EPISODE') { this.loadSeriesEpisodes(item); return; }
     const target = { content: { type: item.type, tmdbId: item.tmdbId, seriesTmdbId: null, seasonNumber: null, episodeNumber: null } };
-    this.saveAnswer(category.id, { target, label: item.title || this.copy.resultMovie, image: item.posterUrl ?? null, subtitle: this.contentSubtitle(item) });
+    this.saveAnswer(category.id, { target, label: item.title || this.copy.resultMovie, image: this.imageUrl(item.posterUrl, 'w342'), subtitle: this.contentSubtitle(item) });
     this.closeCategory();
   }
   protected choosePerson(person: SearchPersonView): void {
     const category = this.activeCategory(); if (!category) return;
-    this.saveAnswer(category.id, { target: { personTmdbId: person.tmdbId }, label: person.name || this.copy.resultPerson, image: person.photoUrl ?? null, subtitle: person.knownForDepartment ?? null });
+    this.saveAnswer(category.id, { target: { personTmdbId: person.tmdbId }, label: person.name || this.copy.resultPerson, image: this.imageUrl(person.photoUrl, 'w185'), subtitle: person.knownForDepartment ?? null });
     this.closeCategory();
   }
   protected chooseEpisode(episode: ContentEpisodeSelection): void {
@@ -120,7 +122,7 @@ export class PickFillComponent implements OnDestroy {
     if (!category || !series || episode.seasonNumber === null || episode.episodeNumber === null) return;
     const target = { content: { type: 'EPISODE' as const, tmdbId: null, seriesTmdbId: series.tmdbId, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber } };
     const label = `${series.title || this.copy.resultSeries} · T${episode.seasonNumber} E${episode.episodeNumber}${episode.name ? ` · ${episode.name}` : ''}`;
-    this.saveAnswer(category.id, { target, label, image: episode.stillUrl ? episode.stillUrl : series.posterUrl ?? null, subtitle: episode.airDate ?? null });
+    this.saveAnswer(category.id, { target, label, image: this.imageUrl(episode.stillUrl || series.posterUrl, 'w500'), subtitle: episode.airDate ?? null });
     this.closeCategory();
   }
   protected setSeason(event: Event): void { const raw = (event.target as HTMLSelectElement).value; this.episodeSeason.set(raw !== '' && Number.isInteger(Number(raw)) ? Number(raw) : null); this.loadSeasonEpisodes(); }
@@ -139,7 +141,7 @@ export class PickFillComponent implements OnDestroy {
     });
   }
   protected optionLabel(option: PicksOptionView): string { return option.preview.contentCard?.title || option.preview.person?.name || this.copy.searchEmpty; }
-  protected optionImage(option: PicksOptionView): string | null { return option.preview.contentCard?.customPosterUrl || option.preview.contentCard?.posterPath || option.preview.person?.profileUrl || null; }
+  protected optionImage(option: PicksOptionView): string | null { return this.imageUrl(option.preview.contentCard?.customPosterUrl || option.preview.contentCard?.posterPath || option.preview.person?.profileUrl, 'w342'); }
   protected optionSubtitle(option: PicksOptionView): string | null { return option.preview.contentCard?.releaseYear?.toString() ?? option.preview.contentCard?.type ?? null; }
   protected optionRating(option: PicksOptionView): string | null { const rating = option.preview.contentCard?.stats?.averageScore; return rating === null || rating === undefined ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
   protected optionRatingLabel(option: PicksOptionView): string { const rating = this.optionRating(option); return rating ? `${this.homeCopy.communityAverage}: ${rating}` : ''; }
@@ -147,7 +149,7 @@ export class PickFillComponent implements OnDestroy {
   protected menuExpanded(option: PicksOptionView): boolean { return this.openMenu() === this.optionMenuKey(option); }
   protected readonly openMenu = signal('');
   protected toggleOptionMenu(option: PicksOptionView, event: MouseEvent): void { event.stopPropagation(); const key = this.optionMenuKey(option); this.openMenu.update((current) => current === key ? '' : key); }
-  protected optionAction(option: PicksOptionView, action: ContentImageActionSelection): void { if (action.action.id !== 'open') return; this.openTarget(option.target); }
+  protected optionAction(option: PicksOptionView, action: ContentImageActionSelection): void { this.openMenu.set(''); if (action.action.id !== 'open') return; this.openTarget(option.target); }
   protected pickOption(event: Event, option: PicksOptionView): void { event.preventDefault(); event.stopPropagation(); this.chooseFixed(option); }
   protected fixedOptions(categoryId: string): PicksOptionView[] { return this.optionViews().get(categoryId) ?? []; }
   protected hasOpenSearchResults(): boolean { return this.searchResults().contents.length > 0 || this.searchResults().people.length > 0; }
@@ -163,7 +165,8 @@ export class PickFillComponent implements OnDestroy {
     return this.seriesSeasons().filter((season) => season.seasonNumber !== null && season.seasonNumber >= 0).map((season) => ({ seasonNumber: season.seasonNumber as number, name: season.name || `${this.templateCopy.type.SERIES} ${season.seasonNumber}` }));
   }
   protected episodeLabel(episode: ContentEpisodeSelection): string { return `E${episode.episodeNumber} · ${episode.name || this.copy.episode}`; }
-  protected episodeImage(episode: ContentEpisodeSelection): string | null { return episode.stillUrl ? episode.stillUrl : null; }
+  protected episodeImage(episode: ContentEpisodeSelection): string | null { return this.imageUrl(episode.stillUrl, 'w500'); }
+  protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w342'): string | null { return tmdbImageUrl(path, size); }
 
   private setSearchResults(result: SearchView): void {
     this.searchResults.set({ contents: result.contents ?? [], people: result.people ?? [] });

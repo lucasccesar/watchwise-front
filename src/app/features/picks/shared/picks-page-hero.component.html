@@ -3,15 +3,14 @@
     <div class="tr-skeleton tr-hero-skeleton picks-hero-skeleton" aria-hidden="true"></div>
   }
   @if (backgroundImage && !heroBackdropFailed) {
-    <img class="picks-hero-image" [src]="backgroundImage" alt="" (load)="onHeroImageLoad()" (error)="onHeroImageError()" />
+    <app-responsive-banner [path]="backgroundImage" fallbackPath="" (imageLoaded)="onHeroImageLoad()" (imageError)="onHeroImageError()" />
   }
-  <div class="picks-hero-shade" aria-hidden="true"></div>
   <div class="picks-hero-content">
-    <h1 id="picks-page-title">{{ copy.title }}</h1>
+    <h1 id="picks-page-title" class="ww-page-hero-title">{{ copy.title }}</h1>
     @if (statsText) {
-      <p class="picks-hero-stats"><span aria-hidden="true"></span>{{ statsText }}<span aria-hidden="true"></span></p>
+      <p class="picks-hero-stats ww-page-hero-kicker"><span aria-hidden="true"></span>{{ statsText }}<span aria-hidden="true"></span></p>
     }
-    <p class="picks-hero-description">{{ copy.description }}</p>
+    <p class="picks-hero-description ww-page-hero-description">{{ copy.description }}</p>
   </div>
 </section>
 

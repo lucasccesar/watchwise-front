@@ -16,11 +16,13 @@ import { ProfileApiService, PublicUserProfile } from '../../../profile/data-acce
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { SocialActionsMenuComponent, SocialActionMenuEvent, SocialActionMenuUser } from '../../../../shared/components/social-actions-menu/social-actions-menu.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -45,7 +47,7 @@ interface ReviewCalendarDay {
 @Component({
   selector: 'app-diary-review-detail',
   standalone: true,
-  imports: [RouterLink, NgTemplateOutlet, PageSkeletonComponent, DialogBackdropComponent, ModalFocusDirective, ShareReviewDialogComponent, SocialActionsMenuComponent, CommentItemComponent],
+  imports: [RouterLink, NgTemplateOutlet, PageSkeletonComponent, ResponsiveBannerComponent, DialogBackdropComponent, ModalFocusDirective, ShareReviewDialogComponent, SocialActionsMenuComponent, CommentItemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './review-detail.component.html',
   styleUrl: './review-detail.component.css',
@@ -180,6 +182,7 @@ export class DiaryReviewDetailComponent {
     return {
       title: this.contentTitle(),
       subtitle,
+      subtitleBelowTitle: content?.type === 'EPISODE',
       rating: entry.score,
       review: entry.comment,
       backgroundUrl: this.backdrop() || posterUrl,
@@ -227,15 +230,7 @@ export class DiaryReviewDetailComponent {
   protected posterUrl(): string | null {
     const entry = this.entry();
     const path = entry?.customPosterUrl || entry?.card?.customPosterUrl || entry?.card?.posterPath;
-    if (!path) return null;
-    return /^https?:\/\//i.test(path)
-      ? path
-      : `https://image.tmdb.org/t/p/w500${path.startsWith('/') ? path : `/${path}`}`;
-  }
-
-  protected backdropStyle(): string | null {
-    const url = this.backdrop();
-    return url ? `url("${url}")` : null;
+    return tmdbImageUrl(path, 'w500');
   }
 
   protected formatDate(value: string | null | undefined): string {
@@ -581,7 +576,7 @@ export class DiaryReviewDetailComponent {
 
   private setBackdrop(path: string | null): void {
     if (!path) return;
-    this.backdrop.set(/^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/w1280${path.startsWith('/') ? path : `/${path}`}`);
+    this.backdrop.set(tmdbImageUrl(path, 'w1280'));
   }
 
   private createReviewCalendarDays(month: Date, selectedDate: string): ReviewCalendarDay[] {

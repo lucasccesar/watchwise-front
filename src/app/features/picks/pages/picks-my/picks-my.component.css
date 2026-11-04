@@ -23,7 +23,7 @@
 .picks-answer-chips span { max-width: 210px; overflow: hidden; padding: 4px 8px; border: 1px solid var(--color-border); border-radius: 5px; color: var(--color-text-secondary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .picks-answer-chips .picks-chip-more { border-color: transparent; }
 .picks-my-progress { display: flex; align-items: center; gap: 7px; color: var(--color-text); font-size: var(--font-size-xs); font-weight: 650; }
-.picks-progress-icon { display: grid; width: 14px; height: 14px; place-items: center; border: 1px solid currentColor; border-radius: 3px; font-size: 10px; line-height: 1; }
+.picks-progress-icon { display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; line-height: 1; }
 .picks-progress-track { width: 120px; height: 6px; overflow: hidden; border-radius: 99px; background: var(--color-surface-secondary); }
 .picks-progress-track > span { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); }
 .picks-my-side { display: flex; min-width: 160px; flex-direction: column; align-items: flex-end; justify-content: space-between; align-self: stretch; padding: 4px 0; }
@@ -36,7 +36,10 @@
 .picks-my-social .picks-likes svg { color: #f05b68; }
 .picks-my-pagination { display: flex; min-height: 72px; align-items: center; justify-content: center; gap: 16px; }
 .picks-my-pagination button { min-height: 38px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; cursor: pointer; }
+.picks-my-pagination > button:first-child, .picks-my-pagination > button:last-child { display: grid; width: 36px; min-height: 36px; place-items: center; padding: 0; border: 0; background: transparent; }
+.picks-my-pagination > button:first-child:hover:not(:disabled), .picks-my-pagination > button:last-child:hover:not(:disabled) { background: transparent; color: var(--color-primary); }
 .picks-my-pagination button:disabled { cursor: default; opacity: .45; }
+.picks-my-pagination svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .picks-my-pagination span { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .picks-state { min-height: 320px; }
 .picks-my-empty .picks-create { margin-top: 8px; }

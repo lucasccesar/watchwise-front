@@ -11,9 +11,9 @@
   } @else if (status() === 'error') {
     <section class="picks-state"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (section() === 'all') {
-    <section class="picks-toolbar picks-all-toolbar">
+    <section class="picks-toolbar picks-all-toolbar ww-filter-surface">
       <label class="picks-sort-label">{{ copy.sortTemplates }}
-        <select [value]="allSort()" (change)="setAllSort($any($event.target).value)">
+        <select [value]="allSort()" (change)="setAllSort($any($event.target).value)" data-ww-select-trigger>
           <option value="POPULAR_WEEK">{{ copy.popularThisWeek }}</option>
           <option value="MOST_PICKED">{{ copy.mostPicked }}</option>
           <option value="RECENT">{{ copy.recentlyAdded }}</option>
@@ -31,16 +31,16 @@
       </div>
       <span class="picks-results-count">{{ pageCount(allTemplates()) }}</span>
     </section>
-    <section class="picks-feed picks-catalog-feed">
+    <section class="picks-feed picks-catalog-feed" [class.picks-catalog-feed--empty]="!allTemplates()?.content?.length">
       @if (allTemplates()?.content?.length) {
         <div class="picks-grid">
           @for (template of allTemplates()?.content ?? []; track trackTemplate($index, template)) { <ng-container *ngTemplateOutlet="templateCard; context: { $implicit: template }" /> }
         </div>
         @if ((allTemplates()?.totalPages ?? 0) > 1) {
           <nav class="picks-catalog-pagination" aria-label="{{ copy.catalogPagination }}">
-            <button type="button" [disabled]="allPage() === 1" (click)="previousAllPage()">{{ copy.previousPage }}</button>
+            <button type="button" [disabled]="allPage() === 1" [attr.aria-label]="copy.previousPage" (click)="previousAllPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
             <span>{{ copy.pageOf.replace('{page}', allPage().toString()).replace('{total}', (allTemplates()?.totalPages ?? 0).toString()) }}</span>
-            <button type="button" [disabled]="!allTemplates()?.hasNext" (click)="nextAllPage()">{{ copy.nextPage }}</button>
+            <button type="button" [disabled]="!allTemplates()?.hasNext" [attr.aria-label]="copy.nextPage" (click)="nextAllPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
           </nav>
         }
       } @else {
@@ -48,7 +48,7 @@
       }
     </section>
   } @else {
-    <form class="picks-toolbar" (submit)="submitSearch($event)">
+    <form class="picks-toolbar ww-filter-surface" (submit)="submitSearch($event)">
       <label class="picks-search"><span class="sr-only">{{ copy.searchLabel }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input type="search" [value]="query()" (input)="updateQuery($event)" [placeholder]="copy.searchPlaceholder"/><button type="submit">{{ copy.search }}</button></label>
       <div class="picks-origins" role="group" [attr.aria-label]="copy.originLabel">
         <button type="button" [class.active]="origin() === null" [attr.aria-pressed]="origin() === null" (click)="selectOrigin(null)">{{ copy.all }}</button>

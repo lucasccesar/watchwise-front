@@ -1,6 +1,9 @@
 import { DecimalPipe, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild, computed, inject, input, output, signal } from '@angular/core';
 import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
+import { messageCatalog } from '../../i18n/messages';
+import { ModalScrollLockDirective } from '../../directives/modal-scroll-lock.directive';
+import { WATCHWISE_STAR_PATH } from '../../utils/watchwise-star';
 
 export type ShareCardKind = 'episode' | 'profile' | 'ratings-map' | 'list' | 'picks';
 
@@ -41,12 +44,13 @@ export interface ShareCardModel {
   scores?: readonly (number | null)[];
   scoreGroups?: readonly ShareCardScoreGroup[];
   ratingsMatrix?: ShareRatingsMatrix;
+  itemCount?: number;
 }
 
 @Component({
   selector: 'app-share-preview',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ModalScrollLockDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './share-preview.component.html',
   styleUrl: './share-preview.component.css',
@@ -56,17 +60,33 @@ export class SharePreviewComponent implements OnDestroy {
   readonly shareUrl = input('');
   readonly returnFocusTarget = input<HTMLElement | null>(null);
   protected readonly closed = output<void>();
+  protected readonly listCopy = messageCatalog['pt-BR'].shareListPreview;
+  protected readonly listBackgroundUrl = signal<string | null>(null);
+  protected readonly listBackgroundPickerOpen = signal(false);
+  protected readonly listShowDescription = signal(true);
+  protected readonly listShowRank = signal(true);
+  protected readonly listCopyPending = signal(false);
+  protected readonly listBackgroundZoom = signal(120);
+  protected readonly listBackgroundX = signal(50);
+  protected readonly listBackgroundY = signal(30);
+  protected readonly listBackgroundImage = computed(() => this.listBackgroundUrl() || this.model().backgroundUrl || this.model().imageUrl || null);
+  protected readonly listItemCount = computed(() => this.model().itemCount ?? this.model().items?.length ?? 0);
+  protected readonly listRemainingCount = computed(() => Math.max(0, this.listItemCount() - this.previewItems().length));
   private readonly toasts = inject(ToastNotificationsService);
   private readonly document = inject(DOCUMENT);
   private readonly opener = this.document.activeElement as HTMLElement | null;
   private dialogElement?: HTMLElement;
   private focusRestored = false;
+  private backgroundDragStart: { pointerX: number; pointerY: number; backgroundX: number; backgroundY: number } | null = null;
 
   @ViewChild('shareDialog')
   protected set dialog(value: ElementRef<HTMLElement> | undefined) {
     this.dialogElement = value?.nativeElement;
     (this.focusableControls()[0] ?? this.dialogElement)?.focus();
   }
+
+  @ViewChild('listSharePreview')
+  private listSharePreview?: ElementRef<HTMLElement>;
 
   ngOnDestroy(): void {
     this.restoreFocus();
@@ -84,6 +104,12 @@ export class SharePreviewComponent implements OnDestroy {
   @HostListener('document:keydown', ['$event'])
   protected handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
+      if (this.listBackgroundPickerOpen()) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.listBackgroundPickerOpen.set(false);
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       this.close();
@@ -121,6 +147,7 @@ export class SharePreviewComponent implements OnDestroy {
   }
 
   protected readonly previewItems = () => this.model().items?.slice(0, this.model().kind === 'list' ? 20 : 16) ?? [];
+  protected readonly listBackgroundOptions = computed(() => this.previewItems().filter((item) => Boolean(item.imageUrl)));
   protected readonly previewRecentItems = () => this.model().recentItems?.slice(0, 5) ?? [];
   protected readonly kindLabel = () => ({
     episode: 'Episódio',
@@ -141,8 +168,86 @@ export class SharePreviewComponent implements OnDestroy {
     }
   }
 
+  protected listItemCountLabel(): string {
+    const count = new Intl.NumberFormat('pt-BR').format(this.listItemCount());
+    return this.listItemCount() === 1 ? this.listCopy.oneTitle.replace('{count}', count) : this.listCopy.manyTitles.replace('{count}', count);
+  }
+
+  protected toggleListDescription(): void { this.listShowDescription.update((value) => !value); }
+  protected toggleListRank(): void { this.listShowRank.update((value) => !value); }
+
+  protected toggleListBackgroundPicker(): void { this.listBackgroundPickerOpen.update((open) => !open); }
+
+  protected selectListBackground(imageUrl: string): void {
+    this.listBackgroundUrl.set(imageUrl);
+    this.listBackgroundPickerOpen.set(false);
+  }
+
+  protected isListBackgroundSelected(imageUrl: string | null | undefined): boolean {
+    return Boolean(imageUrl && this.listBackgroundImage() === imageUrl);
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected dismissListBackgroundPicker(event: MouseEvent): void {
+    if (!this.listBackgroundPickerOpen()) return;
+    const picker = this.dialogElement?.querySelector('.list-share-image-picker-wrap');
+    if (picker && !picker.contains(event.target as Node)) this.listBackgroundPickerOpen.set(false);
+  }
+
+  protected adjustListBackgroundZoom(amount: number): void {
+    this.listBackgroundZoom.update((value) => Math.max(100, Math.min(250, value + amount)));
+  }
+
+  protected listBackgroundWheel(event: WheelEvent): void {
+    event.preventDefault();
+    if (event.deltaY !== 0) this.adjustListBackgroundZoom(event.deltaY < 0 ? 10 : -10);
+  }
+
+  protected resetListBackground(): void {
+    this.listBackgroundZoom.set(120);
+    this.listBackgroundX.set(50);
+    this.listBackgroundY.set(30);
+  }
+
+  protected updateListBackgroundZoom(event: Event): void {
+    this.listBackgroundZoom.set(Number((event.currentTarget as HTMLInputElement).value));
+  }
+
+  protected updateListBackgroundPosition(axis: 'x' | 'y', event: Event): void {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    (axis === 'x' ? this.listBackgroundX : this.listBackgroundY).set(value);
+  }
+
+  protected startListBackgroundDrag(event: PointerEvent): void {
+    if (event.button !== 0 || !this.listBackgroundImage()) return;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+    this.backgroundDragStart = {
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      backgroundX: this.listBackgroundX(),
+      backgroundY: this.listBackgroundY(),
+    };
+  }
+
+  protected moveListBackground(event: PointerEvent): void {
+    if (!this.backgroundDragStart) return;
+    const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    this.listBackgroundX.set(this.clampPosition(this.backgroundDragStart.backgroundX - ((event.clientX - this.backgroundDragStart.pointerX) / bounds.width) * 100));
+    this.listBackgroundY.set(this.clampPosition(this.backgroundDragStart.backgroundY - ((event.clientY - this.backgroundDragStart.pointerY) / bounds.height) * 100));
+  }
+
+  protected endListBackgroundDrag(): void { this.backgroundDragStart = null; }
+
+  private clampPosition(value: number): number { return Math.max(0, Math.min(100, value)); }
+
   protected downloadCard(): void {
     const model = this.model();
+    if (model.kind === 'list') {
+      this.downloadListCard();
+      return;
+    }
     const title = this.escape(model.title);
     const subtitle = this.escape(model.subtitle || this.kindLabel());
     const author = this.escape(model.authorName || 'Watchwise');
@@ -150,7 +255,7 @@ export class SharePreviewComponent implements OnDestroy {
     const description = this.escape(model.quote || model.description || '');
     const bg = model.backgroundUrl || model.imageUrl || '';
     const imageLayer = bg ? `<image href="${this.escape(bg)}" x="-28" y="-28" width="1136" height="1976" preserveAspectRatio="xMidYMid slice" opacity=".45" filter="url(#blur)"/>` : '';
-    const items = (model.items ?? []).slice(0, model.kind === 'list' ? 20 : 16);
+    const items = (model.items ?? []).slice(0, 16);
     const renderPosterGrid = (gridItems: readonly ShareCardItem[], startY: number, posterWidth: number, columns: number, options: { showLabels?: boolean; showRatings?: boolean; numbered?: boolean } = {}) => {
       const posterHeight = Math.round(posterWidth * 1.48);
       const gap = Math.round((1080 - columns * posterWidth - 112) / Math.max(1, columns - 1));
@@ -162,15 +267,17 @@ export class SharePreviewComponent implements OnDestroy {
         const number = options.numbered ? `<text x="${x + 12}" y="${y + 28}" class="rank">${index + 1}</text>` : '';
         const itemLabel = this.escape(item.label || item.title).slice(0, 38);
         const label = options.showLabels ? `<text x="${x}" y="${y + posterHeight + 24}" class="item-title">${itemLabel}</text>` : '';
-        const rating = options.showRatings && item.rating !== null && item.rating !== undefined ? `<rect x="${x + posterWidth - 70}" y="${y + posterHeight - 38}" width="64" height="30" rx="7" fill="#101115" fill-opacity=".88"/><text x="${x + posterWidth - 38}" y="${y + posterHeight - 17}" text-anchor="middle" class="rating-small">★ ${this.escape(item.rating.toLocaleString('pt-BR', { maximumFractionDigits: 1 }))}</text>` : '';
+        const rating = options.showRatings && item.rating !== null && item.rating !== undefined
+          ? `<rect x="${x + posterWidth - 70}" y="${y + posterHeight - 38}" width="64" height="30" rx="7" fill="#101115" fill-opacity=".88"/><svg x="${x + posterWidth - 66}" y="${y + posterHeight - 33}" width="18" height="18" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"><path d="${WATCHWISE_STAR_PATH}"/></svg><text x="${x + posterWidth - 26}" y="${y + posterHeight - 17}" text-anchor="middle" class="rating-small">${this.escape(item.rating.toLocaleString('pt-BR', { maximumFractionDigits: 1 }))}</text>`
+          : '';
         return `<clipPath id="${clipId}"><rect x="${x}" y="${y}" width="${posterWidth}" height="${posterHeight}" rx="10"/></clipPath>${poster}${number}${rating}${label}`;
       }).join('');
     };
-    const columns = model.kind === 'list' || model.kind === 'profile' ? 5 : 4;
-    const posterWidth = model.kind === 'profile' ? 168 : model.kind === 'list' ? 160 : 205;
-    const posterGrid = renderPosterGrid(items, model.kind === 'profile' ? 900 : 465, posterWidth, columns, { showLabels: model.kind !== 'profile', numbered: model.kind === 'list' });
+    const columns = model.kind === 'profile' ? 5 : 4;
+    const posterWidth = model.kind === 'profile' ? 168 : 205;
+    const posterGrid = renderPosterGrid(items, model.kind === 'profile' ? 900 : 465, posterWidth, columns, { showLabels: model.kind !== 'profile' });
     const recentGrid = model.kind === 'profile' ? renderPosterGrid((model.recentItems ?? []).slice(0, 5), 1310, 168, 5, { showRatings: true }) : '';
-    const rating = model.rating === null || model.rating === undefined ? '' : `<text x="56" y="390" class="rating">★ ${this.escape(String(model.rating.toLocaleString('pt-BR', { maximumFractionDigits: 1 })))}</text>`;
+    const rating = model.rating === null || model.rating === undefined ? '' : `<svg x="56" y="364" width="30" height="30" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"><path d="${WATCHWISE_STAR_PATH}"/></svg><text x="92" y="390" class="rating">${this.escape(String(model.rating.toLocaleString('pt-BR', { maximumFractionDigits: 1 })))}</text>`;
     const avatarClip = model.kind === 'profile' ? 'profileAvatarClip' : 'avatarClip';
     const avatar = model.avatarUrl ? `<image href="${this.escape(model.avatarUrl)}" x="${model.kind === 'profile' ? 488 : 56}" y="${model.kind === 'profile' ? 205 : 132}" width="${model.kind === 'profile' ? 104 : 72}" height="${model.kind === 'profile' ? 104 : 72}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarClip})"/>` : '';
     const ratingsMap = model.ratingsMatrix?.columnLabels.length
@@ -232,6 +339,179 @@ export class SharePreviewComponent implements OnDestroy {
     anchor.download = `watchwise-${model.kind}.svg`;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  protected async copyListImage(): Promise<void> {
+    if (this.listCopyPending()) return;
+    this.listCopyPending.set(true);
+    try {
+      const clipboard = navigator.clipboard;
+      if (!clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('clipboard-unavailable');
+      const imageBlob = await this.createListImageBlob();
+      await clipboard.write([new ClipboardItem({ 'image/png': imageBlob })]);
+      this.toasts.success(this.listCopy.imageCopied);
+    } catch {
+      this.toasts.error(this.listCopy.copyError);
+    } finally {
+      this.listCopyPending.set(false);
+    }
+  }
+
+  private async downloadListCard(): Promise<void> {
+    const svg = await this.createListCardSvg();
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+    const anchor = this.document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'watchwise-lista.svg';
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  private async createListCardSvg(): Promise<string> {
+    const preview = this.listSharePreview?.nativeElement;
+    if (!preview) throw new Error('list-preview-unavailable');
+
+    const bounds = preview.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) throw new Error('list-preview-not-rendered');
+
+    const clone = preview.cloneNode(true) as HTMLElement;
+    await this.copyComputedPreviewStyles(preview, clone);
+    await this.inlinePreviewImages(preview, clone);
+
+    const foreignObject = new XMLSerializer().serializeToString(clone);
+    const fontFaces = await this.inlineInterFontFaces();
+    return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="1080" height="1920" viewBox="0 0 ${bounds.width} ${bounds.height}" preserveAspectRatio="none"><defs><style>${fontFaces}</style></defs><foreignObject x="0" y="0" width="${bounds.width}" height="${bounds.height}">${foreignObject}</foreignObject></svg>`;
+  }
+
+  private async copyComputedPreviewStyles(source: HTMLElement, clone: HTMLElement): Promise<void> {
+    const view = this.document.defaultView;
+    if (!view) throw new Error('preview-window-unavailable');
+
+    const computed = view.getComputedStyle(source);
+    const declarations: string[] = [];
+    for (let index = 0; index < computed.length; index += 1) {
+      const property = computed.item(index);
+      const value = property === 'background-image'
+        ? await this.inlineCssImageUrls(computed.getPropertyValue(property))
+        : computed.getPropertyValue(property);
+      declarations.push(`${property}:${value};`);
+    }
+    clone.setAttribute('style', declarations.join(''));
+
+    const sourceChildren = Array.from(source.children) as HTMLElement[];
+    const cloneChildren = Array.from(clone.children) as HTMLElement[];
+    await Promise.all(sourceChildren.map((child, index) => this.copyComputedPreviewStyles(child, cloneChildren[index])));
+
+    const before = this.clonePseudoElement(source, '::before', view);
+    const after = this.clonePseudoElement(source, '::after', view);
+    if (before) clone.insertBefore(before, clone.firstChild);
+    if (after) clone.append(after);
+  }
+
+  private clonePseudoElement(source: HTMLElement, pseudo: '::before' | '::after', view: Window): HTMLElement | null {
+    const computed = view.getComputedStyle(source, pseudo);
+    if (!computed.content || computed.content === 'none' || computed.content === 'normal') return null;
+
+    const pseudoElement = this.document.createElement('span');
+    const declarations: string[] = [];
+    for (let index = 0; index < computed.length; index += 1) {
+      const property = computed.item(index);
+      if (property === 'content') continue;
+      declarations.push(`${property}:${computed.getPropertyValue(property)};`);
+    }
+    pseudoElement.setAttribute('style', declarations.join(''));
+    const text = computed.content.replace(/^(['"])(.*)\1$/s, '$2');
+    pseudoElement.textContent = text === 'none' || text === 'normal' ? '' : text;
+    return pseudoElement;
+  }
+
+  private async inlinePreviewImages(source: HTMLElement, clone: HTMLElement): Promise<void> {
+    const sourceImages = Array.from(source.querySelectorAll('img'));
+    const cloneImages = Array.from(clone.querySelectorAll('img'));
+    await Promise.all(sourceImages.map(async (image, index) => {
+      const url = image.currentSrc || image.src;
+      if (!url) return;
+      cloneImages[index].src = await this.imageAsDataUrl(url);
+      cloneImages[index].removeAttribute('loading');
+      cloneImages[index].setAttribute('draggable', 'false');
+    }));
+  }
+
+  private async inlineCssImageUrls(value: string): Promise<string> {
+    const urls = Array.from(value.matchAll(/url\((['"]?)(.*?)\1\)/g));
+    let result = value;
+    for (const match of urls) {
+      const source = match[2];
+      if (!source || source.startsWith('data:')) continue;
+      const dataUrl = await this.imageAsDataUrl(source);
+      result = result.replace(match[0], `url("${dataUrl}")`);
+    }
+    return result;
+  }
+
+  private async imageAsDataUrl(source: string): Promise<string> {
+    const url = new URL(source, this.document.baseURI).href;
+    if (url.startsWith('data:')) return url;
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error('image-load-failed');
+    return this.blobAsDataUrl(await response.blob());
+  }
+
+  private async inlineInterFontFaces(): Promise<string> {
+    const fontLink = this.document.querySelector<HTMLLinkElement>('link[href*="fonts.googleapis.com/css2?family=Inter"]');
+    if (!fontLink) return '';
+
+    try {
+      const stylesheet = await fetch(fontLink.href);
+      if (!stylesheet.ok) return '';
+      const rules = (await stylesheet.text()).match(/@font-face\s*\{[^}]+\}/g) ?? [];
+      const weights = [400, 500, 600, 700];
+      const faces = await Promise.all(weights.map(async (weight) => {
+        const rule = rules.find((candidate) =>
+          new RegExp(`font-weight:\\s*${weight}(?:\\s|;)`, 'i').test(candidate) && /unicode-range:\s*U\+0000-00FF/i.test(candidate),
+        );
+        const source = rule?.match(/src:\s*url\((['"]?)(.*?)\1\)/i)?.[2];
+        if (!source) return '';
+        const fontData = await this.imageAsDataUrl(source);
+        return `@font-face{font-family:Inter;font-style:normal;font-weight:${weight};src:url("${fontData}") format("woff2");}`;
+      }));
+      return faces.join('');
+    } catch {
+      return '';
+    }
+  }
+
+  private async createListImageBlob(): Promise<Blob> {
+    const svgDocument = new DOMParser().parseFromString(await this.createListCardSvg(), 'image/svg+xml');
+    if (svgDocument.querySelector('parsererror')) throw new Error('invalid-svg');
+
+    const svg = new XMLSerializer().serializeToString(svgDocument.documentElement);
+    const objectUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+    try {
+      const image = this.document.createElement('img');
+      image.src = objectUrl;
+      await image.decode();
+      const canvas = this.document.createElement('canvas');
+      canvas.width = 1080;
+      canvas.height = 1920;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('canvas-unavailable');
+      context.drawImage(image, 0, 0);
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('image-encode-failed')), 'image/png');
+      });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  private blobAsDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('image-read-failed'));
+      reader.onerror = () => reject(reader.error ?? new Error('image-read-failed'));
+      reader.readAsDataURL(blob);
+    });
   }
 
   private escape(value: string): string {
