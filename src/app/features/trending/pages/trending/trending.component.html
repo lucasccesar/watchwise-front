@@ -33,16 +33,6 @@
         {{ copy.thisWeek }}
       </button>
     </div>
-    <button
-      class="tr-filter-trigger"
-      type="button"
-      [attr.aria-label]="copy.filters"
-      [attr.aria-expanded]="filterOpen()"
-      aria-haspopup="dialog"
-      (click)="openFilters($event)"
-     data-ww-select-trigger>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
-    </button>
   </div>
 
 
@@ -282,82 +272,6 @@
         </div>
       </section>
     }
-  }
-
-  @if (filterOpen()) {
-    <div class="tr-filter-layer" appModalScrollLock>
-      <button
-        class="tr-filter-backdrop"
-        type="button"
-        [attr.aria-label]="copy.closeFilters"
-        (click)="closeFilters()"
-      ></button>
-      <div
-        #filterDialog
-        class="tr-filter-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="tr-filter-title"
-      >
-        <div class="tr-filter-handle" aria-hidden="true"><span></span></div>
-        <div class="tr-filter-heading">
-          @if (filterSubpage()) {
-            <button class="tr-filter-back" type="button" (click)="backToFilters()">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12" /></svg>
-              {{ copy.filters }}
-            </button>
-            <button
-              #filterCloseButton
-              type="button"
-              [attr.aria-label]="copy.closeFilters"
-              (click)="closeFilters()"
-            >×</button>
-          } @else {
-            <h2 id="tr-filter-title">{{ copy.filters }}</h2>
-            <button
-              #filterCloseButton
-              type="button"
-              [attr.aria-label]="copy.closeFilters"
-              (click)="closeFilters()"
-            >×</button>
-          }
-        </div>
-        @if (!filterSubpage()) {
-          <div class="tr-filter-options">
-            <button class="tr-filter-row" type="button" (click)="openFilterSubpage('view')">
-              <span>{{ copy.viewLabel }}</span><span>{{ view() === 'list' ? copy.list : copy.grid }}</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-            </button>
-            <button class="tr-filter-row" type="button" (click)="openFilterSubpage('period')">
-              <span>{{ copy.periodLabel }}</span><span>{{ period() === 'week' ? copy.thisWeek : copy.today }}</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-            </button>
-          </div>
-        } @else if (filterSubpage() === 'view') {
-          <h2 id="tr-filter-title" class="tr-filter-subtitle">{{ copy.viewLabel }}</h2>
-          <div class="tr-filter-radio-list" role="radiogroup" [attr.aria-label]="copy.viewLabel">
-            <button type="button" role="radio" [attr.aria-checked]="view() === 'list'" (click)="selectFilterView('list')">
-              <span class="tr-filter-radio"></span>{{ copy.list }}
-            </button>
-            <button type="button" role="radio" [attr.aria-checked]="view() === 'grid'" (click)="selectFilterView('grid')">
-              <span class="tr-filter-radio"></span>{{ copy.grid }}
-            </button>
-          </div>
-          <button class="tr-filter-done" type="button" (click)="backToFilters()">{{ copy.apply }}</button>
-        } @else {
-          <h2 id="tr-filter-title" class="tr-filter-subtitle">{{ copy.periodLabel }}</h2>
-          <div class="tr-filter-radio-list" role="radiogroup" [attr.aria-label]="copy.periodLabel">
-            <button type="button" role="radio" [attr.aria-checked]="period() === 'week'" (click)="selectFilterPeriod('week')">
-              <span class="tr-filter-radio"></span>{{ copy.thisWeek }}
-            </button>
-            <button type="button" role="radio" [attr.aria-checked]="period() === 'day'" (click)="selectFilterPeriod('day')">
-              <span class="tr-filter-radio"></span>{{ copy.today }}
-            </button>
-          </div>
-          <button class="tr-filter-done" type="button" (click)="backToFilters()">{{ copy.apply }}</button>
-        }
-      </div>
-    </div>
   }
 
   @if (watchDialogCard(); as card) {

@@ -1,11 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
-  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
-  ViewChild,
   computed,
   inject,
   signal,
@@ -21,7 +19,6 @@ import {
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
-import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
@@ -68,7 +65,7 @@ function emptySection(loading = false): SectionState {
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, ResponsiveBannerComponent, CheckIconComponent],
+  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent],
   templateUrl: './trending.component.html',
   styleUrl: './trending.component.css',
 })
@@ -79,8 +76,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly view = signal<'grid' | 'list'>(
     typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches ? 'list' : 'grid',
   );
-  protected readonly filterOpen = signal(false);
-  protected readonly filterSubpage = signal<'view' | 'period' | null>(null);
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly errorMessage = signal('');
   protected readonly sections = signal<Sections>({ MOVIE: emptySection(), SERIES: emptySection() });
@@ -135,7 +130,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   private readonly sectionRequests: Partial<Record<TrendingType, Subscription>> = {};
   private readonly cardActionRequests = new Subscription();
   private listRequests = new Subscription();
-  private filterOpener: HTMLElement | null = null;
 
   protected posterImage(path: string | null | undefined): string | null {
     return buildTmdbImageUrl(path, 'w500');
@@ -144,14 +138,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   private tmdbImageUrl(path: string): string {
     return buildTmdbImageUrl(path, 'w1920') ?? '';
   }
-
-  @ViewChild('filterCloseButton')
-  protected set filterCloseButton(button: ElementRef<HTMLButtonElement> | undefined) {
-    if (button && this.filterOpen()) button.nativeElement.focus();
-  }
-
-  @ViewChild('filterDialog')
-  private filterDialog?: ElementRef<HTMLElement>;
 
   constructor(
     private readonly api: TrendingApiService,
@@ -208,65 +194,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected changePeriod(period: TrendingWindow): void {
     if (period === this.period()) return;
     this.period.set(period);
-    this.closeFilters();
     this.load();
-  }
-
-  protected selectFilterPeriod(period: TrendingWindow): void {
-    if (period !== this.period()) {
-      this.period.set(period);
-      this.load();
-    }
-    this.filterSubpage.set(null);
-  }
-
-  protected selectFilterView(view: 'grid' | 'list'): void {
-    this.view.set(view);
-    this.filterSubpage.set(null);
-  }
-
-  protected openFilterSubpage(page: 'view' | 'period'): void {
-    this.filterSubpage.set(page);
-  }
-
-  protected backToFilters(): void {
-    this.filterSubpage.set(null);
-  }
-
-  protected openFilters(event: Event): void {
-    this.filterOpener = event.currentTarget as HTMLElement;
-    this.filterOpen.set(true);
-  }
-
-  protected closeFilters(): void {
-    this.filterOpen.set(false);
-    this.filterSubpage.set(null);
-    this.filterOpener?.focus();
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  protected handleFilterKeydown(event: KeyboardEvent): void {
-    if (!this.filterOpen()) return;
-    if (event.key === 'Escape') {
-      this.closeFilters();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const focusable = Array.from(
-      this.filterDialog?.nativeElement.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
-        'button:not([disabled]), input:not([disabled])',
-      ) ?? [],
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
   }
 
   protected visibleCards(type: TrendingType): TrendingCard[] {
