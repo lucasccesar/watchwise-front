@@ -24,7 +24,7 @@
         <input id="picks-catalog-search" type="search" [value]="query()" (input)="updateQuery($event)" [placeholder]="copy.searchPlaceholder" />
         <button type="submit">{{ copy.search }}</button>
       </form>
-      <div class="picks-origins" role="group" [attr.aria-label]="copy.originLabel">
+      <div class="picks-origins ww-segmented-control" role="group" [attr.aria-label]="copy.originLabel">
         <button type="button" [class.active]="origin() === null" [attr.aria-pressed]="origin() === null" (click)="selectOrigin(null)">{{ copy.all }}</button>
         <button type="button" [class.active]="origin() === 'OFFICIAL'" [attr.aria-pressed]="origin() === 'OFFICIAL'" (click)="selectOrigin('OFFICIAL')">{{ copy.official }}</button>
         <button type="button" [class.active]="origin() === 'COMMUNITY'" [attr.aria-pressed]="origin() === 'COMMUNITY'" (click)="selectOrigin('COMMUNITY')">{{ copy.community }}</button>
@@ -50,7 +50,7 @@
   } @else {
     <form class="picks-toolbar ww-filter-surface" (submit)="submitSearch($event)">
       <label class="picks-search"><span class="sr-only">{{ copy.searchLabel }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input type="search" [value]="query()" (input)="updateQuery($event)" [placeholder]="copy.searchPlaceholder"/><button type="submit">{{ copy.search }}</button></label>
-      <div class="picks-origins" role="group" [attr.aria-label]="copy.originLabel">
+      <div class="picks-origins ww-segmented-control" role="group" [attr.aria-label]="copy.originLabel">
         <button type="button" [class.active]="origin() === null" [attr.aria-pressed]="origin() === null" (click)="selectOrigin(null)">{{ copy.all }}</button>
         <button type="button" [class.active]="origin() === 'OFFICIAL'" [attr.aria-pressed]="origin() === 'OFFICIAL'" (click)="selectOrigin('OFFICIAL')">{{ copy.official }}</button>
         <button type="button" [class.active]="origin() === 'COMMUNITY'" [attr.aria-pressed]="origin() === 'COMMUNITY'" (click)="selectOrigin('COMMUNITY')">{{ copy.community }}</button>

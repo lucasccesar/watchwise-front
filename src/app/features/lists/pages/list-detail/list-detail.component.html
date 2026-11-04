@@ -25,7 +25,7 @@
       <div class="list-detail-controls">
         <div class="list-detail-filters">
           @if (list.itemScope === 'MOVIE_OR_SERIES') {
-            <div class="list-detail-type-tabs" role="group" [attr.aria-label]="copy.typeFilter">
+            <div class="list-detail-type-tabs ww-segmented-control" role="group" [attr.aria-label]="copy.typeFilter">
               <button type="button" [class.calendar-filter-active]="type() === null" [attr.aria-pressed]="type() === null" (click)="selectType(null)">{{ copy.all }}</button>
               <button type="button" [class.calendar-filter-active]="type() === 'MOVIE'" [attr.aria-pressed]="type() === 'MOVIE'" (click)="selectType('MOVIE')"><span class="calendar-filter-dot calendar-filter-dot--movie" aria-hidden="true"></span>{{ copy.movies }}</button>
               <button type="button" [class.calendar-filter-active]="type() === 'SERIES'" [attr.aria-pressed]="type() === 'SERIES'" (click)="selectType('SERIES')"><span class="calendar-filter-dot calendar-filter-dot--series" aria-hidden="true"></span>{{ copy.series }}</button>

@@ -11,7 +11,7 @@
 
   <section class="watchlist-toolbar ww-filter-surface" aria-label="{{ copy.filters }}">
     <div class="watchlist-toolbar-left">
-      <div class="watchlist-type-tabs" role="group" aria-label="{{ copy.contentType }}">
+      <div class="watchlist-type-tabs ww-segmented-control" role="group" aria-label="{{ copy.contentType }}">
         <button type="button" [class.watchlist-tab-active]="type() === null" [attr.aria-pressed]="type() === null" (click)="selectType(null)">{{ copy.all }}</button>
         <button type="button" [class.watchlist-tab-active]="type() === 'MOVIE'" [attr.aria-pressed]="type() === 'MOVIE'" (click)="selectType('MOVIE')">{{ copy.movies }}</button>
         <button type="button" [class.watchlist-tab-active]="type() === 'SERIES'" [attr.aria-pressed]="type() === 'SERIES'" (click)="selectType('SERIES')">{{ copy.series }}</button>

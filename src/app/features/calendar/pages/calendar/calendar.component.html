@@ -16,7 +16,7 @@
         <button type="button" [attr.aria-label]="copy.nextMonth" (click)="changeMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
         <button class="calendar-today" type="button" (click)="goToToday()">{{ copy.todayButton }}</button>
       </div>
-      <div class="calendar-type-filter" role="group" aria-label="{{ copy.filterByType }}">
+      <div class="calendar-type-filter ww-segmented-control" role="group" aria-label="{{ copy.filterByType }}">
         <button type="button" [class.calendar-filter-active]="filter() === 'ALL'" [attr.aria-pressed]="filter() === 'ALL'" (click)="setFilter('ALL')">{{ copy.all }}</button>
         <button type="button" [class.calendar-filter-active]="filter() === 'EPISODE'" [attr.aria-pressed]="filter() === 'EPISODE'" (click)="setFilter('EPISODE')"><span class="calendar-filter-dot calendar-filter-dot--episode" aria-hidden="true"></span>{{ copy.episodes }}</button>
         <button type="button" [class.calendar-filter-active]="filter() === 'SEASON'" [attr.aria-pressed]="filter() === 'SEASON'" (click)="setFilter('SEASON')"><span class="calendar-filter-dot calendar-filter-dot--season" aria-hidden="true"></span>{{ copy.seasons }}</button>

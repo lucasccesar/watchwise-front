@@ -15,7 +15,7 @@
 
   <div class="tr-toolbar ww-filter-surface">
     <span class="tr-mobile-date">{{ periodRange() }}</span>
-    <div class="tr-period" role="group" [attr.aria-label]="copy.periodLabel">
+    <div class="tr-period ww-segmented-control" role="group" [attr.aria-label]="copy.periodLabel">
       <button
         type="button"
         [attr.aria-pressed]="period() === 'day'"

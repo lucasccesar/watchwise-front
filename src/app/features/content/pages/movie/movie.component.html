@@ -497,7 +497,7 @@
           <h2 id="movie-reviews-title">{{ copy.reviews }}</h2>
           <span>{{ formatNumber(reviewCount(), 0) }}</span>
         </div>
-        <div class="movie-review-sort" role="group" [attr.aria-label]="copy.reviewSort">
+        <div class="movie-review-sort ww-segmented-control" role="group" [attr.aria-label]="copy.reviewSort">
           <button type="button" [attr.aria-pressed]="reviewSort() === 'POPULAR'" (click)="changeReviewSort('POPULAR')">{{ copy.popular }}</button>
           <button type="button" [attr.aria-pressed]="reviewSort() === 'RECENT'" (click)="changeReviewSort('RECENT')">{{ copy.recent }}</button>
           <button type="button" [attr.aria-pressed]="reviewSort() === 'FOLLOWING'" (click)="changeReviewSort('FOLLOWING')">{{ copy.following }}</button>

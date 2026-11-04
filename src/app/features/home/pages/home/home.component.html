@@ -186,7 +186,7 @@
               <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
             </span>
           </h2>
-          <div class="view-switch" role="group" [attr.aria-label]="copy.upcoming">
+          <div class="view-switch ww-segmented-control" role="group" [attr.aria-label]="copy.upcoming">
             <button type="button" [attr.aria-pressed]="upcomingView() === 'calendar'" [class.view-switch--active]="upcomingView() === 'calendar'" (click)="upcomingView.set('calendar')">{{ copy.calendarView }}</button>
             <button type="button" [attr.aria-pressed]="upcomingView() === 'next'" [class.view-switch--active]="upcomingView() === 'next'" (click)="upcomingView.set('next')">{{ copy.nextView }}</button>
           </div>
