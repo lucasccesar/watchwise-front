@@ -998,3 +998,27 @@
   .series-page .series-action-watch-row:not(.series-action-watch-row--has-menu){padding-right:var(--space-2)}
   .series-page .series-action-watch-row--has-menu{padding-right:52px}
 }
+
+.movie-action-rating--unrated strong{align-items:center}
+.series-page .series-bulk-dialog .series-bulk-content{margin-top:var(--space-4)}
+.series-page .series-bulk-dialog .movie-button--primary:hover:not(:disabled){outline:none}
+.series-page .series-action-watch-row--partial{box-sizing:border-box;padding:var(--space-1) 48px var(--space-1) var(--space-1);border:1px solid var(--color-primary);border-radius:var(--radius-md)}
+.series-page .series-action-watch-row--partial .series-action-mark-watched{width:auto;min-width:0;min-height:64px;flex:1 1 auto;border:0;border-radius:var(--radius-sm);background:transparent}
+.series-page .series-action-watch-row--partial .movie-mobile-more-actions{top:50%;right:0;transform:translateY(-50%)}
+.series-page .series-action-watch-row--partial .movie-mobile-more-actions summary{border:0!important;background:transparent!important}
+.series-page .series-completion-dialog{box-sizing:border-box;width:min(100%,480px);display:flex;flex-direction:column;gap:var(--space-5);padding:var(--space-6);border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface-secondary);color:var(--color-text);box-shadow:var(--shadow-xl)}
+.series-page .series-completion-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
+.series-page .series-completion-icon{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:var(--radius-full)}
+.series-page .series-completion-icon app-check-icon{width:20px;height:20px}
+.series-page .series-completion-copy h2{margin:0;font-size:var(--font-size-lg);font-weight:600;line-height:var(--line-height-lg)}
+.series-page .series-completion-copy p{margin:var(--space-2) 0 0;color:var(--color-text-secondary);font-size:var(--font-size-sm);line-height:var(--line-height-md)}
+.series-page .series-completion-dialog>footer{display:flex;justify-content:flex-end;gap:var(--space-2)}
+.series-page .series-completion-dialog>footer .movie-button{min-height:40px}
+.series-page .series-completion-dialog .movie-button--primary>svg{width:16px;height:16px}
+
+@media(max-width:800px){
+  .series-page .series-action-watch-row--partial{padding-right:48px}
+  .series-page .series-action-watch-row--partial .series-action-mark-watched{min-height:60px}
+  .series-page .series-completion-dialog{max-height:calc(100dvh - 32px);padding:var(--space-5)}
+  .series-page .series-completion-dialog>footer .movie-button{flex:1}
+}

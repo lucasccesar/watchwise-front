@@ -51,9 +51,10 @@ import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-
 import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type PageStatus = 'loading' | 'ready' | 'error';
-type DialogState = 'bulk' | 'lists' | 'rating' | 'videos' | null;
+type DialogState = 'bulk' | 'completed' | 'lists' | 'rating' | 'videos' | null;
 type WatchDateMode = 'today' | 'specific' | 'release';
 type RatingTarget =
+  | { type: 'SERIES' }
   | { type: 'EPISODE'; episode: SeriesEpisodeSummary }
   | { type: 'SEASON'; season: SeriesSeasonSummary };
 
@@ -127,7 +128,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly activeSeriesImageMenu = signal<string | null>(null);
   protected readonly detailsExpanded = signal(false);
-  protected readonly castTab = signal<'cast' | 'guest' | 'crew'>('cast');
+  protected readonly castTab = signal<'cast' | 'crew'>('cast');
   protected readonly peoplePane = signal<'watched' | 'watching'>('watched');
   protected readonly providersExpanded = signal(false);
   protected readonly listsExpanded = signal(false);
@@ -180,6 +181,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
   private requests = new Subscription();
   protected modalOpener: HTMLElement | null = null;
+  private completionNeedsReload = false;
   private stylesheet: HTMLLinkElement | null = null;
   private readonly toasts = inject(ToastNotificationsService);
 
@@ -505,9 +507,15 @@ export class SeriesComponent implements OnInit, OnDestroy {
     } else {
       request = { content: { type: 'SERIES', tmdbId }, watchedDate: date };
     }
+    const completedWholeSeries = target?.type !== 'SEASON';
     this.runAction(this.api.createBulkSeriesDiaryEntry(request, crypto.randomUUID()), () => {
-      this.closeDialog();
-      this.showToast('Episódios adicionados ao diário.');
+      if (completedWholeSeries) {
+        this.completionNeedsReload = true;
+        this.ratingTarget.set(null);
+        this.dialog.set('completed');
+      } else {
+        this.closeDialog();
+      }
       this.reload();
     });
   }
@@ -515,10 +523,23 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected openRating(target: RatingTarget, event?: Event): void {
     this.captureDialogOpener(event);
     this.ratingTarget.set(target);
-    this.ratingScore.set(target.type === 'SEASON' ? this.seasonMyRating(target.season) ?? 0 : this.episodeMyRating(target.episode) ?? 0);
-    this.ratingReview.set(target.type === 'EPISODE' ? this.findEpisodeCard(target.episode)?.viewerState.myReview ?? '' : '');
+    const series = this.page();
+    this.ratingScore.set(target.type === 'SERIES'
+      ? series?.viewerState.myRating ?? 0
+      : target.type === 'SEASON'
+        ? this.seasonMyRating(target.season) ?? 0
+        : this.episodeMyRating(target.episode) ?? 0);
+    this.ratingReview.set(target.type === 'SERIES'
+      ? series?.viewerState.myReview ?? ''
+      : target.type === 'EPISODE'
+        ? this.findEpisodeCard(target.episode)?.viewerState.myReview ?? ''
+        : '');
     this.dialog.set('rating');
     queueMicrotask(() => this.seriesDialog?.nativeElement.focus());
+  }
+
+  protected rateCompletedSeries(event?: Event): void {
+    this.openRating({ type: 'SERIES' }, event);
   }
 
   protected updateRatingReview(event: Event): void {
@@ -532,6 +553,11 @@ export class SeriesComponent implements OnInit, OnDestroy {
       return `${seriesTitle} · T${target.episode.seasonNumber ?? 0} · E${target.episode.episodeNumber ?? 0} · ${target.episode.name || 'Episódio'}`;
     }
     if (target?.type === 'SEASON') return `${seriesTitle} · Temporada ${target.season.seasonNumber ?? ''}`;
+    if (target?.type === 'SERIES') {
+      const seasons = this.page()?.details.numberOfSeasons ?? 0;
+      const episodes = this.page()?.details.numberOfEpisodes ?? 0;
+      return `${seriesTitle} · ${formatSeriesNumber(seasons)} temporadas · ${formatSeriesNumber(episodes)} episódios`;
+    }
     return seriesTitle;
   }
 
@@ -541,7 +567,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected canSaveRating(): boolean {
     const target = this.ratingTarget();
-    return target?.type === 'EPISODE'
+    return target?.type === 'EPISODE' || target?.type === 'SERIES'
       ? this.ratingScore() > 0 || this.ratingReview().trim().length > 0
       : this.ratingScore() > 0;
   }
@@ -551,6 +577,42 @@ export class SeriesComponent implements OnInit, OnDestroy {
     const score = this.ratingScore();
     const tmdbId = this.tmdbId().trim();
     if (!target || !this.canSaveRating() || !tmdbId) return;
+    const currentPage = this.page();
+    if (target.type === 'SERIES') {
+      const contentId = currentPage?.details.contentId;
+      if (!contentId) return;
+      const comment = this.ratingReview().trim();
+      const reviewId = currentPage.viewerState.reviewIds?.[0] ?? null;
+      const currentScore = currentPage.viewerState.myRating ?? 0;
+      const requests: Observable<unknown>[] = [];
+      if (comment) {
+        if (reviewId) {
+          requests.push(this.api.updateContentReview(reviewId, comment));
+          if (score > 0 && score !== currentScore) {
+            requests.push(this.api.setContentRating(contentId, score, currentPage.viewerState.currentRatingVersion ?? null));
+          }
+        } else {
+          requests.push(this.api.createContentReview(contentId, {
+            comment,
+            ...(score > 0 ? { score } : {}),
+            ...(score > 0 ? { expectedRatingVersion: currentPage.viewerState.currentRatingVersion ?? null } : {}),
+          }, crypto.randomUUID()));
+        }
+      } else {
+        if (reviewId) requests.push(this.api.deleteContentReview(reviewId));
+        if (score > 0 && score !== currentScore) {
+          requests.push(this.api.setContentRating(contentId, score, currentPage.viewerState.currentRatingVersion ?? null));
+        }
+      }
+      if (!requests.length) return;
+      this.runAction(forkJoin(requests), () => {
+        const completionRefreshHandledByClose = target.type === 'SERIES' && this.completionNeedsReload;
+        this.closeDialog();
+        this.showToast('Avaliação salva.');
+        if (!completionRefreshHandledByClose) this.reload();
+      });
+      return;
+    }
     const season = target.type === 'SEASON'
       ? this.page()?.sections.seasons.find(card => card.seasonNumber === target.season.seasonNumber)
       : null;
@@ -817,12 +879,12 @@ export class SeriesComponent implements OnInit, OnDestroy {
     return this.comments().filter((comment) => comment.parentCommentId === parentId);
   }
 
-  protected setCastTab(tab: 'cast' | 'guest' | 'crew'): void {
+  protected setCastTab(tab: 'cast' | 'crew'): void {
     this.castTab.set(tab);
   }
 
   protected castTabKeydown(event: KeyboardEvent): void {
-    const tabs = ['cast', 'guest', 'crew'] as const;
+    const tabs = ['cast', 'crew'] as const;
     const currentIndex = tabs.indexOf(this.castTab());
     let nextIndex = currentIndex;
     if (event.key === 'ArrowLeft') nextIndex = (currentIndex + tabs.length - 1) % tabs.length;
@@ -842,11 +904,15 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected closeDialog(): void {
+    const shouldReloadAfterCompletion = this.completionNeedsReload
+      && (this.dialog() === 'completed' || (this.dialog() === 'rating' && this.ratingTarget()?.type === 'SERIES'));
+    if (shouldReloadAfterCompletion) this.completionNeedsReload = false;
     this.dialog.set(null);
     this.videoPlaying.set(false);
     this.ratingTarget.set(null);
     this.modalOpener?.focus();
     this.modalOpener = null;
+    if (shouldReloadAfterCompletion) this.reload();
   }
 
   protected closeMobileActions(): void {

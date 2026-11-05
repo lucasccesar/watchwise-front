@@ -540,6 +540,12 @@ export interface SeriesDiaryRequest {
   watchedInTheater?: boolean;
 }
 
+export interface ContentReviewCreationRequest {
+  comment: string;
+  score?: number | null;
+  expectedRatingVersion?: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ContentApiService {
   constructor(private readonly http: HttpClient) {}
@@ -823,6 +829,26 @@ export class ContentApiService {
       `/api/v1/contents/${encodeURIComponent(contentId)}/my-rating`,
       { score, expectedVersion },
     );
+  }
+
+  createContentReview(
+    contentId: string,
+    request: ContentReviewCreationRequest,
+    idempotencyKey: string,
+  ): Observable<unknown> {
+    return this.http.post(
+      `/api/v1/contents/${encodeURIComponent(contentId)}/reviews`,
+      request,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
+  }
+
+  updateContentReview(reviewId: string, comment: string): Observable<unknown> {
+    return this.http.patch(`/api/v1/reviews/${encodeURIComponent(reviewId)}`, { comment });
+  }
+
+  deleteContentReview(reviewId: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/reviews/${encodeURIComponent(reviewId)}`);
   }
 
   createComment(contentId: string, request: CommentCreationRequest): Observable<ContentComment> {

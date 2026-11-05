@@ -53,7 +53,7 @@ export class SeasonComponent implements OnDestroy {
   protected readonly contentId = signal('');
   protected readonly episodes = computed(() => this.page()?.sections?.episodes ?? []);
   protected readonly cast = computed(() => this.page()?.details.cast ?? []);
-  protected readonly guestStars = computed(() => this.page()?.details.guestStars ?? []);
+  protected readonly castTab = signal<'cast' | 'crew'>('cast');
   protected readonly comments = signal<ContentComment[]>([]);
   protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly reviews = signal<ContentReview[]>([]);
@@ -228,6 +228,26 @@ export class SeasonComponent implements OnDestroy {
   protected episodeRoute(episode: SeasonEpisodeCard): string[] {
     if (episode.seasonNumber === null || episode.episodeNumber === null) return ['/content/series', this.tmdbId()];
     return ['/content/series', episode.seriesTmdbId || this.tmdbId(), 'season', String(episode.seasonNumber), 'episode', String(episode.episodeNumber)];
+  }
+
+  protected setCastTab(tab: 'cast' | 'crew'): void {
+    this.castTab.set(tab);
+  }
+
+  protected castTabKeydown(event: KeyboardEvent): void {
+    const tabs = ['cast', 'crew'] as const;
+    const currentIndex = tabs.indexOf(this.castTab());
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex + tabs.length - 1) % tabs.length;
+    else if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = tabs.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    this.setCastTab(nextTab);
+    queueMicrotask(() => this.document.getElementById(`season-${nextTab}-tab`)?.focus());
   }
 
   protected episodeKey(episode: SeasonEpisodeCard): string {

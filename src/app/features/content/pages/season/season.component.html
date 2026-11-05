@@ -12,6 +12,11 @@
     <section class="movie-state movie-state--error" role="alert"><h1>{{ pageError() }}</h1><button class="movie-button movie-button--primary" type="button" (click)="reload()" data-ww-button="primary">Tentar novamente</button></section>
   } @else if (page(); as seasonPage) {
     <section class="movie-overview season-overview" aria-labelledby="season-title">
+      <nav class="season-breadcrumb" aria-label="Breadcrumb">
+        <a [routerLink]="['/content/series', tmdbId()]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" /></svg>{{ seriesName() }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ seasonName() }}</span>
+      </nav>
       <div class="movie-backdrop-frame" aria-hidden="true"><app-responsive-banner [path]="backdropUrl()" fallbackPath="" appearance="content-detail" /></div>
       <div class="movie-overview-grid">
         <aside class="movie-sidebar">
@@ -43,7 +48,6 @@
         </aside>
 
         <header class="movie-title-block season-title-block">
-          <a class="season-parent-link" [routerLink]="['/content/series', tmdbId()]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" /></svg>{{ seriesName() }}</a>
           <div class="movie-title-line"><h1 id="season-title" class="ww-detail-hero-title">{{ seasonName() }}</h1>@if (parentYear()) { <span class="movie-title-year">{{ parentYear() }}</span> }</div>
           <div class="movie-head-stats" aria-label="Resumo da temporada">
             <div class="movie-head-rating"><span class="movie-head-star"><ng-container [ngTemplateOutlet]="ratingStar" /></span><span class="movie-head-rating-value"><span class="movie-head-rating-number"><strong>{{ formatRating(averageRating(seasonPage.stats)) }}</strong><span>/10</span></span><small>{{ averageRatingCaption(seasonPage.stats) }}</small></span></div>
@@ -62,9 +66,9 @@
             @if (seasonPage.details.releaseDate) { <div><dt>Estreou</dt><dd>{{ formatDate(seasonPage.details.releaseDate) }}</dd></div> }
             @if (averageRuntime()) { <div><dt>Duração por episódio</dt><dd>{{ formatRuntime(averageRuntime()) }}</dd></div> }
             @if (episodeCount()) { <div><dt>Episódios</dt><dd>{{ formatNumber(episodeCount(), 0) }}</dd></div> }
-            @if (crew().length) { <div class="movie-metadata-wide"><dt>Equipe</dt><dd>{{ crew().map(person => person.name).join(', ') }}</dd></div> }
+            @if (crew().length) { <div><dt>Equipe</dt><dd>{{ crew().map(person => person.name).join(', ') }}</dd></div> }
             @if (countries().length) { <div><dt>País</dt><dd>{{ countries().join(', ') }}</dd></div> }
-            @if (genres().length) { <div class="movie-metadata-wide"><dt>Gêneros</dt><dd>{{ genres().join(', ') }}</dd></div> }
+            @if (genres().length) { <div><dt>Gêneros</dt><dd>{{ genres().join(', ') }}</dd></div> }
           </dl>
           <section class="movie-synopsis-section" aria-labelledby="season-synopsis-title">
             <h2 id="season-synopsis-title" class="movie-desktop-synopsis-title">Sobre esta temporada</h2>
@@ -76,9 +80,9 @@
                 @if (seasonPage.details.releaseDate) { <div><dt>Estreou</dt><dd>{{ formatDate(seasonPage.details.releaseDate) }}</dd></div> }
                 @if (averageRuntime()) { <div><dt>Duração por episódio</dt><dd>{{ formatRuntime(averageRuntime()) }}</dd></div> }
                 @if (episodeCount()) { <div><dt>Episódios</dt><dd>{{ formatNumber(episodeCount(), 0) }}</dd></div> }
-                @if (crew().length) { <div class="movie-metadata-wide"><dt>Equipe</dt><dd>{{ crew().map(person => person.name).join(', ') }}</dd></div> }
+                @if (crew().length) { <div><dt>Equipe</dt><dd>{{ crew().map(person => person.name).join(', ') }}</dd></div> }
                 @if (countries().length) { <div><dt>País</dt><dd>{{ countries().join(', ') }}</dd></div> }
-                @if (genres().length) { <div class="movie-metadata-wide"><dt>Gêneros</dt><dd>{{ genres().join(', ') }}</dd></div> }
+                @if (genres().length) { <div><dt>Gêneros</dt><dd>{{ genres().join(', ') }}</dd></div> }
               </dl>
             }
           </section>
@@ -131,13 +135,22 @@
     </section>
 
     <section id="season-cast" class="movie-page-section movie-cast-section series-section season-section" aria-labelledby="season-cast-title">
-      <div class="movie-section-heading series-cast-heading"><h2 id="season-cast-title">Elenco da temporada</h2><span>{{ formatNumber(cast().length + guestStars().length, 0) }} pessoas</span></div>
-      @if (cast().length || guestStars().length) {
-        <div class="movie-people-scroll season-cast-scroll" tabindex="0" aria-label="Elenco e convidados da temporada">
-          @for (person of cast(); track person.id) { <article class="movie-person-card">@if (imageUrl(person.profilePath, 'w185'); as portrait) { <img [src]="portrait" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ personInitials(person.name) }}</span> }<div><strong>{{ person.name }}</strong><span>{{ person.character || '' }}</span>@if (person.episodeCount) { <small>{{ formatNumber(person.episodeCount, 0) }} episódios</small> }</div></article> }
-          @for (person of guestStars(); track person.id) { <article class="movie-person-card">@if (imageUrl(person.profilePath, 'w185'); as portrait) { <img [src]="portrait" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ personInitials(person.name) }}</span> }<div><strong>{{ person.name }}</strong><span>{{ person.character || '' }}</span>@if (person.episodeCount) { <small>{{ formatNumber(person.episodeCount, 0) }} episódios</small> }</div></article> }
+      <div class="movie-section-heading series-cast-heading">
+        <div><h2 id="season-cast-title">Elenco da temporada</h2></div>
+        <div class="movie-people-tabs" role="tablist" aria-label="Elenco ou equipe da temporada" (keydown)="castTabKeydown($event)">
+          <button id="season-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'cast'" [attr.tabindex]="castTab() === 'cast' ? 0 : -1" (click)="setCastTab('cast')">Elenco <span>{{ formatNumber(cast().length, 0) }}</span></button>
+          <button id="season-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'crew'" [attr.tabindex]="castTab() === 'crew' ? 0 : -1" (click)="setCastTab('crew')">Equipe <span>{{ formatNumber(crew().length, 0) }}</span></button>
         </div>
-      } @else { <p class="movie-section-state ww-empty-message">O elenco desta temporada não está disponível.</p> }
+      </div>
+      @if (castTab() === 'cast') {
+        @if (cast().length) {
+          <div class="movie-people-scroll" role="tabpanel" aria-labelledby="season-cast-tab" tabindex="0">@for (person of cast().slice(0, 24); track person.id) { <article class="movie-person-card">@if (imageUrl(person.profilePath, 'w185'); as portrait) { <img [src]="portrait" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ personInitials(person.name) }}</span> }<div><strong>{{ person.name }}</strong><span>{{ person.character || '' }}</span>@if (person.episodeCount) { <small>{{ formatNumber(person.episodeCount, 0) }} episódios</small> }</div></article> }</div>
+        } @else { <p class="movie-section-state ww-empty-message">O elenco desta temporada não está disponível.</p> }
+      } @else {
+        @if (crew().length) {
+          <div class="movie-people-scroll" role="tabpanel" aria-labelledby="season-crew-tab" tabindex="0">@for (person of crew().slice(0, 24); track person.id) { <article class="movie-person-card movie-person-card--crew">@if (imageUrl(person.profilePath, 'w185'); as portrait) { <img [src]="portrait" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ personInitials(person.name) }}</span> }<div><strong>{{ person.name }}</strong><span>{{ person.jobs.join(', ') }}</span></div></article> }</div>
+        } @else { <p class="movie-section-state ww-empty-message">A equipe desta temporada não está disponível.</p> }
+      }
     </section>
 
     <section id="season-seasons" class="movie-page-section series-seasons-section series-section season-section" aria-labelledby="season-seasons-title">
@@ -147,7 +160,7 @@
           @for (season of seasons(); track season.seasonNumber) {
             <article class="series-season-card" [class.season-card-current]="season.seasonNumber === seasonNumber()">
               <a class="season-card-link" [routerLink]="seasonRoute(season)" [attr.aria-current]="season.seasonNumber === seasonNumber() ? 'page' : null">
-                <span class="series-season-poster">@if (imageUrl(season.posterUrl, 'w342'); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ season.seasonNumber }}</span> }</span>
+                <span class="series-season-poster content-image-card">@if (imageUrl(season.posterUrl, 'w342'); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ season.seasonNumber }}</span> }</span>
                 <span class="series-season-details"><strong>{{ season.name || ('Temporada ' + season.seasonNumber) }}</strong><span>{{ formatNumber(season.episodeCount, 0) }} episódios</span></span>
               </a>
             </article>
@@ -173,8 +186,14 @@
                 <app-content-image-actions class="season-card-menu" [attr.data-menu-key]="episodeKey(episode)" [ratingValue]="formatRating(episodeRating(episode))" [ratingLabel]="episodeRatingLabel(episode)" [optionsLabel]="'Opções do episódio'" [expanded]="activeEpisodeMenu() === episodeKey(episode)" [actions]="episodeActions(episode)" (toggle)="toggleEpisodeMenu(episodeKey(episode), $event)" (actionSelected)="episodeAction(episode, $event)" />
               </div>
               <div class="series-episode-copy">
-                <div class="series-episode-heading"><strong><a [routerLink]="episodeRoute(episode)">{{ episode.title || ('Episódio ' + (episode.episodeNumber ?? '')) }}</a></strong><span>E{{ episode.episodeNumber }}</span></div>
-                <div class="series-episode-meta"><span>{{ formatDate(episode.releaseDate) }}</span><span>{{ formatRuntime(episode.runtimeMinutes) }}</span></div>
+                <div class="series-episode-heading"><strong><a [routerLink]="episodeRoute(episode)">{{ episode.title || ('Episódio ' + (episode.episodeNumber ?? '')) }}</a></strong><span>S{{ episode.seasonNumber ?? seasonNumber() }} · E{{ episode.episodeNumber }}</span></div>
+                <div class="series-episode-meta"><span>{{ formatRuntime(episode.runtimeMinutes) }}</span>@if (episode.releaseDate) { <span>{{ formatDate(episode.releaseDate) }}</span> }</div>
+                <ul class="season-episode-stats" aria-label="Estatísticas do episódio">
+                  @if (episodeRating(episode) !== null) { <li><ng-container [ngTemplateOutlet]="ratingStar" /><strong>{{ formatRating(episodeRating(episode)) }}</strong></li> }
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 8.965C9.5 8.488 9.5 8.249 9.6 8.116C9.687 8 9.819 7.928 9.964 7.917C10.13 7.905 10.331 8.034 10.733 8.292L15.453 11.327C15.802 11.551 15.976 11.663 16.036 11.805C16.088 11.93 16.088 12.07 16.036 12.195C15.976 12.337 15.802 12.449 15.453 12.673L10.733 15.708C10.331 15.966 10.13 16.095 9.964 16.083C9.819 16.072 9.687 16 9.6 15.884C9.5 15.751 9.5 15.512 9.5 15.035V8.965Z M22 12C22 17.523 17.523 22 12 22C6.477 22 2 17.523 2 12C2 6.477 6.477 2 12 2C17.523 2 22 6.477 22 12Z" /></svg><span><strong>{{ formatNumber(episode.stats.playsCount, 0) }}</strong> reproduções</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2.27V6.4C14 6.96 14 7.24 14.109 7.454C14.205 7.642 14.358 7.795 14.546 7.891C14.76 8 15.04 8 15.6 8H19.73M16 13H8M16 17H8M10 9H8M14 2H8.8C7.12 2 6.28 2 5.638 2.327C5.074 2.615 4.615 3.074 4.327 3.638C4 4.28 4 5.12 4 6.8V17.2C4 18.88 4 19.72 4.327 20.362C4.615 20.927 5.074 21.385 5.638 21.673C6.28 22 7.12 22 8.8 22H15.2C16.88 22 17.72 22 18.362 21.673C18.927 21.385 19.385 20.927 19.673 20.362C20 19.72 20 18.88 20 17.2V8L14 2Z" /></svg><span><strong>{{ formatNumber(episode.stats.ratingsCount, 0) }}</strong> avaliações</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5C21 16.194 17.194 20 12.5 20C11.423 20 10.393 19.8 9.445 19.434C9.271 19.367 9.185 19.334 9.116 19.318C9.048 19.303 8.999 19.296 8.93 19.293C8.859 19.29 8.781 19.298 8.626 19.314L3.505 19.844C3.017 19.894 2.773 19.919 2.629 19.831C2.503 19.755 2.418 19.627 2.395 19.482C2.368 19.315 2.485 19.1 2.718 18.668L4.354 15.641C4.488 15.393 4.555 15.268 4.586 15.148C4.616 15.031 4.623 14.945 4.614 14.824C4.604 14.7 4.549 14.54 4.44 14.217C4.151 13.36 4 12.447 4 11.5C4 6.806 7.806 3 12.5 3C17.194 3 21 6.806 21 11.5Z" /></svg><span><strong>{{ formatNumber(episode.stats.commentsCount, 0) }}</strong> comentários</span></li>
+                </ul>
               </div>
             </article>
           }
