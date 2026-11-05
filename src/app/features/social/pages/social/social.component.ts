@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { AuthSessionService, SessionUser } from '../../../../core/session/session.service';
@@ -108,21 +108,7 @@ export class SocialComponent implements OnInit, OnDestroy {
     private readonly profileApi: ProfileApiService,
     private readonly settingsApi: SettingsApiService,
     private readonly reportApi: ReportApiService,
-  ) {
-    effect((onCleanup) => {
-      if (!this.reportTarget()) return;
-      const root = this.document.documentElement;
-      const body = this.document.body;
-      const previousRootOverflow = root.style.overflow;
-      const previousBodyOverflow = body.style.overflow;
-      root.style.overflow = 'hidden';
-      body.style.overflow = 'hidden';
-      onCleanup(() => {
-        root.style.overflow = previousRootOverflow;
-        body.style.overflow = previousBodyOverflow;
-      });
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -164,8 +150,20 @@ export class SocialComponent implements OnInit, OnDestroy {
   }
 
   protected followingLabel(): string {
-    const count = new Intl.NumberFormat('pt-BR').format(this.data()?.followingCount ?? 0);
-    return this.copy.followingActivity.replace('{count}', count);
+    return this.copy.followingActivity.replace('{count}', this.followingLabelCount());
+  }
+
+  protected followingLabelPrefix(): string {
+    return this.copy.followingActivity.split('{count}')[0] ?? '';
+  }
+
+  protected followingLabelCount(): string {
+    return new Intl.NumberFormat('pt-BR').format(this.data()?.followingCount ?? 0);
+  }
+
+  protected followingLabelSuffix(): string {
+    const suffix = this.copy.followingActivity.split('{count}')[1] ?? '';
+    return suffix.startsWith(' pessoas') ? suffix.slice(' pessoas'.length) : suffix;
   }
 
   protected onHeroBackdropLoaded(): void {

@@ -1,9 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { forkJoin, Observable, of, Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { DiaryApiService, DiaryRecord, DiarySeriesOption } from '../../data-access/diary-api.service';
+import {
+  DiaryApiService,
+  DiaryRecord,
+  DiarySeriesOption,
+  DiaryViewEntryItem,
+  DiaryViewGroupedItem,
+  DiaryViewResponseItem,
+} from '../../data-access/diary-api.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
 import {
   HomeApiService,
@@ -18,15 +25,18 @@ import {
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
-import { filterDiaryEntries, localDiaryDay, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
+import { filterDiaryEntries, localDiaryDay, type DiaryFilters, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { movieMessages } from '../../../content/i18n/movie.messages';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
 interface DiaryDayGroup {
   key: string;
   date: Date;
-  entries: DiaryGridEntry[];
+  entries: DiaryTimelineEntry[];
 }
 
 interface DiaryPaginationItem {
@@ -50,12 +60,42 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
   watchedInTheater: boolean | null;
   watchNumber: number;
   companions: DiaryReviewCompanion[];
+  derivedCompletion?: boolean;
+  sourceEntries?: DiaryGridEntry[];
 }
+
+interface DiaryGroupedGridEntry {
+  kind: 'GROUPED';
+  id: string;
+  content: {
+    type: string;
+    tmdbId: string | null;
+    seriesTmdbId: string | null;
+    seasonNumber: null;
+    episodeNumber: null;
+    runtimeMinutes: number | null;
+  };
+  watchedDate: string;
+  score: number | null;
+  watchedInTheater: boolean | null;
+  seriesTitle: string | null;
+  seriesPosterPath: string | null;
+  backdropPath: string | null;
+  groupType: DiaryViewGroupedItem['groupType'];
+  seasonCount: number;
+  seasonNumbers: number[];
+  episodeCount: number;
+  totalRuntimeMinutes: number | null;
+  watchNumber: number | null;
+  memberEntries: DiaryGridEntry[];
+}
+
+type DiaryTimelineEntry = DiaryGridEntry | DiaryGroupedGridEntry;
 
 @Component({
   selector: 'app-diary',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent, ShareReviewDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diary.component.html',
   styleUrl: './diary.component.css',
@@ -72,9 +112,13 @@ export class DiaryComponent implements OnDestroy {
   protected readonly heroBackdropFailed = signal(false);
   protected readonly diarySeries = signal<DiarySeriesOption[]>([]);
   protected readonly diaryEntries = signal<DiaryGridEntry[]>([]);
+  protected readonly diaryViewItems = signal<DiaryViewResponseItem[]>([]);
   protected readonly loadingPlaceholders = Array.from({ length: 12 }, (_, index) => index);
   protected readonly reviewLoadingPlaceholders = [0, 1, 2];
   protected readonly busyReviewLikeIds = signal<ReadonlySet<string>>(new Set());
+  protected readonly seriesGrouping = signal(true);
+  protected readonly seriesGroupingBusy = signal(false);
+  protected readonly seriesGroupingError = signal('');
   protected readonly activeFilter = signal<DiaryFilter>(null);
   protected readonly typeFilter = signal<DiaryTypeFilter>('all');
   protected readonly ratingMin = signal(1);
@@ -87,19 +131,24 @@ export class DiaryComponent implements OnDestroy {
   protected readonly dateTo = signal('');
   protected readonly selectedDateShortcut = signal<'week' | 'month' | 'year' | 'all' | null>('all');
   protected readonly theaterOnly = signal(false);
-  protected readonly collapsedDays = signal<ReadonlySet<string>>(new Set());
   protected readonly grouped = signal(true);
   protected readonly page = signal(1);
   protected readonly pageSize = 30;
   protected readonly reviewsPageSize = 15;
   protected readonly isReviewsPage = this.route.snapshot.data['mode'] === 'reviews';
   protected readonly currentPageSize = computed(() => this.isReviewsPage ? this.reviewsPageSize : this.pageSize);
-  protected readonly entries = computed(() => filterDiaryEntries(this.diaryEntries(), {
+  private readonly activeDiaryFilters = computed(() => ({
     type: this.typeFilter(), ratingMin: this.ratingMin(), ratingMax: this.ratingMax(),
     seriesId: this.selectedSeriesId(), dateFrom: this.dateFrom(), dateTo: this.dateTo(),
     theaterOnly: this.theaterOnly(), sort: this.sortOrder(),
   }));
+  protected readonly entries = computed<DiaryTimelineEntry[]>(() => this.isReviewsPage
+    ? filterDiaryEntries(this.diaryEntries(), this.activeDiaryFilters())
+    : this.filteredTimelineEntries());
   protected readonly visibleEntries = computed(() => this.entries().slice(
+    (this.page() - 1) * this.currentPageSize(), this.page() * this.currentPageSize(),
+  ));
+  protected readonly visibleReviewEntries = computed(() => filterDiaryEntries(this.diaryEntries(), this.activeDiaryFilters()).slice(
     (this.page() - 1) * this.currentPageSize(), this.page() * this.currentPageSize(),
   ));
   protected readonly groups = computed(() => this.groupByDay(this.visibleEntries()));
@@ -133,15 +182,47 @@ export class DiaryComponent implements OnDestroy {
     return pages.map((page, index) => ({ key: page === null ? `ellipsis-${index}` : `page-${page}`, page }));
   });
   protected readonly posterActions: readonly ContentImageAction[] = [
-    { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
+    { id: 'watch-again', label: this.copy.watchAgainAction, icon: 'rewatch' },
+    { id: 'edit-rating', label: this.copy.editRatingAction, icon: 'star' },
+    { id: 'share-review', label: this.copy.shareReviewAction, icon: 'share' },
+    { id: 'remove-history', label: this.copy.removeHistoryAction, icon: 'trash' },
   ];
+  protected readonly shareCopy = movieMessages['pt-BR'];
+  protected readonly shareReviewTarget = signal<DiaryGridEntry | null>(null);
+  protected readonly shareReviewOpener = signal<HTMLElement | null>(null);
+  protected readonly shareReviewModel = computed<ShareReviewDialogModel | null>(() => {
+    const entry = this.shareReviewTarget();
+    if (!entry) return null;
+    const type = (entry.content.type ?? '').toUpperCase();
+    const user = this.session.user();
+    const posterUrl = this.poster(entry);
+    const backdropUrl = tmdbImageUrl(entry.card?.backdropPath, 'w1280') || posterUrl;
+    const year = entry.card?.releaseYear ?? entry.card?.releaseDate?.slice(0, 4) ?? null;
+    return {
+      title: this.title(entry),
+      subtitle: type === 'EPISODE' ? this.reviewContext(entry) || null : year ? String(year) : null,
+      subtitleBelowTitle: type === 'EPISODE',
+      rating: entry.score,
+      review: entry.comment,
+      backgroundUrl: backdropUrl,
+      posterUrl,
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: type === 'MOVIE' ? 'MOVIE' : 'SERIES',
+      tmdbId: type === 'MOVIE' ? entry.content.tmdbId : entry.content.seriesTmdbId || entry.content.tmdbId,
+    };
+  });
+  protected readonly diaryActionPending = signal(false);
 
   private readonly session = inject(AuthSessionService);
   private readonly api = inject(HomeApiService);
   private readonly diaryApi = inject(DiaryApiService);
   private readonly contentApi = inject(ContentApiService);
   private readonly router = inject(Router);
+  private readonly toasts = inject(ToastNotificationsService);
   private request?: Subscription;
+  private viewRequest?: Subscription;
+  private actionRequests = new Subscription();
   private filterOpener?: HTMLButtonElement;
   private ratingDrag?: { pointerId: number; track: HTMLElement; handle: 'min' | 'max' | null };
 
@@ -149,7 +230,11 @@ export class DiaryComponent implements OnDestroy {
     this.load();
   }
 
-  ngOnDestroy(): void { this.request?.unsubscribe(); }
+  ngOnDestroy(): void {
+    this.request?.unsubscribe();
+    this.viewRequest?.unsubscribe();
+    this.actionRequests.unsubscribe();
+  }
 
   protected onHeroBackdropLoaded(): void {
     this.heroBackdropLoading.set(false);
@@ -167,6 +252,8 @@ export class DiaryComponent implements OnDestroy {
       return;
     }
     this.request?.unsubscribe();
+    this.viewRequest?.unsubscribe();
+    this.seriesGroupingBusy.set(false);
     this.status.set('loading');
     this.heroBackdropPath.set(undefined);
     this.heroBackdropLoading.set(true);
@@ -177,15 +264,19 @@ export class DiaryComponent implements OnDestroy {
       diary: this.isReviewsPage
         ? this.diaryApi.getAllReviews(user.id)
         : this.diaryApi.getAllDiaryEntries(user.id),
+      view: this.isReviewsPage ? of([] as DiaryViewResponseItem[]) : this.readDiaryView(user.id, true),
       series: this.diaryApi.getDiarySeries(user.id),
     }).subscribe({
-      next: ({ summary, diary, series }) => {
+      next: ({ summary, diary, view, series }) => {
         this.summary.set(summary);
         const backdropPath = summary.latestWatchedBackdropPath;
         this.heroBackdropPath.set(backdropPath);
         this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath.trim()));
         this.heroBackdropFailed.set(false);
         this.diarySeries.set(series);
+        this.diaryViewItems.set(view);
+        this.seriesGrouping.set(true);
+        this.seriesGroupingError.set('');
         this.page.set(1);
         this.diaryEntries.set(diary.map((record) => this.toGridEntry(record)));
         this.status.set('ready');
@@ -345,7 +436,7 @@ export class DiaryComponent implements OnDestroy {
     return entry.card?.releaseYear ? String(entry.card.releaseYear) : '';
   }
 
-  protected reviewWatchedDate(entry: DiaryGridEntry): string {
+  protected reviewWatchedDate(entry: Pick<DiaryGridEntry, 'watchedDate'>): string {
     const day = localDiaryDay(entry.watchedDate);
     if (!day) return this.copy.dateUnavailable;
     const [year, month, date] = day.split('-').map(Number);
@@ -407,21 +498,30 @@ export class DiaryComponent implements OnDestroy {
     this.page.set(1);
   }
 
-  protected toggleDay(key: string): void {
-    this.collapsedDays.update((days) => {
-      const next = new Set(days);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }
-
   protected toggleGrouping(): void {
     this.grouped.update(value => !value);
   }
 
-  protected dayCollapsed(key: string): boolean {
-    return this.collapsedDays().has(key);
+  protected toggleSeriesGrouping(): void {
+    if (this.seriesGroupingBusy()) return;
+    const user = this.session.user();
+    if (!user) return;
+    const nextGrouped = !this.seriesGrouping();
+    this.seriesGroupingBusy.set(true);
+    this.seriesGroupingError.set('');
+    this.viewRequest?.unsubscribe();
+    this.viewRequest = this.readDiaryView(user.id, nextGrouped).subscribe({
+      next: (items) => {
+        this.diaryViewItems.set(items);
+        this.seriesGrouping.set(nextGrouped);
+        this.seriesGroupingBusy.set(false);
+        this.page.set(1);
+      },
+      error: () => {
+        this.seriesGroupingBusy.set(false);
+        this.seriesGroupingError.set(this.homeCopy.genericError);
+      },
+    });
   }
 
   protected groupWeekdayLabel(group: DiaryDayGroup): string {
@@ -435,11 +535,93 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected groupSummary(group: DiaryDayGroup): string {
-    const runtime = group.entries.reduce((sum, item) => sum + (item.card?.runtimeMinutes ?? 0), 0);
-    const plays = group.entries.length;
+    const runtime = group.entries.reduce((sum, item) => sum + (this.isGroupedEntry(item)
+      ? item.totalRuntimeMinutes ?? 0
+      : item.card?.runtimeMinutes ?? 0), 0);
+    const plays = group.entries.reduce((sum, item) => sum + (this.isGroupedEntry(item)
+      ? Math.max(item.episodeCount, item.memberEntries.length, item.seasonCount, 1)
+      : 1), 0);
     const playLabel = plays === 1 ? this.copy.playSingular : this.copy.playPlural;
     const duration = runtime > 0 ? ` · ${this.formatDuration(runtime)}` : '';
     return `${plays} ${playLabel}${duration}`;
+  }
+
+  protected isGroupedEntry(entry: DiaryTimelineEntry): entry is DiaryGroupedGridEntry {
+    return 'kind' in entry && entry.kind === 'GROUPED';
+  }
+
+  protected groupedTitle(entry: DiaryGroupedGridEntry): string {
+    return entry.seriesTitle || this.copy.titleUnavailable;
+  }
+
+  protected groupedPoster(entry: DiaryGroupedGridEntry): string | null {
+    return tmdbImageUrl(entry.seriesPosterPath, 'w342');
+  }
+
+  protected groupedBackdrop(entry: DiaryGroupedGridEntry): string | null {
+    return tmdbImageUrl(entry.backdropPath, 'w1280');
+  }
+
+  protected groupedRoute(entry: DiaryGroupedGridEntry): string[] | null {
+    return entry.content.tmdbId ? ['/content/series', entry.content.tmdbId] : null;
+  }
+
+  protected groupedTypeLabel(entry: DiaryGroupedGridEntry): string {
+    if (entry.groupType === 'SERIES') return this.copy.seriesGroup;
+    if (entry.groupType === 'SEASON') return entry.seasonCount > 1 ? this.copy.seasons : this.copy.season;
+    return entry.episodeCount > 1 ? this.copy.episodes : this.copy.episode;
+  }
+
+  protected groupedMetadata(entry: DiaryGroupedGridEntry): string {
+    return this.groupedMetadataParts(entry).join(' · ');
+  }
+
+  protected groupedRuntimeLabel(entry: DiaryGroupedGridEntry): string | null {
+    if (entry.totalRuntimeMinutes !== null) return this.formatDuration(entry.totalRuntimeMinutes);
+    return entry.episodeCount > 0 ? this.copy.groupRuntimeUnavailable : null;
+  }
+
+  protected groupedMetadataParts(entry: DiaryGroupedGridEntry): string[] {
+    const format = new Intl.NumberFormat('pt-BR');
+    const parts: string[] = [];
+    const seasonNumbers = [...new Set(entry.seasonNumbers.filter(Number.isInteger))].sort((a, b) => a - b);
+    if (seasonNumbers.length > 0) parts.push(this.groupedSeasonNumbersLabel(seasonNumbers));
+    else if (entry.seasonCount > 0) parts.push(this.copy.groupSeasons.replace('{count}', format.format(entry.seasonCount)));
+    if (entry.episodeCount > 0) parts.push(this.copy.groupEpisodes.replace('{count}', format.format(entry.episodeCount)));
+    return parts;
+  }
+
+  private groupedSeasonNumbersLabel(seasonNumbers: number[]): string {
+    const formatted = seasonNumbers.map(number => new Intl.NumberFormat('pt-BR').format(number));
+    const enumeration = formatted.length === 1
+      ? formatted[0]
+      : `${formatted.slice(0, -1).join(', ')} e ${formatted[formatted.length - 1]}`;
+    return `${this.copy.season} ${enumeration}`;
+  }
+
+  protected groupedHasReview(entry: DiaryGroupedGridEntry): boolean {
+    return entry.memberEntries.some(member => Boolean(member.comment?.trim()));
+  }
+
+  protected groupedHasPartial(entry: DiaryGroupedGridEntry): boolean {
+    return entry.memberEntries.some(member => member.card?.previewStatus === 'PARTIAL');
+  }
+
+  protected groupedLikesCount(entry: DiaryGroupedGridEntry): number {
+    return entry.memberEntries.reduce((total, member) => total + member.likesCount, 0);
+  }
+
+  protected groupedCommentsCount(entry: DiaryGroupedGridEntry): number {
+    return entry.memberEntries.reduce((total, member) => total + member.commentsCount, 0);
+  }
+
+  protected groupedDate(entry: DiaryGroupedGridEntry): string {
+    return this.reviewWatchedDate(entry);
+  }
+
+  protected groupedLabel(entry: DiaryGroupedGridEntry): string {
+    return [this.groupedTitle(entry), this.groupedTypeLabel(entry), this.groupedMetadata(entry), this.groupedRuntimeLabel(entry), this.groupedDate(entry)]
+      .filter(Boolean).join(', ');
   }
 
   protected title(entry: HomeRecentlyWatched): string {
@@ -481,7 +663,7 @@ export class DiaryComponent implements OnDestroy {
 
   protected poster(entry: DiaryGridEntry): string | null {
     const type = entry.content.type?.toUpperCase();
-    const path = (type === 'EPISODE' || type === 'SEASON' ? entry.seriesPosterPath : null)
+    const path = (type === 'EPISODE' || type === 'SEASON' || type === 'SERIES' ? entry.seriesPosterPath : null)
       || entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath;
     return tmdbImageUrl(path, 'w342');
   }
@@ -509,6 +691,9 @@ export class DiaryComponent implements OnDestroy {
     }
     if (type === 'MOVIE' && entry.content.tmdbId) return ['/content/movie', entry.content.tmdbId];
     if (type === 'SERIES' && entry.content.seriesTmdbId) return ['/content/series', entry.content.seriesTmdbId];
+    if (type === 'SEASON' && entry.content.seriesTmdbId && entry.content.seasonNumber !== null) {
+      return ['/content/series', entry.content.seriesTmdbId, 'season', String(entry.content.seasonNumber)];
+    }
     if (type === 'EPISODE' && entry.content.seriesTmdbId && entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) {
       return ['/content/series', entry.content.seriesTmdbId, 'season', String(entry.content.seasonNumber), 'episode', String(entry.content.episodeNumber)];
     }
@@ -525,10 +710,142 @@ export class DiaryComponent implements OnDestroy {
     return score ? `${this.homeCopy.tmdbRating}: ${score}` : '';
   }
 
-  protected handlePosterAction(entry: HomeRecentlyWatched, selection: ContentImageActionSelection): void {
-    if (selection.action.id !== 'open-content') return;
-    const route = this.contentRoute(entry);
-    if (route) void this.router.navigate(route);
+  protected posterActionsFor(entry: DiaryTimelineEntry): readonly ContentImageAction[] {
+    const records = this.actionRecords(entry);
+    return this.posterActions.map((action) => {
+      if (action.id === 'remove-history') return { ...action, disabled: this.isReviewsPage || records.length === 0 || records.some(record => record.reviewSource !== 'DIARY') };
+      if (action.id === 'edit-rating' || action.id === 'share-review') return { ...action, disabled: records.length === 0 };
+      return action;
+    });
+  }
+
+  protected handlePosterAction(entry: DiaryTimelineEntry, selection: ContentImageActionSelection): void {
+    const target = this.representativeEntry(entry);
+    if (selection.action.id === 'watch-again') {
+      this.watchAgain(entry);
+      return;
+    }
+    if (selection.action.id === 'edit-rating') {
+      if (target) void this.router.navigate(['/diary/entry', target.id], { state: { openReviewEditor: true } });
+      return;
+    }
+    if (selection.action.id === 'share-review') {
+      if (!target) return;
+      const actionButton = selection.event.currentTarget as HTMLElement;
+      this.shareReviewOpener.set(actionButton.closest('app-content-image-actions')?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
+      this.shareReviewTarget.set(target);
+      return;
+    }
+    if (selection.action.id === 'remove-history') this.removeHistory(entry);
+  }
+
+  protected closeShareReviewPreview(): void {
+    this.shareReviewTarget.set(null);
+    this.shareReviewOpener()?.focus();
+    this.shareReviewOpener.set(null);
+  }
+
+  private actionRecords(entry: DiaryTimelineEntry): DiaryGridEntry[] {
+    if (this.isGroupedEntry(entry)) return entry.memberEntries;
+    if (entry.derivedCompletion) return entry.sourceEntries ?? [];
+    return [entry];
+  }
+
+  private representativeEntry(entry: DiaryTimelineEntry): DiaryGridEntry | null {
+    if (!this.isGroupedEntry(entry)) {
+      if (entry.derivedCompletion) {
+        return entry.sourceEntries?.find(record => Boolean(record.comment?.trim()) || record.score !== null)
+          ?? entry.sourceEntries?.[0]
+          ?? null;
+      }
+      return entry;
+    }
+    return entry.memberEntries.find(record => Boolean(record.comment?.trim()) || record.score !== null)
+      ?? entry.memberEntries[0]
+      ?? {
+        id: entry.id,
+        reviewSource: 'DIARY',
+        seriesPosterPath: entry.seriesPosterPath,
+        content: { id: null, tmdbId: entry.content.tmdbId, type: 'SERIES', seriesTmdbId: entry.content.seriesTmdbId, seasonNumber: null, episodeNumber: null, runtimeMinutes: entry.totalRuntimeMinutes },
+        watchedDate: entry.watchedDate,
+        watchNumber: entry.watchNumber ?? 1,
+        customPosterUrl: null,
+        seriesTitle: entry.seriesTitle,
+        companions: [],
+        companionProfilePictures: [],
+        card: null,
+        score: entry.score,
+        likesCount: 0,
+        likedByMe: false,
+        commentsCount: 0,
+        comment: null,
+        watchedInTheater: entry.watchedInTheater,
+      };
+  }
+
+  private watchAgain(entry: DiaryTimelineEntry): void {
+    if (this.diaryActionPending()) return;
+    const records = this.actionRecords(entry);
+    const requests = records
+      .map(record => this.createRewatchRequest(record))
+      .filter((request): request is Observable<unknown> => request !== null);
+    if (!requests.length) {
+      const route = this.isGroupedEntry(entry) ? this.groupedRoute(entry) : this.contentRoute(entry);
+      if (route) void this.router.navigate(route);
+      return;
+    }
+    this.diaryActionPending.set(true);
+    this.actionRequests.add(forkJoin(requests).subscribe({
+      next: () => {
+        this.diaryActionPending.set(false);
+        this.toasts.success(this.copy.watchAgainSaved);
+        this.load();
+      },
+      error: () => {
+        this.diaryActionPending.set(false);
+        this.toasts.error(this.homeCopy.genericError);
+      },
+    }));
+  }
+
+  private createRewatchRequest(entry: DiaryGridEntry): Observable<unknown> | null {
+    const type = (entry.content.type ?? '').toUpperCase();
+    const watchedDate = this.localToday();
+    if (type === 'MOVIE' && entry.content.tmdbId) {
+      return this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: entry.content.tmdbId }, watchedDate, isRewatch: true });
+    }
+    if (type === 'EPISODE' && entry.content.seriesTmdbId && entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) {
+      return this.contentApi.createSeriesDiaryEntry({
+        content: { type: 'EPISODE', seriesTmdbId: entry.content.seriesTmdbId, seasonNumber: entry.content.seasonNumber, episodeNumber: entry.content.episodeNumber },
+        watchedDate,
+        isRewatch: true,
+      });
+    }
+    return null;
+  }
+
+  private localToday(): string {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+
+  private removeHistory(entry: DiaryTimelineEntry): void {
+    if (this.diaryActionPending()) return;
+    const records = this.actionRecords(entry).filter(record => record.reviewSource === 'DIARY');
+    if (!records.length || !window.confirm(this.copy.removeHistoryConfirm.replace('{count}', String(records.length)))) return;
+    this.diaryActionPending.set(true);
+    this.actionRequests.add(forkJoin(records.map(record => this.contentApi.deleteDiaryEntry(record.id))).subscribe({
+      next: () => {
+        this.diaryActionPending.set(false);
+        this.toasts.success(this.copy.removeHistorySuccess);
+        this.load();
+      },
+      error: () => {
+        this.diaryActionPending.set(false);
+        this.toasts.error(this.homeCopy.genericError);
+      },
+    }));
   }
 
   protected goToPage(page: number): void {
@@ -589,7 +906,189 @@ export class DiaryComponent implements OnDestroy {
       .replace('{total}', format.format(this.totalPlays()));
   }
 
-  private groupByDay(entries: DiaryGridEntry[]): DiaryDayGroup[] {
+  private readDiaryView(userId: string, grouped: boolean) {
+    // Keep the existing history view usable while a local API/mock is updated to expose /diary/view.
+    const api = this.diaryApi as DiaryApiService & {
+      getAllDiaryViewItems?: (ownerId: string, grouped: boolean) => ReturnType<DiaryApiService['getAllDiaryViewItems']>;
+    };
+    return api.getAllDiaryViewItems?.(userId, grouped) ?? of([] as DiaryViewResponseItem[]);
+  }
+
+  private filteredTimelineEntries(): DiaryTimelineEntry[] {
+    const filters = this.activeDiaryFilters();
+    const rawEntries = this.diaryEntries();
+    const source = this.diaryViewItems().length
+      ? this.toTimelineEntries(this.diaryViewItems(), rawEntries)
+      : rawEntries;
+    const filtered = source.filter(entry => this.matchesTimelineFilters(entry, filters));
+
+    if (filters.sort === 'newest') return filtered;
+    return filtered.sort((left, right) => {
+      if (filters.sort === 'highest' || filters.sort === 'lowest') {
+        if (left.score === null && right.score !== null) return 1;
+        if (right.score === null && left.score !== null) return -1;
+        const scoreDiff = (left.score ?? 0) - (right.score ?? 0);
+        if (scoreDiff) return filters.sort === 'highest' ? -scoreDiff : scoreDiff;
+      }
+      const dateDiff = localDiaryDay(left.watchedDate).localeCompare(localDiaryDay(right.watchedDate));
+      if (dateDiff) return filters.sort === 'oldest' ? dateDiff : -dateDiff;
+      return left.id.localeCompare(right.id);
+    });
+  }
+
+  private matchesTimelineFilters(entry: DiaryTimelineEntry, filters: DiaryFilters): boolean {
+    if (!this.isGroupedEntry(entry)) return filterDiaryEntries([entry], filters).length > 0;
+    const day = localDiaryDay(entry.watchedDate);
+    if (filters.dateFrom && (!day || day < filters.dateFrom)) return false;
+    if (filters.dateTo && (!day || day > filters.dateTo)) return false;
+    if (filters.seriesId && entry.content.tmdbId !== filters.seriesId) return false;
+    if (filters.theaterOnly && !entry.memberEntries.some(member => member.watchedInTheater === true)) return false;
+
+    const expectedType = ({ movies: 'MOVIE', series: 'SERIES', seasons: 'SEASON', episodes: 'EPISODE' } as const)[filters.type as 'movies' | 'series' | 'seasons' | 'episodes'];
+    if (filters.type !== 'all' && entry.groupType !== expectedType
+      && !entry.memberEntries.some(member => member.content.type === expectedType)) return false;
+    if (filters.ratingMin > 1 || filters.ratingMax < 10) {
+      return entry.memberEntries.some(member => member.score !== null
+        && member.score >= filters.ratingMin && member.score <= filters.ratingMax);
+    }
+    return true;
+  }
+
+  private toTimelineEntries(items: DiaryViewResponseItem[], records: DiaryGridEntry[]): DiaryTimelineEntry[] {
+    const consumedIds = new Set<string>();
+    const result: DiaryTimelineEntry[] = [];
+    const recordsById = new Map(records.map(record => [record.id, record]));
+
+    for (const item of items) {
+      if (item.kind === 'GROUPED') {
+        const members = this.groupedRecords(item, records, consumedIds);
+        for (const member of members) consumedIds.add(member.id);
+        result.push(this.toGroupedGridEntry(item, members));
+        continue;
+      }
+
+      if (item.kind === 'PERSISTED_ENTRY' && item.diaryEntryId) {
+        const record = recordsById.get(item.diaryEntryId);
+        if (record) {
+          consumedIds.add(record.id);
+          result.push(record);
+          continue;
+        }
+      }
+      if (item.kind === 'DERIVED_COMPLETION') result.push(this.toSyntheticGridEntry(item));
+    }
+
+    return result;
+  }
+
+  private groupedRecords(item: DiaryViewGroupedItem, records: DiaryGridEntry[], consumedIds: ReadonlySet<string>): DiaryGridEntry[] {
+    const seriesId = item.content.tmdbId || item.content.seriesTmdbId;
+    if (!seriesId) return [];
+    const candidates = records.filter(record => {
+      const recordSeriesId = record.content.seriesTmdbId
+        || (record.content.type === 'SERIES' ? record.content.tmdbId : null);
+      return !consumedIds.has(record.id)
+        && recordSeriesId === seriesId
+        && localDiaryDay(record.watchedDate) === item.groupDate
+        && (item.watchNumber === null || record.watchNumber === item.watchNumber);
+    });
+    const episodes = candidates.filter(record => record.content.type === 'EPISODE');
+    if (item.episodeCount > 0) return episodes.slice(0, item.episodeCount);
+    const completions = candidates.filter(record => record.content.type === 'SEASON' || record.content.type === 'SERIES');
+    return completions.slice(0, Math.max(1, item.seasonCount));
+  }
+
+  private toGroupedGridEntry(item: DiaryViewGroupedItem, members: DiaryGridEntry[]): DiaryGroupedGridEntry {
+    const seriesId = item.content.tmdbId || item.content.seriesTmdbId;
+    const matchingSeries = this.diarySeries().find(option => option.seriesTmdbId === seriesId);
+    const seriesTitle = members.find(member => member.seriesTitle)?.seriesTitle || matchingSeries?.title || null;
+    const seriesPosterPath = members.find(member => member.seriesPosterPath)?.seriesPosterPath
+      || members.find(member => member.content.type === 'SERIES')?.card?.posterPath
+      || null;
+    const scores = members.map(member => member.score).filter((score): score is number => score !== null);
+    return {
+      kind: 'GROUPED',
+      id: `group:${seriesId ?? 'unknown'}:${item.groupDate}:${item.watchNumber ?? 1}:${item.orderedAt}`,
+      content: {
+        type: item.groupType,
+        tmdbId: seriesId,
+        seriesTmdbId: seriesId,
+        seasonNumber: null,
+        episodeNumber: null,
+        runtimeMinutes: item.totalRuntimeMinutes,
+      },
+      watchedDate: item.groupDate,
+      score: scores.length ? Math.max(...scores) : null,
+      watchedInTheater: members.some(member => member.watchedInTheater === true),
+      seriesTitle,
+      seriesPosterPath,
+      backdropPath: item.backdropPath ?? null,
+      groupType: item.groupType,
+      seasonCount: item.seasonCount,
+      seasonNumbers: item.seasonNumbers ?? [],
+      episodeCount: item.episodeCount,
+      totalRuntimeMinutes: item.totalRuntimeMinutes,
+      watchNumber: item.watchNumber,
+      memberEntries: members,
+    };
+  }
+
+  private toSyntheticGridEntry(item: DiaryViewEntryItem): DiaryGridEntry {
+    const watchedDate = item.watchedDate || item.orderedAt.slice(0, 10);
+    const seriesTmdbId = item.content.seriesTmdbId
+      || (item.content.type === 'SERIES' ? item.content.tmdbId : null);
+    const relatedEntry = this.diaryEntries().find(entry =>
+      (entry.content.seriesTmdbId || (entry.content.type === 'SERIES' ? entry.content.tmdbId : null)) === seriesTmdbId
+      && localDiaryDay(entry.watchedDate) === localDiaryDay(watchedDate)
+      && entry.watchNumber === (item.watchNumber ?? 1),
+    );
+    const sourceEntries = this.diaryEntries().filter(entry => {
+      const recordSeriesId = entry.content.seriesTmdbId
+        || (entry.content.type === 'SERIES' ? entry.content.tmdbId : null);
+      if (!seriesTmdbId || recordSeriesId !== seriesTmdbId
+        || localDiaryDay(entry.watchedDate) !== localDiaryDay(watchedDate)
+        || entry.watchNumber !== (item.watchNumber ?? 1)) return false;
+      if (item.content.type === 'SEASON') return entry.content.type === 'EPISODE'
+        && entry.content.seasonNumber === item.content.seasonNumber;
+      if (item.content.type === 'EPISODE') return entry.content.type === 'EPISODE'
+        && entry.content.seasonNumber === item.content.seasonNumber
+        && entry.content.episodeNumber === item.content.episodeNumber;
+      return item.content.type === 'SERIES' && entry.content.type === 'EPISODE';
+    });
+    return {
+      id: item.completionKey || `completion:${item.content.type}:${item.content.tmdbId ?? item.content.seriesTmdbId ?? item.orderedAt}`,
+      reviewSource: 'DIARY',
+      derivedCompletion: true,
+      seriesPosterPath: relatedEntry?.seriesPosterPath ?? null,
+      content: {
+        id: item.content.id,
+        tmdbId: item.content.tmdbId,
+        type: item.content.type,
+        seriesTmdbId,
+        seasonNumber: item.content.seasonNumber,
+        episodeNumber: item.content.episodeNumber,
+        runtimeMinutes: item.content.runtimeMinutes,
+      },
+      watchedDate,
+      watchNumber: item.watchNumber ?? 1,
+      customPosterUrl: null,
+      seriesTitle: relatedEntry?.seriesTitle
+        ?? this.diarySeries().find(option => option.seriesTmdbId === seriesTmdbId)?.title
+        ?? null,
+      companions: [],
+      companionProfilePictures: [],
+      card: null,
+      score: item.currentScore,
+      likesCount: 0,
+      likedByMe: false,
+      commentsCount: 0,
+      comment: null,
+      watchedInTheater: null,
+      sourceEntries,
+    };
+  }
+
+  private groupByDay(entries: DiaryTimelineEntry[]): DiaryDayGroup[] {
     const map = new Map<string, DiaryDayGroup>();
     for (const entry of entries) {
       const day = localDiaryDay(entry.watchedDate);

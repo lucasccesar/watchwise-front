@@ -1,8 +1,9 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, inject, input, output, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionKind, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
 import { ModalFocusDirective } from '../../directives/modal-focus.directive';
+import { ModalScrollLockDirective } from '../../directives/modal-scroll-lock.directive';
 import { WATCHWISE_STAR_PATH } from '../../utils/watchwise-star';
 import { tmdbImageUrl } from '../../utils/tmdb-image-url';
 import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
@@ -59,7 +60,7 @@ export interface ShareReviewDialogCopy {
 @Component({
   selector: 'app-share-review-dialog',
   standalone: true,
-  imports: [ModalFocusDirective],
+  imports: [ModalFocusDirective, ModalScrollLockDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './share-review-dialog.component.html',
   styleUrl: './share-review-dialog.component.css',
@@ -90,21 +91,6 @@ export class ShareReviewDialogComponent implements OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly contentApi = inject(ContentApiService);
   private readonly toasts = inject(ToastNotificationsService);
-
-  constructor() {
-    effect((onCleanup) => {
-      const root = this.document.documentElement;
-      const body = this.document.body;
-      const previousRootOverflow = root.style.overflow;
-      const previousBodyOverflow = body.style.overflow;
-      this.renderer.setStyle(root, 'overflow', 'hidden');
-      this.renderer.setStyle(body, 'overflow', 'hidden');
-      onCleanup(() => {
-        this.renderer.setStyle(root, 'overflow', previousRootOverflow);
-        this.renderer.setStyle(body, 'overflow', previousBodyOverflow);
-      });
-    });
-  }
 
   ngOnDestroy(): void {
     this.releaseShareImages();

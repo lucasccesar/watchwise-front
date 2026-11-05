@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
@@ -220,10 +220,13 @@ export class DiaryReviewDetailComponent {
   }
 
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(ContentApiService);
   private readonly profileApi = inject(ProfileApiService);
+  private openReviewEditorAfterLoad = false;
 
   constructor() {
+    this.openReviewEditorAfterLoad = this.router.getCurrentNavigation()?.extras.state?.['openReviewEditor'] === true;
     this.route.paramMap.subscribe((params) => this.load(params.get('entryId') ?? ''));
   }
 
@@ -533,6 +536,10 @@ export class DiaryReviewDetailComponent {
         }
         this.loadBackdrop(entry);
         this.loadComments(entry.id);
+        if (this.openReviewEditorAfterLoad) {
+          this.openReviewEditorAfterLoad = false;
+          queueMicrotask(() => this.openReviewEditor());
+        }
       },
       error: (error: unknown) => {
         this.errorMessage.set(this.requestError(error));

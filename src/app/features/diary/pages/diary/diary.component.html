@@ -7,7 +7,26 @@
     <p class="ww-page-hero-description">{{ isReviewsPage ? copy.reviewsDescription : copy.description }}</p>
   </header>
 
-  @if (summary(); as data) {
+  @if (status() === 'loading') {
+    <section class="diary-stats diary-stats--loading" role="status" aria-live="polite" aria-busy="true" [attr.aria-label]="homeCopy.loadingTitle">
+      <div class="diary-stats-track" aria-hidden="true">
+        @for (card of [1, 2]; track card) {
+          <article class="diary-stats-card diary-stats-card--loading">
+            @for (item of [1, 2]; track item) {
+              <div class="diary-loading-stat">
+                <span class="diary-loading-shimmer diary-loading-stat-label"></span>
+                <span class="diary-loading-shimmer diary-loading-stat-value"></span>
+                <span class="diary-loading-shimmer diary-loading-stat-detail"></span>
+              </div>
+              @if (item === 1) { <span class="diary-loading-shimmer diary-loading-stat-icon"></span> }
+            }
+          </article>
+        }
+      </div>
+      <span class="diary-visually-hidden">{{ homeCopy.loadingDescription }}</span>
+      <div class="diary-stats-pagination" aria-hidden="true"><span class="diary-stats-pagination-active"></span><span></span></div>
+    </section>
+  } @else if (summary(); as data) {
     <section class="diary-stats" aria-label="{{ copy.stats }}">
       <div class="diary-stats-track">
         <article class="diary-stats-card" [attr.aria-label]="homeCopy.episodesWatched">
@@ -115,8 +134,10 @@
         </div>
         <button type="button" class="diary-filter-button diary-theater-filter-button" [class.diary-filter-button-active]="theaterOnly()" [attr.aria-pressed]="theaterOnly()" (click)="toggleTheaterFilter()" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2h20v-2a3 3 0 0 1 0-6V7H2v2Zm11 0v1m0 2v1m0 2v1"/></svg>{{ copy.watchedInTheaters }}</button>
         </div>
+        <button type="button" class="diary-collapse-button diary-series-group-button" [class.diary-series-group-button-active]="seriesGrouping()" [disabled]="seriesGroupingBusy()" [attr.aria-label]="seriesGrouping() ? copy.ungroupSeries : copy.groupSeries" [attr.title]="seriesGrouping() ? copy.ungroupSeries : copy.groupSeries" [attr.aria-pressed]="seriesGrouping()" [attr.aria-busy]="seriesGroupingBusy()" (click)="toggleSeriesGrouping()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z" /><path d="M11 8h2M8 11v2M16 11v2M11 16h2" /></svg></button>
         <button type="button" class="diary-collapse-button" [attr.aria-label]="grouped() ? copy.ungroupDays : copy.groupByDay" [attr.title]="grouped() ? copy.ungroupDays : copy.groupByDay" [attr.aria-pressed]="!grouped()" (click)="toggleGrouping()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="grouped() ? 'M4 12h16M12 3v7m-4-4 4 4 4-4M12 21v-7m-4 4 4-4 4 4' : 'M4 12h16M12 10V3m-4 4 4-4 4 4M12 14v7m-4-4 4 4 4-4'" /></svg></button>
       </div>
+      @if (seriesGroupingError()) { <p class="diary-grouping-error" role="alert">{{ seriesGroupingError() }}</p> }
     </section>
   } @else {
     <section class="diary-filters diary-review-filters ww-filter-surface" [attr.aria-label]="copy.filters" (keydown.escape)="closeFilter($event)">
@@ -231,7 +252,7 @@
 
     <section class="diary-history" [class.diary-review-list]="isReviewsPage" [attr.aria-label]="isReviewsPage ? copy.reviews : copy.history">
       @if (isReviewsPage) {
-        @for (entry of visibleEntries(); track entry.id) {
+        @for (entry of visibleReviewEntries(); track entry.id) {
           @let route = contentRoute(entry);
           @let image = poster(entry);
           <article class="diary-review-item">
@@ -273,14 +294,64 @@
       @for (group of displayGroups(); track group.key) {
         <section class="diary-day-group">
           @if (grouped()) {
-          <button type="button" class="diary-day-heading" [attr.aria-expanded]="!dayCollapsed(group.key)" (click)="toggleDay(group.key)">
+          <div class="diary-day-heading" role="heading" aria-level="3">
             <span class="diary-day-date"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><strong>{{ groupWeekdayLabel(group) }}</strong><span>{{ groupDateLabel(group) }}</span></span>
             <small class="diary-day-summary">{{ groupSummary(group) }}</small>
-          </button>
+          </div>
           }
-          @if (!grouped() || !dayCollapsed(group.key)) {
             <div class="diary-entry-grid">
               @for (entry of group.entries; track entry.id) {
+                @if (isGroupedEntry(entry)) {
+                  @let route = groupedRoute(entry);
+                  @let image = groupedPoster(entry);
+                  @let backdrop = groupedBackdrop(entry);
+                  @let runtime = groupedRuntimeLabel(entry);
+                  <div class="diary-grouped-card">
+                    <article class="diary-grouped-entry" [attr.aria-label]="groupedLabel(entry)">
+                      @if (backdrop) {
+                        <div class="diary-grouped-summary-backdrop" [style.background-image]="'url(' + backdrop + ')'" aria-hidden="true"></div>
+                        <div class="diary-grouped-summary-scrim" aria-hidden="true"></div>
+                      }
+                      <div class="diary-grouped-media">
+                        <a class="diary-entry-poster diary-grouped-poster content-image-card" [routerLink]="route" [attr.aria-label]="groupedTitle(entry)" [class.diary-entry-link-disabled]="!route">
+                          @if (image) { <img [src]="image" alt="" loading="lazy" /> }
+                          @else { <span class="diary-entry-poster-empty">{{ groupedTitle(entry) }}</span> }
+                          <span class="diary-entry-type"
+                            [class.diary-entry-type--episode]="entry.groupType === 'EPISODE'"
+                            [class.diary-entry-type--season]="entry.groupType === 'SEASON'"
+                            [class.diary-entry-type--series]="entry.groupType === 'SERIES'">
+                            <span aria-hidden="true"></span>{{ groupedTypeLabel(entry) }}
+                          </span>
+                          @if (!grouped()) {
+                            <span class="diary-entry-watched-date" [attr.aria-label]="copy.watchedOn.replace('{date}', groupedDate(entry))" [attr.title]="copy.watchedOn.replace('{date}', groupedDate(entry))">{{ groupedDate(entry) }}</span>
+                          }
+                        </a>
+                        <div class="diary-entry-engagement diary-grouped-engagement">
+                          <div class="diary-entry-indicators">
+                            @if (groupedHasReview(entry)) { <span class="diary-entry-indicator" [attr.aria-label]="copy.reviewIndicator" [attr.title]="copy.reviewIndicator"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg></span> }
+                            @if (entry.watchNumber !== null && entry.watchNumber > 1) { <span class="diary-entry-indicator" [attr.aria-label]="copy.rewatchIndicator" [attr.title]="copy.rewatchIndicator"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.7-4L3 9" /><path d="M3 4v5h5M4 13a8 8 0 0 0 14.7 4L21 15" /><path d="M21 20v-5h-5" /></svg></span> }
+                            @if (entry.watchedInTheater === true) { <span class="diary-entry-indicator" [attr.aria-label]="copy.watchedInTheaters" [attr.title]="copy.watchedInTheaters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2h20v-2a3 3 0 0 1 0-6V7H2v2Zm11 0v1m0 2v1m0 2v1" /></svg></span> }
+                            @if (groupedHasPartial(entry)) { <span class="diary-entry-partial">{{ copy.partial }}</span> }
+                          </div>
+                          <div class="diary-entry-social">
+                            <span class="diary-like-count"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>{{ groupedLikesCount(entry) }}</span>
+                            <span class="diary-comment-count"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" /></svg>{{ groupedCommentsCount(entry) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="diary-grouped-summary">
+                        <div class="diary-grouped-metadata">
+                          @for (part of groupedMetadataParts(entry); track $index) { <p>{{ part }}</p> }
+                        </div>
+                      </div>
+                    </article>
+                    <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [actions]="posterActionsFor(entry)" (actionSelected)="handlePosterAction(entry, $event)" />
+                    <div class="diary-entry-title-row diary-grouped-footer">
+                      <a class="diary-grouped-title" [routerLink]="route" [class.diary-entry-link-disabled]="!route">{{ groupedTitle(entry) }}</a>
+                      @if (runtime) { <span class="diary-entry-title-meta diary-grouped-runtime">{{ runtime }}</span> }
+                    </div>
+                  </div>
+                } @else {
                 @let route = contentRoute(entry);
                 @let image = poster(entry);
                 <a class="diary-entry-link" [routerLink]="route" [attr.aria-label]="entryLabel(entry)" [class.diary-entry-link-disabled]="!route">
@@ -294,7 +365,7 @@
                       [class.diary-entry-type--movie]="entry.content.type === 'MOVIE'">
                       <span aria-hidden="true"></span>{{ typeLabel(entry) }}
                     </span>
-                    <app-content-image-actions [ratingValue]="imageRating(entry)" [ratingLabel]="imageRatingLabel(entry)" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="handlePosterAction(entry, $event)" />
+                    <app-content-image-actions [ratingValue]="imageRating(entry)" [ratingLabel]="imageRatingLabel(entry)" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActionsFor(entry)" (actionSelected)="handlePosterAction(entry, $event)" />
                     @if (entry.companions.length > 0) {
                       <span class="diary-companion-avatar">
                         @if (entry.companions[0].profilePicture; as picture) { <img [src]="picture" alt="" loading="lazy" /> }
@@ -347,9 +418,9 @@
                     }
                   </div>
                 </a>
+                }
               }
             </div>
-          }
         </section>
       }
       }
@@ -361,3 +432,6 @@
     </nav>
   }
 </main>
+@if (shareReviewModel(); as model) {
+  <app-share-review-dialog [model]="model" [copy]="shareCopy" [returnFocusTarget]="shareReviewOpener()" (closed)="closeShareReviewPreview()" />
+}

@@ -491,6 +491,24 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'content/series/:tmdbId/season/:seasonNumber',
+    canActivate: [authenticatedGuard],
+    title: 'Temporada | Watchwise',
+    loadComponent: () =>
+      import('./layout/authenticated-layout.component').then(
+        (module) => module.AuthenticatedLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/content/pages/season/season.component').then(
+            (module) => module.SeasonComponent,
+          ),
+      },
+    ],
+  },
+  {
     path: 'content/series/:tmdbId',
     canActivate: [authenticatedGuard],
     loadComponent: () =>

@@ -136,7 +136,6 @@
                                     <small>{{ list.itemsCount ?? 0 }}</small>
                                   </label>
                                   @if (busyListId() === list.id) { <span class="tr-user-list-busy" role="status">{{ copy.loading }}</span> }
-                                  @else if (!canToggleList(list)) { <span class="tr-user-list-busy">{{ copy.incompatibleList }}</span> }
                                 </li>
                               }
                             </ul>
@@ -199,7 +198,7 @@
                               <path d="M5 12h14" />
                             </svg>
                           } @else {
-                            <app-check-icon />
+                            <app-check-icon [color]="'#FFFFFF'" />
                           }
                         </span>
                       }

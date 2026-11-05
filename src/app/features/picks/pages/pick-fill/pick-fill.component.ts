@@ -13,6 +13,7 @@ import { PageSkeletonComponent } from '../../../../shared/components/page-skelet
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 type PickAnswerState = { target: PickCreationSelection['target']; label: string; image: string | null; subtitle: string | null; option?: PicksOptionView };
@@ -143,8 +144,8 @@ export class PickFillComponent implements OnDestroy {
   protected optionLabel(option: PicksOptionView): string { return option.preview.contentCard?.title || option.preview.person?.name || this.copy.searchEmpty; }
   protected optionImage(option: PicksOptionView): string | null { return this.imageUrl(option.preview.contentCard?.customPosterUrl || option.preview.contentCard?.posterPath || option.preview.person?.profileUrl, 'w342'); }
   protected optionSubtitle(option: PicksOptionView): string | null { return option.preview.contentCard?.releaseYear?.toString() ?? option.preview.contentCard?.type ?? null; }
-  protected optionRating(option: PicksOptionView): string | null { const rating = option.preview.contentCard?.stats?.averageScore; return rating === null || rating === undefined ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
-  protected optionRatingLabel(option: PicksOptionView): string { const rating = this.optionRating(option); return rating ? `${this.homeCopy.communityAverage}: ${rating}` : ''; }
+  protected optionRating(option: PicksOptionView): string | null { const card = option.preview.contentCard; const rating = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).value; return rating === null ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
+  protected optionRatingLabel(option: PicksOptionView): string { const rating = this.optionRating(option); if (!rating) return ''; const card = option.preview.contentCard; const source = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).source; return `${source === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage}: ${rating}`; }
   protected optionMenuKey(option: PicksOptionView): string { return `${this.activeCategoryId()}:${option.id}`; }
   protected menuExpanded(option: PicksOptionView): boolean { return this.openMenu() === this.optionMenuKey(option); }
   protected readonly openMenu = signal('');

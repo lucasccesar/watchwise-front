@@ -127,10 +127,10 @@
 
 .watchlist-toolbar { display: flex; min-height: 90px; align-items: center; justify-content: space-between; gap: 20px; width: 100%; margin: 0 auto 24px; padding: 0 max(24px, calc((100% - 1334px) / 2)); border-block: 1px solid var(--color-border); box-sizing: border-box; }
 .watchlist-toolbar-left { display: flex; min-width: 0; align-items: center; gap: 12px; }
-.watchlist-type-tabs { display: flex; width: fit-content; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); }
-.watchlist-type-tabs button { min-width: 84px; height: 36px; padding: 0 14px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-sm); cursor: pointer; }
+.watchlist-type-tabs { display: inline-flex; width: fit-content; height: 40px; align-items: center; gap: var(--space-1); box-sizing: border-box; padding: var(--space-1); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: transparent; }
+.watchlist-type-tabs button { min-width: 84px; height: 30px; box-sizing: border-box; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font: inherit; font-size: var(--font-size-sm); cursor: pointer; }
 .watchlist-type-tabs button:hover { color: var(--color-text); }
-.watchlist-type-tabs .watchlist-tab-active { background: var(--color-primary); color: var(--color-text); font-weight: 600; }
+.watchlist-type-tabs .watchlist-tab-active { background: var(--color-primary); color: var(--color-text); font-weight: 700; }
 
 .watchlist-control-row { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; margin: 0; }
 .watchlist-summary { display: flex; flex: 0 0 auto; align-items: center; gap: 18px; }
@@ -192,7 +192,7 @@
 .watchlist-grid--list .watchlist-card-copy p { white-space: normal; }
 .watchlist-card .tr-upcoming-release { position: absolute; z-index: 4; bottom: var(--space-2); left: var(--space-2); display: inline-flex; min-height: 18px; align-items: center; gap: var(--space-1); padding: 0 var(--space-2); border-radius: var(--radius-sm); background: var(--color-accent); color: var(--color-surface); font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
 .watchlist-card .tr-upcoming-release svg { width: 12px; height: 12px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.watchlist-card .tr-state-marker { position: absolute; top: 0; left: 50%; display: grid; width: 22px; height: 22px; box-sizing: border-box; place-items: center; border: 2px solid var(--color-surface); border-radius: var(--radius-full); background: var(--color-surface-secondary); color: var(--color-text); transform: translate(-50%, -50%); }
+.watchlist-card .tr-state-marker { position: absolute; top: 0; left: 50%; display: grid; width: 22px; height: 22px; box-sizing: border-box; place-items: center; border: 2px solid var(--color-surface); border-radius: var(--radius-full); background: var(--color-primary); color: var(--color-text); transform: translate(-50%, -50%); }
 .watchlist-card .tr-card-text { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
 .watchlist-card .tr-card-main { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
 .watchlist-card .tr-card-text p, .watchlist-card .tr-preview-note { margin: 0; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); text-overflow: ellipsis; white-space: nowrap; }

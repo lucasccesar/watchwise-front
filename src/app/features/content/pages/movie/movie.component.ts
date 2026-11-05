@@ -10,7 +10,6 @@ import {
   Renderer2,
   ViewChild,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -35,19 +34,24 @@ import {
   ContentPageResult,
   ContentReview,
   MovieVideo,
+  ContentPageStats,
   ReviewSort,
   UserListSummary,
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
+import { getVideoPlatformLabel } from '../../utils/content-video.utils';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { ContentPosterPickerComponent } from '../../../../shared/components/content-poster-picker/content-poster-picker.component';
 import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'watch' | 'videos' | 'lists' | 'share' | null;
@@ -64,7 +68,7 @@ type WatchForm = FormGroup<{
 @Component({
   selector: 'app-movie-content',
   standalone: true,
-  imports: [ReactiveFormsModule, NgTemplateOutlet, PageSkeletonComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, CommentItemComponent, ModalScrollLockDirective, CheckIconComponent],
+  imports: [ReactiveFormsModule, NgTemplateOutlet, PageSkeletonComponent, ContentListSkeletonComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, ContentPosterPickerComponent, CommentItemComponent, ModalScrollLockDirective, CheckIconComponent],
   templateUrl: './movie.component.html',
   styleUrl: './movie.component.css',
 })
@@ -191,19 +195,6 @@ export class MovieComponent implements OnInit, OnDestroy {
     protected readonly session: AuthSessionService,
     formBuilder: FormBuilder,
   ) {
-    effect((onCleanup) => {
-      if (!this.dialog()) return;
-      const root = this.document.documentElement;
-      const body = this.document.body;
-      const previousRootOverflow = root.style.overflow;
-      const previousBodyOverflow = body.style.overflow;
-      root.style.overflow = 'hidden';
-      body.style.overflow = 'hidden';
-      onCleanup(() => {
-        root.style.overflow = previousRootOverflow;
-        body.style.overflow = previousBodyOverflow;
-      });
-    });
     this.maxWatchedDate = this.localDate(new Date());
     this.watchForm = formBuilder.nonNullable.group({
       watchedDate: [this.maxWatchedDate, Validators.required],
@@ -519,6 +510,10 @@ export class MovieComponent implements OnInit, OnDestroy {
     return this.isYoutubeVideo(video) ? `https://i.ytimg.com/vi/${video.key}/hqdefault.jpg` : null;
   }
 
+  protected videoPlatform(video: MovieVideo): string {
+    return getVideoPlatformLabel(video);
+  }
+
   private isYoutubeVideo(video: MovieVideo): boolean {
     if (!/^[a-zA-Z0-9_-]{11}$/.test(video.key)) return false;
     try {
@@ -599,7 +594,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected toggleMovieInList(list: UserListSummary): void {
     if (
       this.actionPending() ||
-      (list.containsContent !== true && (list.itemScope === 'LIST' || list.itemScope === 'MIXED'))
+      (list.containsContent !== true && !this.canAddContentToList(list))
     ) return;
 
     if (list.containsContent) {
@@ -610,17 +605,43 @@ export class MovieComponent implements OnInit, OnDestroy {
       );
       this.runAction(removal, () => {
         this.showToast(this.copy.listRemoved);
-        this.loadUserLists(1);
-        this.refreshPageStats();
+        this.updateMovieListMembership(list, false);
       });
       return;
     }
 
     this.runAction(this.api.addMovieToList(list.id, this.tmdbId()), () => {
       this.showToast(this.copy.listAdded);
-      this.loadUserLists(1);
-      this.refreshPageStats();
+      this.updateMovieListMembership(list, true);
     });
+  }
+
+  private updateMovieListMembership(list: UserListSummary, containsContent: boolean): void {
+    const updateList = (current: UserListSummary): UserListSummary => {
+      if (current.id !== list.id) return current;
+      const wasInList = current.containsContent === true;
+      const countDelta = Number(containsContent) - Number(wasInList);
+      return {
+        ...current,
+        containsContent,
+        ...(current.itemsCount === undefined ? {} : { itemsCount: Math.max(0, current.itemsCount + countDelta) }),
+      };
+    };
+
+    this.userLists.update((current) => current.map(updateList));
+    this.userListsPage.update((current) => current
+      ? { ...current, content: current.content.map(updateList) }
+      : current);
+    this.page.update((current) => {
+      if (!current) return current;
+      const lists = current.viewerState.lists.filter((item) => item.listId !== list.id);
+      if (containsContent) lists.push({ listId: list.id, name: list.name, visibility: list.visibility });
+      return { ...current, viewerState: { ...current.viewerState, lists } };
+    });
+  }
+
+  protected canAddContentToList(list: UserListSummary): boolean {
+    return list.itemScope === null || list.itemScope === 'MOVIE_OR_SERIES';
   }
 
   protected loadMoreLists(): void {
@@ -812,6 +833,12 @@ export class MovieComponent implements OnInit, OnDestroy {
     return this.imageUrl(details?.customPosterUrl || details?.posterPath, 'w500');
   }
 
+  protected applyCustomPoster(customPosterUrl: string): void {
+    this.page.update((current) => current
+      ? { ...current, details: { ...current.details, customPosterUrl } }
+      : current);
+  }
+
   protected backdropUrl(): string | null {
     return this.imageUrl(this.page()?.details.backdropPath, 'w1280');
   }
@@ -884,6 +911,17 @@ export class MovieComponent implements OnInit, OnDestroy {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     }).format(value);
+  }
+
+  protected averageRating(stats: ContentPageStats): number | null {
+    return resolveRating(stats.averageScore, stats.tmdbVoteAverage).value;
+  }
+
+  protected averageRatingCaption(stats: ContentPageStats): string {
+    const rating = resolveRating(stats.averageScore, stats.tmdbVoteAverage);
+    return rating.source === 'tmdb'
+      ? this.copy.tmdbRating
+      : this.copy.ratingsCount.replace('{count}', this.formatNumber(stats.ratingsCount, 0));
   }
 
   protected ratingBarHeight(score: number): number {

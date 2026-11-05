@@ -23,13 +23,14 @@ import { ProfileCountryMapComponent } from '../../components/profile-country-map
 import { ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
 
 type ProfileSection = 'profile' | 'progress' | 'history' | 'reviews' | 'lists' | 'watchlist' | 'picks' | 'episode-ratings-map' | 'episode-ratings-map-show' | 'month-in-review' | 'year-in-review' | 'all-time-stats';
 type ProfileTabKey = keyof typeof messageCatalog['pt-BR']['profilePage']['tabs'];
 type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
-type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; releaseYear: number | null; averageScore: number | null; contentType: 'MOVIE' | 'SERIES' };
+type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; contentType: 'MOVIE' | 'SERIES' };
 type RecentSeriesCard = {
   seriesTmdbId: string;
   title: string;
@@ -1342,34 +1343,63 @@ export class ProfileComponent {
       posterPath: entry.customPosterUrl,
       releaseYear: null,
       averageScore: null,
+      ratingSource: 'none',
       contentType: entry.type,
     };
 
     if (entry.type === 'SERIES') {
       return this.contentApi.getSeriesPage(entry.content.id).pipe(
-        map((page) => ({
-          ...entry,
-          title: page.details.title ?? '',
-          posterPath: entry.customPosterUrl || page.details.posterPath,
-          releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
-          averageScore: page.stats.averageScore,
-          contentType: 'SERIES' as const,
-        })),
+        map((page) => {
+          const rating = resolveRating(page.stats.averageScore, page.stats.tmdbVoteAverage);
+          return {
+            ...entry,
+            title: page.details.title ?? '',
+            posterPath: entry.customPosterUrl || page.details.posterPath,
+            releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
+            averageScore: rating.value,
+            ratingSource: rating.source,
+            contentType: 'SERIES' as const,
+          };
+        }),
         catchError(() => of(unavailable)),
       );
     }
 
     return this.contentApi.getPage(entry.content.id).pipe(
-      map((page) => ({
-        ...entry,
-        title: page.details.title ?? '',
-        posterPath: entry.customPosterUrl || page.details.posterPath,
-        releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
-        averageScore: page.stats.averageScore,
-        contentType: 'MOVIE' as const,
-      })),
+      map((page) => {
+        const rating = resolveRating(page.stats.averageScore, page.stats.tmdbVoteAverage);
+        return {
+          ...entry,
+          title: page.details.title ?? '',
+          posterPath: entry.customPosterUrl || page.details.posterPath,
+          releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
+          averageScore: rating.value,
+          ratingSource: rating.source,
+          contentType: 'MOVIE' as const,
+        };
+      }),
       catchError(() => of(unavailable)),
     );
+  }
+
+  protected topFiveRatingLabel(entry: ResolvedTopFive): string {
+    if (entry.averageScore === null) return '';
+    const source = entry.ratingSource === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage;
+    return `${source} ${entry.averageScore.toFixed(1)}`;
+  }
+
+  protected profileCardRating(card: { stats?: { averageScore: number | null } | null; tmdbVoteAverage?: number | null } | null | undefined): string | null {
+    if (!card) return null;
+    const rating = resolveRating(card.stats?.averageScore, card.tmdbVoteAverage).value;
+    return rating === null ? null : rating.toFixed(1);
+  }
+
+  protected profileCardRatingLabel(card: { stats?: { averageScore: number | null } | null; tmdbVoteAverage?: number | null } | null | undefined): string {
+    if (!card) return '';
+    const rating = resolveRating(card.stats?.averageScore, card.tmdbVoteAverage);
+    if (rating.value === null) return '';
+    const source = rating.source === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage;
+    return `${source} ${rating.value.toFixed(1)}`;
   }
 
   private resetSectionData(): void {

@@ -30,7 +30,7 @@
         />
         @if (nameError(); as error) {
           <p class="auth-field-error" id="signup-name-error">
-            <span aria-hidden="true">!</span><span>{{ error }}</span>
+            <span>{{ error }}</span>
           </p>
         }
       </div>
@@ -57,7 +57,7 @@
         </div>
         @if (usernameError(); as error) {
           <p class="auth-field-error" id="signup-username-error">
-            <span aria-hidden="true">!</span><span>{{ error }}</span>
+            <span>{{ error }}</span>
           </p>
         }
       </div>
@@ -81,7 +81,7 @@
         />
         @if (emailError(); as error) {
           <p class="auth-field-error" id="signup-email-error">
-            <span aria-hidden="true">!</span><span>{{ error }}</span>
+            <span>{{ error }}</span>
           </p>
         }
       </div>
@@ -122,7 +122,7 @@
         </div>
         @if (passwordError(); as error) {
           <p class="auth-field-error" id="signup-password-error">
-            <span aria-hidden="true">!</span><span>{{ error }}</span>
+            <span>{{ error }}</span>
           </p>
         } @else {
           <p class="auth-password-hint" id="signup-password-hint">{{ copy.passwordHint }}</p>
@@ -148,7 +148,7 @@
         </div>
         @if (termsError(); as error) {
           <p class="auth-field-error" id="signup-terms-error">
-            <span aria-hidden="true">!</span><span>{{ error }}</span>
+            <span>{{ error }}</span>
           </p>
         }
       </div>
@@ -167,7 +167,7 @@
         </div>
         @if (ageConfirmationError(); as error) {
           <p class="auth-field-error" id="signup-age-confirmation-error">
-            <span aria-hidden="true">!</span><span>{{ error }}</span>
+            <span>{{ error }}</span>
           </p>
         }
       </div>

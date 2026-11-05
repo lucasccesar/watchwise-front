@@ -17,7 +17,8 @@
 
       <div class="movie-overview-grid">
         <aside class="movie-sidebar">
-          <div class="movie-poster-wrap">
+          <div class="movie-poster-state">
+            <div class="movie-poster-wrap">
             @if (posterUrl(); as poster) {
               <img
                 class="movie-poster"
@@ -30,6 +31,7 @@
                 <span aria-hidden="true">WW</span>
               </div>
             }
+            </div>
           </div>
 
           <section class="movie-providers" aria-labelledby="movie-providers-title">
@@ -38,32 +40,17 @@
               <ul class="movie-provider-list">
                 @for (provider of moviePage.metadata.watchProviders.slice(0, 4); track $index) {
                   <li>
-                    @if (provider.watchUrl) {
-                      <a [href]="provider.watchUrl" target="_blank" rel="noopener noreferrer" [attr.aria-label]="copy.watchProvider.replace('{provider}', provider.providerName)">
-                        @if (imageUrl(provider.logoPath, 'w92'); as logo) {
-                          <img [src]="logo" alt="" loading="lazy" />
-                        } @else {
-                          <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
-                        }
-                        <span class="movie-provider-copy">
-                          <strong>{{ provider.providerName }}</strong>
-                          <small>{{ providerLabel(provider.type) }}</small>
-                        </span>
-        <span class="movie-external-icon" aria-hidden="true">&#8599;</span>
-                      </a>
-                    } @else {
-                      <div class="movie-provider-item">
-                        @if (imageUrl(provider.logoPath, 'w92'); as logo) {
-                          <img [src]="logo" alt="" loading="lazy" />
-                        } @else {
-                          <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
-                        }
-                        <span class="movie-provider-copy">
-                          <strong>{{ provider.providerName }}</strong>
-                          <small>{{ providerLabel(provider.type) }}</small>
-                        </span>
-                      </div>
-                    }
+                    <div class="movie-provider-item">
+                      @if (imageUrl(provider.logoPath, 'w92'); as logo) {
+                        <img [src]="logo" alt="" loading="lazy" />
+                      } @else {
+                        <span class="movie-provider-initials" aria-hidden="true">{{ providerInitials(provider.providerName) }}</span>
+                      }
+                      <span class="movie-provider-copy">
+                        <strong>{{ provider.providerName }}</strong>
+                        <small>{{ providerLabel(provider.type) }}</small>
+                      </span>
+                    </div>
                   </li>
                 }
               </ul>
@@ -121,10 +108,10 @@
               <span class="movie-head-star" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span>
               <span class="movie-head-rating-value">
                 <span class="movie-head-rating-number">
-                  <strong>{{ formatRating(moviePage.stats.averageScore) }}</strong>
+                  <strong>{{ formatRating(averageRating(moviePage.stats)) }}</strong>
                   <span>/10</span>
                 </span>
-                <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
+                <small>{{ averageRatingCaption(moviePage.stats) }}</small>
               </span>
             </div>
             <a href="#movie-reviews" class="movie-head-stat">
@@ -280,18 +267,21 @@
           @if (moviePage.viewerState.watchStatus === 'WATCHED') {
           <button
             class="movie-action-rating"
+            [class.movie-action-rating--unrated]="!moviePage.viewerState.myRating"
             type="button"
             [disabled]="actionPending()"
             (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
           >
             <span>{{ copy.yourRating }}</span>
-            <strong><span aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
+            <strong><span aria-hidden="true">@if (moviePage.viewerState.myRating) { <ng-container [ngTemplateOutlet]="ratingStar" /> } @else { <svg class="movie-action-rating-empty-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" /></svg> }</span> {{ moviePage.viewerState.myRating ?? copy.noRating }}@if (moviePage.viewerState.myRating) { <small>/10</small> }</strong>
           </button>
           } @else {
-            <button class="movie-action-mark-watched" type="button" [disabled]="actionPending()" (click)="openWatchDialog('new', $event)">
-              <app-check-icon />
-              <span>{{ copy.markWatched }}</span>
-            </button>
+            @if (!moviePage.viewerState.dropped) {
+              <button class="movie-action-mark-watched" type="button" [disabled]="actionPending()" (click)="openWatchDialog('new', $event)">
+                <app-check-icon />
+                <span>{{ copy.markWatched }}</span>
+              </button>
+            }
           }
 
           @if (moviePage.viewerState.watchStatus === 'WATCHED') {
@@ -322,8 +312,8 @@
               <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions" data-ww-menu>
                 <button type="button" (click)="openWatchDialog('again', $event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.watchAgain }}</span><small>{{ copy.playsCount.replace('{count}', formatNumber(moviePage.viewerState.playsCount, 0)) }}</small></button>
                 <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
-                <button type="button" [disabled]="!moviePage.viewerState.myReview" (click)="openShareDialog($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button>
-                <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg><span>{{ copy.changePoster }}</span></button>
+                <button type="button" (click)="openShareDialog($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button>
+                <app-content-poster-picker [contentId]="moviePage.details.contentId" [tmdbId]="moviePage.details.tmdbId" contentType="MOVIE" [selectedPosterPath]="moviePage.details.customPosterUrl || moviePage.details.posterPath" [label]="copy.changePoster" [selectionLabel]="copy.posterSelectionLabel" [loadingLabel]="copy.loadingPosters" [loadErrorLabel]="copy.postersLoadError" [retryLabel]="copy.retry" [emptyLabel]="copy.noPosters" [saveSuccessLabel]="copy.posterUpdated" [saveErrorLabel]="copy.posterUpdateError" (posterSaved)="applyCustomPoster($event)" />
               </div>
             </details>
           </div>
@@ -346,15 +336,15 @@
               <div id="movie-lists-panel" class="movie-lists-panel" [attr.aria-label]="copy.listSelectTitle" data-ww-menu>
                 <strong class="movie-lists-panel-title">{{ copy.yourLists }}</strong>
                 @if (userListsStatus() === 'loading') {
-                  <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loading" />
+                  <app-content-list-skeleton [label]="copy.loadingLists" />
                 } @else if (userListsStatus() === 'error') {
                   <p class="movie-field-error" role="alert">{{ userListsError() || copy.listLoadError }}</p>
                   <button class="movie-text-button" type="button" (click)="loadUserLists(1)">{{ copy.retry }}</button>
                 } @else if (userLists().length) {
                   @for (list of userLists(); track list.id) {
-                    <button class="movie-lists-panel-item" type="button" [disabled]="actionPending() || (list.containsContent !== true && (list.itemScope === 'LIST' || list.itemScope === 'MIXED'))" [attr.aria-pressed]="list.containsContent === true" (click)="toggleMovieInList(list)" data-ww-menu-item>
-                      <span class="movie-lists-panel-check" aria-hidden="true">@if (list.containsContent) { <app-check-icon /> }</span>
-                      <span class="movie-lists-panel-name">{{ list.name }}</span>
+                    <button class="movie-lists-panel-item" type="button" [disabled]="actionPending() || (list.containsContent !== true && !canAddContentToList(list))" [attr.aria-pressed]="list.containsContent === true" (click)="toggleMovieInList(list)" data-ww-menu-item>
+                      <span class="movie-lists-panel-check" aria-hidden="true">@if (list.containsContent) { <app-check-icon [color]="'#FFFFFF'" /> }</span>
+                      <span class="movie-lists-panel-copy"><span class="movie-lists-panel-name">{{ list.name }}</span></span>
                       @if (list.itemsCount !== undefined) {<span class="movie-lists-panel-count">{{ formatNumber(list.itemsCount, 0) }}</span>}
                     </button>
                   }
@@ -428,9 +418,9 @@
                 <div class="movie-rating-average">
                   <span class="movie-rating-average-value">
                     <span class="movie-rating-average-star" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /></span>
-                    <strong>{{ formatRating(moviePage.stats.averageScore) }}</strong>
+                    <strong>{{ formatRating(averageRating(moviePage.stats)) }}</strong>
                   </span>
-                  <small>{{ copy.ratingsCount.replace('{count}', formatNumber(moviePage.stats.ratingsCount, 0)) }}</small>
+                  <small>{{ averageRatingCaption(moviePage.stats) }}</small>
                 </div>
               </div>
             </section>
@@ -492,7 +482,7 @@
     </section>
 
     <section id="movie-reviews" class="movie-page-section movie-reviews" aria-labelledby="movie-reviews-title">
-      <div class="movie-section-heading movie-section-heading--split ww-filter-surface">
+      <div class="movie-section-heading movie-section-heading--split">
         <div class="movie-heading-count">
           <h2 id="movie-reviews-title">{{ copy.reviews }}</h2>
           <span>{{ formatNumber(reviewCount(), 0) }}</span>
@@ -535,8 +525,8 @@
                 <p class="movie-review-text">{{ review.comment }}</p>
               }
               <div class="movie-review-actions">
-                <button type="button" [attr.aria-label]="review.likedByMe ? copy.unlike : copy.like" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
-                  <span aria-hidden="true">{{ review.likedByMe ? '♥' : '♡' }}</span>
+                <button class="movie-review-like" type="button" [attr.aria-label]="review.likedByMe ? copy.unlike : copy.like" [attr.aria-pressed]="review.likedByMe" (click)="toggleReviewLike(review)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
                   <span>{{ formatNumber(review.likesCount, 0) }}</span>
                 </button>
                 <span class="movie-review-comments"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5C21 16.2 17.2 20 12.5 20c-1.1 0-2.1-.2-3.1-.6L3 20l1.4-5.4A8.5 8.5 0 1 1 21 11.5Z" /></svg>{{ copy.commentsCount.replace('{count}', formatNumber(review.commentsCount, 0)) }}</span>
@@ -825,20 +815,18 @@
               <div class="movie-video-feature-caption"><h3>{{ video.name }}</h3><span>{{ video.type }}@if (video.official) { · {{ copy.official }} }</span></div>
             </div>
             @if (page()?.details?.videos; as videos) {
-              @if (videos.length > 1) {
+              @if (videos.length) {
                 <section class="movie-video-more" [attr.aria-label]="copy.moreVideos">
                   <h3>{{ copy.moreVideos }}</h3>
                   <div class="movie-video-thumbnails" role="group" [attr.aria-label]="copy.moreVideos" tabindex="0">
                     @for (otherVideo of videos; track otherVideo.key) {
-                      @if (otherVideo.key !== video.key) {
-                        <button type="button" class="movie-video-card" [attr.aria-label]="copy.playVideo.replace('{video}', otherVideo.name)" (click)="selectVideo(otherVideo)">
-                          <span class="movie-video-card-image">
-                            @if (videoThumbnail(otherVideo); as thumbnail) { <img [src]="thumbnail" alt="" loading="lazy" /> }
-                            <span aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5V19.5L19 12L7 4.5Z" /></svg></span>
-                          </span>
-                          <span class="movie-video-card-copy"><strong>{{ otherVideo.name }}</strong><small>{{ otherVideo.type }}</small></span>
-                        </button>
-                      }
+                      <button type="button" class="movie-video-card" [class.movie-video-card--active]="otherVideo.key === video.key" [attr.aria-pressed]="otherVideo.key === video.key" [attr.aria-label]="copy.playVideo.replace('{video}', otherVideo.name)" (click)="selectVideo(otherVideo)">
+                        <span class="movie-video-card-image">
+                          @if (videoThumbnail(otherVideo); as thumbnail) { <img [src]="thumbnail" alt="" loading="lazy" /> }
+                          <span aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5V19.5L19 12L7 4.5Z" /></svg></span>
+                        </span>
+                        <span class="movie-video-card-copy"><strong>{{ otherVideo.name }}</strong>@if (videoPlatform(otherVideo); as platform) { <span class="movie-video-platform">{{ platform }}</span> }<small>{{ otherVideo.type }}</small></span>
+                      </button>
                     }
                   </div>
                 </section>
@@ -849,7 +837,7 @@
           }
         } @else {
           @if (userListsStatus() === 'loading') {
-            <app-page-skeleton variant="rows" [compact]="true" [label]="copy.loading" />
+            <app-content-list-skeleton [label]="copy.loadingLists" />
           } @else if (userListsStatus() === 'error') {
             <div class="movie-section-state" role="alert">
               <p>{{ userListsError() || copy.listLoadError }}</p>
@@ -862,17 +850,16 @@
                   <button
                     class="movie-list-option"
                     type="button"
-                    [disabled]="actionPending() || (list.containsContent !== true && (list.itemScope === 'LIST' || list.itemScope === 'MIXED'))"
+                    [disabled]="actionPending() || (list.containsContent !== true && !canAddContentToList(list))"
                     [attr.aria-pressed]="list.containsContent === true"
                     (click)="toggleMovieInList(list)"
+                    data-ww-menu-item
                   >
-                    <span class="movie-list-check" aria-hidden="true">@if (list.containsContent) { <app-check-icon /> }</span>
+                    <span class="movie-list-check" aria-hidden="true">@if (list.containsContent) { <app-check-icon [color]="'#FFFFFF'" /> }</span>
                     <span class="movie-list-name">{{ list.name }}</span>
                     <span class="movie-list-status">
                       @if (list.containsContent) {
                         {{ copy.alreadyInList }} · {{ copy.removeMovieFromList }}
-                      } @else if (list.itemScope === 'LIST' || list.itemScope === 'MIXED') {
-                        {{ copy.listTypeLocked }}
                       } @else {
                         {{ copy.addMovieToList }}
                       }

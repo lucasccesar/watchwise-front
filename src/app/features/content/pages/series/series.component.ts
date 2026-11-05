@@ -9,11 +9,10 @@ import {
   Renderer2,
   ViewChild,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, Title } from '@angular/platform-browser';
 import { forkJoin, Observable, Subscription, of, switchMap, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -23,6 +22,7 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import {
   ContentApiService,
   ContentComment,
+  ContentPageStats,
   ContentPageResult,
   ContentReview,
   MovieVideo,
@@ -34,15 +34,21 @@ import {
   UserListSummary,
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
+import { getVideoPlatformLabel } from '../../utils/content-video.utils';
 import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { ContentPosterPickerComponent } from '../../../../shared/components/content-poster-picker/content-poster-picker.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type DialogState = 'bulk' | 'lists' | 'rating' | 'videos' | null;
@@ -54,7 +60,7 @@ type RatingTarget =
 @Component({
   selector: 'app-series-content',
   standalone: true,
-  imports: [NgTemplateOutlet, ContentImageActionsComponent, PageSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, ModalScrollLockDirective, CheckIconComponent],
+  imports: [NgTemplateOutlet, RouterLink, ContentImageActionsComponent, PageSkeletonComponent, ContentListSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, ShareReviewDialogComponent, ContentPosterPickerComponent],
   templateUrl: './series.component.html',
 })
 export class SeriesComponent implements OnInit, OnDestroy {
@@ -91,6 +97,24 @@ export class SeriesComponent implements OnInit, OnDestroy {
     const videos = this.page()?.details.videos ?? [];
     return videos.find((video) => video.key === this.selectedVideoKey()) ?? videos[0] ?? null;
   });
+  protected readonly shareReviewOpen = signal(false);
+  protected readonly shareModel = computed<ShareReviewDialogModel | null>(() => {
+    const page = this.page();
+    if (!page) return null;
+    const user = this.session.user();
+    return {
+      title: page.details.title || this.copy.untitled,
+      subtitle: page.details.releaseDate?.slice(0, 4) ?? null,
+      rating: page.viewerState.myRating,
+      review: page.viewerState.myReview,
+      backgroundUrl: this.backdropUrl(),
+      posterUrl: this.posterUrl(),
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: 'SERIES',
+      tmdbId: page.details.tmdbId || this.tmdbId() || null,
+    };
+  });
   protected readonly videoEmbedUrl = computed(() => {
     const video = this.selectedVideo();
     if (!video || !this.isYoutubeVideo(video)) return null;
@@ -117,6 +141,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly watchDate = signal(this.localDate(new Date()));
   protected readonly ratingTarget = signal<RatingTarget | null>(null);
   protected readonly ratingScore = signal(0);
+  protected readonly ratingReview = signal('');
   protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly episodes = computed(() => {
     const current = this.page();
@@ -137,7 +162,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
     if (!current) return [];
     const summaries = current.details.seasons ?? [];
     const cards = current.sections.seasons ?? [];
-    return summaries.length ? summaries : cards.map((card) => ({
+    const items = summaries.length ? summaries : cards.map((card) => ({
       seasonNumber: card.seasonNumber,
       name: card.title,
       posterPath: card.posterPath,
@@ -145,6 +170,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
       episodeCount: null,
       airedEpisodeCount: null,
     }));
+    return items.filter((season) => season.seasonNumber !== 0);
   });
 
   private readonly document = inject(DOCUMENT);
@@ -153,7 +179,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   private readonly title = inject(Title);
   private readonly subscriptions = new Subscription();
   private requests = new Subscription();
-  private modalOpener: HTMLElement | null = null;
+  protected modalOpener: HTMLElement | null = null;
   private stylesheet: HTMLLinkElement | null = null;
   private readonly toasts = inject(ToastNotificationsService);
 
@@ -166,21 +192,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
     private readonly api: ContentApiService,
     private readonly diaryApi: DiaryApiService,
     protected readonly session: AuthSessionService,
-  ) {
-    effect((onCleanup) => {
-      if (!this.dialog()) return;
-      const root = this.document.documentElement;
-      const body = this.document.body;
-      const previousRootOverflow = root.style.overflow;
-      const previousBodyOverflow = body.style.overflow;
-      root.style.overflow = 'hidden';
-      body.style.overflow = 'hidden';
-      onCleanup(() => {
-        root.style.overflow = previousRootOverflow;
-        body.style.overflow = previousBodyOverflow;
-      });
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
     this.loadStylesheet();
@@ -302,7 +314,13 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected posterUrl(): string | null {
     const details = this.page()?.details;
-    return this.imageUrl(this.page()?.metadata.presentationPosterPath || details?.customPosterUrl || details?.posterPath, 'w500');
+    return this.imageUrl(details?.customPosterUrl || this.page()?.metadata.presentationPosterPath || details?.posterPath, 'w500');
+  }
+
+  protected applyCustomPoster(customPosterUrl: string): void {
+    this.page.update((current) => current
+      ? { ...current, details: { ...current.details, customPosterUrl } }
+      : current);
   }
 
   protected backdropUrl(): string | null {
@@ -315,6 +333,25 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected formatRating(value: number | null | undefined): string {
     return this.formatNumber(value, 1);
+  }
+
+  protected averageRating(stats: ContentPageStats): number | null {
+    return resolveRating(stats.averageScore, stats.tmdbVoteAverage).value;
+  }
+
+  protected averageRatingCaption(stats: ContentPageStats): string {
+    const rating = resolveRating(stats.averageScore, stats.tmdbVoteAverage);
+    return rating.source === 'tmdb'
+      ? this.copy.tmdbRating
+      : this.copy.ratingsCount.replace('{count}', this.formatNumber(stats.ratingsCount, 0));
+  }
+
+  protected contentRatingLabel(stats: ContentPageStats | undefined): string {
+    if (!stats) return '';
+    const rating = resolveRating(stats.averageScore, stats.tmdbVoteAverage);
+    if (rating.value === null) return '';
+    const source = rating.source === 'tmdb' ? this.copy.tmdbRating : this.copy.averageRating;
+    return `${source}: ${this.formatRating(rating.value)} de 10`;
   }
 
   protected formatDate(value: string | null | undefined): string {
@@ -381,6 +418,10 @@ export class SeriesComponent implements OnInit, OnDestroy {
     return this.isYoutubeVideo(video) ? `https://i.ytimg.com/vi/${video.key}/hqdefault.jpg` : null;
   }
 
+  protected videoPlatform(video: MovieVideo): string {
+    return getVideoPlatformLabel(video);
+  }
+
   private isYoutubeVideo(video: MovieVideo): boolean {
     if (!/^[a-zA-Z0-9_-]{11}$/.test(video.key)) return false;
     try {
@@ -404,14 +445,34 @@ export class SeriesComponent implements OnInit, OnDestroy {
     return `episode-${episode.seasonNumber ?? 0}-${episode.episodeNumber ?? 0}`;
   }
 
+  protected episodeRoute(episode: SeriesEpisodeSummary): string[] {
+    const id = this.tmdbId();
+    if (episode.seasonNumber === null || episode.episodeNumber === null) return ['/content/series', id];
+    return ['/content/series', id, 'season', String(episode.seasonNumber), 'episode', String(episode.episodeNumber)];
+  }
+
+  protected openEpisodeShareReview(episode: SeriesEpisodeSummary): void {
+    this.activeSeriesImageMenu.set(null);
+    void this.router.navigate(this.episodeRoute(episode), {
+      state: { openShareReview: true, shareReturnUrl: this.router.url },
+    });
+  }
+
   protected seasonMenuKey(season: SeriesSeasonSummary): string {
     return `season-${season.seasonNumber ?? 0}`;
   }
 
-  protected imageActionsFor(isWatched: boolean, type: 'episode' | 'season'): readonly ContentImageAction[] {
+  protected imageActionsFor(isWatched: boolean, type: 'episode' | 'season', hasRating = false): readonly ContentImageAction[] {
+    if (type === 'episode') {
+      return [
+        { id: 'rate', label: hasRating ? this.copy.editRating : this.copy.rate, icon: 'star' },
+        { id: 'rewatch', label: this.copy.rewatch, icon: 'rewatch', disabled: !isWatched },
+        { id: 'share-review', label: this.copy.shareReview, icon: 'share', disabled: !isWatched },
+      ];
+    }
     return [
       { id: 'watch', label: isWatched ? this.copy.watchAgain : this.copy.markWatched, icon: 'check' },
-      { id: 'rate', label: type === 'episode' ? 'Avaliar episódio' : 'Avaliar temporada', icon: 'star' },
+      { id: 'rate', label: 'Avaliar temporada', icon: 'star' },
     ];
   }
 
@@ -422,8 +483,9 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected episodeImageAction(episode: SeriesEpisodeSummary, selection: ContentImageActionSelection): void {
     this.activeSeriesImageMenu.set(null);
-    if (selection.action.id === 'watch') this.markEpisodeWatched(episode);
+    if (selection.action.id === 'rewatch') this.markEpisodeWatched(episode, true);
     else if (selection.action.id === 'rate') this.openRating({ type: 'EPISODE', episode }, selection.event);
+    else if (selection.action.id === 'share-review') this.openEpisodeShareReview(episode);
   }
 
   protected seasonImageAction(season: SeriesSeasonSummary, selection: ContentImageActionSelection): void {
@@ -454,15 +516,41 @@ export class SeriesComponent implements OnInit, OnDestroy {
     this.captureDialogOpener(event);
     this.ratingTarget.set(target);
     this.ratingScore.set(target.type === 'SEASON' ? this.seasonMyRating(target.season) ?? 0 : this.episodeMyRating(target.episode) ?? 0);
+    this.ratingReview.set(target.type === 'EPISODE' ? this.findEpisodeCard(target.episode)?.viewerState.myReview ?? '' : '');
     this.dialog.set('rating');
     queueMicrotask(() => this.seriesDialog?.nativeElement.focus());
+  }
+
+  protected updateRatingReview(event: Event): void {
+    this.ratingReview.set((event.currentTarget as HTMLTextAreaElement).value);
+  }
+
+  protected ratingDialogSubtitle(): string {
+    const target = this.ratingTarget();
+    const seriesTitle = this.page()?.details.title || this.copy.untitled;
+    if (target?.type === 'EPISODE') {
+      return `${seriesTitle} · T${target.episode.seasonNumber ?? 0} · E${target.episode.episodeNumber ?? 0} · ${target.episode.name || 'Episódio'}`;
+    }
+    if (target?.type === 'SEASON') return `${seriesTitle} · Temporada ${target.season.seasonNumber ?? ''}`;
+    return seriesTitle;
+  }
+
+  protected ratingDialogHeading(): string {
+    return this.ratingScore() > 0 ? this.copy.editRating : this.copy.rate;
+  }
+
+  protected canSaveRating(): boolean {
+    const target = this.ratingTarget();
+    return target?.type === 'EPISODE'
+      ? this.ratingScore() > 0 || this.ratingReview().trim().length > 0
+      : this.ratingScore() > 0;
   }
 
   protected saveRating(): void {
     const target = this.ratingTarget();
     const score = this.ratingScore();
     const tmdbId = this.tmdbId().trim();
-    if (!target || !score || !tmdbId) return;
+    if (!target || !this.canSaveRating() || !tmdbId) return;
     const season = target.type === 'SEASON'
       ? this.page()?.sections.seasons.find(card => card.seasonNumber === target.season.seasonNumber)
       : null;
@@ -472,10 +560,22 @@ export class SeriesComponent implements OnInit, OnDestroy {
     }
     const request = target.type === 'SEASON'
       ? this.api.setContentRating(season!.contentId, score, season!.viewerState.currentRatingVersion ?? null)
-      : this.api.createSeriesDiaryEntry({
-          content: { type: 'EPISODE', seriesTmdbId: tmdbId, seasonNumber: target.episode.seasonNumber ?? 1, episodeNumber: target.episode.episodeNumber ?? 1 },
-          score, watchedDate: this.localDate(new Date()),
-        });
+      : (() => {
+          const card = this.findEpisodeCard(target.episode);
+          const comment = this.ratingReview().trim();
+          const request = {
+            ...(score > 0 ? { score } : {}),
+            comment: comment || null,
+          };
+          if (card?.viewerState.latestDiaryEntryId) {
+            return this.api.updateDiaryEntry(card.viewerState.latestDiaryEntryId, request);
+          }
+          return this.api.createSeriesDiaryEntry({
+            content: { type: 'EPISODE', seriesTmdbId: tmdbId, seasonNumber: target.episode.seasonNumber ?? 1, episodeNumber: target.episode.episodeNumber ?? 1 },
+            ...request,
+            watchedDate: this.localDate(new Date()),
+          });
+        })();
     this.runAction(request, () => {
       this.closeDialog();
       this.showToast('Avaliação salva.');
@@ -483,12 +583,13 @@ export class SeriesComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected markEpisodeWatched(episode: SeriesEpisodeSummary): void {
+  protected markEpisodeWatched(episode: SeriesEpisodeSummary, isRewatch = false): void {
     const tmdbId = this.tmdbId().trim();
     if (!tmdbId || episode.seasonNumber === null || episode.episodeNumber === null) return;
     const request = this.api.createSeriesDiaryEntry({
       content: { type: 'EPISODE', seriesTmdbId: tmdbId, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber },
       watchedDate: this.localDate(new Date()),
+      isRewatch,
     });
     this.runAction(request, () => this.reload());
   }
@@ -535,22 +636,61 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected toggleSeriesInList(list: UserListSummary): void {
-    if (this.actionPending() || (list.containsContent !== true && (list.itemScope === 'LIST' || list.itemScope === 'MIXED'))) return;
+    if (this.actionPending() || (list.containsContent !== true && !this.canAddContentToList(list))) return;
     if (list.containsContent) {
       this.runAction(this.findSeriesItemInList(list.id, this.contentId(), 1).pipe(
         switchMap((itemId) => itemId ? this.api.removeListItem(list.id, itemId) : throwError(() => new Error('List item not found'))),
       ), () => {
         this.showToast('Série removida da lista.');
-        this.loadUserLists(1);
-        this.reload();
+        this.updateSeriesListMembership(list, false);
       });
       return;
     }
     this.runAction(this.api.addSeriesToList(list.id, this.tmdbId()), () => {
       this.showToast('Série adicionada à lista.');
-      this.loadUserLists(1);
-      this.reload();
+      this.updateSeriesListMembership(list, true);
     });
+  }
+
+  private updateSeriesListMembership(list: UserListSummary, containsContent: boolean): void {
+    const updateList = (current: UserListSummary): UserListSummary => {
+      if (current.id !== list.id) return current;
+      const wasInList = current.containsContent === true;
+      const countDelta = Number(containsContent) - Number(wasInList);
+      return {
+        ...current,
+        containsContent,
+        ...(current.itemsCount === undefined ? {} : { itemsCount: Math.max(0, current.itemsCount + countDelta) }),
+      };
+    };
+
+    this.userLists.update((current) => current.map(updateList));
+    this.userListsPage.update((current) => current
+      ? { ...current, content: current.content.map(updateList) }
+      : current);
+    this.page.update((current) => {
+      if (!current) return current;
+      const lists = current.viewerState.lists.filter((item) => item.listId !== list.id);
+      if (containsContent) lists.push({ listId: list.id, name: list.name, visibility: list.visibility });
+      return { ...current, viewerState: { ...current.viewerState, lists } };
+    });
+  }
+
+  private refreshSeriesViewerState(): void {
+    const contentId = this.contentId();
+    if (!contentId) return;
+    this.requests.add(this.api.getSeriesPage(contentId).subscribe({
+      next: (page) => this.page.update((current) => current
+        ? { ...current, viewerState: page.viewerState }
+        : current),
+      error: (error: unknown) => {
+        if (!this.handleSessionError(error)) this.showToast(this.errorMessage(error), 'error');
+      },
+    }));
+  }
+
+  protected canAddContentToList(list: UserListSummary): boolean {
+    return list.itemScope === null || list.itemScope === 'MOVIE_OR_SERIES';
   }
 
   protected createSeriesList(): void {
@@ -561,7 +701,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
       this.listCreateOpen.set(false);
       this.showToast('Lista criada.');
       this.loadUserLists(1);
-      this.reload();
+      this.refreshSeriesViewerState();
     });
   }
 
@@ -716,6 +856,44 @@ export class SeriesComponent implements OnInit, OnDestroy {
     menu.querySelector<HTMLElement>('summary')?.focus();
   }
 
+  protected episodeRatingsMapRoute(): string[] | null {
+    const username = this.session.user()?.username;
+    const tmdbId = this.tmdbId();
+    return username && tmdbId ? ['/users', username, 'episode-ratings-map', tmdbId] : null;
+  }
+
+  protected openEpisodeRatingsMap(): void {
+    const route = this.episodeRatingsMapRoute();
+    if (!route) return;
+    this.closeMobileActions();
+    void this.router.navigate(route);
+  }
+
+  protected openShareReview(event?: Event): void {
+    this.captureDialogOpener(event);
+    this.shareReviewOpen.set(true);
+  }
+
+  protected closeShareReview(): void {
+    this.shareReviewOpen.set(false);
+    this.modalOpener?.focus();
+    this.modalOpener = null;
+  }
+
+  protected clearSeriesHistory(): void {
+    const series = this.page();
+    const tmdbId = this.tmdbId();
+    if (!series || !tmdbId || this.actionPending()) return;
+    const title = series.details.title || this.copy.untitled;
+    const message = this.copy.removeSeriesHistoryConfirm.replace('{title}', title);
+    if (!window.confirm(message)) return;
+    this.closeMobileActions();
+    this.runAction(this.diaryApi.deleteSeriesDiaryHistory(tmdbId), () => {
+      this.showToast(this.copy.seriesHistoryRemoved);
+      this.reload();
+    });
+  }
+
   protected onSeriesCardMenuToggle(event: Event): void {
     const details = event.currentTarget as HTMLDetailsElement;
     const menu = details.querySelector<HTMLElement>('.movie-mobile-more-menu');
@@ -737,26 +915,23 @@ export class SeriesComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected shareSeries(): void {
-    const title = this.page()?.details.title ?? 'Watchwise';
-    if (navigator.share) void navigator.share({ title, url: window.location.href }).catch(() => undefined);
-    else void navigator.clipboard?.writeText(window.location.href)
-      .then(() => this.showToast('Link copiado.'))
-      .catch(() => this.showToast('Não foi possível copiar o link.', 'error'));
-  }
-
-  private calculateWatchProgress(series: SeriesPage | null): { watchedEpisodeCount: number; percentage: number } {
-    if (!series) return { watchedEpisodeCount: 0, percentage: 0 };
+  private calculateWatchProgress(series: SeriesPage | null): { watchedEpisodeCount: number; totalEpisodeCount: number; percentage: number } {
+    if (!series) return { watchedEpisodeCount: 0, totalEpisodeCount: 0, percentage: 0 };
 
     const savedProgress = this.progressRecord();
     if (savedProgress) {
-      const totalEpisodeCount = savedProgress.totalEpisodeCount ??
-        savedProgress.totalReleasedEpisodeCount ?? series.details.numberOfEpisodes;
-      return getSeriesWatchProgress(
-        savedProgress.watchedPercentage === 100 ? 'WATCHED' : null,
-        savedProgress.watchedEpisodeCount,
-        totalEpisodeCount,
-      );
+      const totalEpisodeCount = savedProgress.totalReleasedEpisodeCount ??
+        series.viewerState.releasedEpisodeCount ??
+        savedProgress.totalEpisodeCount ??
+        series.details.numberOfEpisodes;
+      return {
+        ...getSeriesWatchProgress(
+          savedProgress.watchedPercentage === 100 ? 'WATCHED' : null,
+          savedProgress.watchedEpisodeCount,
+          totalEpisodeCount,
+        ),
+        totalEpisodeCount: totalEpisodeCount ?? 0,
+      };
     }
 
     const seasons = series.details.seasons.map((season) => {
@@ -775,13 +950,19 @@ export class SeriesComponent implements OnInit, OnDestroy {
     }
     const seasonTotal = seasons.reduce((count, season) => count + (season.totalEpisodeCount ?? 0), 0);
 
-    return getSeriesWatchProgress(
-      series.viewerState.watchStatus,
-      series.viewerState.watchedEpisodeCount,
-      series.details.numberOfEpisodes ?? (seasonTotal || null),
-      seasons,
-      [...episodeStates.values()].filter(Boolean).length,
-    );
+    const totalEpisodeCount = series.viewerState.releasedEpisodeCount ??
+      (seasonTotal || series.details.numberOfEpisodes);
+
+    return {
+      ...getSeriesWatchProgress(
+        series.viewerState.watchStatus,
+        series.viewerState.watchedEpisodeCount,
+        totalEpisodeCount,
+        seasons,
+        [...episodeStates.values()].filter(Boolean).length,
+      ),
+      totalEpisodeCount: totalEpisodeCount ?? 0,
+    };
   }
 
   private getSeriesProgressRecord(tmdbId: string): Observable<SeriesInProgressRecord | null> {
@@ -849,15 +1030,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
     return !!series && this.seriesIsWatched(series);
   }
 
-  protected ratingDialogTitle(): string {
-    const target = this.ratingTarget();
-    return target?.type === 'EPISODE'
-      ? `Avaliar ${target.episode.name || 'episódio'}`
-      : target?.type === 'SEASON'
-        ? `Avaliar ${target.season.name || 'temporada'}`
-        : 'Avaliar série';
-  }
-
   protected seasonProgress(season: SeriesSeasonSummary): number {
     const card = this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber);
     const total = card?.viewerState.releasedEpisodeCount ?? season.airedEpisodeCount ?? season.episodeCount ?? 0;
@@ -870,15 +1042,32 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected seasonScore(season: SeriesSeasonSummary): number | null {
-    return this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber)?.stats.averageScore ?? null;
+    const stats = this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber)?.stats;
+    return stats ? resolveRating(stats.averageScore, stats.tmdbVoteAverage).value : null;
   }
 
   protected seriesIsWatched(series: SeriesPage): boolean {
-    return this.calculateWatchProgress(series).percentage >= 100;
+    return series.viewerState.watchStatus === 'WATCHED' || this.calculateWatchProgress(series).percentage >= 100;
+  }
+
+  protected seriesPlayCount(series: SeriesPage): number {
+    const reportedCount = Math.max(0, series.viewerState.playsCount ?? 0);
+    return Math.max(reportedCount, this.seriesIsWatched(series) ? 1 : 0);
   }
 
   protected seasonMyRating(season: SeriesSeasonSummary): number | null {
     return this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber)?.viewerState.myRating ?? null;
+  }
+
+  protected seasonLastWatchedDate(season: SeriesSeasonSummary): string | null {
+    const series = this.page();
+    if (!series) return null;
+    const cardDate = series.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber)?.viewerState.lastWatchedDate;
+    if (cardDate) return cardDate;
+    return [...series.sections.episodes, ...series.sections.recentEpisodes]
+      .filter((episode) => episode.seasonNumber === season.seasonNumber && episode.viewerState.lastWatchedDate)
+      .map((episode) => episode.viewerState.lastWatchedDate as string)
+      .sort((left, right) => right.localeCompare(left))[0] ?? null;
   }
 
   protected seasonIsWatched(season: SeriesSeasonSummary): boolean {
@@ -887,28 +1076,43 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected episodeIsWatched(episode: SeriesEpisodeSummary): boolean {
-    const card = this.page()?.sections.recentEpisodes.find((entry) =>
-      entry.seasonNumber === episode.seasonNumber && entry.episodeNumber === episode.episodeNumber,
-    );
-    return card?.viewerState.watchStatus === 'WATCHED';
+    const card = this.findEpisodeCard(episode);
+    return card?.viewerState.watchStatus === 'WATCHED' || Boolean(card?.viewerState.lastWatchedDate);
   }
 
   protected episodeScore(episode: SeriesEpisodeSummary): number | null {
-    return this.page()?.sections.recentEpisodes.find((entry) =>
-      entry.seasonNumber === episode.seasonNumber && entry.episodeNumber === episode.episodeNumber,
-    )?.stats.averageScore ?? null;
+    const stats = this.findEpisodeCard(episode)?.stats;
+    return stats ? resolveRating(stats.averageScore, stats.tmdbVoteAverage).value : null;
+  }
+
+  protected episodeRatingLabel(episode: SeriesEpisodeSummary): string {
+    const stats = this.findEpisodeCard(episode)?.stats;
+    return this.contentRatingLabel(stats);
+  }
+
+  protected seasonRatingLabel(season: SeriesSeasonSummary): string {
+    const stats = this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber)?.stats;
+    return this.contentRatingLabel(stats);
   }
 
   protected episodeMyRating(episode: SeriesEpisodeSummary): number | null {
-    return this.page()?.sections.recentEpisodes.find((entry) =>
-      entry.seasonNumber === episode.seasonNumber && entry.episodeNumber === episode.episodeNumber,
-    )?.viewerState.myRating ?? null;
+    return this.findEpisodeCard(episode)?.viewerState.myRating ?? null;
   }
 
   protected episodeLastWatchedDate(episode: SeriesEpisodeSummary): string | null {
-    return this.page()?.sections.recentEpisodes.find((entry) =>
+    return this.findEpisodeCard(episode)?.viewerState.lastWatchedDate ?? null;
+  }
+
+  private findEpisodeCard(episode: SeriesEpisodeSummary): SeriesPage['sections']['episodes'][number] | undefined {
+    const sections = this.page()?.sections;
+    if (!sections) return undefined;
+    const matches = [...sections.recentEpisodes, ...sections.episodes].filter((entry) =>
       entry.seasonNumber === episode.seasonNumber && entry.episodeNumber === episode.episodeNumber,
-    )?.viewerState.lastWatchedDate ?? null;
+    );
+    return matches.find((entry) => Boolean(entry.viewerState.lastWatchedDate))
+      ?? matches.find((entry) => entry.viewerState.watchStatus === 'WATCHED')
+      ?? matches.find((entry) => entry.viewerState.myRating !== null)
+      ?? matches[0];
   }
 
   protected watchedPercentage(): number {
@@ -917,6 +1121,10 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected watchedEpisodeCount(): number {
     return this.watchProgress().watchedEpisodeCount;
+  }
+
+  protected totalWatchedEpisodeCount(): number {
+    return this.watchProgress().totalEpisodeCount;
   }
 
   @HostListener('document:keydown', ['$event'])

@@ -23,6 +23,7 @@ export class PicksExploreComponent {
   protected readonly copy = messageCatalog['pt-BR'].picksPage;
   protected readonly status = signal<PicksLoadState>('loading');
   protected readonly section = signal<PicksSection>('explore');
+  protected readonly myTemplatesOnly = signal(false);
   protected readonly origin = signal<PicksOrigin | null>(null);
   protected readonly query = signal('');
   protected readonly popular = signal<PicksTemplatePage | null>(null);
@@ -55,6 +56,7 @@ export class PicksExploreComponent {
     const isCatalogRoute = this.route.snapshot.pathFromRoot.some((route) => route.routeConfig?.path === 'picks/templates');
     if (isCatalogRoute) {
       this.section.set('all');
+      this.myTemplatesOnly.set(this.route.snapshot.queryParamMap.get('scope') === 'mine');
       const origin = this.route.snapshot.queryParamMap.get('origin');
       if (origin === 'OFFICIAL' || origin === 'COMMUNITY') this.origin.set(origin);
       const sort = this.route.snapshot.queryParamMap.get('sort');
@@ -72,7 +74,10 @@ export class PicksExploreComponent {
     this.error.set('');
     const name = this.query().trim() || undefined;
     if (this.section() === 'all') {
-      this.api.getTemplates({ origin: this.origin() ?? undefined, name, page: this.allPage(), size: 20, sort: this.allSort() }).subscribe({
+      const request = this.myTemplatesOnly()
+        ? this.api.getMyTemplates({ page: this.allPage(), size: 5, sort: 'RECENT' })
+        : this.api.getTemplates({ origin: this.origin() ?? undefined, name, page: this.allPage(), size: 20, sort: this.allSort() });
+      request.subscribe({
         next: (page) => { this.allTemplates.set(page); this.status.set('ready'); },
         error: (error: unknown) => this.fail(error),
       });

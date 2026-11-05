@@ -35,7 +35,7 @@
   color: var(--color-text) !important;
   font-family: var(--font-sans) !important;
   font-size: var(--font-size-sm) !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   line-height: var(--line-height-sm) !important;
   white-space: nowrap !important;
 }
@@ -141,14 +141,20 @@ select[data-ww-select-trigger] {
   color: var(--color-text) !important;
   font-family: var(--font-sans) !important;
   font-size: var(--font-size-sm) !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   line-height: var(--line-height-sm) !important;
   cursor: pointer;
 }
 
 select[data-ww-select-trigger] {
   max-width: 100%;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+}
+
+:where([class*='type-tabs']) :is(a, button),
+:where([class*='toolbar']) :is(a, button):not([data-ww-menu-item]) {
+  color: var(--color-text) !important;
+  font-weight: 600 !important;
 }
 
 button[data-ww-select-trigger]:hover:not(:disabled),
@@ -349,4 +355,8 @@ summary[data-ww-ellipsis-trigger] svg {
   summary[data-ww-ellipsis-trigger] {
     transition: none;
   }
+}
+
+.tr-state-marker--watched app-check-icon {
+  transform: scale(.75);
 }

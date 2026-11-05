@@ -23,6 +23,7 @@ import { buildCommentTree } from '../../../../shared/components/comment-item/com
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -159,6 +160,18 @@ export class EpisodeComponent implements OnDestroy {
 
   protected formatRating(value: number | null | undefined): string {
     return value === null || value === undefined ? '0' : value.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  }
+
+  protected communityRating(): number | null {
+    const stats = this.page()?.stats;
+    return stats ? resolveRating(stats.averageScore, stats.tmdbVoteAverage).value : null;
+  }
+
+  protected communityRatingCaption(): string {
+    const stats = this.page()?.stats;
+    if (!stats) return '';
+    const rating = resolveRating(stats.averageScore, stats.tmdbVoteAverage);
+    return rating.source === 'tmdb' ? 'Nota no TMDB' : `${stats.ratingsCount} avaliações da comunidade`;
   }
 
   protected ratingBarWidth(value: number | null | undefined): number {

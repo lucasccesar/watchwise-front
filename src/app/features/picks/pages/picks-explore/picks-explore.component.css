@@ -12,6 +12,8 @@
 .picks-origins button { min-height: 30px; padding: 0 11px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); font-weight: 600; cursor: pointer; }
 .picks-origins button.active { background: var(--color-primary); color: var(--color-text); }
 .picks-results-count { margin-left: auto; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.picks-my-templates-toolbar { justify-content: space-between; }
+.picks-my-templates-toolbar h2 { margin: 0; font-size: var(--font-size-lg); font-weight: 650; }
 .picks-catalog-feed--empty { display: flex; flex: 1 0 auto; flex-direction: column; }
 .picks-catalog-feed--empty .picks-empty { flex: 1 0 auto; }
 .picks-section { margin-top: 30px; }
@@ -60,6 +62,7 @@
   .picks-search { min-width: 100%; box-sizing: border-box; }
   .picks-origins { align-self: flex-start; }
   .picks-results-count { align-self: center; }
+  .picks-my-templates-toolbar { align-items: center; flex-direction: row; flex-wrap: nowrap; }
   .picks-catalog-pagination { width: calc(100% - 32px); margin-inline: auto; justify-content: space-between; gap: 8px; }
   .picks-grid { grid-template-columns: 1fr; gap: 12px; }
   .picks-section { margin-top: 22px; }

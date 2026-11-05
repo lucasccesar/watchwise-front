@@ -135,17 +135,16 @@ describe('Diary control state', () => {
     }
     expect(api.getAllDiaryEntries).toHaveBeenCalledTimes(1);
   });
-  it('shows all entries in flat mode even when individual days are collapsed', () => {
+  it('keeps all date groups expanded when switching between grouped and flat modes', () => {
     const { page } = diary();
     page.diaryEntries.set(records);
-    page.toggleDay('2026-10-20');
+    expect(page.displayGroups()).toHaveLength(2);
     page.toggleGrouping();
     expect(page.grouped()).toBe(false);
     expect(page.visibleEntries()).toHaveLength(3);
     expect(page.displayGroups().map((group: any) => group.entries.length)).toEqual([3]);
     page.toggleGrouping();
     expect(page.grouped()).toBe(true);
-    expect(page.dayCollapsed('2026-10-20')).toBe(true);
     expect(page.displayGroups()).toHaveLength(2);
   });
   it('keeps date-only diary groups on their local calendar day', () => {

@@ -16,7 +16,7 @@
 .calendar-month-control h2 { min-width: 190px; margin: 0; font-size: var(--font-size-display-xs); line-height: var(--line-height-display-xs); font-weight: 600; text-align: center; text-transform: capitalize; }
 .calendar-month-control .calendar-today { width: auto; margin-left: 8px; padding: 0 14px; font-family: inherit; font-size: var(--font-size-sm); }
 .calendar-type-filter { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); }
-.calendar-type-filter button { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary); font-family: inherit; font-size: var(--font-size-sm); white-space: nowrap; cursor: pointer; }
+.calendar-type-filter button { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); font-family: inherit; font-size: var(--font-size-sm); font-weight: 700; white-space: nowrap; cursor: pointer; }
 .calendar-type-filter button:hover { color: var(--color-text); }
 .calendar-type-filter .calendar-filter-active { background: var(--color-primary); color: var(--color-text); font-weight: 600; }
 .calendar-filter-dot, .calendar-event-kind i { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--color-primary); }
@@ -42,6 +42,7 @@
 .calendar-event--watched { opacity: .62; }
 .calendar-event-kind { display: inline-flex; width: fit-content; min-height: 21px; align-items: center; gap: 5px; padding: 0 7px; border-radius: var(--radius-sm); background: var(--color-tertiary); color: var(--color-text); font-size: var(--font-size-xs); font-weight: 600; }
 .calendar-event-kind i { width: 7px; height: 7px; }
+.calendar-event-kind--episode { background: var(--color-secondary); }
 .calendar-event-kind--episode i { background: var(--color-primary); }
 .calendar-event-main { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .calendar-event-main strong { overflow: hidden; font-size: var(--font-size-sm); font-weight: 600; line-height: var(--line-height-sm); text-overflow: ellipsis; }

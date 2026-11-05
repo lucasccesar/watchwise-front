@@ -89,6 +89,11 @@
   --dialog-shadow: var(--shadow-xl);
 }
 
+html.ww-modal-scroll-locked,
+body.ww-modal-scroll-locked {
+  overflow: hidden !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -531,4 +536,13 @@ input:focus-visible {
 
 .ww-progress-icon {
   transform: rotate(90deg);
+}
+
+.movie-lists-panel-copy,
+.movie-list-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
 }

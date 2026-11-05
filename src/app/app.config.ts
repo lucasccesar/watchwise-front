@@ -6,7 +6,7 @@ import {
   provideHttpClient,
   withXsrfConfiguration,
 } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
@@ -18,6 +18,6 @@ export const appConfig: ApplicationConfig = {
         headerName: 'X-XSRF-TOKEN',
       }),
     ),
-    provideRouter(routes),
+    provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled' })),
   ],
 };

@@ -76,6 +76,7 @@
 }
 
 .social-following-summary strong {
+  color: var(--color-text);
   font-weight: 600;
 }
 

@@ -48,7 +48,7 @@
                 </div>
               }
               <div class="picks-my-progress">
-                <span class="picks-progress-icon" aria-hidden="true"><app-check-icon /></span>
+                <span class="picks-progress-icon" aria-hidden="true"><app-check-icon [color]="'#FFFFFF'" /></span>
                 <span>{{ progressLabel(pick) }}</span>
                 <span class="picks-progress-track" role="progressbar" [attr.aria-label]="progressLabel(pick)" [attr.aria-valuenow]="pick.answeredCategoriesCount" [attr.aria-valuemin]="0" [attr.aria-valuemax]="pick.totalCategoriesCount"><span [style.width.%]="progressPercent(pick)"></span></span>
               </div>
@@ -71,12 +71,75 @@
         </nav>
       }
     } @else {
-      <section class="picks-empty picks-my-empty ww-empty-panel ww-empty-panel--page">
+      <section class="picks-empty picks-my-empty ww-empty-panel" [class.ww-empty-panel--page]="templatesStatus() === 'ready' && templateCount() === 0">
         <div class="picks-empty-mark" aria-hidden="true">✦</div>
         <h3>{{ copy.emptyPicksTitle }}</h3>
         <p>{{ copy.emptyPicksDescription }}</p>
         <a class="picks-create" routerLink="/picks/explore">{{ copy.explorePicks }}</a>
       </section>
     }
+
+    <section class="picks-my-templates" aria-labelledby="my-templates-heading">
+      <header class="picks-my-heading">
+        <div>
+          <h2 id="my-templates-heading">{{ copy.myTemplatesTitle }}</h2>
+          <p>{{ countLabel(templateCount() ?? 0) }}</p>
+        </div>
+        <a class="picks-see-all" routerLink="/picks/templates" [queryParams]="{ scope: 'mine' }">{{ copy.seeAll }} <span aria-hidden="true">→</span></a>
+      </header>
+
+      @if (templatesStatus() === 'loading') {
+        <app-page-skeleton variant="cards" [compact]="true" [label]="copy.loading" />
+      } @else if (templatesStatus() === 'error') {
+        <section class="picks-state"><h3>{{ copy.errorTitle }}</h3><p>{{ templatesError() }}</p><button type="button" (click)="loadTemplates()">{{ copy.retry }}</button></section>
+      } @else if (templates()?.content?.length) {
+        <div class="picks-my-list">
+          @for (template of templates()?.content ?? []; track trackTemplate($index, template)) {
+            <article class="picks-my-row picks-my-template-row">
+              <a class="picks-my-poster" [routerLink]="templateRoute(template)" [attr.aria-label]="copy.openTemplate.replace('{name}', template.name)">
+                @if (template.coverImage) { <img [src]="template.coverImage" alt="" loading="lazy" /> }
+                @else { <span>{{ template.name.slice(0, 1).toUpperCase() }}</span> }
+              </a>
+              <div class="picks-my-main">
+                <div class="picks-my-title-line">
+                  <h3><a [routerLink]="templateRoute(template)">{{ template.name }}</a></h3>
+                  <span class="picks-template-origin">{{ templateOriginLabel(template) }}</span>
+                </div>
+                <p class="picks-template-description">{{ template.description || copy.noDescription }}</p>
+                <div class="picks-byline">
+                  <span>{{ copy.templateCategoriesCount.replace('{count}', template.categoriesCount.toLocaleString('pt-BR')) }}</span>
+                  <span class="picks-byline-dot" aria-hidden="true">·</span>
+                  <span>{{ template.picksCount.toLocaleString('pt-BR') }} {{ copy.picks }}</span>
+                  @if (dateLabel(template.createdAt); as createdAt) { <span class="picks-byline-dot" aria-hidden="true">·</span><time>{{ copy.createdOn.replace('{date}', createdAt) }}</time> }
+                </div>
+                @if (template.categoryNames.length) {
+                  <div class="picks-answer-chips" [attr.aria-label]="copy.templateCategoriesCount.replace('{count}', template.categoriesCount.toLocaleString('pt-BR'))">
+                    @for (category of template.categoryNames.slice(0, 5); track category) { <span>{{ category }}</span> }
+                    @if (template.categoriesCount > template.categoryNames.length) { <span class="picks-chip-more">{{ copy.moreCategories.replace('{count}', (template.categoriesCount - template.categoryNames.length).toString()) }}</span> }
+                  </div>
+                }
+              </div>
+              <aside class="picks-my-side">
+                <a class="picks-view-pick" [routerLink]="templateRoute(template)">{{ copy.viewTemplate }}</a>
+                @if (template.myPicksCount > 0 && template.latestMyPickId) { <a class="picks-my-template-answer" [routerLink]="['/picks', template.latestMyPickId]">{{ copy.myPicks }} <span aria-hidden="true">→</span></a> }
+              </aside>
+            </article>
+          }
+        </div>
+        @if ((templates()?.totalPages ?? 0) > 1) {
+          <nav class="picks-my-pagination" aria-label="{{ copy.catalogPagination }}">
+            <button type="button" [disabled]="templatesPageNumber() <= 1" [attr.aria-label]="copy.previousPage" (click)="previousTemplatesPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+            <span>{{ templatesPageLabel() }}</span>
+            <button type="button" [disabled]="!templates()?.hasNext" [attr.aria-label]="copy.nextPage" (click)="nextTemplatesPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+          </nav>
+        }
+      } @else {
+        <section class="picks-empty picks-my-empty ww-empty-panel">
+          <h3>{{ copy.emptyMineTitle }}</h3>
+          <p>{{ copy.emptyMineDescription }}</p>
+          <a class="picks-create" routerLink="/picks/create">{{ copy.createTemplate }}</a>
+        </section>
+      }
+    </section>
   </section>
 </main>

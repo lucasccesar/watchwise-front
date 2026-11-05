@@ -48,6 +48,7 @@ export interface ProfileContentCard {
   posterPath: string | null;
   backdropPath?: string | null;
   customPosterUrl: string | null;
+  tmdbVoteAverage?: number | null;
   releaseYear: number | null;
   runtimeMinutes?: number | null;
   genres?: string[] | null;

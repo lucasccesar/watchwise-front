@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PicksApiService, PicksMyPickCard, PicksMyPickPage } from '../../data-access/picks-api.service';
+import { PicksApiService, PicksMyPickCard, PicksMyPickPage, PicksTemplatePage, PicksTemplatePreview } from '../../data-access/picks-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksPageHeroComponent } from '../../shared/picks-page-hero.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -23,6 +23,10 @@ export class PicksMyComponent {
   protected readonly status = signal<PicksLoadState>('loading');
   protected readonly page = signal(1);
   protected readonly picks = signal<PicksMyPickPage | null>(null);
+  protected readonly templatesPageNumber = signal(1);
+  protected readonly templates = signal<PicksTemplatePage | null>(null);
+  protected readonly templatesStatus = signal<PicksLoadState>('loading');
+  protected readonly templatesError = signal('');
   protected readonly templateCount = signal<number | null>(null);
   protected readonly error = signal('');
   protected readonly statsText = computed(() => {
@@ -37,13 +41,11 @@ export class PicksMyComponent {
 
   private readonly api = inject(PicksApiService);
   private readonly pageSize = 10;
+  private readonly templatesPageSize = 5;
 
   constructor() {
     this.load();
-    this.api.getMyTemplates({ page: 1, size: 1 }).subscribe({
-      next: (templates) => this.templateCount.set(templates.totalElements),
-      error: () => this.templateCount.set(0),
-    });
+    this.loadTemplates();
   }
 
   protected load(): void {
@@ -70,8 +72,40 @@ export class PicksMyComponent {
     this.load();
   }
 
+  protected loadTemplates(): void {
+    this.templatesStatus.set('loading');
+    this.templatesError.set('');
+    this.api.getMyTemplates({ page: this.templatesPageNumber(), size: this.templatesPageSize, sort: 'RECENT' }).subscribe({
+      next: (page) => {
+        this.templates.set(page);
+        this.templateCount.set(page.totalElements);
+        this.templatesStatus.set('ready');
+      },
+      error: (error: unknown) => {
+        this.templatesStatus.set('error');
+        this.templatesError.set(error instanceof HttpErrorResponse && error.status === 0 ? this.copy.connectionError : this.copy.loadMyTemplatesError);
+      },
+    });
+  }
+
+  protected nextTemplatesPage(): void {
+    if (!this.templates()?.hasNext) return;
+    this.templatesPageNumber.update((value) => value + 1);
+    this.loadTemplates();
+  }
+
+  protected previousTemplatesPage(): void {
+    if (this.templatesPageNumber() <= 1) return;
+    this.templatesPageNumber.update((value) => value - 1);
+    this.loadTemplates();
+  }
+
   protected trackPick(_index: number, pick: PicksMyPickCard): string { return pick.id; }
   protected pickRoute(pick: PicksMyPickCard): string[] { return ['/picks', pick.id]; }
+  protected templateRoute(template: PicksTemplatePreview): string[] { return ['/picks/templates', template.id]; }
+  protected trackTemplate(_index: number, template: PicksTemplatePreview): string { return template.id; }
+  protected templateOriginLabel(template: PicksTemplatePreview): string { return template.origin === 'OFFICIAL' ? this.copy.official : this.copy.community; }
+  protected templateCountLabel(): string { return this.countLabel(this.templateCount() ?? 0); }
   protected creatorName(pick: PicksMyPickCard): string { return pick.picksTemplate.creator?.name || pick.picksTemplate.creator?.username || this.copy.unknownCreator; }
   protected creatorHandle(pick: PicksMyPickCard): string | null { return pick.picksTemplate.creator?.username ? '@' + pick.picksTemplate.creator.username : null; }
   protected visibilityLabel(pick: PicksMyPickCard): string {
@@ -102,5 +136,10 @@ export class PicksMyComponent {
     return this.copy.pageOf
       .replace('{page}', this.page().toString())
       .replace('{total}', (this.picks()?.totalPages ?? 1).toString());
+  }
+  protected templatesPageLabel(): string {
+    return this.copy.pageOf
+      .replace('{page}', this.templatesPageNumber().toString())
+      .replace('{total}', (this.templates()?.totalPages ?? 1).toString());
   }
 }

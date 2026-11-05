@@ -11,6 +11,7 @@ import { CommentItemComponent } from '../../../../shared/components/comment-item
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type PickTemplateStatus = 'loading' | 'ready' | 'error';
 type CommunitySort = 'RECENT' | 'POPULAR';
@@ -101,10 +102,11 @@ export class PickTemplateComponent {
   }
   protected optionPoster(option: PicksOptionView): string | null { const card = option.preview?.contentCard; return tmdbImageUrl(card?.customPosterUrl || card?.posterPath || option.preview?.person?.profileUrl, 'w342'); }
   protected optionRating(option: PicksOptionView): string | null {
-    const value = option.preview?.contentCard?.stats?.averageScore;
+    const card = option.preview?.contentCard;
+    const value = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).value;
     return value === null || value === undefined ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
   }
-  protected optionRatingLabel(option: PicksOptionView): string { const value = this.optionRating(option); return value ? `${this.homeCopy.communityAverage}: ${value}` : ''; }
+  protected optionRatingLabel(option: PicksOptionView): string { const value = this.optionRating(option); if (!value) return ''; const card = option.preview?.contentCard; const source = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).source; return `${source === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage}: ${value}`; }
   protected optionLabel(option: PicksOptionView): string { return option.preview?.contentCard?.title || option.preview?.person?.name || this.copy.optionUnavailable; }
   protected optionMenuKey(option: PicksOptionView): string { return `${this.templateId}:${option.id}`; }
   protected optionMenuKeyFor(option: PicksOptionView): string { return this.activeOptionMenu() === this.optionMenuKey(option) ? this.optionMenuKey(option) : ''; }

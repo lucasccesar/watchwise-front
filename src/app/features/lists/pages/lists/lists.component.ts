@@ -1,7 +1,7 @@
-import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { CdkDrag, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Subscription, concatMap, finalize, forkJoin, from, map, of, switchMap, toArray } from 'rxjs';
 import { ListsApiService, ListCardPreview, ListItemType, ListSource, UserListCard } from '../../data-access/lists-api.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
@@ -21,7 +21,7 @@ type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'c
 @Component({
   selector: 'app-lists',
   standalone: true,
-  imports: [RouterLink, ResponsiveBannerComponent, PageSkeletonComponent, ModalFocusDirective, SharePreviewComponent, CheckIconComponent],
+  imports: [RouterLink, CdkDrag, CdkDropList, ResponsiveBannerComponent, PageSkeletonComponent, ModalFocusDirective, SharePreviewComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './lists.component.html',
   styleUrl: './lists.component.css',
@@ -55,9 +55,8 @@ export class ListsComponent {
   protected readonly reorderMode = signal(false);
   protected readonly reorderDraft = signal<UserListCard[]>([]);
   protected readonly reorderInitialIds = signal<string[]>([]);
-  protected readonly draggedListId = signal<string | null>(null);
-  protected readonly dragOverListId = signal<string | null>(null);
   protected readonly savingOrder = signal(false);
+  protected readonly reorderDragStartDelay = { touch: 150, mouse: 0 };
   protected readonly reorderHasChanges = computed(() => {
     const current = this.reorderDraft().map((list) => list.id);
     const initial = this.reorderInitialIds();
@@ -69,7 +68,6 @@ export class ListsComponent {
   private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastNotificationsService);
-  private readonly document = inject(DOCUMENT);
   private request?: Subscription;
   private previousReorderState: { source: ListsPageSource; itemType: ListItemType | null; sort: ListSort; direction: 'asc' | 'desc'; page: number } | null = null;
 
@@ -294,8 +292,6 @@ export class ListsComponent {
     this.reorderMode.set(false);
     this.reorderDraft.set([]);
     this.reorderInitialIds.set([]);
-    this.draggedListId.set(null);
-    this.dragOverListId.set(null);
     this.previousReorderState = null;
     if (previous) {
       this.source.set(previous.source);
@@ -359,48 +355,11 @@ export class ListsComponent {
     this.moveDraftList(fromIndex, toIndex);
   }
 
-  protected startListDrag(list: UserListCard, event: DragEvent): void {
-    if (!this.reorderMode()) {
-      event.preventDefault();
-      return;
-    }
-    this.draggedListId.set(list.id);
-    this.dragOverListId.set(list.id);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', list.id);
-    }
-  }
-
-  protected dragOverList(listId: string, event: DragEvent): void {
-    if (!this.reorderMode() || !this.draggedListId()) return;
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    this.dragOverListId.set(listId);
-    const current = this.reorderDraft();
-    const fromIndex = current.findIndex((list) => list.id === this.draggedListId());
-    const targetIndex = current.findIndex((list) => list.id === listId);
-    if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) return;
-    const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const insertAfterTarget = event.clientY >= bounds.top + bounds.height / 2;
-    const nextIndex = Math.max(0, Math.min(current.length - 1, targetIndex + Number(insertAfterTarget) - Number(fromIndex < targetIndex)));
-    this.moveDraftList(fromIndex, nextIndex);
-  }
-
-  protected dropList(listId: string, event: DragEvent): void {
-    event.preventDefault();
-    if (this.draggedListId()) this.dragOverList(listId, event);
-    else {
-      const fromId = event.dataTransfer?.getData('text/plain');
-      if (fromId) this.moveDraftList(this.reorderDraft().findIndex((list) => list.id === fromId), this.reorderDraft().findIndex((list) => list.id === listId));
-    }
-    this.draggedListId.set(null);
-    this.dragOverListId.set(null);
-  }
-
-  protected finishListDrag(): void {
-    this.draggedListId.set(null);
-    this.dragOverListId.set(null);
+  protected dropList(event: CdkDragDrop<UserListCard[]>): void {
+    if (!this.reorderMode() || this.savingOrder() || event.previousContainer !== event.container) return;
+    const reordered = [...this.reorderDraft()];
+    moveItemInArray(reordered, event.previousIndex, event.currentIndex);
+    this.reorderDraft.set(reordered);
   }
 
   protected typeLabel(): string {
@@ -519,30 +478,9 @@ export class ListsComponent {
   private moveDraftList(fromIndex: number, toIndex: number): void {
     const current = this.reorderDraft();
     if (fromIndex < 0 || toIndex < 0 || fromIndex >= current.length || toIndex >= current.length || fromIndex === toIndex) return;
-    const previousPositions = new Map(
-      Array.from(this.document.querySelectorAll<HTMLElement>('[data-list-card-id]'))
-        .map((element) => [element.dataset['listCardId'] ?? '', element.getBoundingClientRect().top] as const),
-    );
     const reordered = [...current];
-    const [list] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, list);
+    moveItemInArray(reordered, fromIndex, toIndex);
     this.reorderDraft.set(reordered);
-    const view = this.document.defaultView;
-    if (!view || view.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    view.requestAnimationFrame(() => view.requestAnimationFrame(() => {
-      for (const element of this.document.querySelectorAll<HTMLElement>('[data-list-card-id]')) {
-        if (element.dataset['listCardId'] === this.draggedListId()) continue;
-        const previousTop = previousPositions.get(element.dataset['listCardId'] ?? '');
-        const offset = previousTop === undefined ? 0 : previousTop - element.getBoundingClientRect().top;
-        if (offset) {
-          element.getAnimations().forEach((animation) => animation.cancel());
-          element.animate([{ transform: `translateY(${offset}px)` }, { transform: 'translateY(0)' }], {
-            duration: 180,
-            easing: 'cubic-bezier(.2,.8,.2,1)',
-          });
-        }
-      }
-    }));
   }
 
   private resetAndLoad(): void { this.page.set(1); this.load(); }

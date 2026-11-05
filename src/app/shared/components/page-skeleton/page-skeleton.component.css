@@ -167,6 +167,60 @@
   flex: 0 0 min(190px, 28%);
 }
 
+.ww-page-skeleton--content,
+.ww-page-skeleton--episode-content { width: min(1280px, calc(100% - 64px)); }
+.ww-content-skeleton-hero { position: relative; padding-top: 244px; }
+.ww-content-skeleton-backdrop { position: absolute; inset: 0 0 auto; width: 100%; height: 460px; border-radius: 0; }
+.ww-content-skeleton-overview { position: relative; display: grid; grid-template-columns: 220px minmax(0, 1fr) 264px; grid-template-rows: 216px auto; column-gap: var(--space-10); row-gap: var(--space-8); }
+.ww-content-skeleton-sidebar { grid-column: 1; grid-row: 1 / span 2; display: flex; min-width: 0; flex-direction: column; gap: var(--space-6); }
+.ww-content-skeleton-poster { display: block; width: 100%; aspect-ratio: 2 / 3; border-radius: var(--radius-md); }
+.ww-content-skeleton-provider,
+.ww-content-skeleton-actions > div { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.ww-content-skeleton-copy { grid-column: 2; grid-row: 2; display: flex; min-width: 0; flex-direction: column; gap: var(--space-3); padding-top: var(--space-2); }
+.ww-content-skeleton-title { width: 76%; height: 42px; border-radius: var(--radius-md); }
+.ww-content-skeleton-section-title { width: min(240px, 60%); height: 22px; border-radius: var(--radius-sm); }
+.ww-content-skeleton-following { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-4); }
+.ww-content-skeleton-following > div { display: flex; gap: var(--space-2); }
+.ww-content-skeleton-avatar { width: 32px; height: 32px; flex: 0 0 32px; border-radius: var(--radius-full); }
+.ww-content-skeleton-actions { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; gap: var(--space-3); }
+.ww-content-skeleton-action { width: 100%; height: 48px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.ww-content-skeleton-score { width: 54%; height: 30px; align-self: flex-end; }
+.ww-content-skeleton-sections { display: flex; flex-direction: column; gap: var(--space-10); margin-top: var(--space-12); }
+.ww-content-skeleton-sections > section { display: flex; flex-direction: column; gap: var(--space-4); }
+.ww-content-skeleton-tabs { display: flex; gap: var(--space-2); }
+.ww-content-skeleton-tabs .ww-skeleton-pill { width: 96px; height: 40px; }
+.ww-content-skeleton-people { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-4); }
+.ww-content-skeleton-people > div,
+.ww-content-skeleton-posters > div { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
+.ww-content-skeleton-people > div > span:first-child { width: 100%; aspect-ratio: 3 / 4; border-radius: var(--radius-md); }
+.ww-content-skeleton-posters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+
+.ww-episode-skeleton { display: flex; flex-direction: column; gap: var(--space-8); }
+.ww-episode-skeleton-hero { position: relative; min-height: 390px; overflow: hidden; padding: var(--space-6) 0; }
+.ww-episode-skeleton-backdrop { position: absolute; inset: 0; border-radius: 0; }
+.ww-episode-skeleton-hero > div { position: relative; z-index: 1; display: flex; width: min(1200px, 100%); min-height: 340px; flex-direction: column; justify-content: space-between; margin-inline: auto; }
+.ww-episode-skeleton-back { width: 160px; height: 16px; }
+.ww-episode-skeleton-hero section { display: flex; max-width: 770px; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.ww-episode-skeleton-eyebrow { width: min(420px, 75%); height: 15px; }
+.ww-episode-skeleton-title { width: min(620px, 88%); height: clamp(42px, 5vw, 60px); border-radius: var(--radius-md); }
+.ww-episode-skeleton-meta { width: min(320px, 65%); height: 16px; }
+.ww-episode-skeleton-copy { width: min(650px, 88%); height: 15px; }
+.ww-episode-skeleton-copy--short { width: min(460px, 62%); }
+.ww-episode-skeleton-hero section > div { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.ww-episode-skeleton-action { width: 150px; height: 42px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.ww-episode-skeleton-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: var(--space-8); width: min(1200px, 100%); margin: -7px auto 0; }
+.ww-episode-skeleton-layout > aside,
+.ww-episode-skeleton-layout > div { display: flex; min-width: 0; flex-direction: column; gap: var(--space-4); }
+.ww-episode-skeleton-layout > aside > div { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.ww-episode-skeleton-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border); }
+.ww-episode-skeleton-layout section { display: flex; flex-direction: column; gap: var(--space-3); }
+.ww-episode-skeleton-cast { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.ww-episode-skeleton-cast > div { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.ww-episode-skeleton-cast > div > span:first-child { width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--radius-full); }
+.ww-episode-skeleton-review { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+.ww-episode-skeleton-review > span:first-child { width: 40px; height: 40px; grid-row: span 2; border-radius: var(--radius-full); }
+.ww-episode-skeleton-comment { width: 100%; height: 64px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+
 .ww-page-skeleton.ww-page-skeleton--calendar {
   width: var(--content-width);
   gap: var(--space-3);
@@ -337,4 +391,76 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ww-skeleton-shape::after { animation: none; transform: none; opacity: 0.35; }
+}
+
+.ww-page-skeleton--episode-content { width: 100%; gap: 0; padding-block: 0; }
+.ww-content-skeleton-title-block { grid-column: 2 / span 2; grid-row: 1; align-self: end; min-width: 0; padding-bottom: var(--space-2); display: flex; flex-direction: column; gap: var(--space-4); }
+.ww-content-skeleton-stats { display: flex; align-items: center; gap: var(--space-5); }
+.ww-content-skeleton-stats > span { width: 78px; height: 34px; }
+.ww-content-skeleton-stats > span:first-child { width: 120px; height: 42px; }
+.ww-content-skeleton-metadata { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); }
+.ww-content-skeleton-metadata > span { width: 112px; height: 14px; }
+.ww-content-skeleton-metadata > span:nth-child(2) { width: 180px; }
+.ww-content-skeleton-metadata > span:nth-child(4) { width: 150px; }
+.ww-content-skeleton-following { min-height: 72px; }
+.ww-content-skeleton-review { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+.ww-content-skeleton-review > span:first-child { width: 40px; height: 40px; grid-row: span 2; border-radius: var(--radius-full); }
+.ww-content-skeleton-comment { width: 100%; height: 64px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+
+.ww-episode-skeleton-layout { margin-top: 0; }
+
+@media (max-width: 1200px) {
+  .ww-content-skeleton-overview { grid-template-columns: minmax(160px, 200px) minmax(0, 1fr) minmax(220px, 240px); column-gap: var(--space-6); }
+}
+
+@media (max-width: 800px) {
+  .ww-page-skeleton--content { width: calc(100% - 40px); }
+  .ww-content-skeleton-hero { padding-top: 240px; }
+  .ww-content-skeleton-backdrop { height: 240px; }
+  .ww-content-skeleton-overview { width: auto; margin: -128px var(--space-4) 0; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: auto; column-gap: var(--space-4); row-gap: var(--space-6); }
+  .ww-content-skeleton-sidebar { display: contents; }
+  .ww-content-skeleton-poster { grid-column: 1; grid-row: 1; width: 104px; align-self: end; }
+  .ww-content-skeleton-provider { display: none; }
+  .ww-content-skeleton-title-block { grid-column: 2; grid-row: 1; align-self: end; padding: 0; gap: var(--space-2); }
+  .ww-content-skeleton-title { width: 86%; height: 28px; }
+  .ww-content-skeleton-stats { gap: var(--space-2); }
+  .ww-content-skeleton-stats > span { display: none; }
+  .ww-content-skeleton-stats > span:first-child { display: block; width: 74px; height: 28px; }
+  .ww-content-skeleton-actions { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  .ww-content-skeleton-actions > div { grid-column: 1 / -1; }
+  .ww-content-skeleton-copy { grid-column: 1 / -1; grid-row: 3; gap: var(--space-3); }
+  .ww-content-skeleton-metadata { display: none; }
+  .ww-content-skeleton-following { margin-top: var(--space-2); }
+  .ww-content-skeleton-sections { margin: var(--space-8) var(--space-4) 0; }
+  .ww-content-skeleton-people { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .ww-episode-skeleton-hero { min-height: 390px; padding: 17px 0 24px; }
+  .ww-episode-skeleton-hero > div,
+  .ww-episode-skeleton-layout { width: calc(100% - 36px); }
+  .ww-episode-skeleton-hero > div { min-height: 349px; }
+  .ww-episode-skeleton-layout { grid-template-columns: 130px minmax(0, 1fr); gap: 16px; }
+  .ww-episode-skeleton-cast { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .ww-page-skeleton--content { width: calc(100% - 32px); }
+  .ww-content-skeleton-overview { margin-inline: var(--space-4); grid-template-columns: 88px minmax(0, 1fr); column-gap: var(--space-3); row-gap: var(--space-4); }
+  .ww-content-skeleton-poster { width: 88px; }
+  .ww-content-skeleton-title { width: 92%; height: 24px; }
+  .ww-content-skeleton-actions > div { padding: var(--space-3); }
+  .ww-content-skeleton-sections { margin-inline: var(--space-4); }
+  .ww-content-skeleton-people,
+  .ww-content-skeleton-posters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .ww-episode-skeleton-hero { min-height: 360px; padding-top: 17px; }
+  .ww-episode-skeleton-hero > div,
+  .ww-episode-skeleton-layout { width: calc(100% - 32px); }
+  .ww-episode-skeleton-hero > div { min-height: 319px; }
+  .ww-episode-skeleton-title { height: 38px; }
+  .ww-episode-skeleton-layout { grid-template-columns: minmax(0, 1fr); margin-top: 13px; }
+  .ww-episode-skeleton-layout > aside { display: grid; grid-template-columns: 94px minmax(0, 1fr); align-items: start; gap: 10px; }
+  .ww-episode-skeleton-layout > aside > .ww-content-skeleton-poster { grid-row: span 2; width: 94px; }
+  .ww-episode-skeleton-layout > aside > div { min-width: 0; padding: 9px; }
+  .ww-episode-skeleton-layout > aside > div > span { max-width: 100%; }
+  .ww-episode-skeleton-nav { align-items: flex-start; flex-direction: column; }
 }

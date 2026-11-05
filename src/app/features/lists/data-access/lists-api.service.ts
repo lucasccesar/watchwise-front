@@ -30,11 +30,12 @@ export interface ListCardPreview {
   posterPath: string | null;
   customPosterUrl: string | null;
   releaseYear: number | null;
+  tmdbVoteAverage?: number | null;
   runtimeMinutes: number | null;
   numberOfEpisodes: number | null;
   genres: string[] | null;
   stats: { averageScore: number | null; playsCount: number; reviewsCount: number; commentsCount: number } | null;
-  viewerState: { watchStatus: string | null; myRating: number | null } | null;
+  viewerState: { watchStatus: string | null; myRating: number | null; inWatchlist?: boolean | null } | null;
   previewStatus: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
 }
 
@@ -105,6 +106,7 @@ export interface ListDetailView {
   itemsCount: number;
   commentsCount: number;
   totalRuntimeMinutes: number;
+  backdropPath?: string | null;
   rank: number | null;
   itemScope: string | null;
   items: ListDetailPage;

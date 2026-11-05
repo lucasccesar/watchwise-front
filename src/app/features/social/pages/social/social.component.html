@@ -54,7 +54,7 @@
           <img class="social-stack-avatar" [src]="viewer()?.profilePicture || '/default-user-avatar.png'" alt="" loading="lazy" />
         }
       </div>
-      <p>{{ followingLabel() }}</p>
+      <p>{{ followingLabelPrefix() }}<strong>{{ followingLabelCount() }} pessoas</strong>{{ followingLabelSuffix() }}</p>
     </section>
 
 

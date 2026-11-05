@@ -13,6 +13,7 @@ import { CommentItemComponent } from '../../../../shared/components/comment-item
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { resolveRating } from '../../../../shared/utils/community-rating';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 
@@ -127,8 +128,8 @@ export class PickDetailComponent {
     return tmdbImageUrl(path, 'w500');
   }
   protected shareLink(): string { return `${window.location.origin}/picks/${encodeURIComponent(this.pickId)}`; }
-  protected answerRating(answer: PicksAnswer): string | null { const rating = answer.preview?.contentCard?.stats?.averageScore; return rating === null || rating === undefined ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
-  protected answerRatingLabel(answer: PicksAnswer): string { const rating = this.answerRating(answer); return rating ? `${this.homeCopy.communityAverage}: ${rating}` : ''; }
+  protected answerRating(answer: PicksAnswer): string | null { const card = answer.preview?.contentCard; const rating = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).value; return rating === null ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
+  protected answerRatingLabel(answer: PicksAnswer): string { const rating = this.answerRating(answer); if (!rating) return ''; const card = answer.preview?.contentCard; const source = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).source; return `${source === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage}: ${rating}`; }
   protected answerMenuKey(answer: PicksAnswer): string { return `${this.pickId}:${answer.categoryId}`; }
   protected menuExpanded(answer: PicksAnswer): boolean { return this.openMenu() === this.answerMenuKey(answer); }
   protected toggleAnswerMenu(answer: PicksAnswer, event: MouseEvent): void { event.stopPropagation(); const key = this.answerMenuKey(answer); this.openMenu.update((current) => current === key ? '' : key); }

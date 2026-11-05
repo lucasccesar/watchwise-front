@@ -82,6 +82,58 @@ export interface DiaryRecordPage {
   backdropPath?: string | null;
 }
 
+export interface DiaryViewContentRef {
+  id: string | null;
+  tmdbId: string | null;
+  type: DiaryContentType;
+  seriesTmdbId: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  runtimeMinutes: number | null;
+  totalRuntimeMinutes?: number | null;
+  releaseYear?: number | null;
+}
+
+export interface DiaryViewEntryItem {
+  kind: 'PERSISTED_ENTRY' | 'DERIVED_COMPLETION';
+  diaryEntryId: string | null;
+  completionKey: string | null;
+  content: DiaryViewContentRef;
+  watchNumber: number | null;
+  anchorEntryId: string | null;
+  watchedDate: string | null;
+  orderedAt: string;
+  currentScore: number | null;
+  currentRatingVersion: number | null;
+  reviewPreviews: unknown[];
+  reviewCount: number;
+}
+
+export interface DiaryViewGroupedItem {
+  kind: 'GROUPED';
+  content: DiaryViewContentRef;
+  groupType: DiaryContentType;
+  backdropPath?: string | null;
+  seasonCount: number;
+  seasonNumbers?: number[];
+  episodeCount: number;
+  totalRuntimeMinutes: number | null;
+  groupDate: string;
+  watchNumber: number | null;
+  orderedAt: string;
+}
+
+export type DiaryViewResponseItem = DiaryViewEntryItem | DiaryViewGroupedItem;
+
+export interface DiaryViewPage {
+  content: DiaryViewResponseItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
 export interface SeriesSeasonProgress {
   seasonNumber: number;
   watchedEpisodeCount: number;
@@ -153,8 +205,30 @@ export class DiaryApiService {
     return this.http.get<DiarySeriesOption[]>(`/api/v1/users/${encodeURIComponent(userId)}/diary/series`);
   }
 
+  deleteSeriesDiaryHistory(seriesTmdbId: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/diary/series/${encodeURIComponent(seriesTmdbId)}`);
+  }
+
   getAllDiaryEntries(userId: string, hasReview?: boolean): Observable<DiaryRecord[]> {
     return readAllPages(page => this.getDiaryPage(userId, { page, size: 1000, hasReview, sortBy: 'NEWEST' }));
+  }
+
+  getAllDiaryViewItems(userId: string, grouped: boolean): Observable<DiaryViewResponseItem[]> {
+    return readAllPages(page => this.getDiaryViewPage(userId, { page, size: 1000, grouped }));
+  }
+
+  getDiaryViewPage(
+    userId: string,
+    options: { page: number; size: number; grouped: boolean },
+  ): Observable<DiaryViewPage> {
+    const params = new HttpParams()
+      .set('page', options.page)
+      .set('size', options.size)
+      .set('grouped', options.grouped);
+    return this.http.get<DiaryViewPage>(
+      `/api/v1/users/${encodeURIComponent(userId)}/diary/view`,
+      { params },
+    );
   }
 
   getAllReviews(userId: string): Observable<DiaryRecord[]> {

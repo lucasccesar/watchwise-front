@@ -1,4 +1,4 @@
-<div class="movie-modal-backdrop" (click)="dismissFromBackdrop($event)">
+<div class="movie-modal-backdrop" appModalScrollLock (click)="dismissFromBackdrop($event)">
   <section #shareDialog class="movie-dialog" role="dialog" appModalFocus [modalReturnFocus]="returnFocusTarget()" (modalDismiss)="close()" aria-modal="true" [attr.aria-labelledby]="'share-review-dialog-title'" (click)="handleDialogClick($event)">
     <header class="movie-dialog-header">
       <div class="movie-dialog-heading">

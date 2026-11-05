@@ -1,0 +1,27 @@
+<button class="content-poster-picker-trigger" type="button" role="menuitem" data-ww-menu-item [disabled]="savingUrl() !== null" (click)="toggle($event)">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
+  <span>{{ label }}</span>
+</button>
+
+@if (open()) {
+  <div class="movie-share-image-options movie-share-image-options--poster content-poster-options" role="group" [attr.aria-label]="selectionLabel" [style.top.px]="position()?.top ?? null" [style.left.px]="position()?.left ?? null">
+    @if (status() === 'loading') {
+      <div class="movie-share-image-grid movie-share-image-grid--loading movie-share-image-grid--posters" role="status" [attr.aria-label]="loadingLabel">
+        @for (skeleton of skeletons; track skeleton) { <span></span> }
+      </div>
+    } @else if (status() === 'error') {
+      <p class="movie-share-image-empty" role="alert">{{ loadErrorLabel }}</p>
+      <button class="movie-share-reset-link" type="button" (click)="retry()">{{ retryLabel }}</button>
+    } @else if (images().length) {
+      <div class="movie-share-image-grid movie-share-image-grid--posters">
+        @for (image of images(); track image.url; let index = $index) {
+          <button class="movie-share-image-option" type="button" [class.movie-share-image-option--selected]="isSelected(image)" [disabled]="savingUrl() !== null" [attr.aria-label]="'Pôster ' + (index + 1)" [attr.aria-pressed]="isSelected(image)" (click)="select(image)">
+            @if (imageUrl(image.url); as poster) { <img [src]="poster" alt="" loading="lazy" /> }
+          </button>
+        }
+      </div>
+    } @else {
+      <p class="movie-share-image-empty">{{ emptyLabel }}</p>
+    }
+  </div>
+}

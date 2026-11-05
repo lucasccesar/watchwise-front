@@ -153,7 +153,6 @@
                           <small>{{ list.itemsCount ?? 0 }}</small>
                         </label>
                         @if (busyListId() === list.id) { <span class="watchlist-user-list-busy" role="status">{{ trendingCopy.loading }}</span> }
-                        @else if (!canToggleList(list)) { <span class="watchlist-user-list-busy">{{ trendingCopy.incompatibleList }}</span> }
                       </li>
                     }
                   </ul>
@@ -178,7 +177,7 @@
             }
             @if (isUpcoming(item) && item.releaseDate) { <span class="tr-upcoming-release"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2V6M8 2V6M7.8 22H16.2C17.88 22 18.72 22 19.362 21.673C19.927 21.385 20.385 20.927 20.673 20.362C21 19.72 21 18.88 21 17.2V8.8C21 7.12 21 6.28 20.673 5.638C20.385 5.074 19.927 4.615 19.362 4.327C18.72 4 17.88 4 16.2 4H7.8C6.12 4 5.28 4 4.638 4.327C4.074 4.615 3.615 5.074 3.327 5.638C3 6.28 3 7.12 3 8.8V17.2C3 18.88 3 19.72 3.327 20.362C3.615 20.927 4.074 21.385 4.638 21.673C5.28 22 6.12 22 7.8 22Z"/></svg>{{ releaseDateShort(item.releaseDate) }}</span> }
             @if (item.card.viewerState?.watchStatus === 'WATCHED') {
-              <span class="tr-state-marker tr-state-marker--watched" [attr.aria-label]="trendingCopy.watched" [title]="trendingCopy.watched"><app-check-icon /></span>
+              <span class="tr-state-marker tr-state-marker--watched" [attr.aria-label]="trendingCopy.watched" [title]="trendingCopy.watched"><app-check-icon [color]="'#FFFFFF'" /></span>
             }
           </div>
           <div class="watchlist-card-copy tr-card-text">

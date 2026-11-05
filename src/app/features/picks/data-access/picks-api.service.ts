@@ -112,7 +112,7 @@ export interface PicksTargetSearch {
 }
 
 export interface PicksTargetPreview {
-  contentCard: { contentId: string | null; type: 'MOVIE' | 'SERIES' | 'EPISODE' | 'SEASON'; tmdbId: string | null; seriesTmdbId: string | null; seasonNumber: number | null; episodeNumber: number | null; title: string | null; posterPath: string | null; customPosterUrl: string | null; releaseYear: number | null; stats: { averageScore: number | null } | null } | null;
+  contentCard: { contentId: string | null; type: 'MOVIE' | 'SERIES' | 'EPISODE' | 'SEASON'; tmdbId: string | null; seriesTmdbId: string | null; seasonNumber: number | null; episodeNumber: number | null; title: string | null; posterPath: string | null; customPosterUrl: string | null; releaseYear: number | null; tmdbVoteAverage?: number | null; stats: { averageScore: number | null } | null } | null;
   person: { tmdbId: string; name: string; profileUrl: string | null } | null;
   contextCard: { title: string | null; posterPath: string | null } | null;
 }

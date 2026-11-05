@@ -19,11 +19,50 @@ export interface ContentImageSelection {
 
 export interface ContentReference {
   id: string;
-  type: 'MOVIE' | 'SERIES' | 'EPISODE';
+  type: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE';
   tmdbId: string | null;
   seriesTmdbId?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
+}
+
+export interface SeasonEpisodeCard extends Omit<SeriesChildCard, 'contentId' | 'type'> {
+  contentId: string | null;
+  type: 'EPISODE';
+}
+
+export interface SeasonContentPage {
+  details: {
+    contentId: string;
+    type: 'SEASON';
+    tmdbId: string | null;
+    seriesTmdbId: string;
+    seasonNumber: number;
+    title: string | null;
+    overview: string | null;
+    posterPath: string | null;
+    customPosterUrl: string | null;
+    backdropPath: string | null;
+    releaseDate: string | null;
+    runtimeMinutes: number | null;
+    episodeCount: number | null;
+    genres: string[] | null;
+    countries: string[] | null;
+    cast: SeriesCastMember[] | null;
+    guestStars: SeriesCastMember[] | null;
+    crew: MovieCrewMember[] | null;
+    videos: MovieVideo[] | null;
+    parentTitle: string | null;
+    parentReleaseYear: number | null;
+  };
+  metadata: ContentPage['metadata'];
+  stats: ContentPageStats;
+  visibleReviewsCount: number;
+  viewerState: ContentViewerState & { currentRatingVersion?: number | null };
+  sections: {
+    episodes: SeasonEpisodeCard[] | null;
+    seasons: SeriesChildCard[] | null;
+  } | null;
 }
 
 export interface EpisodeContentPage {
@@ -314,6 +353,7 @@ export interface MovieDetails {
 export interface ContentPageStats {
   contentId: string;
   averageScore: number | null;
+  tmdbVoteAverage?: number | null;
   ratingsCount: number;
   ratingsDistribution: Array<{ score: number; count: number }>;
   playsCount: number;
@@ -514,6 +554,13 @@ export class ContentApiService {
     );
   }
 
+  setCustomContentPoster(contentId: string, customPosterUrl: string): Observable<void> {
+    return this.http.put<void>(
+      `/api/v1/users/me/content-posters/${encodeURIComponent(contentId)}`,
+      { customPosterUrl },
+    );
+  }
+
   getSeriesSeasons(seriesTmdbId: string): Observable<ContentSeasonSelection[]> {
     return this.http.get<ContentSeasonSelection[]>(`/api/v1/contents/selection/series/${encodeURIComponent(seriesTmdbId)}/seasons`);
   }
@@ -533,6 +580,14 @@ export class ContentApiService {
     return this.http.post<ContentReference>('/api/v1/contents/reference', {
       type: 'SERIES',
       tmdbId,
+    });
+  }
+
+  createSeasonReference(seriesTmdbId: string, seasonNumber: number): Observable<ContentReference> {
+    return this.http.post<ContentReference>('/api/v1/contents/reference', {
+      type: 'SEASON',
+      seriesTmdbId,
+      seasonNumber,
     });
   }
 
@@ -559,6 +614,10 @@ export class ContentApiService {
     return this.http
       .get<SeriesPageResponse>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`)
       .pipe(map(normalizeSeriesPageResponse));
+  }
+
+  getSeasonPage(contentId: string): Observable<SeasonContentPage> {
+    return this.http.get<SeasonContentPage>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`);
   }
 
   getEpisodePage(contentId: string): Observable<EpisodeContentPage> {
@@ -614,7 +673,7 @@ export class ContentApiService {
     });
   }
 
-  getListItems(listId: string, page: number, type: 'MOVIE' | 'SERIES' = 'MOVIE'): Observable<UserListDetail> {
+  getListItems(listId: string, page: number, type: 'MOVIE' | 'SERIES' | 'SEASON' = 'MOVIE'): Observable<UserListDetail> {
     const params = new HttpParams().set('page', page).set('size', 30).set('type', type);
     return this.http.get<UserListDetail>(`/api/v1/lists/${encodeURIComponent(listId)}`, { params });
   }
@@ -663,6 +722,19 @@ export class ContentApiService {
   addSeriesToList(listId: string, tmdbId: string): Observable<unknown> {
     return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
       content: { type: 'SERIES', tmdbId },
+    });
+  }
+
+  addSeasonToList(listId: string, seriesTmdbId: string, seasonNumber: number): Observable<unknown> {
+    return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
+      content: { type: 'SEASON', seriesTmdbId, seasonNumber },
+    });
+  }
+
+  createSeasonList(name: string, seriesTmdbId: string, seasonNumber: number): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>('/api/v1/users/me/lists/bulk', {
+      name,
+      items: [{ type: 'SEASON', seriesTmdbId, seasonNumber }],
     });
   }
 

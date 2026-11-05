@@ -9,7 +9,7 @@ export class ModalFocusDirective implements AfterViewInit, OnDestroy {
   private static readonly stack: ModalFocusDirective[] = [];
   private readonly document = inject(DOCUMENT);
   private readonly root = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  private readonly releaseScrollLock = inject(ModalScrollLockService).acquire();
+  private readonly releaseScrollLock = inject(ModalScrollLockService).acquire(this.root);
   private readonly opener = this.document.activeElement as HTMLElement | null;
   private destroyed = false;
 
