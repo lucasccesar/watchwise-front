@@ -25,19 +25,20 @@ import { CommentItemComponent } from '../../../../shared/components/comment-item
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
+import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type LoadState = 'loading' | 'ready' | 'error';
-type EpisodeDialog = 'watch' | 'videos' | 'lists' | null;
-type EpisodeWatchMode = 'new' | 'edit' | 'again';
+type EpisodeDialog = 'watch' | 'videos' | null;
 
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [NgTemplateOutlet, ModalFocusDirective, ModalScrollLockDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
+  imports: [NgTemplateOutlet, ModalFocusDirective, ModalScrollLockDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ContentListSkeletonComponent, WatchLogDialogComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',
@@ -62,7 +63,7 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly status = signal<LoadState>('loading');
   protected readonly actionError = signal('');
   protected readonly dialog = signal<EpisodeDialog>(null);
-  protected readonly watchMode = signal<EpisodeWatchMode>('new');
+  protected readonly watchLogOpen = signal(false);
   protected readonly watchDate = signal(this.localDate(new Date()));
   protected readonly selectedRating = signal(0);
   protected readonly reviewText = signal('');
@@ -70,11 +71,11 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly userListsPage = signal<ContentPageResult<UserListSummary> | null>(null);
   protected readonly userListsStatus = signal<LoadState>('loading');
   protected readonly userListsError = signal('');
+  protected readonly listsExpanded = signal(false);
   protected readonly reviewSort = signal<'POPULAR' | 'RECENT' | 'FOLLOWING'>('POPULAR');
   protected readonly peopleTab = signal<'cast' | 'guests' | 'crew'>('cast');
   protected readonly detailsExpanded = signal(false);
   protected readonly videosOpen = computed(() => this.dialog() === 'videos');
-  protected readonly listsOpen = computed(() => this.dialog() === 'lists');
   protected readonly selectedVideoKey = signal<string | null>(null);
   protected readonly videoPlaying = signal(false);
   protected readonly selectedVideo = computed(() => {
@@ -269,17 +270,39 @@ export class EpisodeComponent implements OnDestroy {
   }
 
   protected openRating(): void {
-    this.openWatchDialog(this.alreadyWatched() ? 'edit' : 'new');
-  }
-
-  protected openWatchDialog(mode: EpisodeWatchMode): void {
     const page = this.page();
     if (!page) return;
-    this.watchMode.set(mode);
-    this.watchDate.set(mode === 'edit' ? page.viewerState.lastWatchedDate ?? this.localDate(new Date()) : this.localDate(new Date()));
-    this.selectedRating.set(mode === 'edit' ? page.viewerState.myRating ?? 0 : 0);
-    this.reviewText.set(mode === 'edit' ? page.viewerState.myReview ?? '' : '');
+    this.watchDate.set(page.viewerState.lastWatchedDate ?? this.localDate(new Date()));
+    this.selectedRating.set(page.viewerState.myRating ?? 0);
+    this.reviewText.set(page.viewerState.myReview ?? '');
     this.dialog.set('watch');
+  }
+
+  protected closeWatchLogDialog(): void {
+    if (!this.busy()) this.watchLogOpen.set(false);
+  }
+
+  protected saveWatchLog(submission: WatchLogSubmission): void {
+    const page = this.page();
+    if (!page || this.busy()) return;
+    this.busy.set(true);
+    this.api.createSeriesDiaryEntry({
+      content: {
+        type: 'EPISODE',
+        seriesTmdbId: this.tmdbId(),
+        seasonNumber: this.seasonNumber(),
+        episodeNumber: this.episodeNumber(),
+      },
+      ...submission,
+    }).subscribe({
+      next: () => {
+        this.watchLogOpen.set(false);
+        this.busy.set(false);
+        this.showToast(submission.isRewatch ? 'Episódio registrado novamente.' : 'Episódio marcado como assistido.');
+        this.reload();
+      },
+      error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
+    });
   }
 
   protected closeDialog(): void {
@@ -292,13 +315,13 @@ export class EpisodeComponent implements OnDestroy {
     const watchedDate = this.watchDate();
     if (!page || this.busy() || !watchedDate || watchedDate > this.localDate(new Date())) return;
     this.busy.set(true);
-    const diaryEntryId = this.watchMode() === 'edit' ? page.viewerState.latestDiaryEntryId : null;
+    const diaryEntryId = page.viewerState.latestDiaryEntryId;
     const changes = {
       watchedDate,
       score: this.selectedRating() || null,
       comment: this.reviewText().trim() || null,
     };
-    const request = this.watchMode() === 'edit' && diaryEntryId
+    const request = diaryEntryId
       ? this.api.updateDiaryEntry(diaryEntryId, changes)
       : this.api.createSeriesDiaryEntry({
           ...changes,
@@ -310,8 +333,14 @@ export class EpisodeComponent implements OnDestroy {
     });
   }
 
-  protected markWatched(): void {
-    this.openWatchDialog(this.alreadyWatched() ? 'again' : 'new');
+  protected markWatched(event?: Event): void {
+    if (!this.page() || this.busy()) return;
+    const currentTarget = event?.currentTarget;
+    if (currentTarget instanceof HTMLElement) {
+      const menu = currentTarget.closest<HTMLDetailsElement>('.movie-mobile-more-actions');
+      if (menu) menu.open = false;
+    }
+    this.watchLogOpen.set(true);
   }
 
   protected toggleDetails(): void {
@@ -373,9 +402,10 @@ export class EpisodeComponent implements OnDestroy {
     }));
   }
 
-  protected openLists(): void {
-    this.dialog.set('lists');
-    this.loadUserLists();
+  protected toggleListsPanel(): void {
+    const expanded = !this.listsExpanded();
+    this.listsExpanded.set(expanded);
+    if (expanded && !this.userListsPage()) this.loadUserLists(1);
   }
 
   protected canAddEpisodeToList(list: UserListSummary): boolean {

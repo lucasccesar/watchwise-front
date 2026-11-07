@@ -20,8 +20,40 @@
     </section>
   } @else if (page(); as episode) {
     <section class="movie-overview" aria-labelledby="episode-title">
-      <div class="movie-backdrop-frame" aria-hidden="true">
+      <div class="movie-backdrop-frame">
         <app-responsive-banner [path]="backdrop()" fallbackPath="" appearance="content-detail" />
+        <nav class="episode-banner-navigation" [attr.aria-label]="'Navegar pelos episódios da temporada ' + seasonNumber()">
+          @if (adjacentEpisodes().previous; as previous) {
+            @if (episodeRoute(previous); as route) {
+              <a class="episode-banner-chevron episode-banner-chevron--previous" [routerLink]="route" [state]="episodeNavigationState(previous.contentId)" rel="prev" [attr.aria-label]="'Episódio anterior: ' + navigationTitle(previous)" [title]="'Episódio anterior: ' + navigationTitle(previous)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              </a>
+            } @else {
+              <span class="episode-banner-chevron episode-banner-chevron--previous episode-banner-chevron--unavailable" role="img" [attr.aria-label]="'Episódio anterior indisponível: ' + navigationTitle(previous)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              </span>
+            }
+          } @else {
+            <span class="episode-banner-chevron episode-banner-chevron--previous episode-banner-chevron--unavailable" role="img" aria-label="Episódio anterior indisponível">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            </span>
+          }
+          @if (adjacentEpisodes().next; as next) {
+            @if (episodeRoute(next); as route) {
+              <a class="episode-banner-chevron episode-banner-chevron--next" [routerLink]="route" [state]="episodeNavigationState(next.contentId)" rel="next" [attr.aria-label]="'Próximo episódio: ' + navigationTitle(next)" [title]="'Próximo episódio: ' + navigationTitle(next)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              </a>
+            } @else {
+              <span class="episode-banner-chevron episode-banner-chevron--next episode-banner-chevron--unavailable" role="img" [attr.aria-label]="'Próximo episódio indisponível: ' + navigationTitle(next)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              </span>
+            }
+          } @else {
+            <span class="episode-banner-chevron episode-banner-chevron--next episode-banner-chevron--unavailable" role="img" aria-label="Próximo episódio indisponível">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </span>
+          }
+        </nav>
       </div>
 
       <div class="movie-overview-grid">
@@ -158,31 +190,6 @@
             <ng-container [ngTemplateOutlet]="episodeMetadata" />
           </dl>
 
-          @if (adjacentEpisodes().previous || adjacentEpisodes().next) {
-            <nav class="episode-navigation" [attr.aria-label]="'Navegar pelos episódios da temporada ' + seasonNumber()">
-              @if (adjacentEpisodes().previous; as previous) {
-                @if (episodeRoute(previous); as route) {
-                  <a [routerLink]="route" [state]="episodeNavigationState(previous.contentId)" rel="prev">
-                    <span class="episode-navigation-arrow" aria-hidden="true">←</span>
-                    <span class="episode-navigation-copy"><small>Anterior</small><strong>{{ navigationTitle(previous) }}</strong></span>
-                  </a>
-                } @else {
-                  <span class="episode-navigation-unavailable">Episódio anterior indisponível</span>
-                }
-              }
-              @if (adjacentEpisodes().next; as next) {
-                @if (episodeRoute(next); as route) {
-                  <a [routerLink]="route" [state]="episodeNavigationState(next.contentId)" rel="next">
-                    <span class="episode-navigation-copy"><small>Próximo</small><strong>{{ navigationTitle(next) }}</strong></span>
-                    <span class="episode-navigation-arrow" aria-hidden="true">→</span>
-                  </a>
-                } @else {
-                  <span class="episode-navigation-unavailable">Próximo episódio indisponível</span>
-                }
-              }
-            </nav>
-          }
-
           @if (episode.details.overview?.trim()) {
             <section class="movie-synopsis-section" aria-labelledby="episode-synopsis-title">
               <h2 id="episode-synopsis-title" class="movie-desktop-synopsis-title">Sinopse</h2>
@@ -267,7 +274,7 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
                 </summary>
                 <div class="movie-mobile-more-menu" role="group" aria-label="Opções do histórico" data-ww-menu>
-                  <button type="button" (click)="markWatched()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>Assistir novamente</span></button>
+                  <button type="button" (click)="markWatched($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>Assistir novamente</span></button>
                   <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>Histórico</span></button>
                   <button type="button" (click)="openSharePreview()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>Compartilhar avaliação</span></button>
                   <button type="button" (click)="removeFromDiary()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg><span>Remover do histórico</span></button>
@@ -275,18 +282,44 @@
               </details>
             </div>
           } @else {
-            <button class="movie-action-mark-watched" type="button" [disabled]="busy()" (click)="markWatched()">
-              <app-check-icon />
-              <span>Marcar como assistido</span>
-            </button>
+            <div class="movie-mark-watched-row">
+              <button class="movie-action-mark-watched movie-action-mark-watched--fill" type="button" [disabled]="busy()" (click)="markWatched($event)">
+                <app-check-icon />
+                <span>Marcar como assistido</span>
+              </button>
+            </div>
           }
 
           <div class="movie-lists-control episode-lists-control">
-            <button class="movie-action-lists" type="button" (click)="openLists()" [attr.aria-expanded]="dialog() === 'lists'">
+            <button class="movie-action-lists" type="button" [disabled]="busy()" (click)="toggleListsPanel()" [attr.aria-expanded]="listsExpanded()" data-ww-select-trigger>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12H9M21 6H9M21 18H9M5 12C5 12.552 4.552 13 4 13C3.448 13 3 12.552 3 12C3 11.448 3.448 11 4 11ZM5 6C5 6.552 4.552 7 4 7C3.448 7 3 6.552 3 6C3 5.448 3.448 5 4 5ZM5 18C5 18.552 4.552 19 4 19C3.448 19 3 18.552 3 18C3 17.448 3.448 17 4 17Z" /></svg>
               <span>{{ episode.viewerState.lists.length ? 'Em ' + episode.viewerState.lists.length + ' listas' : 'Adicionar à lista' }}</span>
               <svg class="movie-lists-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
+            @if (listsExpanded()) {
+              <div class="movie-lists-panel" aria-label="Suas listas" data-ww-menu>
+                <strong class="movie-lists-panel-title">Suas listas</strong>
+                @if (userListsStatus() === 'loading') {
+                  <app-content-list-skeleton label="Carregando listas…" />
+                } @else if (userListsStatus() === 'error') {
+                  <p class="movie-field-error" role="alert">{{ userListsError() }}</p>
+                  <button class="movie-text-button" type="button" (click)="loadUserLists(1)">Tentar novamente</button>
+                } @else if (userLists().length) {
+                  @for (list of userLists(); track list.id) {
+                    <button class="movie-lists-panel-item" type="button" [disabled]="busy() || (list.containsContent !== true && !canAddEpisodeToList(list))" [attr.aria-pressed]="list.containsContent === true" (click)="toggleEpisodeInList(list)" data-ww-menu-item>
+                      <span class="movie-lists-panel-check">@if (list.containsContent) { <app-check-icon /> }</span>
+                      <span class="movie-lists-panel-copy"><span class="movie-lists-panel-name">{{ list.name }}</span></span>
+                      @if (list.itemsCount !== undefined) { <span class="movie-lists-panel-count">{{ list.itemsCount }}</span> }
+                    </button>
+                  }
+                  @if (userListsPage()?.hasNext) {
+                    <button class="movie-text-button movie-lists-panel-more" type="button" [disabled]="userListsStatus() === 'loading'" (click)="loadMoreLists()">Carregar mais listas</button>
+                  }
+                } @else {
+                  <p class="movie-empty-inline ww-empty-message">Você ainda não criou nenhuma lista.</p>
+                }
+              </div>
+            }
           </div>
 
           <div class="movie-ratings-divider">
@@ -499,14 +532,26 @@
   }
 </main>
 
+@if (watchLogOpen()) {
+  <app-watch-log-dialog
+    [dialogTitle]="alreadyWatched() ? 'Assistir novamente' : 'Marcar como assistido'"
+    [title]="seriesTitle()"
+    [subtitle]="'T' + seasonNumber() + ' · E' + episodeNumber() + ' · ' + episodeTitle()"
+    [initialRewatch]="alreadyWatched()"
+    [saving]="busy()"
+    (dismiss)="closeWatchLogDialog()"
+    (save)="saveWatchLog($event)"
+  />
+}
+
 @if (page(); as episode) {
   @if (dialog(); as currentDialog) {
     <div class="movie-modal-backdrop" appModalScrollLock (click)="closeDialog()">
-      <section class="movie-dialog episode-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="currentDialog === 'watch' ? 'episode-watch-title' : currentDialog === 'videos' ? 'episode-videos-title' : 'episode-lists-title'" (click)="$event.stopPropagation()">
+      <section class="movie-dialog episode-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="currentDialog === 'watch' ? 'episode-watch-title' : 'episode-videos-title'" (click)="$event.stopPropagation()">
         <header class="movie-dialog-header">
           <div class="movie-dialog-heading">
-            <h2 [id]="currentDialog === 'watch' ? 'episode-watch-title' : currentDialog === 'videos' ? 'episode-videos-title' : 'episode-lists-title'">
-              {{ currentDialog === 'watch' ? (watchMode() === 'edit' ? 'Editar registro' : watchMode() === 'again' ? 'Assistir novamente' : 'Marcar como assistido') : currentDialog === 'videos' ? 'Vídeos' : 'Adicionar à lista' }}
+            <h2 [id]="currentDialog === 'watch' ? 'episode-watch-title' : 'episode-videos-title'">
+              {{ currentDialog === 'watch' ? 'Editar registro' : 'Vídeos' }}
             </h2>
             @if (currentDialog === 'watch') {
               <span class="movie-watch-subtitle">{{ seriesTitle() }} · T{{ seasonNumber() }} · E{{ episodeNumber() }} · {{ episodeTitle() }}</span>
@@ -535,14 +580,14 @@
             </div>
             <label for="episode-review-text">Sua resenha <span>(opcional)</span><textarea id="episode-review-text" rows="5" [value]="reviewText()" (input)="reviewComment($event)" maxlength="20000" placeholder="O que você achou deste episódio?"></textarea></label>
             <div class="movie-dialog-actions">
-              @if (watchMode() === 'edit' && episode.viewerState.latestDiaryEntryId) {
+              @if (episode.viewerState.latestDiaryEntryId) {
                 <button class="movie-text-button movie-remove-watch" type="button" [disabled]="busy()" (click)="removeFromDiary()">Remover do histórico</button>
               }
               <button class="movie-button movie-button--secondary" type="button" (click)="closeDialog()">Cancelar</button>
               <button class="movie-button movie-button--primary" type="submit" [disabled]="busy() || !watchDate() || watchDate() > maxWatchedDate">{{ busy() ? 'Salvando…' : 'Salvar' }}</button>
             </div>
           </form>
-        } @else if (currentDialog === 'videos') {
+        } @else {
           @if (selectedVideo(); as video) {
             <div class="movie-video-feature">
               <div class="movie-video-player">
@@ -577,33 +622,6 @@
             }
           } @else {
             <p class="movie-empty-inline">Não há vídeos disponíveis.</p>
-          }
-        } @else {
-          @if (userListsStatus() === 'loading') {
-            <app-page-skeleton variant="rows" [compact]="true" label="Carregando listas…" />
-          } @else if (userListsStatus() === 'error') {
-            <div class="movie-section-state" role="alert">
-              <p>{{ userListsError() }}</p>
-              <button class="movie-text-button" type="button" (click)="loadUserLists()">Tentar novamente</button>
-            </div>
-          } @else if (userLists().length) {
-            <ul class="movie-list-options">
-              @for (list of userLists(); track list.id) {
-                <li>
-                  <button class="movie-list-option" type="button" [disabled]="busy() || (list.containsContent !== true && !canAddEpisodeToList(list))" [attr.aria-pressed]="list.containsContent === true" (click)="toggleEpisodeInList(list)">
-                    <span class="movie-list-check" aria-hidden="true">@if (list.containsContent) { <app-check-icon /> }</span>
-                    <span class="movie-list-name">{{ list.name }}</span>
-                    @if (list.containsContent) { <span class="movie-list-status">Já adicionada · Remover</span> }
-                    @else if (list.itemsCount !== undefined) { <span class="movie-list-status">{{ list.itemsCount }}</span> }
-                  </button>
-                </li>
-              }
-            </ul>
-            @if (userListsPage()?.hasNext) {
-              <button class="movie-text-button" type="button" [disabled]="userListsStatus() === 'loading'" (click)="loadMoreLists()">Carregar mais listas</button>
-            }
-          } @else {
-            <p class="movie-empty-inline">Você ainda não criou nenhuma lista.</p>
           }
         }
       </section>

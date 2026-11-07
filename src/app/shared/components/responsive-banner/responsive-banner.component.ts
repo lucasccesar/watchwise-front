@@ -58,14 +58,14 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
     }
 
     .responsive-banner-image--content-detail {
-      object-position: center 40%;
+      object-position: center 30%;
       filter: blur(1px);
       opacity: 1;
       transform: scale(1.04);
     }
 
     .responsive-banner-image--episode-detail {
-      object-position: center 35%;
+      object-position: center 30%;
     }
 
     .responsive-banner-shade {

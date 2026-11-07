@@ -109,59 +109,74 @@
   white-space: nowrap;
 }
 
-.episode-navigation {
-  min-width: 0;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-3) 0;
-  border-block: 1px solid var(--color-border);
+.episode-banner-navigation {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
 }
 
-.episode-navigation > a {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.episode-banner-chevron {
+  position: absolute;
+  top: 50%;
+  width: 136px;
+  height: 152px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   color: var(--color-text);
+  pointer-events: auto;
+  transition: transform 120ms ease, color 120ms ease;
+}
+
+.episode-banner-chevron--previous {
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.episode-banner-chevron--next {
+  right: 0;
+  transform: translateY(-50%);
+}
+
+a.episode-banner-chevron {
   text-decoration: none;
 }
 
-.episode-navigation > a:last-of-type {
-  margin-left: auto;
-  text-align: right;
+a.episode-banner-chevron--previous:hover {
+  transform: translateY(-50%) scale(1.06);
 }
 
-.episode-navigation-arrow {
+a.episode-banner-chevron--next:hover {
+  transform: translateY(-50%) scale(1.06);
+}
+
+a.episode-banner-chevron:hover {
   color: var(--color-primary);
-  font-size: var(--font-size-lg);
 }
 
-.episode-navigation-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.episode-banner-chevron:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
-.episode-navigation small {
-  color: var(--color-tertiary);
-  font-size: var(--font-size-xs);
+.episode-banner-chevron--unavailable {
+  opacity: 0.45;
 }
 
-.episode-navigation strong {
-  max-width: 250px;
-  overflow: hidden;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.episode-navigation-unavailable {
-  color: var(--color-tertiary);
-  font-size: var(--font-size-sm);
+.episode-banner-chevron svg {
+  width: 124px;
+  height: 124px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 55%));
 }
 
 .episode-page .movie-action-primary-row {
@@ -177,15 +192,31 @@
 }
 
 @media (max-width: 800px) {
-  .episode-navigation {
-    gap: var(--space-2);
+  .episode-banner-chevron--previous {
+    left: 0;
   }
 
-  .episode-navigation strong {
-    max-width: min(34vw, 200px);
+  .episode-banner-chevron--next {
+    right: 0;
+  }
+
+  .episode-banner-chevron {
+    width: 98px;
+    height: 112px;
+  }
+
+  .episode-banner-chevron svg {
+    width: 86px;
+    height: 86px;
   }
 
   .episode-page .movie-action-watch-row {
     padding-right: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .episode-banner-chevron {
+    transition: none;
   }
 }

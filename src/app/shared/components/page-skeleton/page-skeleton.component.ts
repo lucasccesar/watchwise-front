@@ -78,8 +78,42 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
         }
         @case ('episode-content') {
           <div class="ww-episode-skeleton" aria-hidden="true">
-            <header class="ww-episode-skeleton-hero"><span class="ww-skeleton-shape ww-episode-skeleton-backdrop"></span><div><span class="ww-skeleton-shape ww-episode-skeleton-back"></span><section><span class="ww-skeleton-shape ww-episode-skeleton-eyebrow"></span><span class="ww-skeleton-shape ww-episode-skeleton-title"></span><span class="ww-skeleton-shape ww-episode-skeleton-meta"></span><span class="ww-skeleton-shape ww-episode-skeleton-copy"></span><span class="ww-skeleton-shape ww-episode-skeleton-copy ww-episode-skeleton-copy--short"></span><div>@for (action of compactCards.slice(0, 3); track action) { <span class="ww-skeleton-shape ww-episode-skeleton-action"></span> }</div></section></div></header>
-            <div class="ww-episode-skeleton-layout"><aside><span class="ww-skeleton-shape ww-content-skeleton-poster"></span><div><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span></div><div><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span></div></aside><div><div class="ww-episode-skeleton-nav"><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-skeleton-pill"></span></div><section><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span><div class="ww-episode-skeleton-cast">@for (person of compactCards; track person) { <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape ww-skeleton-line"></span></div> }</div></section><section><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span>@for (review of compactCards.slice(0, 2); track review) { <div class="ww-episode-skeleton-review"><span class="ww-skeleton-shape ww-content-skeleton-avatar"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line"></span></div> }</section><section><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span><span class="ww-skeleton-shape ww-episode-skeleton-comment"></span></section></div></div>
+            <div class="ww-content-skeleton-hero">
+              <span class="ww-skeleton-shape ww-content-skeleton-backdrop"></span>
+              <div class="ww-content-skeleton-overview">
+                <aside class="ww-content-skeleton-sidebar">
+                  <span class="ww-skeleton-shape ww-content-skeleton-poster"></span>
+                  <div class="ww-content-skeleton-provider ww-episode-skeleton-provider">
+                    <span class="ww-skeleton-shape ww-skeleton-line"></span>
+                    @for (provider of compactCards.slice(0, 3); track provider) {
+                      <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span></div>
+                    }
+                  </div>
+                </aside>
+                <header class="ww-content-skeleton-title-block ww-episode-skeleton-title-block">
+                  <div class="ww-episode-skeleton-parent-links"><span class="ww-skeleton-shape"></span><i></i><span class="ww-skeleton-shape"></span></div>
+                  <div class="ww-episode-skeleton-heading"><span class="ww-skeleton-shape ww-episode-skeleton-title"></span><span class="ww-skeleton-shape ww-episode-skeleton-coordinate"></span><span class="ww-skeleton-shape ww-episode-skeleton-certification"></span></div>
+                  <div class="ww-content-skeleton-stats"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                </header>
+                <div class="ww-content-skeleton-copy ww-episode-skeleton-copy">
+                  <div class="ww-episode-skeleton-switcher"><span class="ww-skeleton-shape"></span><div>@for (episode of compactCards; track episode) { <span class="ww-skeleton-shape"></span> }</div></div>
+                  <div class="ww-content-skeleton-metadata"><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span></div>
+                  <div class="ww-episode-skeleton-synopsis"><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line"></span></div>
+                  <div class="ww-content-skeleton-following"><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span><div>@for (person of compactCards; track person) { <span class="ww-skeleton-shape ww-content-skeleton-avatar"></span> }</div></div>
+                </div>
+                <aside class="ww-content-skeleton-actions ww-episode-skeleton-actions">
+                  <span class="ww-skeleton-shape ww-content-skeleton-action ww-episode-skeleton-rating-action"></span>
+                  <span class="ww-skeleton-shape ww-content-skeleton-action ww-episode-skeleton-watch-action"></span>
+                  <span class="ww-skeleton-shape ww-content-skeleton-action ww-episode-skeleton-list-action"></span>
+                  <div><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-content-skeleton-score"></span></div>
+                </aside>
+              </div>
+            </div>
+            <div class="ww-content-skeleton-sections">
+              <section><div class="ww-content-skeleton-tabs">@for (tab of compactCards.slice(0, 3); track tab) { <span class="ww-skeleton-shape ww-skeleton-pill"></span> }</div><div class="ww-content-skeleton-people">@for (person of cards; track person) { <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape ww-skeleton-line"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--short"></span></div> }</div></section>
+              <section><div class="ww-episode-skeleton-review-heading"><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span><div><span class="ww-skeleton-shape ww-skeleton-pill"></span><span class="ww-skeleton-shape ww-skeleton-pill"></span></div></div>@for (review of compactCards.slice(0, 2); track review) { <div class="ww-content-skeleton-review"><span class="ww-skeleton-shape ww-content-skeleton-avatar"></span><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line"></span></div> }</section>
+              <section><span class="ww-skeleton-shape ww-content-skeleton-section-title"></span><span class="ww-skeleton-shape ww-content-skeleton-comment"></span>@for (comment of compactCards.slice(0, 2); track comment) { <span class="ww-skeleton-shape ww-content-skeleton-comment ww-episode-skeleton-comment-row"></span> }</section>
+            </div>
           </div>
         }
         @case ('list') {

@@ -277,10 +277,12 @@
           </button>
           } @else {
             @if (!moviePage.viewerState.dropped) {
-              <button class="movie-action-mark-watched" type="button" [disabled]="actionPending()" (click)="openWatchDialog('new', $event)">
-                <app-check-icon />
-                <span>{{ copy.markWatched }}</span>
-              </button>
+              <div class="movie-mark-watched-row">
+                <button class="movie-action-mark-watched movie-action-mark-watched--fill" type="button" [disabled]="actionPending()" (click)="openWatchDialog('new', $event)">
+                  <app-check-icon />
+                  <span>{{ copy.markWatched }}</span>
+                </button>
+              </div>
             }
           }
 
