@@ -60,7 +60,6 @@
         <header class="ww-social-report-header">
           <span class="ww-social-report-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg></span>
           <div><h2 id="ww-social-report-title">{{ reportTitle }}</h2><p>{{ copy.reportAnonymous.replace('{user}', reportHandle) }}</p></div>
-          <button class="ww-social-report-close" type="button" [attr.aria-label]="copy.reportClose" [disabled]="busy()" (click)="cancelReport()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
         </header>
         <div class="ww-social-report-evidence"><span>{{ reportEvidenceLabel }}</span><p>{{ reportEvidenceText }}</p></div>
         <fieldset class="ww-social-report-reasons" [attr.aria-busy]="busy()">

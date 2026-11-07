@@ -1,0 +1,24 @@
+<!-- @dsCard group="Navigation" height=80 subtitle="Menu item — default, hover, selected" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Header / Navigation — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .row { display:flex; gap:var(--space-4); align-items:center; }
+  .item { padding:8px 12px; border-radius:6px; font-size:14px; font-weight:600; color:var(--tertiary); }
+  .item.hover { background:var(--surface-secondary); color:var(--text); }
+  .item.sel { color:var(--primary); }
+</style>
+</head>
+<body>
+<div class="row">
+  <span class="item">Home</span>
+  <span class="item hover">Explore</span>
+  <span class="item sel">My list</span>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

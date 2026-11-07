@@ -1,20 +1,23 @@
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin, Subscription, switchMap } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { forkJoin, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
-import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import {
   ContentApiService,
   ContentComment,
   ContentReview,
   ContentPageResult,
   EpisodeContentPage,
+  MovieVideo,
   SeriesChildCard,
-  SeriesPage,
+  UserListDetail,
+  UserListSummary,
 } from '../../data-access/content-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
@@ -24,20 +27,23 @@ import { ToastNotificationsService } from '../../../../shared/components/toast-n
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
+import { getVideoPlatformLabel } from '../../utils/content-video.utils';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type LoadState = 'loading' | 'ready' | 'error';
+type EpisodeDialog = 'watch' | 'videos' | 'lists' | null;
+type EpisodeWatchMode = 'new' | 'edit' | 'again';
 
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
+  imports: [NgTemplateOutlet, ModalFocusDirective, ModalScrollLockDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',
 })
 export class EpisodeComponent implements OnDestroy {
   protected readonly page = signal<EpisodeContentPage | null>(null);
-  protected readonly series = signal<SeriesPage | null>(null);
   protected readonly reviews = signal<ContentReview[]>([]);
   protected readonly comments = signal<ContentComment[]>([]);
   protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
@@ -48,15 +54,40 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly reviewsError = signal('');
   protected readonly commentsError = signal('');
   protected readonly commentMaxLength = 280;
+  protected readonly maxWatchedDate = this.localDate(new Date());
   protected readonly canSubmitComment = computed(() => {
     const text = this.commentText().trim();
     return !!text && text.length <= this.commentMaxLength && !this.busy();
   });
   protected readonly status = signal<LoadState>('loading');
   protected readonly actionError = signal('');
-  protected readonly ratingOpen = signal(false);
+  protected readonly dialog = signal<EpisodeDialog>(null);
+  protected readonly watchMode = signal<EpisodeWatchMode>('new');
+  protected readonly watchDate = signal(this.localDate(new Date()));
   protected readonly selectedRating = signal(0);
   protected readonly reviewText = signal('');
+  protected readonly userLists = signal<UserListSummary[]>([]);
+  protected readonly userListsPage = signal<ContentPageResult<UserListSummary> | null>(null);
+  protected readonly userListsStatus = signal<LoadState>('loading');
+  protected readonly userListsError = signal('');
+  protected readonly reviewSort = signal<'POPULAR' | 'RECENT' | 'FOLLOWING'>('POPULAR');
+  protected readonly peopleTab = signal<'cast' | 'guests' | 'crew'>('cast');
+  protected readonly detailsExpanded = signal(false);
+  protected readonly videosOpen = computed(() => this.dialog() === 'videos');
+  protected readonly listsOpen = computed(() => this.dialog() === 'lists');
+  protected readonly selectedVideoKey = signal<string | null>(null);
+  protected readonly videoPlaying = signal(false);
+  protected readonly selectedVideo = computed(() => {
+    const videos = this.page()?.details.videos ?? [];
+    return videos.find(video => video.key === this.selectedVideoKey()) ?? videos[0] ?? null;
+  });
+  protected readonly videoEmbedUrl = computed<SafeResourceUrl | null>(() => {
+    const video = this.selectedVideo();
+    return video && this.isYoutubeVideo(video)
+      ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1`)
+      : null;
+  });
+  protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly commentText = signal('');
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly busy = signal(false);
@@ -65,17 +96,35 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly seasonNumber = signal(0);
   protected readonly episodeNumber = signal(0);
   private readonly toasts = inject(ToastNotificationsService);
+  private readonly document = inject(DOCUMENT);
+  private readonly renderer = inject(Renderer2);
+  private stylesheet?: HTMLLinkElement;
   protected readonly backdrop = computed(() => {
-    const path = this.page()?.details.backdropPath || this.series()?.details.backdropPath;
+    const page = this.page();
+    const path = page?.details.backdropPath || page?.metadata.presentationPosterPath || page?.details.posterPath;
     return this.imageUrl(path, 'w1280');
   });
   protected readonly episodeTitle = computed(() => this.page()?.details.title || 'Episódio');
-  protected readonly seriesTitle = computed(() => this.series()?.details.title || this.page()?.details.parentTitle || 'Série');
+  protected readonly seriesTitle = computed(() => this.page()?.details.parentTitle || 'Série');
   protected readonly alreadyWatched = computed(() => this.page()?.viewerState.watchStatus === 'WATCHED');
+  protected readonly ratingDistribution = computed(() => this.page()?.stats.ratingsDistribution ?? []);
   protected readonly adjacentEpisodes = computed(() => ({
     previous: this.page()?.navigation?.previousEpisode ?? null,
     next: this.page()?.navigation?.nextEpisode ?? null,
   }));
+  protected readonly seasonEpisodeItems = computed(() => {
+    const navigation = this.page()?.navigation;
+    const count = navigation?.seasonEpisodeCount;
+    const seriesTmdbId = navigation?.seriesTmdbId || this.tmdbId();
+    const seasonNumber = navigation?.seasonNumber ?? this.seasonNumber();
+    if (count == null || !Number.isInteger(count) || count < 1 || !seriesTmdbId) return [];
+
+    return Array.from({ length: count }, (_, index) => {
+      const episodeNumber = index + 1;
+      const route = episodeContentRoute({ seriesTmdbId, seasonNumber, episodeNumber });
+      return route ? { episodeNumber, route } : null;
+    }).filter((item): item is { episodeNumber: number; route: string[] } => item !== null);
+  });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const page = this.page();
     const user = this.session.user();
@@ -98,7 +147,8 @@ export class EpisodeComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(ContentApiService);
-  private readonly session = inject(AuthSessionService);
+  protected readonly session = inject(AuthSessionService);
+  private readonly sanitizer = inject(DomSanitizer);
   private openShareReviewAfterLoad = false;
   private shareReturnUrl: string | null = null;
   private request?: Subscription;
@@ -111,11 +161,12 @@ export class EpisodeComponent implements OnDestroy {
     this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
       ? navigationState['shareReturnUrl']
       : null;
+    this.loadStylesheet();
     this.routeRequest = this.route.paramMap.subscribe((params) => {
       const seriesTmdbId = params.get('tmdbId') ?? '';
       const season = Number(params.get('seasonNumber'));
       const episode = Number(params.get('episodeNumber'));
-      this.load(seriesTmdbId, season, episode);
+      this.load(seriesTmdbId, season, episode, this.routeContentId());
     });
   }
 
@@ -123,6 +174,7 @@ export class EpisodeComponent implements OnDestroy {
     this.routeRequest?.unsubscribe();
     this.request?.unsubscribe();
     this.communityRequests.unsubscribe();
+    if (this.stylesheet) this.renderer.removeChild(this.document.head, this.stylesheet);
   }
 
   protected reload(): void {
@@ -149,6 +201,24 @@ export class EpisodeComponent implements OnDestroy {
     const [year, month, day] = value.slice(0, 10).split('-').map(Number);
     if (!year || !month || !day) return '';
     return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(year, month - 1, day));
+  }
+
+  protected crewNamesForRole(page: EpisodeContentPage, role: 'director' | 'writer'): string {
+    const matching = this.episodeCrew(page)
+      .filter(person => person.jobs.some(job => job.toLocaleLowerCase('pt-BR').includes(role === 'director' ? 'director' : 'writer')))
+      .map(person => person.name.trim())
+      .filter(Boolean);
+    return [...new Set(matching)].join(', ');
+  }
+
+  protected episodeCrew(page: EpisodeContentPage): EpisodeContentPage['details']['crew'] {
+    return page.metadata.crewInherited && page.metadata.presentationCrew
+      ? page.metadata.presentationCrew
+      : page.details.crew;
+  }
+
+  protected productionCompanyNames(page: EpisodeContentPage): string {
+    return page.details.productionCompanies.map(company => company.name).join(', ');
   }
 
   protected formatRuntime(value: number | null | undefined): string {
@@ -178,6 +248,17 @@ export class EpisodeComponent implements OnDestroy {
     return Math.min(100, Math.max(0, (value ?? 0) * 10));
   }
 
+  protected ratingBarHeight(score: number): number {
+    const distribution = this.ratingDistribution();
+    const count = distribution.find(item => item.score === score)?.count ?? 0;
+    const largest = Math.max(...distribution.map(item => item.count), 0);
+    return largest ? Math.max(2, count / largest * 56) : 2;
+  }
+
+  protected ratingCount(score: number): number {
+    return this.ratingDistribution().find(item => item.score === score)?.count ?? 0;
+  }
+
   protected reviewComment(event: Event): void {
     this.reviewText.set((event.target as HTMLTextAreaElement).value);
   }
@@ -187,43 +268,199 @@ export class EpisodeComponent implements OnDestroy {
   }
 
   protected openRating(): void {
-    this.selectedRating.set(this.page()?.viewerState.myRating ?? 0);
-    this.reviewText.set(this.page()?.viewerState.myReview ?? '');
-    this.ratingOpen.set(true);
+    this.openWatchDialog(this.alreadyWatched() ? 'edit' : 'new');
   }
 
-  protected saveRating(): void {
+  protected openWatchDialog(mode: EpisodeWatchMode): void {
     const page = this.page();
-    if (!page || !this.selectedRating() || this.busy()) return;
+    if (!page) return;
+    this.watchMode.set(mode);
+    this.watchDate.set(mode === 'edit' ? page.viewerState.lastWatchedDate ?? this.localDate(new Date()) : this.localDate(new Date()));
+    this.selectedRating.set(mode === 'edit' ? page.viewerState.myRating ?? 0 : 0);
+    this.reviewText.set(mode === 'edit' ? page.viewerState.myReview ?? '' : '');
+    this.dialog.set('watch');
+  }
+
+  protected closeDialog(): void {
+    this.dialog.set(null);
+    this.videoPlaying.set(false);
+  }
+
+  protected saveWatch(): void {
+    const page = this.page();
+    const watchedDate = this.watchDate();
+    if (!page || this.busy() || !watchedDate || watchedDate > this.localDate(new Date())) return;
     this.busy.set(true);
-    const diaryEntryId = page.viewerState.latestDiaryEntryId;
-    // Omitting watchedDate from PATCH preserves the original event date on the server.
-    const request = diaryEntryId
-      ? this.api.updateDiaryEntry(diaryEntryId, { score: this.selectedRating(), comment: this.reviewText().trim() })
+    const diaryEntryId = this.watchMode() === 'edit' ? page.viewerState.latestDiaryEntryId : null;
+    const changes = {
+      watchedDate,
+      score: this.selectedRating() || null,
+      comment: this.reviewText().trim() || null,
+    };
+    const request = this.watchMode() === 'edit' && diaryEntryId
+      ? this.api.updateDiaryEntry(diaryEntryId, changes)
       : this.api.createSeriesDiaryEntry({
-          content: { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber: this.seasonNumber(), episodeNumber: this.episodeNumber(), runtimeMinutes: page.details.runtimeMinutes ?? undefined },
-          score: this.selectedRating(),
-          comment: this.reviewText().trim() || null,
-          watchedDate: new Date().toISOString().slice(0, 10),
+          ...changes,
+          content: { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber: this.seasonNumber(), episodeNumber: this.episodeNumber() },
         });
     request.subscribe({
-      next: () => { this.ratingOpen.set(false); this.busy.set(false); this.showToast('Avaliação salva.'); this.reload(); },
+      next: () => { this.closeDialog(); this.busy.set(false); this.showToast(this.selectedRating() ? 'Registro salvo no diário.' : 'Episódio registrado no diário.'); this.reload(); },
       error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
     });
   }
 
   protected markWatched(): void {
-    const page = this.page();
-    if (!page || this.busy()) return;
+    this.openWatchDialog(this.alreadyWatched() ? 'again' : 'new');
+  }
+
+  protected toggleDetails(): void {
+    this.detailsExpanded.update(expanded => !expanded);
+  }
+
+  protected openWatchedOptions(event: Event): void {
+    const row = (event.currentTarget as HTMLElement | null)?.closest('.movie-action-primary-row');
+    const menu = row?.querySelector<HTMLDetailsElement>('.episode-more-actions');
+    if (menu) menu.open = !menu.open;
+  }
+
+  protected removeFromDiary(): void {
+    const entryId = this.page()?.viewerState.latestDiaryEntryId;
+    if (!entryId || this.busy()) return;
     this.busy.set(true);
-    this.api.createSeriesDiaryEntry({
-      content: { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber: this.seasonNumber(), episodeNumber: this.episodeNumber(), runtimeMinutes: page.details.runtimeMinutes ?? undefined },
-      watchedDate: new Date().toISOString().slice(0, 10),
-      isRewatch: this.alreadyWatched(),
-    }).subscribe({
-      next: () => { this.busy.set(false); this.showToast(this.alreadyWatched() ? 'Reassistida.' : 'Episódio marcado como assistido.'); this.reload(); },
+    this.api.deleteDiaryEntry(entryId).subscribe({
+      next: () => { this.busy.set(false); this.closeDialog(); this.showToast('Episódio removido do diário.'); this.reload(); },
       error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
     });
+  }
+
+  protected openVideos(): void {
+    this.selectedVideoKey.set(this.page()?.details.videos[0]?.key ?? null);
+    this.videoPlaying.set(false);
+    this.dialog.set('videos');
+  }
+
+  protected selectVideo(video: MovieVideo): void {
+    this.videoPlaying.set(false);
+    this.selectedVideoKey.set(video.key);
+  }
+
+  protected playVideo(): void {
+    if (this.videoEmbedUrl()) this.videoPlaying.set(true);
+  }
+
+  protected videoThumbnail(video: MovieVideo): string | null {
+    return this.isYoutubeVideo(video) ? `https://i.ytimg.com/vi/${video.key}/hqdefault.jpg` : null;
+  }
+
+  protected videoPlatform(video: MovieVideo): string {
+    return getVideoPlatformLabel(video);
+  }
+
+  protected loadUserLists(pageNumber = 1): void {
+    const userId = this.session.user()?.id;
+    const contentId = this.page()?.details.contentId;
+    if (!userId || !contentId) return;
+    this.userListsStatus.set('loading');
+    this.userListsError.set('');
+    this.communityRequests.add(this.api.getUserLists(userId, contentId, pageNumber).subscribe({
+      next: response => {
+        this.userListsPage.set(response);
+        this.userLists.update(current => pageNumber === 1 ? response.content : [...current, ...response.content]);
+        this.userListsStatus.set('ready');
+      },
+      error: error => { this.userListsStatus.set('error'); this.userListsError.set(this.errorText(error)); },
+    }));
+  }
+
+  protected openLists(): void {
+    this.dialog.set('lists');
+    this.loadUserLists();
+  }
+
+  protected canAddEpisodeToList(list: UserListSummary): boolean {
+    return list.itemScope === null || list.itemScope === 'EPISODE' || list.itemScope === 'MIXED';
+  }
+
+  protected toggleEpisodeInList(list: UserListSummary): void {
+    const page = this.page();
+    if (!page || this.busy() || (list.containsContent !== true && !this.canAddEpisodeToList(list))) return;
+    this.busy.set(true);
+    const request = list.containsContent === true
+      ? this.findEpisodeItemInList(list.id, page.details.contentId, 1).pipe(
+          switchMap(itemId => itemId
+            ? this.api.removeListItem(list.id, itemId)
+            : throwError(() => new Error('Não foi possível encontrar o episódio na lista.'))),
+        )
+      : this.api.addEpisodeToList(list.id, this.tmdbId(), this.seasonNumber(), this.episodeNumber());
+    request.subscribe({
+      next: () => {
+        const containsContent = list.containsContent !== true;
+        const update = (item: UserListSummary): UserListSummary => item.id === list.id
+          ? { ...item, containsContent, ...(item.itemsCount === undefined ? {} : { itemsCount: Math.max(0, item.itemsCount + (containsContent ? 1 : -1)) }) }
+          : item;
+        this.userLists.update(items => items.map(update));
+        this.userListsPage.update(current => current ? { ...current, content: current.content.map(update) } : current);
+        this.page.update(current => {
+          if (!current) return current;
+          const lists = current.viewerState.lists.filter(item => item.listId !== list.id);
+          if (containsContent) lists.push({ listId: list.id, name: list.name, visibility: list.visibility });
+          return { ...current, viewerState: { ...current.viewerState, lists } };
+        });
+        this.busy.set(false);
+        this.showToast(containsContent ? 'Episódio adicionado à lista.' : 'Episódio removido da lista.');
+      },
+      error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
+    });
+  }
+
+  protected loadMoreLists(): void {
+    const current = this.userListsPage();
+    if (current?.hasNext) this.loadUserLists(current.page + 1);
+  }
+
+  protected changeReviewSort(sort: 'POPULAR' | 'RECENT' | 'FOLLOWING'): void {
+    if (sort === this.reviewSort()) return;
+    this.reviewSort.set(sort);
+    this.reviews.set([]);
+    this.reviewPage.set(null);
+    const contentId = this.page()?.details.contentId;
+    if (!contentId) return;
+    this.reviewsLoading.set(true);
+    this.communityRequests.add(this.api.getReviews(contentId, 1, sort).subscribe({
+      next: response => { this.reviewPage.set(response); this.reviews.set(response.content); this.reviewsLoading.set(false); },
+      error: error => { this.reviewsLoading.set(false); this.reviewsError.set(this.errorText(error)); },
+    }));
+  }
+
+  protected setPeopleTab(tab: 'cast' | 'guests' | 'crew'): void {
+    this.peopleTab.set(tab);
+  }
+
+  protected peopleTabKeydown(event: KeyboardEvent): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const tabs = ['cast', 'guests', 'crew'] as const;
+    const currentIndex = tabs.indexOf(this.peopleTab());
+    const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : Math.max(0, Math.min(tabs.length - 1, currentIndex + (event.key === 'ArrowRight' ? 1 : -1)));
+    this.setPeopleTab(tabs[nextIndex]);
+  }
+
+  protected selectRating(score: number): void {
+    this.selectedRating.set(this.selectedRating() === score ? 0 : score);
+  }
+
+  protected dateDraft(event: Event): void {
+    this.watchDate.set((event.target as HTMLInputElement).value);
+  }
+
+  protected isYoutubeVideo(video: MovieVideo): boolean {
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(video.key)) return false;
+    try {
+      const hostname = new URL(video.url).hostname.toLowerCase();
+      return hostname === 'youtube.com' || hostname === 'www.youtube.com' || hostname === 'youtu.be';
+    } catch {
+      return false;
+    }
   }
 
   protected submitComment(event: SubmitEvent): void {
@@ -254,8 +491,21 @@ export class EpisodeComponent implements OnDestroy {
     });
   }
 
-  protected episodeRoute(episode: SeriesChildCard): string[] {
-    return ['/content/series', episode.seriesTmdbId || this.tmdbId(), 'season', String(episode.seasonNumber ?? 1), 'episode', String(episode.episodeNumber ?? 1)];
+  protected episodeRoute(episode: SeriesChildCard): string[] | null {
+    if (episode.type !== 'EPISODE') return null;
+    return episodeContentRoute({
+      seriesTmdbId: episode.seriesTmdbId || this.tmdbId(),
+      seasonNumber: episode.seasonNumber,
+      episodeNumber: episode.episodeNumber,
+    });
+  }
+
+  protected episodeNavigationState(contentId: string | null | undefined): { contentId: string } | undefined {
+    return episodeContentNavigationState(contentId);
+  }
+
+  protected navigationTitle(episode: SeriesChildCard): string {
+    return episode.title?.trim() || `T${episode.seasonNumber ?? '?'} · E${episode.episodeNumber ?? '?'}`;
   }
 
   protected loadMoreReviews(): void {
@@ -264,7 +514,7 @@ export class EpisodeComponent implements OnDestroy {
     if (!contentId || !current?.hasNext || this.reviewsLoading()) return;
     this.reviewsLoading.set(true);
     this.reviewsError.set('');
-    this.communityRequests.add(this.api.getReviews(contentId, current.page + 1, 'POPULAR').subscribe({
+    this.communityRequests.add(this.api.getReviews(contentId, current.page + 1, this.reviewSort()).subscribe({
       next: response => {
         this.reviewPage.set(response);
         this.reviews.update(items => [...items, ...response.content]);
@@ -299,11 +549,28 @@ export class EpisodeComponent implements OnDestroy {
       .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || a.id.localeCompare(b.id)));
   }
 
+  private findEpisodeItemInList(listId: string, contentId: string, pageNumber: number): Observable<string | null> {
+    return this.api.getListItems(listId, pageNumber, 'EPISODE').pipe(
+      switchMap((response: UserListDetail) => {
+        const item = response.items.find(candidate => candidate.content?.id === contentId);
+        if (item) return of(item.id);
+        return response.itemsHasNext ? this.findEpisodeItemInList(listId, contentId, pageNumber + 1) : of(null);
+      }),
+    );
+  }
+
+  private localDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   protected showToast(message: string): void {
     this.toasts.success(message);
   }
 
-  private load(tmdbId: string, seasonNumber: number, episodeNumber: number): void {
+  private load(tmdbId: string, seasonNumber: number, episodeNumber: number, contentId: string | null = null): void {
     this.request?.unsubscribe();
     this.communityRequests.unsubscribe();
     this.communityRequests = new Subscription();
@@ -318,32 +585,38 @@ export class EpisodeComponent implements OnDestroy {
     this.episodeNumber.set(episodeNumber);
     this.status.set('loading');
     this.page.set(null);
-    this.series.set(null);
+    this.detailsExpanded.set(false);
     this.reviews.set([]);
     this.comments.set([]);
+    this.userLists.set([]);
+    this.userListsPage.set(null);
+    this.userListsStatus.set('loading');
+    this.userListsError.set('');
+    this.dialog.set(null);
+    this.selectedVideoKey.set(null);
+    this.videoPlaying.set(false);
     if (!tmdbId || !Number.isInteger(seasonNumber) || !Number.isInteger(episodeNumber) || seasonNumber < 0 || episodeNumber < 1) {
       this.status.set('error');
       this.actionError.set('Este episódio não foi encontrado.');
       return;
     }
-    this.request = this.api.createEpisodeReference(tmdbId, seasonNumber, episodeNumber).pipe(
-      switchMap((episodeRef) => this.api.createSeriesReference(tmdbId).pipe(
-        switchMap((seriesRef) => forkJoin({
-          episode: this.api.getEpisodePage(episodeRef.id),
-          series: this.api.getSeriesPage(seriesRef.id),
-          reviews: this.api.getReviews(episodeRef.id, 1, 'POPULAR'),
-          comments: this.api.getComments(episodeRef.id, 1),
-        })),
-      )),
+    const reference = contentId
+      ? of({ id: contentId })
+      : this.api.createEpisodeReference(tmdbId, seasonNumber, episodeNumber);
+    this.request = reference.pipe(
+      switchMap((episodeRef) => forkJoin({
+        episode: this.api.getEpisodePage(episodeRef.id),
+        reviews: this.api.getReviews(episodeRef.id, 1, 'POPULAR'),
+        comments: this.api.getComments(episodeRef.id, 1),
+      })),
     ).subscribe({
-      next: ({ episode, series, reviews, comments }) => {
+      next: ({ episode, reviews, comments }) => {
         if (episode.details.type !== 'EPISODE') {
           this.status.set('error');
           this.actionError.set('Este episódio não foi encontrado.');
           return;
         }
         this.page.set(episode);
-        this.series.set(series);
         this.reviews.set(reviews.content);
         this.comments.set(comments.content);
         this.reviewPage.set(reviews);
@@ -358,9 +631,24 @@ export class EpisodeComponent implements OnDestroy {
     });
   }
 
+  private routeContentId(): string | null {
+    const navigationState = this.router.getCurrentNavigation()?.extras.state;
+    const historyState = this.document.defaultView?.history.state as Record<string, unknown> | null;
+    const value = navigationState?.['contentId'] ?? historyState?.['contentId'];
+    return typeof value === 'string' && value.trim() ? value : null;
+  }
+
   private errorText(error: unknown): string {
     if (error instanceof HttpErrorResponse && error.status === 0) return 'Não foi possível conectar ao serviço. Tente novamente.';
     if (error instanceof HttpErrorResponse && error.status === 404) return 'Este episódio não está disponível.';
     return 'Não foi possível carregar esta tela agora. Tente novamente.';
+  }
+
+  private loadStylesheet(): void {
+    const stylesheet = this.renderer.createElement('link') as HTMLLinkElement;
+    this.renderer.setAttribute(stylesheet, 'rel', 'stylesheet');
+    this.renderer.setAttribute(stylesheet, 'href', new URL('styles/movie-content.css', this.document.baseURI).href);
+    this.renderer.appendChild(this.document.head, stylesheet);
+    this.stylesheet = stylesheet;
   }
 }

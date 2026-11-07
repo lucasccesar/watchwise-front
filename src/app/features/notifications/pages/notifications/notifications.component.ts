@@ -13,6 +13,7 @@ import {
   WatchwiseNotificationType,
 } from '../../data-access/notifications-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
@@ -212,12 +213,28 @@ export class NotificationsComponent {
     if (content?.type && content.type !== 'MOVIE') {
       const seriesId = content.seriesTmdbId || content.tmdbId;
       if (seriesId && content.type === 'EPISODE' && content.seasonNumber !== null && content.episodeNumber !== null) {
-        return ['/content/series', seriesId, 'season', String(content.seasonNumber), 'episode', String(content.episodeNumber)];
+        return episodeContentRoute({ seriesTmdbId: seriesId, seasonNumber: content.seasonNumber, episodeNumber: content.episodeNumber });
       }
       if (seriesId) return ['/content/series', seriesId];
     }
     const username = item.latestActor?.username;
     return username ? ['/users', username] : null;
+  }
+
+  protected itemRouteState(item: NotificationView): { contentId: string } | undefined {
+    const card = item.targetPreview?.contentCard ?? item.contentCard;
+    const isEpisodeTarget = card?.type === 'EPISODE' || item.content?.type === 'EPISODE';
+    return isEpisodeTarget ? episodeContentNavigationState(card?.contentId ?? item.content?.id) : undefined;
+  }
+
+  protected episodeRoute(item: NotificationView): string[] | null {
+    const card = item.targetPreview?.contentCard ?? item.contentCard;
+    if (card?.type === 'EPISODE') {
+      const route = episodeContentRoute(card);
+      if (route) return route;
+    }
+    const content = item.content;
+    return content?.type === 'EPISODE' ? episodeContentRoute(content) : null;
   }
 
   protected contentScore(item: NotificationView): number | null {
@@ -325,6 +342,8 @@ export class NotificationsComponent {
       const card = item.targetPreview?.contentCard;
       const contentId = card?.tmdbId || card?.seriesTmdbId;
       if (!card?.type || !contentId) return null;
+      if (card.type === 'EPISODE') return episodeContentRoute(card);
+      if (card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) return ['/content/series', card.seriesTmdbId, 'season', String(card.seasonNumber)];
       return card.type === 'MOVIE'
         ? ['/content/movie', contentId]
         : ['/content/series', card.seriesTmdbId || contentId];

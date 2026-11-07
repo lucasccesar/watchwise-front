@@ -1,0 +1,50 @@
+.ww-confirmation-dialog {
+  width: min(100%, 440px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.ww-confirmation-dialog h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  line-height: var(--line-height-lg);
+}
+
+.ww-confirmation-dialog p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  white-space: pre-line;
+}
+
+.ww-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.ww-confirmation-actions button {
+  flex: 0 0 auto;
+}
+
+.ww-confirmation-actions button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .ww-confirmation-dialog {
+    padding: var(--space-5);
+  }
+
+  .ww-confirmation-actions button {
+    flex: 1 1 auto;
+  }
+}

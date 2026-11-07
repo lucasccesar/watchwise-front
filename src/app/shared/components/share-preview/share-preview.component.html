@@ -6,7 +6,6 @@
           <h2 id="share-dialog-title">{{ listCopy.title }}</h2>
           <p>{{ listCopy.instructions }}</p>
         </div>
-        <button class="share-list-close" type="button" [attr.aria-label]="listCopy.close" (click)="close()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
       </header>
 
       <div class="list-share-layout">
@@ -117,7 +116,7 @@
         </aside>
       </div>
     } @else {
-      <header><div><span>{{ kindLabel() }}</span><h2 id="share-dialog-title">Prévia para compartilhar</h2></div><button type="button" aria-label="Fechar" (click)="close()">×</button></header>
+      <header><div><span>{{ kindLabel() }}</span><h2 id="share-dialog-title">Prévia para compartilhar</h2></div></header>
       <article class="share-card" [class.share-card--profile]="model().kind === 'profile'" [class.share-card--episode]="model().kind === 'episode'" [class.share-card--map]="model().kind === 'ratings-map'" [style.background-image]="model().backgroundUrl ? 'linear-gradient(180deg,rgba(12,13,17,.5),rgba(12,13,17,.94)),url(' + model().backgroundUrl + ')' : null">
         @if (model().kind === 'profile') {
           <div class="share-card-user share-card-user--profile"><span class="share-card-avatar">@if (model().avatarUrl) { <img [src]="model().avatarUrl" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span></div>

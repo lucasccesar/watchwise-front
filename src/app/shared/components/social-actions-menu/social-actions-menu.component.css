@@ -22,14 +22,11 @@
 .ww-social-actions-backdrop--report { display: flex; align-items: flex-start; justify-content: center; padding-block: 7vh; }
 .ww-social-report-dialog { width: min(600px, 100%); flex: 0 0 auto; padding: var(--space-5); border: 1px solid var(--dialog-border); border-radius: var(--dialog-radius); background: var(--dialog-surface); box-shadow: var(--dialog-shadow); }
 .ww-social-report-dialog form { display: flex; flex-direction: column; gap: var(--space-4); }
-.ww-social-report-header { display: grid; grid-template-columns: 40px minmax(0, 1fr) 32px; align-items: start; gap: var(--space-3); }
+.ww-social-report-header { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; gap: var(--space-3); }
 .ww-social-report-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: var(--color-error-soft); color: var(--color-error); }
 .ww-social-report-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .ww-social-report-header h2 { margin: 0; color: var(--color-text); font-size: var(--font-size-lg); line-height: var(--line-height-lg); }
 .ww-social-report-header p { margin: var(--space-1) 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
-.ww-social-report-close { display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
-.ww-social-report-close:hover { background: var(--color-secondary); color: var(--color-text); }
-.ww-social-report-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.8; }
 .ww-social-report-evidence { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
 .ww-social-report-evidence span { display: block; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .ww-social-report-evidence p { margin: var(--space-1) 0 0; color: var(--color-text); font-size: var(--font-size-sm); line-height: var(--line-height-sm); overflow-wrap: anywhere; white-space: pre-wrap; }
@@ -52,6 +49,6 @@
 @media (max-width: 600px) {
   .ww-social-actions-dropdown { min-width: min(220px, calc(100vw - 32px)); }
   .ww-social-report-dialog { padding: var(--space-4); }
-  .ww-social-report-header { grid-template-columns: 36px minmax(0, 1fr) 28px; gap: var(--space-2); }
+  .ww-social-report-header { grid-template-columns: 36px minmax(0, 1fr); gap: var(--space-2); }
   .ww-social-report-icon { width: 36px; height: 36px; }
 }

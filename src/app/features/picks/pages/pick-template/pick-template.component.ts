@@ -12,6 +12,7 @@ import { buildCommentTree } from '../../../../shared/components/comment-item/com
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type PickTemplateStatus = 'loading' | 'ready' | 'error';
 type CommunitySort = 'RECENT' | 'POPULAR';
@@ -108,6 +109,20 @@ export class PickTemplateComponent {
   }
   protected optionRatingLabel(option: PicksOptionView): string { const value = this.optionRating(option); if (!value) return ''; const card = option.preview?.contentCard; const source = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).source; return `${source === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage}: ${value}`; }
   protected optionLabel(option: PicksOptionView): string { return option.preview?.contentCard?.title || option.preview?.person?.name || this.copy.optionUnavailable; }
+  protected optionRoute(option: PicksOptionView): string[] | null {
+    const card = option.preview?.contentCard;
+    const reference = option.target.content ?? option.target.contextContent;
+    if (card?.type === 'MOVIE' && card.tmdbId) return ['/content/movie', card.tmdbId];
+    if (card?.type === 'SERIES' && card.tmdbId) return ['/content/series', card.tmdbId];
+    if (card?.type === 'EPISODE') return episodeContentRoute(card);
+    if (card?.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) return ['/content/series', card.seriesTmdbId, 'season', String(card.seasonNumber)];
+    if (reference?.type === 'EPISODE') return episodeContentRoute(reference);
+    return null;
+  }
+  protected optionNavigationState(option: PicksOptionView): { contentId: string } | undefined {
+    const card = option.preview?.contentCard;
+    return card?.type === 'EPISODE' ? episodeContentNavigationState(card.contentId) : undefined;
+  }
   protected optionMenuKey(option: PicksOptionView): string { return `${this.templateId}:${option.id}`; }
   protected optionMenuKeyFor(option: PicksOptionView): string { return this.activeOptionMenu() === this.optionMenuKey(option) ? this.optionMenuKey(option) : ''; }
   protected readonly activeOptionMenu = signal('');
@@ -116,8 +131,10 @@ export class PickTemplateComponent {
     this.activeOptionMenu.set('');
     if (selection.action.id !== 'open-option') return;
     const card = option.preview.contentCard;
-    if (card?.tmdbId && card.type === 'MOVIE') void this.router.navigate(['/content/movie', card.tmdbId]);
-    else if (card?.tmdbId && card.type === 'SERIES') void this.router.navigate(['/content/series', card.tmdbId]);
+    const route = this.optionRoute(option);
+    if (!route) return;
+    if (card?.type === 'EPISODE') void this.router.navigate(route, { state: episodeContentNavigationState(card.contentId) });
+    else void this.router.navigate(route);
   }
   protected submitComment(event: Event): void {
     event.preventDefault(); const text = this.commentText().trim();

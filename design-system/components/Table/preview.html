@@ -1,0 +1,29 @@
+<!-- @dsCard group="Data" height=220 subtitle="Sortable header, badge, rating" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  table { border-collapse:collapse; width:100%; max-width:420px; border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; font-size:13px; }
+  th { text-align:left; background:var(--surface-secondary); padding:10px 12px; font-weight:600; }
+  td { padding:10px 12px; border-top:1px solid var(--border); }
+  tr.hover td { background:var(--surface-secondary); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:var(--radius-full); background:var(--surface-secondary); font-size:11px; font-weight:600; }
+  .stars { color:var(--accent); }
+  .sub { color:var(--tertiary); font-size:11px; }
+</style>
+</head>
+<body>
+<table>
+  <thead><tr><th>Title ▾</th><th>Status</th><th>Rating</th></tr></thead>
+  <tbody>
+    <tr><td>Dune: Part Two<div class="sub">Movie · 2024</div></td><td><span class="badge">Completed</span></td><td class="stars">★★★★☆</td></tr>
+    <tr class="hover"><td>The Bear<div class="sub">TV Show · S3</div></td><td><span class="badge">Watching</span></td><td class="stars">★★★★★</td></tr>
+  </tbody>
+</table>
+<script>/* static preview */</script>
+</body>
+</html>

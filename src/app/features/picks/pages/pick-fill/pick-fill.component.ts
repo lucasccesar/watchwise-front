@@ -14,6 +14,7 @@ import { ToastNotificationsService } from '../../../../shared/components/toast-n
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
+import { episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 type PickAnswerState = { target: PickCreationSelection['target']; label: string; image: string | null; subtitle: string | null; option?: PicksOptionView };
@@ -216,6 +217,10 @@ export class PickFillComponent implements OnDestroy {
     const content = target.content ?? target.contextContent;
     if (content?.tmdbId && content.type === 'MOVIE') void this.router.navigate(['/content/movie', content.tmdbId]);
     else if (content?.tmdbId && content.type === 'SERIES') void this.router.navigate(['/content/series', content.tmdbId]);
+    else if (content?.type === 'EPISODE') {
+      const route = episodeContentRoute(content);
+      if (route) void this.router.navigate(route);
+    }
   }
   private loadOptionViews(template: PicksTemplateDetail): void {
     const categories = template.categories.filter((category) => category.optionMode === 'FIXED' && category.options.length > 0);

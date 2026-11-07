@@ -7,7 +7,6 @@ import {
   OnDestroy,
   OnInit,
   QueryList,
-  ViewChild,
   ViewChildren,
   computed,
   inject,
@@ -22,6 +21,7 @@ import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { episodeContentNavigationState } from '../../../../shared/utils/episode-content-route';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
@@ -170,13 +170,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChildren('genreItemLabel')
   private genreItemLabels!: QueryList<ElementRef<HTMLElement>>;
-
-  @ViewChild('dialogCloseButton')
-  protected set dialogCloseButton(button: ElementRef<HTMLButtonElement> | undefined) {
-    if (button && (this.watchLogTarget() || this.ratingTarget())) {
-      button.nativeElement.focus();
-    }
-  }
 
   constructor(
     private readonly api: HomeApiService,
@@ -329,6 +322,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       seasonNumber: episode.maxSeasonNumber,
       episodeNumber: episode.maxEpisodeNumber,
     });
+  }
+
+  protected episodeNavigationState(contentId: string | null | undefined): { contentId: string } | undefined {
+    return episodeContentNavigationState(contentId);
   }
 
   protected handleUpcomingContentAction(

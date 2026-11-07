@@ -363,6 +363,10 @@
   margin: 0;
 }
 
+.diary-pagination--bottom {
+  margin-top: var(--space-6);
+}
+
 .diary-pagination button {
   display: grid;
   width: 36px;

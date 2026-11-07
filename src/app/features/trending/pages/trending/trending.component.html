@@ -290,9 +290,6 @@
             <h2 id="tr-watch-dialog-title">{{ card.viewerState?.watchStatus === 'WATCHED' ? copy.watchAgain : footerCopy.markWatched }}</h2>
             <span>{{ cardTitle(card) }}<span aria-hidden="true"> · </span>{{ card.type === 'MOVIE' ? footerCopy.movie : footerCopy.series }}</span>
           </div>
-          <button class="watch-log-close" type="button" [attr.aria-label]="footerCopy.closeDialog" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
         </header>
 
         <div class="watch-log-controls">

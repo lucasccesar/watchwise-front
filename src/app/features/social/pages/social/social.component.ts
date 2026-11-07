@@ -16,6 +16,7 @@ import { CommentItemComponent } from '../../../../shared/components/comment-item
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { episodeContentNavigationState } from '../../../../shared/utils/episode-content-route';
 
 interface ActivityGroup {
   key: string;
@@ -860,6 +861,12 @@ export class SocialComponent implements OnInit, OnDestroy {
     if (activity.eventType === 'DAILY_GAME_RESULT') return ['/games'];
     if (activity.eventType === 'TOP5_UPDATE' && activity.user.username) return ['/users', activity.user.username];
     return null;
+  }
+
+  protected activityNavigationState(activity: FeedActivity): { contentId: string } | undefined {
+    return activity.content?.type === 'EPISODE'
+      ? episodeContentNavigationState(activity.content.id)
+      : undefined;
   }
 
   private resetReportDialog(): void {

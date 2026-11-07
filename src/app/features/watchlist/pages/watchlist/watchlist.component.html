@@ -199,9 +199,6 @@
             <h2 id="watchlist-watch-dialog-title">{{ item.card.viewerState?.watchStatus === 'WATCHED' ? trendingCopy.watchAgain : homeCopy.markWatched }}</h2>
             <span>{{ title(item) }}<span aria-hidden="true"> · </span>{{ item.card.type === 'MOVIE' ? homeCopy.movie : homeCopy.series }}</span>
           </div>
-          <button class="watchlist-watch-log-close" type="button" [attr.aria-label]="homeCopy.closeDialog" [disabled]="watchDialogSaving()" (click)="closeWatchedDialog()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
         </header>
 
         <div class="watchlist-watch-log-controls">

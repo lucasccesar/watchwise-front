@@ -1,0 +1,42 @@
+<!-- @dsCard group="Form" height=240 subtitle="Text field — default, focus, error" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inputs — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .field { margin-bottom:var(--space-5); max-width:280px; }
+  label { display:block; font-size:14px; font-weight:600; margin-bottom:6px; }
+  input { width:100%; box-sizing:border-box; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 12px; font-size:14px; font-family:var(--font-sans); }
+  input.focus { border-color:var(--primary); outline:2px solid var(--primary); outline-offset:0; }
+  input.error { border-color:var(--error); }
+  input:disabled { background:var(--surface-secondary); color:var(--tertiary); }
+  .hint { font-size:12px; color:var(--tertiary); margin-top:6px; }
+  .hint.error { color:var(--error); }
+  ::placeholder { color:var(--tertiary); }
+</style>
+</head>
+<body>
+<div class="field">
+  <label>Movie title</label>
+  <input placeholder="Search title…" />
+  <p class="hint">Enter at least 2 characters.</p>
+</div>
+<div class="field">
+  <label>Focused</label>
+  <input class="focus" value="Dune: Part Two" />
+</div>
+<div class="field">
+  <label>Rating (0–10)</label>
+  <input class="error" value="15" />
+  <p class="hint error">Rating must be between 0 and 10.</p>
+</div>
+<div class="field">
+  <label>Disabled</label>
+  <input disabled value="Locked" />
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

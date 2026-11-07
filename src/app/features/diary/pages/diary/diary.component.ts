@@ -23,11 +23,13 @@ import {
   ContentImageActionsComponent,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { filterDiaryEntries, localDiaryDay, type DiaryFilters, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 
@@ -220,6 +222,7 @@ export class DiaryComponent implements OnDestroy {
   private readonly contentApi = inject(ContentApiService);
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastNotificationsService);
+  private readonly confirmation = inject(ConfirmationDialogService);
   private request?: Subscription;
   private viewRequest?: Subscription;
   private actionRequests = new Subscription();
@@ -678,6 +681,7 @@ export class DiaryComponent implements OnDestroy {
 
   protected contentRoute(entry: HomeRecentlyWatched): string[] | null {
     const type = entry.content.type?.toUpperCase();
+    if (type === 'EPISODE') return episodeContentRoute(entry.content);
     if (this.isReviewsPage) {
       const reviewEntry = entry as DiaryGridEntry;
       if (reviewEntry.reviewSource === 'CONTENT_REVIEW') {
@@ -698,6 +702,10 @@ export class DiaryComponent implements OnDestroy {
       return ['/content/series', entry.content.seriesTmdbId, 'season', String(entry.content.seasonNumber), 'episode', String(entry.content.episodeNumber)];
     }
     return null;
+  }
+
+  protected episodeNavigationState(type: string | null | undefined, contentId: string | null | undefined): { contentId: string } | undefined {
+    return type === 'EPISODE' ? episodeContentNavigationState(contentId) : undefined;
   }
 
   protected imageRating(entry: HomeRecentlyWatched): string | null {
@@ -830,10 +838,15 @@ export class DiaryComponent implements OnDestroy {
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   }
 
-  private removeHistory(entry: DiaryTimelineEntry): void {
+  private async removeHistory(entry: DiaryTimelineEntry): Promise<void> {
     if (this.diaryActionPending()) return;
     const records = this.actionRecords(entry).filter(record => record.reviewSource === 'DIARY');
-    if (!records.length || !window.confirm(this.copy.removeHistoryConfirm.replace('{count}', String(records.length)))) return;
+    if (!records.length) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: this.copy.removeHistoryConfirm.replace('{count}', String(records.length)),
+      confirmLabel: this.copy.removeHistoryAction,
+    });
+    if (!confirmed || this.diaryActionPending()) return;
     this.diaryActionPending.set(true);
     this.actionRequests.add(forkJoin(records.map(record => this.contentApi.deleteDiaryEntry(record.id))).subscribe({
       next: () => {

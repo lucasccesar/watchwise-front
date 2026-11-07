@@ -54,7 +54,6 @@
 
 .movie-page.series-page.season-page .season-switcher {
   min-width: 0;
-  margin-bottom: var(--space-4);
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -109,6 +108,31 @@
   outline-offset: 2px;
 }
 
+.movie-page.series-page.season-page .season-title-block .season-series-title {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: var(--line-height-lg);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movie-page.series-page.season-page .season-title-block {
+  gap: 0;
+}
+
+.movie-page.series-page.season-page .season-title-block > .movie-head-stats {
+  margin-top: var(--space-4);
+}
+
+.movie-page.series-page.season-page .season-title-block .season-series-title:hover {
+  color: var(--color-text);
+}
+
 .movie-page.series-page.season-page #season-cast .series-cast-heading {
   justify-content: flex-start;
   gap: 0;
@@ -156,24 +180,64 @@
 }
 
 .movie-page.series-page.season-page #season-cast .movie-people-scroll {
-  padding-bottom: 22px;
+  padding-bottom: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.movie-page.series-page.season-page #season-cast .movie-people-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.movie-page.series-page.season-page #season-cast .movie-people-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--color-border);
 }
 
 .movie-page.series-page.season-page #season-cast {
-  background: var(--color-surface);
-}
-
-.movie-page.series-page.season-page #season-seasons {
   background: var(--color-surface-secondary);
 }
 
-.movie-page.series-page.season-page #season-episodes,
+.movie-page.series-page.season-page #season-seasons {
+  background: var(--color-surface);
+}
+
+.movie-page.series-page.season-page #season-episodes {
+  background: var(--color-surface-secondary);
+}
+
 .movie-page.series-page.season-page #season-reviews {
   background: var(--color-surface);
 }
 
 .movie-page.series-page.season-page #season-comments {
   background: var(--color-surface-secondary);
+}
+
+.movie-page.series-page.season-page #season-following-title {
+  font-size: 18px;
+}
+
+.movie-page.series-page.season-page .season-season-scroll {
+  align-content: start;
+  align-items: start;
+  grid-auto-flow: row;
+  grid-auto-rows: max-content;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.movie-page.series-page.season-page .series-season-card {
+  position: relative;
+  top: 0;
+  align-self: start;
+  margin: 0;
+  transform: none;
+}
+
+.movie-page.series-page.season-page .series-season-poster {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
 }
 
 .movie-page.series-page.season-page .season-episode-grid {
@@ -205,8 +269,10 @@
 }
 
 .movie-page.series-page.season-page .season-episode-card .series-episode-image {
+  z-index: 10;
   width: 100%;
   aspect-ratio: 16 / 9;
+  overflow: visible;
   border-radius: var(--radius-md);
 }
 
@@ -229,13 +295,21 @@
 
 .movie-page.series-page.season-page .season-episode-card .series-episode-heading strong {
   min-width: 0;
+  font-size: 18px;
 }
 
 .movie-page.series-page.season-page .season-episode-card .series-episode-heading > span {
   flex: 0 0 auto;
   color: var(--color-tertiary);
   font-size: var(--font-size-sm);
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.movie-page.series-page.season-page .season-episode-card .series-episode-heading a,
+.movie-page.series-page.season-page .season-episode-card .series-episode-heading a:hover {
+  color: var(--color-text);
+  text-decoration: none;
 }
 
 .movie-page.series-page.season-page .season-episode-card .series-episode-meta {
@@ -245,6 +319,13 @@
   color: var(--color-tertiary);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
+}
+
+.movie-page.series-page.season-page .season-episode-card .season-episode-overview {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
 }
 
 .movie-page.series-page.season-page .season-episode-stats {
@@ -290,18 +371,69 @@
 .movie-page.series-page.season-page .season-episode-card .series-content-poster-link {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: block;
+  cursor: pointer;
+}
+
+.movie-page.series-page.season-page .season-episode-card .season-card-menu {
+  z-index: 20;
+}
+
+.movie-page.series-page.season-page .season-episode-card:hover,
+.movie-page.series-page.season-page .season-episode-card:focus-within {
+  position: relative;
+  z-index: 20;
+}
+
+.movie-page.series-page.season-page .season-actions-column .movie-action-watch-row {
+  padding: 0;
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--has-menu {
+  padding-right: 44px;
+}
+
+.movie-page.series-page.season-page .season-actions-column .movie-action-primary-row.series-action-primary-row--has-menu details.movie-mobile-more-actions.season-watched-actions--complete {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--color-primary);
+}
+
+.movie-page.series-page.season-page .season-actions-column .season-watched-actions--complete > summary[data-ww-ellipsis-trigger] {
+  border-radius: inherit !important;
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial:not(.series-action-watch-row--has-menu) {
+  padding: 0;
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial:not(.series-action-watch-row--has-menu) .series-action-mark-watched {
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial.series-action-watch-row--has-menu {
+  padding: 0 44px 0 0;
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial.series-action-watch-row--has-menu .series-action-mark-watched {
+  width: auto;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
 .movie-page.series-page.season-page .season-episode-card .series-episode-image > app-content-image-actions {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 12;
   pointer-events: none;
 }
 
-.movie-page.series-page.season-page .season-episode-card .series-card-more-trigger,
-.movie-page.series-page.season-page .season-episode-card .movie-mobile-more-menu {
+.movie-page.series-page.season-page .season-episode-card .season-card-menu {
+  pointer-events: none;
+}
+
+.movie-page.series-page.season-page .season-episode-card .season-episode-rating-trigger {
+  z-index: 14;
   pointer-events: auto;
 }
 
@@ -318,20 +450,34 @@
 
 .movie-page.series-page.season-page .season-card-link {
   display: block;
+  min-width: 0;
+  margin: 0;
+  transform: none;
   color: inherit;
   text-decoration: none;
 }
 
 .movie-page.series-page.season-page .season-card-current {
-  border: 2px solid var(--color-primary);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: 0;
   box-sizing: border-box;
   outline: 0;
 }
 
-.movie-page.series-page.season-page .season-card-current .series-season-poster,
+.movie-page.series-page.season-page .season-card-current .series-season-poster {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: 0;
+}
+
 .movie-page.series-page.season-page .season-card-current .series-season-poster img {
-  border-radius: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--radius-md) - 2px);
 }
 
 .movie-page.series-page.season-page .season-card-current .series-season-details > strong {
@@ -347,8 +493,33 @@
   align-items: center;
   gap: var(--space-2);
   color: var(--color-tertiary);
-  font-size: var(--font-size-md);
+  font-size: 14px;
   font-weight: 600;
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial {
+  box-sizing: border-box;
+  height: 66px;
+  min-height: 66px;
+  padding: 0 44px 0 0;
+}
+
+.movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial .series-action-mark-watched {
+  height: 64px;
+  min-height: 64px;
+}
+
+@media (max-width: 800px) {
+  .movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial {
+    height: 78px;
+    min-height: 78px;
+    padding: var(--space-2) 44px var(--space-2) var(--space-2);
+  }
+
+  .movie-page.series-page.season-page .season-actions-column .series-action-watch-row--partial .series-action-mark-watched {
+    height: 60px;
+    min-height: 60px;
+  }
 }
 
 .movie-page.series-page.season-page .season-unrated svg {
@@ -360,46 +531,23 @@
   background: var(--color-surface-secondary);
 }
 
-.movie-page.series-page.season-page .season-rating-options {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.movie-page.series-page.season-page .season-rating-options button {
-  min-width: 0;
-  min-height: 64px;
-  padding: var(--space-2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+.movie-page.series-page.season-page #season-episodes-title > span {
   color: var(--color-tertiary);
-  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
 }
 
-.movie-page.series-page.season-page .season-rating-options button svg {
-  width: 20px;
-  height: 20px;
-  color: var(--color-accent);
-}
-
-.movie-page.series-page.season-page .season-rating-options button small {
+.movie-page.series-page.season-page #season-cast .movie-person-card > div span,
+.movie-page.series-page.season-page #season-cast .movie-person-card > div small {
+  color: var(--color-tertiary);
   font-size: var(--font-size-xs);
+  font-weight: 400;
+  line-height: var(--line-height-xs);
 }
 
-.movie-page.series-page.season-page .season-rating-options button.series-rating-selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-text);
-}
-
-.movie-page.series-page.season-page .season-rating-options button.series-rating-selected svg {
-  color: var(--color-text);
+.movie-page.series-page.season-page .season-episode-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .movie-page.series-page.season-page .season-overview .movie-following {
@@ -432,6 +580,10 @@
 @media (max-width: 800px) {
   .movie-page.series-page.season-page .season-overview {
     padding-bottom: var(--space-6);
+  }
+
+  .movie-page.series-page.season-page .season-title-block > .movie-head-stats {
+    margin-top: var(--space-2);
   }
 
   .movie-page.series-page.season-page .season-switcher {
@@ -477,14 +629,6 @@
   .movie-page.series-page.season-page .season-episode-stats {
     gap: var(--space-2) var(--space-3);
     font-size: var(--font-size-xs);
-  }
-
-  .movie-page.series-page.season-page .season-rating-options {
-    gap: var(--space-1);
-  }
-
-  .movie-page.series-page.season-page .season-rating-options button {
-    min-height: 58px;
   }
 
   .movie-page.series-page.season-page .season-breadcrumb {

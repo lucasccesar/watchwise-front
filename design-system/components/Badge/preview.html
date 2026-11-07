@@ -1,0 +1,30 @@
+<!-- @dsCard group="Feedback" height=120 subtitle="Neutral, accent, error, success, warning" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Badge — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .row { display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap; }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:var(--radius-full); font-size:12px; font-weight:600; background:var(--surface-secondary); color:var(--text); }
+  .badge.accent { background:transparent; border:1px solid var(--accent); color:var(--accent); }
+  .badge.error { background:var(--error-soft); color:var(--error); }
+  .badge.success { background:var(--success-soft); color:var(--success); }
+  .badge.warning { background:var(--warning-soft); color:var(--warning); }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--text); }
+</style>
+</head>
+<body>
+<div class="row">
+  <span class="badge">Watching</span>
+  <span class="badge"><span class="dot"></span> Completed</span>
+  <span class="badge accent">New episode</span>
+  <span class="badge error">Dropped</span>
+  <span class="badge success">Synced</span>
+  <span class="badge warning">Pending</span>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

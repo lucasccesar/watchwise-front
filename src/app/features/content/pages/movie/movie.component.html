@@ -166,14 +166,12 @@
             }
           </dl>
 
+          @if (moviePage.details.overview?.trim()) {
           <section class="movie-synopsis-section" aria-labelledby="movie-synopsis-title">
             <h2 id="movie-synopsis-title" class="movie-desktop-synopsis-title">{{ copy.synopsis }}</h2>
             <h2 class="movie-mobile-details-title">{{ copy.details }}</h2>
-            @if (!moviePage.details.overview) {
-              <p class="movie-partial-note" role="status">{{ copy.partialData }}</p>
-            }
             <p class="movie-synopsis-copy" [class.movie-synopsis-copy--collapsed]="!detailsExpanded()">
-              {{ moviePage.details.overview || copy.synopsisEmpty }}
+              {{ moviePage.details.overview }}
             </p>
             <button class="movie-details-toggle" type="button" [attr.aria-expanded]="detailsExpanded()" (click)="toggleDetails()">
               {{ detailsExpanded() ? copy.hideDetails : copy.showDetails }}
@@ -254,12 +252,14 @@
               </nav>
             }
           </section>
+          }
 
           <section class="movie-following" aria-labelledby="movie-following-title">
             <div class="movie-following-heading">
               <h2 id="movie-following-title">{{ copy.peopleYouFollow }}</h2>
               <span class="movie-following-count">{{ copy.peopleYouFollowCount.replace('{count}', '0') }}</span>
             </div>
+            <p class="series-following-empty ww-empty-message" aria-live="polite">A atividade das pessoas que você segue aparecerá aqui.</p>
           </section>
         </div>
 
@@ -289,10 +289,11 @@
             <div class="movie-action-watch-row">
             <button
               class="movie-action-watch"
+              data-ww-watched-menu-trigger
               type="button"
               [attr.aria-label]="copy.watched + '. ' + copy.yourRating + ': ' + (moviePage.viewerState.myRating ?? copy.noRating)"
               [disabled]="actionPending()"
-              (click)="openWatchDialog(moviePage.viewerState.watchStatus === 'WATCHED' ? 'edit' : 'new', $event)"
+              (click)="openWatchedOptions($event)"
             >
               <span class="movie-watch-check" aria-hidden="true"><app-check-icon /></span>
               <span class="movie-watch-copy">
@@ -313,7 +314,7 @@
                 <button type="button" (click)="openWatchDialog('again', $event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.watchAgain }}</span><small>{{ copy.playsCount.replace('{count}', formatNumber(moviePage.viewerState.playsCount, 0)) }}</small></button>
                 <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
                 <button type="button" (click)="openShareDialog($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button>
-                <app-content-poster-picker [contentId]="moviePage.details.contentId" [tmdbId]="moviePage.details.tmdbId" contentType="MOVIE" [selectedPosterPath]="moviePage.details.customPosterUrl || moviePage.details.posterPath" [label]="copy.changePoster" [selectionLabel]="copy.posterSelectionLabel" [loadingLabel]="copy.loadingPosters" [loadErrorLabel]="copy.postersLoadError" [retryLabel]="copy.retry" [emptyLabel]="copy.noPosters" [saveSuccessLabel]="copy.posterUpdated" [saveErrorLabel]="copy.posterUpdateError" (posterSaved)="applyCustomPoster($event)" />
+                <app-content-poster-picker [contentId]="moviePage.details.contentId" [tmdbId]="moviePage.details.tmdbId || tmdbId()" contentType="MOVIE" [selectedPosterPath]="moviePage.details.customPosterUrl || moviePage.details.posterPath" [label]="copy.changePoster" [selectionLabel]="copy.posterSelectionLabel" [loadingLabel]="copy.loadingPosters" [loadErrorLabel]="copy.postersLoadError" [retryLabel]="copy.retry" [emptyLabel]="copy.noPosters" [saveSuccessLabel]="copy.posterUpdated" [saveErrorLabel]="copy.posterUpdateError" (posterSaved)="applyCustomPoster($event)" />
               </div>
             </details>
           </div>
@@ -434,10 +435,10 @@
       <div class="movie-cast-heading">
         <div class="movie-people-tabs" role="tablist" [attr.aria-label]="copy.castAndCrew" (keydown)="peopleTabKeydown($event)">
           <button id="movie-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'cast'" [attr.tabindex]="peopleTab() === 'cast' ? 0 : -1" (click)="setPeopleTab('cast')">
-            {{ copy.castTab }} <span>{{ formatNumber(moviePage.details.cast.length, 0) }}</span>
+            {{ copy.castTab }} <span>{{ formatNumber(moviePage.details.cast.slice(0, 24).length, 0) }}</span>
           </button>
           <button id="movie-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'crew'" [attr.tabindex]="peopleTab() === 'crew' ? 0 : -1" (click)="setPeopleTab('crew')">
-            {{ copy.crewTab }} <span>{{ formatNumber(moviePage.details.crew.length, 0) }}</span>
+            {{ copy.crewTab }} <span>{{ formatNumber(moviePage.details.crew.slice(0, 24).length, 0) }}</span>
           </button>
         </div>
       </div>
@@ -663,7 +664,6 @@
             <p class="movie-videos-subtitle">{{ videoPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(videoPage.details.videos.length, 0)) }}</p>
           }
           </div>
-          <button class="movie-icon-button" type="button" [attr.aria-label]="copy.closeDialog" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
         </header>
 
         @if (currentDialog === 'watch') {

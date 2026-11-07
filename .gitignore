@@ -44,11 +44,11 @@ __screenshots__/
 Thumbs.db
 /* References kept local and excluded from commits */
 watchwise-prototype/
-design-system/
-AGENTS.md
-telas-reqs-definitivo.md
+#design-system/
+#AGENTS.md
+#telas-reqs-definitivo.md
 
 # Local development logs and temporary test cache
 /.dev-server*.log
 /.tmp-vitest/
-docs/
+#docs/

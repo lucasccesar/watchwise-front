@@ -86,6 +86,7 @@
 .watchlist-watch-rating, .watchlist-watch-review { display: flex; flex-direction: column; gap: var(--space-2); }
 .watchlist-watch-rating > div { display: flex; flex-wrap: wrap; gap: 4px; }
 .watchlist-watch-rating button { display: flex; width: 44px; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); cursor: pointer; font-family: inherit; font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
+.watchlist-watch-rating button > span { font-weight: 600; }
 .watchlist-watch-rating button:hover { background: var(--color-surface); }
 .watchlist-watch-rating button:disabled { cursor: not-allowed; opacity: .55; }
 .watchlist-watch-rating button svg { width: 32px; height: 32px; fill: none; stroke: var(--color-text-tertiary); stroke-linejoin: round; stroke-width: 2; }

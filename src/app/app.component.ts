@@ -1,9 +1,10 @@
 import { Component, HostListener } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ConfirmationDialogComponent } from './shared/components/confirmation-dialog/confirmation-dialog.component';
 import { ToastNotificationsComponent } from './shared/components/toast-notifications/toast-notifications.component';
 
 @Component({
-  imports: [RouterOutlet, ToastNotificationsComponent],
+  imports: [RouterOutlet, ToastNotificationsComponent, ConfirmationDialogComponent],
   selector: 'app-root',
   standalone: true,
   templateUrl: './app.component.html',
@@ -32,10 +33,11 @@ export class AppComponent {
     }
 
     const openNativeDropdowns = document.querySelectorAll<HTMLDetailsElement>(
-      'details.movie-mobile-more-actions[open], details.movie-watch-people-picker[open]',
+      'details.movie-mobile-more-actions[open], details.movie-watch-people-picker[open], details.episode-more-menu[open]',
     );
+    const isWatchedMenuTrigger = target instanceof Element && target.closest('[data-ww-watched-menu-trigger]') !== null;
     for (const dropdown of openNativeDropdowns) {
-      if (!dropdown.contains(target)) dropdown.open = false;
+      if (!dropdown.contains(target) && !isWatchedMenuTrigger) dropdown.open = false;
     }
   }
 }

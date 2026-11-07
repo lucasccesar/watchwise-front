@@ -717,7 +717,7 @@
 
 .social-report-header {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 32px;
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: start;
   gap: var(--space-3);
 }
@@ -757,33 +757,6 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
-}
-
-.social-report-close {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.social-report-close:hover,
-.social-report-close:focus-visible {
-  background: var(--color-secondary);
-  color: var(--color-text);
-}
-
-.social-report-close svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 1.8;
 }
 
 .social-report-evidence {

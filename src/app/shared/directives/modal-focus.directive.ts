@@ -9,13 +9,13 @@ export class ModalFocusDirective implements AfterViewInit, OnDestroy {
   private static readonly stack: ModalFocusDirective[] = [];
   private readonly document = inject(DOCUMENT);
   private readonly root = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  private readonly releaseScrollLock = inject(ModalScrollLockService).acquire(this.root);
+  private readonly releaseScrollLock = inject(ModalScrollLockService).acquire();
   private readonly opener = this.document.activeElement as HTMLElement | null;
   private destroyed = false;
 
   ngAfterViewInit(): void {
     ModalFocusDirective.stack.push(this);
-    (this.controls()[0] ?? this.root).focus();
+    (this.controls()[0] ?? this.root).focus({ preventScroll: true });
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -43,7 +43,7 @@ export class ModalFocusDirective implements AfterViewInit, OnDestroy {
     const index = ModalFocusDirective.stack.indexOf(this);
     if (index >= 0) ModalFocusDirective.stack.splice(index, 1);
     this.releaseScrollLock();
-    (this.modalReturnFocus() ?? this.opener)?.focus();
+    (this.modalReturnFocus() ?? this.opener)?.focus({ preventScroll: true });
   }
 
   private controls(): HTMLElement[] {

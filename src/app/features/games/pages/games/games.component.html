@@ -74,7 +74,7 @@
 @if (calendarOpen()) {
   <app-dialog-backdrop (dismiss)="closeCalendar()">
     <section class="games-calendar-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeCalendar()" aria-modal="true" [attr.aria-label]="copy.pickDate" (click)="$event.stopPropagation()">
-      <header><h2>{{ copy.pickDate }}</h2><button type="button" [attr.aria-label]="copy.close" (click)="closeCalendar()">×</button></header>
+      <header><h2>{{ copy.pickDate }}</h2></header>
       <div class="games-calendar-month"><button type="button" [disabled]="previousMonthDisabled()" [attr.aria-label]="copy.previousMonth" (click)="shiftMonth(-1)">‹</button><strong>{{ calendarLabel() }}</strong><button type="button" [disabled]="nextMonthDisabled()" [attr.aria-label]="copy.nextMonth" (click)="shiftMonth(1)">›</button></div>
       <div class="games-calendar-grid" role="grid" [attr.aria-label]="calendarLabel()">
         @for (weekday of copy.weekdays; track $index) { <span class="games-weekday" role="columnheader">{{ weekday }}</span> }

@@ -29,6 +29,7 @@ export interface ContentReference {
 export interface SeasonEpisodeCard extends Omit<SeriesChildCard, 'contentId' | 'type'> {
   contentId: string | null;
   type: 'EPISODE';
+  overview: string | null;
 }
 
 export interface SeasonContentPage {
@@ -51,6 +52,7 @@ export interface SeasonContentPage {
     cast: SeriesCastMember[] | null;
     guestStars: SeriesCastMember[] | null;
     crew: MovieCrewMember[] | null;
+    creators: Array<{ name: string; profilePath: string | null }> | null;
     videos: MovieVideo[] | null;
     parentTitle: string | null;
     parentReleaseYear: number | null;
@@ -58,7 +60,11 @@ export interface SeasonContentPage {
   metadata: ContentPage['metadata'];
   stats: ContentPageStats;
   visibleReviewsCount: number;
-  viewerState: ContentViewerState & { currentRatingVersion?: number | null };
+  viewerState: ContentViewerState & {
+    watchedEpisodeCount?: number | null;
+    releasedEpisodeCount?: number | null;
+    currentRatingVersion?: number | null;
+  };
   sections: {
     episodes: SeasonEpisodeCard[] | null;
     seasons: SeriesChildCard[] | null;
@@ -83,11 +89,18 @@ export interface EpisodeContentPage {
     countries: string[];
     cast: SeriesCastMember[];
     guestStars: SeriesCastMember[];
+    crew: MovieCrewMember[];
+    productionCompanies: Array<{ id: number; name: string; logoPath: string | null; originCountry: string | null }>;
+    videos: MovieVideo[];
     parentTitle: string | null;
     parentReleaseYear: number | null;
     customPosterUrl: string | null;
   };
-  metadata: ContentPage['metadata'];
+  metadata: ContentPage['metadata'] & {
+    presentationPosterPath?: string | null;
+    presentationCrew?: MovieCrewMember[];
+    crewInherited?: boolean | null;
+  };
   stats: ContentPageStats;
   visibleReviewsCount: number;
   viewerState: ContentViewerState;
@@ -147,11 +160,11 @@ export interface SeriesChildCard {
   title: string | null;
   posterPath: string | null;
   releaseDate: string | null;
+  episodeCount?: number | null;
+  airedEpisodeCount?: number | null;
   runtimeMinutes: number | null;
   stats: ContentPageStats;
   viewerState: ContentViewerState & {
-    watchStatus?: string | null;
-    myRating?: number | null;
     watchedEpisodeCount?: number | null;
     releasedEpisodeCount?: number | null;
   };
@@ -679,7 +692,7 @@ export class ContentApiService {
     });
   }
 
-  getListItems(listId: string, page: number, type: 'MOVIE' | 'SERIES' | 'SEASON' = 'MOVIE'): Observable<UserListDetail> {
+  getListItems(listId: string, page: number, type: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE' = 'MOVIE'): Observable<UserListDetail> {
     const params = new HttpParams().set('page', page).set('size', 30).set('type', type);
     return this.http.get<UserListDetail>(`/api/v1/lists/${encodeURIComponent(listId)}`, { params });
   }
@@ -734,6 +747,12 @@ export class ContentApiService {
   addSeasonToList(listId: string, seriesTmdbId: string, seasonNumber: number): Observable<unknown> {
     return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
       content: { type: 'SEASON', seriesTmdbId, seasonNumber },
+    });
+  }
+
+  addEpisodeToList(listId: string, seriesTmdbId: string, seasonNumber: number, episodeNumber: number): Observable<unknown> {
+    return this.http.post(`/api/v1/lists/${encodeURIComponent(listId)}/items`, {
+      content: { type: 'EPISODE', seriesTmdbId, seasonNumber, episodeNumber },
     });
   }
 

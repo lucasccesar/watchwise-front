@@ -24,6 +24,7 @@ import { ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileC
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type ProfileSection = 'profile' | 'progress' | 'history' | 'reviews' | 'lists' | 'watchlist' | 'picks' | 'episode-ratings-map' | 'episode-ratings-map-show' | 'month-in-review' | 'year-in-review' | 'all-time-stats';
 type ProfileTabKey = keyof typeof messageCatalog['pt-BR']['profilePage']['tabs'];
@@ -850,6 +851,22 @@ export class ProfileComponent {
     return this.episodeRoute(seriesTmdbId, seasonNumber, episodeNumber);
   }
 
+  protected episodeNavigationState(contentId: string | null | undefined): { contentId: string } | undefined {
+    return episodeContentNavigationState(contentId);
+  }
+
+  protected profileEntryNavigationState(entry: DiaryRecord): { contentId: string } | undefined {
+    return entry.content.type === 'EPISODE' ? episodeContentNavigationState(entry.content.id) : undefined;
+  }
+
+  protected handleProfileEntryImageAction(entry: DiaryRecord, action: string): void {
+    this.activePosterMenu.set(null);
+    if (action !== 'open-content') return;
+    const route = this.detailRoute(entry);
+    if (!route) return;
+    void this.router.navigate(route, { state: this.profileEntryNavigationState(entry) });
+  }
+
   protected episodeStill(entry: DiaryRecord): string | null {
     const key = this.episodeKey(entry);
     return this.imageUrl((key ? this.episodeStillPaths()[key] : null) || entry.card?.backdropPath || entry.seriesPosterPath || entry.card?.posterPath, 'w780');
@@ -1039,9 +1056,13 @@ export class ProfileComponent {
   protected detailRoute(record: DiaryRecord | ProfileDiaryPreview): string[] | null {
     const content = record.content;
     if (!content) return null;
-    const target = content.type === 'MOVIE' ? content.tmdbId : content.seriesTmdbId;
-    if (!target) return null;
-    return ['/content', content.type === 'MOVIE' ? 'movie' : 'series', target];
+    if (content.type === 'MOVIE' && content.tmdbId) return ['/content/movie', content.tmdbId];
+    if (content.type === 'SERIES' && (content.seriesTmdbId || content.tmdbId)) return ['/content/series', content.seriesTmdbId || content.tmdbId!];
+    if (content.type === 'SEASON' && content.seriesTmdbId && content.seasonNumber !== null) {
+      return ['/content/series', content.seriesTmdbId, 'season', String(content.seasonNumber)];
+    }
+    if (content.type === 'EPISODE') return episodeContentRoute(content);
+    return null;
   }
 
   protected contentRoute(type: string | null, tmdbId: string | null, seriesTmdbId: string | null): string[] | null {

@@ -11,6 +11,7 @@
   --color-surface: #181818;
   --color-surface-secondary: #1c1c1c;
   --color-primary: #2563eb;
+  --color-primary-soft: #172554;
   --color-primary-hover: #1d4ed8;
   --color-secondary: #30343b;
   --color-tertiary: #757575;
@@ -545,4 +546,14 @@ input:focus-visible {
   flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
+}
+
+:where([role='dialog'], [role='alertdialog']) button[aria-label*='fechar' i],
+:where([role='dialog'], [role='alertdialog']) button[aria-label*='close' i],
+:where([role='dialog'], [role='alertdialog']) header > button[aria-label*='cancelar' i],
+:where([role='dialog'], [role='alertdialog']) header > button[aria-label*='cancel' i],
+:where([role='dialog'], [role='alertdialog']) button:has(> svg path[d^='M18 6 6 18']),
+:where([role='dialog'], [role='alertdialog']) button:has(> svg path[d^='m6 6 12 12']) {
+  border: 0 !important;
+  background: transparent !important;
 }

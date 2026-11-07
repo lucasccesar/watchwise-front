@@ -14,6 +14,7 @@ import { buildCommentTree } from '../../../../shared/components/comment-item/com
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type PickVisibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 
@@ -137,16 +138,25 @@ export class PickDetailComponent {
     this.openMenu.set('');
     if (event.action.id !== 'open') return;
     const content = answer.preview?.contentCard;
-    if (content?.tmdbId && content.type === 'MOVIE') void this.router.navigate(['/content/movie', content.tmdbId]);
-    else if (content?.tmdbId && content.type === 'SERIES') void this.router.navigate(['/content/series', content.tmdbId]);
-    else if (content?.seriesTmdbId) void this.router.navigate(['/content/series', content.seriesTmdbId]);
+    const route = this.answerRoute(answer);
+    if (!route) return;
+    if (content?.type === 'EPISODE') void this.router.navigate(route, { state: episodeContentNavigationState(content.contentId) });
+    else void this.router.navigate(route);
   }
   protected answerRoute(answer: PicksAnswer): string[] | null {
     const content = answer.preview?.contentCard;
+    const reference = answer.target?.content ?? answer.target?.contextContent;
     if (content?.tmdbId && content.type === 'MOVIE') return ['/content/movie', content.tmdbId];
     if (content?.tmdbId && content.type === 'SERIES') return ['/content/series', content.tmdbId];
+    if (content?.type === 'EPISODE') return episodeContentRoute(content);
+    if (content?.type === 'SEASON' && content.seriesTmdbId && content.seasonNumber !== null) return ['/content/series', content.seriesTmdbId, 'season', String(content.seasonNumber)];
+    if (reference?.type === 'EPISODE') return episodeContentRoute(reference);
     if (content?.seriesTmdbId) return ['/content/series', content.seriesTmdbId];
     return null;
+  }
+  protected answerNavigationState(answer: PicksAnswer): { contentId: string } | undefined {
+    const content = answer.preview?.contentCard;
+    return content?.type === 'EPISODE' ? episodeContentNavigationState(content.contentId) : undefined;
   }
   protected optionActionLabel(answer: PicksAnswer): string { return this.templateCopy.optionActions.replace('{name}', this.answerLabel(answer)); }
   protected commentUser(comment: PicksCommentPreview): string { return comment.user.name || comment.user.username || this.copy.unknownUser; }

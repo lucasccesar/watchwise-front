@@ -1,0 +1,28 @@
+<!-- @dsCard group="Navigation" height=100 subtitle="Numbered, current page highlighted" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pagination — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .pag { display:flex; align-items:center; gap:4px; }
+  .btn { min-width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; font-size:14px; color:var(--tertiary); }
+  .btn.active { background:var(--primary); color:var(--text); }
+  .btn.hover { background:var(--surface-secondary); color:var(--text); }
+</style>
+</head>
+<body>
+<div class="pag">
+  <span class="btn">‹</span>
+  <span class="btn">1</span>
+  <span class="btn active">2</span>
+  <span class="btn hover">3</span>
+  <span class="btn">…</span>
+  <span class="btn">12</span>
+  <span class="btn">›</span>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

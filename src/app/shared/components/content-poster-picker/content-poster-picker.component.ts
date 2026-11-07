@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
 import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
@@ -15,7 +15,7 @@ type PickerStatus = 'idle' | 'loading' | 'ready' | 'error';
 })
 export class ContentPosterPickerComponent implements OnDestroy {
   @Input({ required: true }) contentId = '';
-  @Input({ required: true }) tmdbId = '';
+  @Input({ required: true }) tmdbId: string | number | null = null;
   @Input({ required: true }) contentType: ContentImageSelectionType = 'MOVIE';
   @Input() selectedPosterPath: string | null = null;
   @Input() label = 'Alterar pôster';
@@ -35,6 +35,13 @@ export class ContentPosterPickerComponent implements OnDestroy {
   protected readonly position = signal<{ top: number; left: number } | null>(null);
   protected readonly skeletons = [0, 1, 2, 3, 4, 5, 6, 7];
   private readonly requests = new Subscription();
+  private trigger: HTMLElement | null = null;
+
+  @ViewChild('optionsPanel')
+  private set optionsPanel(reference: ElementRef<HTMLDivElement> | undefined) {
+    if (!reference || !this.open()) return;
+    reference.nativeElement.showPopover();
+  }
 
   constructor(
     private readonly api: ContentApiService,
@@ -50,11 +57,11 @@ export class ContentPosterPickerComponent implements OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     if (this.open()) {
-      this.open.set(false);
-      this.position.set(null);
+      this.closePicker();
       return;
     }
-    this.position.set(this.popupPosition(event.currentTarget as HTMLElement));
+    this.trigger = event.currentTarget as HTMLElement;
+    this.position.set(this.popupPosition(this.trigger));
     this.open.set(true);
     if (this.status() === 'idle' || this.status() === 'error') this.load();
   }
@@ -73,14 +80,17 @@ export class ContentPosterPickerComponent implements OnDestroy {
 
   protected select(image: ContentImageSelection): void {
     const path = this.posterPath(image.url);
-    if (!path || !this.contentId || this.savingUrl()) return;
+    if (!path || this.savingUrl()) return;
+    if (!this.contentId) {
+      this.toasts.error(this.saveErrorLabel);
+      return;
+    }
     this.savingUrl.set(image.url);
     this.requests.add(this.api.setCustomContentPoster(this.contentId, path).subscribe({
       next: () => {
         this.selectedPosterPath = path;
         this.savingUrl.set(null);
-        this.open.set(false);
-        this.position.set(null);
+        this.closePicker();
         const details = this.element.nativeElement.closest('details');
         if (details instanceof HTMLDetailsElement) details.open = false;
         this.posterSaved.emit(path);
@@ -96,26 +106,48 @@ export class ContentPosterPickerComponent implements OnDestroy {
   @HostListener('document:click', ['$event'])
   protected dismissOutside(event: MouseEvent): void {
     if (!this.open() || !(event.target instanceof Node) || this.element.nativeElement.contains(event.target)) return;
-    this.open.set(false);
-    this.position.set(null);
+    this.closePicker();
   }
 
   @HostListener('document:keydown.escape')
   protected dismissOnEscape(): void {
     if (!this.open()) return;
+    const trigger = this.trigger;
+    this.closePicker();
+    trigger?.focus();
+  }
+
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  protected reposition(): void {
+    if (!this.open() || !this.trigger?.isConnected) return;
+    this.position.set(this.popupPosition(this.trigger));
+  }
+
+  protected panelId(): string {
+    return `content-poster-options-${this.contentId}`;
+  }
+
+  private closePicker(): void {
     this.open.set(false);
     this.position.set(null);
+    this.trigger = null;
   }
 
   private load(): void {
-    if (!this.contentId || !this.tmdbId) {
+    const tmdbId = this.tmdbId == null ? '' : String(this.tmdbId).trim();
+    if (!tmdbId) {
       this.status.set('error');
       return;
     }
     this.status.set('loading');
-    this.requests.add(this.api.getContentImages(this.contentType, this.tmdbId, 'posters').subscribe({
+    this.requests.add(this.api.getContentImages(this.contentType, tmdbId, 'posters').subscribe({
       next: (images) => {
-        this.images.set(images);
+        const resolvedImages = images.map((image) => ({
+          ...image,
+          url: tmdbImageUrl(image.url, 'w500') ?? image.url,
+        }));
+        this.images.set(resolvedImages);
         this.status.set('ready');
       },
       error: () => this.status.set('error'),

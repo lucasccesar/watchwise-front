@@ -44,7 +44,7 @@
 @if (activeCategory(); as category) {
   <app-dialog-backdrop (dismiss)="closeCategory()">
     <section class="pick-fill-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeCategory()" aria-modal="true" [attr.aria-label]="copy.dialogTitle.replace('{category}', category.name)">
-      <header><div><span>{{ templateCopy.type[category.allowedType] }} · {{ category.group === 'PRIMARY' ? templateCopy.primary : templateCopy.secondary }}</span><h2>{{ category.name }}</h2>@if (category.description) { <p>{{ category.description }}</p> }</div><button type="button" [attr.aria-label]="copy.close" (click)="closeCategory()">×</button></header>
+      <header><div><span>{{ templateCopy.type[category.allowedType] }} · {{ category.group === 'PRIMARY' ? templateCopy.primary : templateCopy.secondary }}</span><h2>{{ category.name }}</h2>@if (category.description) { <p>{{ category.description }}</p> }</div></header>
       <div class="pick-fill-dialog-body">
         @if (category.optionMode === 'FIXED') {
           <p class="pick-fill-dialog-hint">{{ copy.chooseFixed }} <span>({{ fixedOptions(category.id).length }})</span></p>

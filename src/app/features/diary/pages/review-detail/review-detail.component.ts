@@ -23,6 +23,7 @@ import { SocialActionsMenuComponent, SocialActionMenuEvent, SocialActionMenuUser
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -202,15 +203,18 @@ export class DiaryReviewDetailComponent {
     if (!content) return ['/diary/reviews'];
     if (content.type === 'MOVIE' && content.tmdbId) return ['/content/movie', content.tmdbId];
     if (content.type === 'SERIES' && content.tmdbId) return ['/content/series', content.tmdbId];
-    if ((content.type === 'EPISODE' || content.type === 'SEASON') && content.seriesTmdbId) {
+    if (content.type === 'EPISODE') return episodeContentRoute(content) ?? ['/diary/reviews'];
+    if (content.type === 'SEASON' && content.seriesTmdbId) {
       const season = content.seasonNumber ?? 1;
-      if (content.type === 'EPISODE') {
-        return ['/content/series', content.seriesTmdbId, 'season', String(season), 'episode', String(content.episodeNumber ?? 1)];
-      }
       return ['/content/series', content.seriesTmdbId, 'season', String(season)];
     }
     return ['/diary/reviews'];
   });
+
+  protected episodeNavigationState(): { contentId: string } | undefined {
+    const content = this.entry()?.content;
+    return content?.type === 'EPISODE' ? episodeContentNavigationState(content.id) : undefined;
+  }
 
   protected reviewerReviewsRoute(): string[] {
     const entry = this.entry();

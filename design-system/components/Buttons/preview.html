@@ -1,0 +1,51 @@
+<!-- @dsCard group="Actions" height=260 subtitle="Primary, Secondary, Tertiary, Link, Destructive — size md" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Buttons — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .row { display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; margin-bottom:var(--space-4); }
+  .lbl { color:var(--tertiary); margin:0 0 var(--space-2); }
+  button { font-family:var(--font-sans); font-size:14px; font-weight:600; line-height:20px; padding:10px var(--space-4); border-radius:var(--radius-md); border:1px solid transparent; cursor:pointer; }
+  .primary { background:var(--primary); color:var(--text); }
+  .primary:disabled { opacity:.4; cursor:not-allowed; }
+  .sec-color { background:var(--surface); color:var(--primary); border-color:var(--border); }
+  .sec-gray { background:var(--surface); color:var(--text); border-color:var(--border); }
+  .ter-color { background:transparent; color:var(--primary); }
+  .ter-gray { background:transparent; color:var(--tertiary); }
+  .link { background:none; border:none; padding:0; color:var(--primary); text-decoration:underline; }
+  .pill { border-radius:var(--radius-full); }
+  .icon { width:36px; height:36px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+  .primary-destr { background:var(--error); color:var(--text); }
+  .sec-destr { background:var(--surface); color:var(--error); border-color:var(--border); }
+</style>
+</head>
+<body>
+<div class="root">
+  <p class="lbl">Hierarchy</p>
+  <div class="row">
+    <button class="primary">Primary</button>
+    <button class="sec-color">Secondary color</button>
+    <button class="sec-gray">Secondary gray</button>
+    <button class="ter-color">Tertiary color</button>
+    <button class="ter-gray">Tertiary gray</button>
+    <button class="link">Link</button>
+  </div>
+  <p class="lbl">Destructive (token error)</p>
+  <div class="row">
+    <button class="primary-destr">Delete account</button>
+    <button class="sec-destr">Remove</button>
+  </div>
+  <p class="lbl">Shape and state</p>
+  <div class="row">
+    <button class="primary pill">Pill</button>
+    <button class="sec-gray icon" aria-label="Icon">＋</button>
+    <button class="primary" disabled>Disabled</button>
+  </div>
+</div>
+<script>/* static preview — no interactivity needed */</script>
+</body>
+</html>

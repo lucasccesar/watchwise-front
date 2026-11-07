@@ -11,6 +11,17 @@
   } @else if (status() === 'error') {
     <section class="movie-state movie-state--error" role="alert"><h1>{{ pageError() }}</h1><button class="movie-button movie-button--primary" type="button" (click)="reload()" data-ww-button="primary">Tentar novamente</button></section>
   } @else if (page(); as seasonPage) {
+    <ng-template #seasonWatchedMenu>
+      <details class="movie-mobile-more-actions season-watched-actions" [class.season-watched-actions--complete]="watched()">
+        <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions" data-ww-ellipsis-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></summary>
+        <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions" data-ww-menu>
+          @if (watched()) { <button type="button" [disabled]="actionPending()" (click)="openSeasonRewatch($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.rewatch }}</span><small>{{ formatNumber(seasonPage.viewerState.playsCount, 0) }}</small></button> }
+          <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
+          @if (watched()) { <button type="button" [disabled]="actionPending()" (click)="openShareLatestSeasonReview($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button> }
+          <button class="movie-mobile-action-remove-history" type="button" [disabled]="actionPending()" (click)="openSeasonHistoryConfirmation($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg><span>{{ copy.removeSeasonHistory }}</span></button>
+        </div>
+      </details>
+    </ng-template>
     <section class="movie-overview season-overview" aria-labelledby="season-title">
       <nav class="season-breadcrumb" aria-label="Breadcrumb">
         <a [routerLink]="['/content/series', tmdbId()]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" /></svg>{{ seriesName() }}</a>
@@ -48,6 +59,7 @@
         </aside>
 
         <header class="movie-title-block season-title-block">
+          <a class="season-series-title" [routerLink]="['/content/series', tmdbId()]">{{ seriesName() }}</a>
           <div class="movie-title-line"><h1 id="season-title" class="ww-detail-hero-title">{{ seasonName() }}</h1>@if (parentYear()) { <span class="movie-title-year">{{ parentYear() }}</span> }</div>
           <div class="movie-head-stats" aria-label="Resumo da temporada">
             <div class="movie-head-rating"><span class="movie-head-star"><ng-container [ngTemplateOutlet]="ratingStar" /></span><span class="movie-head-rating-value"><span class="movie-head-rating-number"><strong>{{ formatRating(averageRating(seasonPage.stats)) }}</strong><span>/10</span></span><small>{{ averageRatingCaption(seasonPage.stats) }}</small></span></div>
@@ -66,26 +78,28 @@
             @if (seasonPage.details.releaseDate) { <div><dt>Estreou</dt><dd>{{ formatDate(seasonPage.details.releaseDate) }}</dd></div> }
             @if (averageRuntime()) { <div><dt>Duração por episódio</dt><dd>{{ formatRuntime(averageRuntime()) }}</dd></div> }
             @if (episodeCount()) { <div><dt>Episódios</dt><dd>{{ formatNumber(episodeCount(), 0) }}</dd></div> }
-            @if (crew().length) { <div><dt>Equipe</dt><dd>{{ crew().map(person => person.name).join(', ') }}</dd></div> }
+            @if (creators().length) { <div><dt>Criadores</dt><dd>{{ creators().map(person => person.name).join(', ') }}</dd></div> }
             @if (countries().length) { <div><dt>País</dt><dd>{{ countries().join(', ') }}</dd></div> }
             @if (genres().length) { <div><dt>Gêneros</dt><dd>{{ genres().join(', ') }}</dd></div> }
           </dl>
+          @if (seasonPage.details.overview?.trim()) {
           <section class="movie-synopsis-section" aria-labelledby="season-synopsis-title">
             <h2 id="season-synopsis-title" class="movie-desktop-synopsis-title">Sobre esta temporada</h2>
             <h2 class="movie-mobile-details-title">Detalhes</h2>
-            <p class="movie-synopsis-copy" [class.movie-synopsis-copy--collapsed]="!detailsExpanded()">{{ seasonPage.details.overview || 'Sinopse indisponível.' }}</p>
+            <p class="movie-synopsis-copy" [class.movie-synopsis-copy--collapsed]="!detailsExpanded()">{{ seasonPage.details.overview }}</p>
             <button class="movie-details-toggle" type="button" [attr.aria-expanded]="detailsExpanded()" (click)="detailsExpanded.set(!detailsExpanded())">{{ detailsExpanded() ? 'Ver menos' : 'Ver mais' }} <span aria-hidden="true">⌄</span></button>
             @if (detailsExpanded()) {
               <dl class="movie-metadata movie-metadata--mobile season-metadata">
                 @if (seasonPage.details.releaseDate) { <div><dt>Estreou</dt><dd>{{ formatDate(seasonPage.details.releaseDate) }}</dd></div> }
                 @if (averageRuntime()) { <div><dt>Duração por episódio</dt><dd>{{ formatRuntime(averageRuntime()) }}</dd></div> }
                 @if (episodeCount()) { <div><dt>Episódios</dt><dd>{{ formatNumber(episodeCount(), 0) }}</dd></div> }
-                @if (crew().length) { <div><dt>Equipe</dt><dd>{{ crew().map(person => person.name).join(', ') }}</dd></div> }
+                @if (creators().length) { <div><dt>Criadores</dt><dd>{{ creators().map(person => person.name).join(', ') }}</dd></div> }
                 @if (countries().length) { <div><dt>País</dt><dd>{{ countries().join(', ') }}</dd></div> }
                 @if (genres().length) { <div><dt>Gêneros</dt><dd>{{ genres().join(', ') }}</dd></div> }
               </dl>
             }
           </section>
+          }
           <section class="movie-following season-following" aria-labelledby="season-following-title">
             <h2 id="season-following-title">Pessoas que você segue</h2>
             <p class="ww-empty-message">A atividade das pessoas que você segue aparecerá aqui.</p>
@@ -93,15 +107,31 @@
         </div>
 
         <aside class="movie-actions-column season-actions-column" aria-label="Ações da temporada">
-          <button class="movie-action-rating" type="button" aria-haspopup="dialog" [disabled]="actionPending()" (click)="openRating()">
-            <span>Sua nota</span>
-            @if (seasonPage.viewerState.myRating !== null) { <strong><ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonPage.viewerState.myRating) }}<small>/10</small></strong> }
-            @else { <strong class="season-unrated"><ng-container [ngTemplateOutlet]="emptyRatingStar" />Sem nota</strong> }
-          </button>
-          <button class="movie-action-mark-watched series-action-mark-watched" type="button" [disabled]="actionPending() || !episodeCount()" (click)="openBulkWatch()">
-            <app-check-icon />
-            <span>{{ watched() ? 'Assistido · assistir novamente' : 'Marcar como assistido' }}<small>{{ progressLabel() }}</small></span>
-          </button>
+          @if (watched()) {
+            <button class="movie-action-rating" type="button" aria-haspopup="dialog" [disabled]="actionPending()" (click)="openRating()">
+              <span>Sua nota</span>
+              @if (seasonPage.viewerState.myRating !== null) { <strong><ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonPage.viewerState.myRating) }}<small>/10</small></strong> }
+              @else { <strong class="season-unrated"><ng-container [ngTemplateOutlet]="emptyRatingStar" />Sem nota</strong> }
+            </button>
+          }
+          <div class="movie-action-primary-row" [class.movie-action-primary-row--unwatched]="!watched()" [class.series-action-primary-row--has-menu]="watchedEpisodeCount() > 0 || watched()">
+            <div class="movie-action-watch-row" [style.--watched-progress]="watchedPercentage() + '%'" [class.series-action-watch-row--partial]="!watched()" [class.series-action-watch-row--complete]="watched()" [class.series-action-watch-row--has-menu]="watchedEpisodeCount() > 0 || watched()">
+              @if (watched()) {
+                <button class="movie-action-watch" type="button" data-ww-watched-menu-trigger [attr.aria-label]="copy.watched + '. ' + copy.yourRating + ': ' + (seasonPage.viewerState.myRating ?? copy.noRating)" [disabled]="actionPending()" (click)="openWatchedOptions($event)">
+                  <span class="movie-watch-check" aria-hidden="true"><app-check-icon /></span>
+                  <span class="movie-watch-copy"><strong>{{ copy.watched }}</strong>@if (lastWatchedDate(); as watchedDate) { <small>{{ formatDate(watchedDate) }}</small> }</span>
+                  <span class="movie-action-rating-inline" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /> {{ seasonPage.viewerState.myRating ?? copy.noRating }}</span>
+                </button>
+              } @else {
+                <button class="movie-action-mark-watched series-action-mark-watched" type="button" [disabled]="actionPending() || !bulkEpisodeCount()" (click)="openBulkWatch()">
+                  <app-check-icon [color]="'var(--color-text)'" />
+                  <span>{{ copy.markWatched }}<small>{{ watchedPercentage() }}% assistido · {{ formatNumber(watchedEpisodeCount(), 0) }} de {{ formatNumber(releasedEpisodeCount(), 0) }}</small></span>
+                </button>
+                @if (watchedEpisodeCount() > 0) { <ng-container [ngTemplateOutlet]="seasonWatchedMenu" /> }
+              }
+            </div>
+            @if (watched()) { <ng-container [ngTemplateOutlet]="seasonWatchedMenu" /> }
+          </div>
           <div class="movie-lists-control season-lists-control">
             <button class="movie-action-lists" type="button" [disabled]="actionPending()" [attr.aria-expanded]="listsOpen()" (click)="toggleLists()" data-ww-select-trigger>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12H9M21 6H9M21 18H9M5 12a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 6a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 18a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" /></svg>
@@ -138,8 +168,8 @@
       <div class="movie-section-heading series-cast-heading">
         <div><h2 id="season-cast-title">Elenco da temporada</h2></div>
         <div class="movie-people-tabs" role="tablist" aria-label="Elenco ou equipe da temporada" (keydown)="castTabKeydown($event)">
-          <button id="season-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'cast'" [attr.tabindex]="castTab() === 'cast' ? 0 : -1" (click)="setCastTab('cast')">Elenco <span>{{ formatNumber(cast().length, 0) }}</span></button>
-          <button id="season-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'crew'" [attr.tabindex]="castTab() === 'crew' ? 0 : -1" (click)="setCastTab('crew')">Equipe <span>{{ formatNumber(crew().length, 0) }}</span></button>
+          <button id="season-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'cast'" [attr.tabindex]="castTab() === 'cast' ? 0 : -1" (click)="setCastTab('cast')">Elenco <span>{{ formatNumber(cast().slice(0, 24).length, 0) }}</span></button>
+          <button id="season-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'crew'" [attr.tabindex]="castTab() === 'crew' ? 0 : -1" (click)="setCastTab('crew')">Equipe <span>{{ formatNumber(crew().slice(0, 24).length, 0) }}</span></button>
         </div>
       </div>
       @if (castTab() === 'cast') {
@@ -159,10 +189,33 @@
         <div class="series-card-scroll series-season-scroll season-season-scroll">
           @for (season of seasons(); track season.seasonNumber) {
             <article class="series-season-card" [class.season-card-current]="season.seasonNumber === seasonNumber()">
-              <a class="season-card-link" [routerLink]="seasonRoute(season)" [attr.aria-current]="season.seasonNumber === seasonNumber() ? 'page' : null">
-                <span class="series-season-poster content-image-card">@if (imageUrl(season.posterUrl, 'w342'); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ season.seasonNumber }}</span> }</span>
-                <span class="series-season-details"><strong>{{ season.name || ('Temporada ' + season.seasonNumber) }}</strong><span>{{ formatNumber(season.episodeCount, 0) }} episódios</span></span>
-              </a>
+              <div class="series-season-poster content-image-card">
+                <a class="series-content-poster-link" [routerLink]="seasonRoute(season)" [attr.aria-label]="season.name || 'Abrir temporada'">
+                  @if (imageUrl(season.posterUrl, 'w342'); as poster) { <img [src]="poster" alt="" loading="lazy" /> }
+                  @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> }
+                  @else { <span class="movie-person-fallback">{{ season.seasonNumber }}</span> }
+                  @if (seasonItemIsWatched(season)) { <span class="content-viewed-badge" [attr.aria-label]="copy.seasonWatchedLabel"><app-check-icon [color]="'#FFFFFF'" /></span> }
+                  @if (seasonItemIsWatched(season) && seasonItemLastWatchedDate(season); as watchedDate) { <span class="content-watched-date">{{ formatDate(watchedDate) }}</span> }
+                </a>
+                @if (seasonItemIsWatched(season) && (seasonItemMyRating(season) !== null || seasonItemHasWatchActivity(season))) {
+                  <button class="content-user-rating season-card-rating-trigger" type="button" [attr.aria-label]="seasonItemMyRating(season) !== null ? copy.editRating + ': ' + formatRating(seasonItemMyRating(season)) + ' de 10' : copy.rate" [disabled]="actionPending()" (click)="openRating({ type: 'SEASON', season })">
+                    @if (seasonItemMyRating(season) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonItemMyRating(season)) }} }
+                    @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />{{ copy.rate }} }
+                  </button>
+                }
+              </div>
+              <a class="season-card-link" [routerLink]="seasonRoute(season)" [attr.aria-current]="season.seasonNumber === seasonNumber() ? 'page' : null"><span class="series-season-details"><strong>{{ season.name || ('Temporada ' + season.seasonNumber) }}</strong><span>{{ formatNumber(season.airedEpisodeCount ?? season.episodeCount, 0) }} episódios</span></span></a>
+              <app-content-image-actions
+                class="season-navigation-menu"
+                [attr.data-menu-key]="seasonMenuKey(season)"
+                [ratingValue]="seasonMenuRatingValue(season)"
+                [ratingLabel]="seasonMenuRatingLabel(season)"
+                [optionsLabel]="'Opções da temporada'"
+                [expanded]="activeSeasonMenu() === seasonMenuKey(season)"
+                [actions]="seasonActions(season)"
+                (toggle)="toggleSeasonMenu(seasonMenuKey(season), $event)"
+                (actionSelected)="seasonAction(season, $event)"
+              />
             </article>
           }
         </div>
@@ -174,26 +227,32 @@
       @if (episodes().length) {
         <div class="series-card-scroll series-episode-scroll season-episode-grid">
           @for (episode of episodes(); track episodeKey(episode)) {
-            <article class="series-episode-card season-episode-card">
+              <article class="series-episode-card season-episode-card" role="link" tabindex="0" (click)="openEpisodeFromCard(episode, $event)" (keydown)="handleEpisodeCardKeydown(episode, $event)">
               <div class="series-episode-image content-image-card">
-                <a class="series-content-poster-link" [routerLink]="episodeRoute(episode)" [attr.aria-label]="episode.title || 'Abrir episódio'">
+                <a class="series-content-poster-link" [routerLink]="episodeRoute(episode)" [state]="episodeNavigationState(episode)" [attr.aria-label]="episode.title || 'Abrir episódio'" (click)="stopEpisodeCardClick($event)">
                   @if (imageUrl(episode.posterPath, 'w500'); as still) { <img [src]="still" alt="" loading="lazy" /> }
                   @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> }
                   @if (episodeIsWatched(episode)) { <span class="content-viewed-badge" aria-label="Episódio assistido"><app-check-icon [color]="'#FFFFFF'" /></span> }
                   @if (episodeIsWatched(episode) && episode.viewerState.lastWatchedDate; as watchedDate) { <span class="content-watched-date">{{ formatDate(watchedDate) }}</span> }
-                  @if (episodeMyRating(episode) !== null || episodeIsWatched(episode)) { <span class="content-user-rating" [attr.aria-label]="episodeMyRating(episode) !== null ? 'Sua nota: ' + formatRating(episodeMyRating(episode)) + ' de 10' : 'Avaliar'">@if (episodeMyRating(episode) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(episodeMyRating(episode)) }} } @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />Avaliar }</span> }
                 </a>
-                <app-content-image-actions class="season-card-menu" [attr.data-menu-key]="episodeKey(episode)" [ratingValue]="formatRating(episodeRating(episode))" [ratingLabel]="episodeRatingLabel(episode)" [optionsLabel]="'Opções do episódio'" [expanded]="activeEpisodeMenu() === episodeKey(episode)" [actions]="episodeActions(episode)" (toggle)="toggleEpisodeMenu(episodeKey(episode), $event)" (actionSelected)="episodeAction(episode, $event)" />
+                @if (episodeMyRating(episode) !== null || episodeIsWatched(episode)) {
+                  <button class="content-user-rating season-episode-rating-trigger" type="button" [attr.aria-label]="episodeMyRating(episode) !== null ? copy.editRating + ': ' + formatRating(episodeMyRating(episode)) + ' de 10' : copy.rate" [disabled]="actionPending()" (click)="openEpisodeRating(episode, $event)">
+                    @if (episodeMyRating(episode) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(episodeMyRating(episode)) }} }
+                    @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />{{ copy.rate }} }
+                  </button>
+                }
+                <app-content-image-actions class="season-card-menu" [attr.data-menu-key]="episodeKey(episode)" [optionsLabel]="'Opções do episódio'" [expanded]="activeEpisodeMenu() === episodeKey(episode)" [actions]="episodeActions(episode)" (toggle)="toggleEpisodeMenu(episodeKey(episode), $event)" (actionSelected)="episodeAction(episode, $event)" />
               </div>
               <div class="series-episode-copy">
-                <div class="series-episode-heading"><strong><a [routerLink]="episodeRoute(episode)">{{ episode.title || ('Episódio ' + (episode.episodeNumber ?? '')) }}</a></strong><span>S{{ episode.seasonNumber ?? seasonNumber() }} · E{{ episode.episodeNumber }}</span></div>
-                <div class="series-episode-meta"><span>{{ formatRuntime(episode.runtimeMinutes) }}</span>@if (episode.releaseDate) { <span>{{ formatDate(episode.releaseDate) }}</span> }</div>
+                <div class="series-episode-heading"><strong><a [routerLink]="episodeRoute(episode)" [state]="episodeNavigationState(episode)">{{ episode.title || ('Episódio ' + (episode.episodeNumber ?? '')) }}</a></strong><span>S{{ episode.seasonNumber ?? seasonNumber() }} · E{{ episode.episodeNumber }}</span></div>
+                <div class="series-episode-meta"><span>{{ formatRuntime(episode.runtimeMinutes) }}</span>@if (episode.releaseDate) { <span aria-hidden="true">·</span><span>{{ formatDate(episode.releaseDate) }}</span> }</div>
                 <ul class="season-episode-stats" aria-label="Estatísticas do episódio">
                   @if (episodeRating(episode) !== null) { <li><ng-container [ngTemplateOutlet]="ratingStar" /><strong>{{ formatRating(episodeRating(episode)) }}</strong></li> }
                   <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 8.965C9.5 8.488 9.5 8.249 9.6 8.116C9.687 8 9.819 7.928 9.964 7.917C10.13 7.905 10.331 8.034 10.733 8.292L15.453 11.327C15.802 11.551 15.976 11.663 16.036 11.805C16.088 11.93 16.088 12.07 16.036 12.195C15.976 12.337 15.802 12.449 15.453 12.673L10.733 15.708C10.331 15.966 10.13 16.095 9.964 16.083C9.819 16.072 9.687 16 9.6 15.884C9.5 15.751 9.5 15.512 9.5 15.035V8.965Z M22 12C22 17.523 17.523 22 12 22C6.477 22 2 17.523 2 12C2 6.477 6.477 2 12 2C17.523 2 22 6.477 22 12Z" /></svg><span><strong>{{ formatNumber(episode.stats.playsCount, 0) }}</strong> reproduções</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2.27V6.4C14 6.96 14 7.24 14.109 7.454C14.205 7.642 14.358 7.795 14.546 7.891C14.76 8 15.04 8 15.6 8H19.73M16 13H8M16 17H8M10 9H8M14 2H8.8C7.12 2 6.28 2 5.638 2.327C5.074 2.615 4.615 3.074 4.327 3.638C4 4.28 4 5.12 4 6.8V17.2C4 18.88 4 19.72 4.327 20.362C4.615 20.927 5.074 21.385 5.638 21.673C6.28 22 7.12 22 8.8 22H15.2C16.88 22 17.72 22 18.362 21.673C18.927 21.385 19.385 20.927 19.673 20.362C20 19.72 20 18.88 20 17.2V8L14 2Z" /></svg><span><strong>{{ formatNumber(episode.stats.ratingsCount, 0) }}</strong> avaliações</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5C21 16.194 17.194 20 12.5 20C11.423 20 10.393 19.8 9.445 19.434C9.271 19.367 9.185 19.334 9.116 19.318C9.048 19.303 8.999 19.296 8.93 19.293C8.859 19.29 8.781 19.298 8.626 19.314L3.505 19.844C3.017 19.894 2.773 19.919 2.629 19.831C2.503 19.755 2.418 19.627 2.395 19.482C2.368 19.315 2.485 19.1 2.718 18.668L4.354 15.641C4.488 15.393 4.555 15.268 4.586 15.148C4.616 15.031 4.623 14.945 4.614 14.824C4.604 14.7 4.549 14.54 4.44 14.217C4.151 13.36 4 12.447 4 11.5C4 6.806 7.806 3 12.5 3C17.194 3 21 6.806 21 11.5Z" /></svg><span><strong>{{ formatNumber(episode.stats.commentsCount, 0) }}</strong> comentários</span></li>
                 </ul>
+                @if (episode.overview) { <p class="season-episode-overview">{{ episode.overview }}</p> }
               </div>
             </article>
           }
@@ -242,15 +301,33 @@
       } @else { <p class="movie-section-state ww-empty-message">Seja a primeira pessoa a comentar.</p> }
     </section>
   }
-</main>
+@if (episodeWatchTarget(); as target) {
+  <app-watch-log-dialog
+    [dialogTitle]="target.isRewatch ? copy.rewatch : copy.markWatched"
+    [title]="seriesName()"
+    [subtitle]="episodeWatchSubtitle(target.episode)"
+    [initialRewatch]="target.isRewatch"
+    [saving]="actionPending()"
+    (dismiss)="closeEpisodeWatchDialog()"
+    (save)="saveEpisodeWatch($event)"
+  />
+}
 
 @if (watchDialogOpen()) {
-  <div class="movie-modal-backdrop season-modal-backdrop" (click)="closeDialog()">
+  <div class="movie-modal-backdrop series-modal-backdrop season-modal-backdrop" appModalScrollLock (click)="closeDialog()">
     <section #seasonDialog class="series-bulk-dialog" role="dialog" aria-modal="true" aria-labelledby="season-watch-title" tabindex="-1" appModalFocus (modalDismiss)="closeDialog()" (click)="$event.stopPropagation()">
-      <header><button type="button" aria-label="Fechar" (click)="closeDialog()">×</button><h2 id="season-watch-title">{{ watched() ? 'Registrar temporada novamente' : 'Marcar temporada como assistida' }}</h2></header>
+      <header class="movie-dialog-header">
+        <div class="movie-dialog-heading">
+          <h2 id="season-watch-title">{{ bulkWatchIsRepeat() ? 'Registrar temporada novamente' : 'Marcar temporada como assistida' }}</h2>
+          <p class="movie-watch-subtitle">{{ seriesName() }} · {{ bulkWatchSeasonName() }} · {{ formatNumber(bulkWatchEpisodeCount(), 0) }} {{ bulkWatchIsRepeat() ? 'episódios' : 'episódios restantes' }}</p>
+        </div>
+      </header>
       <div class="series-bulk-content">
-        <p>{{ seriesName() }} · {{ seasonName() }} · {{ formatNumber(episodeCount(), 0) }} episódios</p>
-        <div class="series-bulk-note">Todos os episódios desta temporada serão adicionados ao seu Diário.</div>
+        @if (bulkWatchIsRepeat()) {
+          <div class="series-bulk-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg><span>Todos os episódios desta temporada serão adicionados novamente ao seu Diário.</span></div>
+        } @else {
+          <div class="series-bulk-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg><span>Todos os {{ formatNumber(bulkWatchEpisodeCount(), 0) }} episódios restantes serão adicionados ao seu Diário.</span></div>
+        }
         <fieldset><legend>Quando você assistiu?</legend>
           <label class="series-date-option" [class.series-date-option--selected]="watchDateMode() === 'today'"><input type="radio" name="season-watch-date" value="today" [checked]="watchDateMode() === 'today'" (change)="watchDateMode.set('today')" /><span><strong>Hoje</strong><small>{{ formatDate(watchDate()) }}</small></span></label>
           <label class="series-date-option" [class.series-date-option--selected]="watchDateMode() === 'specific'"><input type="radio" name="season-watch-date" value="specific" [checked]="watchDateMode() === 'specific'" (change)="watchDateMode.set('specific')" /><span><strong>Em uma data específica</strong><small>Todos os episódios serão registrados no mesmo dia</small></span></label>
@@ -258,15 +335,54 @@
           <label class="series-date-option" [class.series-date-option--selected]="watchDateMode() === 'release'"><input type="radio" name="season-watch-date" value="release" [checked]="watchDateMode() === 'release'" (change)="watchDateMode.set('release')" /><span><strong>Na data de lançamento</strong><small>Cada episódio será registrado no dia em que foi ao ar</small></span></label>
         </fieldset>
       </div>
-      <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="actionPending() || !episodeCount()" (click)="saveBulkWatch()" data-ww-button="primary"><app-check-icon [color]="'#FFFFFF'" />{{ watched() ? 'Registrar novamente' : 'Marcar como assistida' }}</button></footer>
+      <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="actionPending() || !bulkWatchEpisodeCount()" (click)="saveBulkWatch()" data-ww-button="primary"><app-check-icon [color]="'#FFFFFF'" /><span>{{ bulkWatchIsRepeat() ? 'Registrar novamente' : 'Marcar ' + formatNumber(bulkWatchEpisodeCount(), 0) + ' episódios' }}</span></button></footer>
+    </section>
+  </div>
+}
+
+@if (seasonHistoryConfirmOpen()) {
+  <div class="movie-modal-backdrop series-modal-backdrop season-modal-backdrop" appModalScrollLock (click)="closeDialog()">
+    <section #seasonHistoryDialog class="movie-dialog series-action-confirm-dialog series-history-confirm-dialog season-history-confirm-dialog" role="alertdialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="season-history-confirm-title" tabindex="-1" (click)="$event.stopPropagation()">
+      <header><h2 id="season-history-confirm-title">{{ copy.removeSeasonHistory }}</h2></header>
+      <p>{{ copy.removeSeasonHistoryConfirm.replace('{title}', seasonName()) }}</p>
+      <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--secondary" [disabled]="actionPending()" (click)="confirmRemoveSeasonHistory()" data-ww-button="danger">{{ copy.removeSeasonHistory }}</button></footer>
+    </section>
+  </div>
+}
+
+@if (ratingPromptSeason(); as season) {
+  <div class="movie-modal-backdrop series-modal-backdrop season-modal-backdrop" appModalScrollLock (click)="closeDialog()">
+    <section #seasonRatingPromptDialog class="movie-dialog series-completion-dialog season-rating-prompt-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="season-rating-prompt-title" tabindex="-1" (click)="$event.stopPropagation()">
+      <header><span class="series-completion-icon" aria-hidden="true"><app-check-icon [color]="'var(--color-success)'" /></span></header>
+      <div class="series-completion-copy">
+        <h2 id="season-rating-prompt-title">Você concluiu {{ season.name || ('Temporada ' + season.seasonNumber) }}</h2>
+        <p>Quer avaliar esta temporada?</p>
+      </div>
+      <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Agora não</button><button type="button" class="movie-button movie-button--primary" (click)="confirmSeasonRating()" data-ww-button="primary"><ng-container [ngTemplateOutlet]="emptyRatingStar" /><span>Avaliar temporada</span></button></footer>
     </section>
   </div>
 }
 
 @if (ratingDialogOpen()) {
-  <app-dialog-backdrop (dismiss)="closeDialog()"><section #seasonDialog class="movie-dialog series-rating-dialog" role="dialog" aria-modal="true" aria-labelledby="season-rating-title" tabindex="-1" appModalFocus (modalDismiss)="closeDialog()" (click)="$event.stopPropagation()">
-    <header class="movie-dialog-header"><h2 id="season-rating-title">{{ ratingTarget()?.type === 'EPISODE' ? 'Avaliar episódio' : 'Avaliar temporada' }}</h2><button class="movie-icon-button" type="button" aria-label="Fechar" (click)="closeDialog()">×</button></header>
-    <div class="season-rating-options" role="group" aria-label="Escolha uma nota">@for (score of ratingOptions; track score) { <button type="button" [class.series-rating-selected]="ratingScore() === score" [attr.aria-pressed]="ratingScore() === score" [attr.aria-label]="score + ' de 10'" (click)="ratingScore.set(score)"><ng-container [ngTemplateOutlet]="ratingStar" /><small>{{ score }}</small></button> }</div>
-    <footer class="movie-dialog-actions"><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="!ratingScore() || actionPending()" (click)="saveRating()" data-ww-button="primary">Salvar avaliação</button></footer>
+  <app-dialog-backdrop placement="top" (dismiss)="closeDialog()"><section #seasonDialog class="movie-dialog rating-dialog ww-dialog-panel series-rating-dialog" role="dialog" aria-modal="true" aria-labelledby="season-rating-title" tabindex="-1" appModalFocus (modalDismiss)="closeDialog()" (click)="$event.stopPropagation()">
+    <header class="watch-log-header">
+      <div><h2 id="season-rating-title">{{ ratingTarget()?.type === 'EPISODE' ? 'Avaliar episódio' : 'Avaliar temporada' }}</h2><span>{{ ratingDialogSubtitle() }}</span></div>
+    </header>
+    <div class="watch-rating" role="group" aria-label="Sua nota"><span>Sua nota</span><div>@for (score of ratingOptions; track score) {
+      <button type="button" [attr.aria-pressed]="ratingScore() === score" [attr.aria-label]="score + ' de 10'" (click)="setRatingScore(score)">
+        <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="ratingScore() > 0 && score <= ratingScore()"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" /></svg>
+        <span [class.watch-rating-score-selected]="ratingScore() > 0 && score <= ratingScore()">{{ score }}</span>
+      </button>
+    }</div></div>
+    @if (ratingTarget()?.type === 'EPISODE' || ratingTarget()?.type === 'SEASON') {
+      <label class="watch-review"><span>Sua resenha <span>(opcional)</span></span><textarea rows="5" placeholder="O que você achou?" [value]="ratingReview()" (input)="updateRatingReview($event)"></textarea></label>
+    }
+    <footer class="watch-log-actions"><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="(!ratingScore() && !ratingReview().trim()) || ratingReviewLoading() || actionPending()" (click)="saveRating()" data-ww-button="primary">Salvar</button></footer>
   </section></app-dialog-backdrop>
 }
+@if (shareReviewOpen()) {
+  @if (shareModel(); as model) {
+    <app-share-review-dialog [model]="model" [copy]="copy" (closed)="closeShareReview()" />
+  }
+}
+</main>

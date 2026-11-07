@@ -793,7 +793,8 @@ app-trending {
 .watch-review > span:first-child { color: var(--color-text); font-size: var(--font-size-sm); font-weight: 600; line-height: var(--line-height-sm); }
 .watch-rating > div { display: flex; flex-wrap: wrap; gap: 4px; }
 .watch-rating button { display: flex; width: 44px; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); cursor: pointer; font-family: inherit; font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
-.watch-rating button:hover { background: var(--color-surface); }
+.watch-rating button > span { font-weight: 600; }
+.watch-rating button:hover { background: transparent; }
 .watch-rating button:disabled { cursor: not-allowed; opacity: 0.55; }
 .watch-rating button svg { width: 32px; height: 32px; fill: none; stroke: var(--color-text-tertiary); stroke-linejoin: round; stroke-width: 2; }
 .watch-rating button svg path { fill: none; stroke: var(--color-text-tertiary); }

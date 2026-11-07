@@ -11,6 +11,20 @@
   } @else if (pageStatus() === 'error') {
     <section class="movie-state movie-state--error" role="alert"><h1>{{ pageError() }}</h1><button class="movie-button movie-button--primary" type="button" (click)="reload()" data-ww-button="primary">{{ copy.retry }}</button></section>
   } @else if (page(); as seriesPage) {
+    <ng-template #seriesWatchedMenu>
+      <details class="movie-mobile-more-actions series-mobile-more-actions">
+        <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions" data-ww-ellipsis-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></summary>
+        <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions" data-ww-menu>
+          @if (seriesIsWatched(seriesPage)) { <button type="button" (click)="openSeriesWatch($event); closeMobileActions()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.rewatch }}</span><small>{{ copy.playsCount.replace('{count}', formatNumber(seriesPage.viewerState.playsCount, 0)) }}</small></button> }
+          <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
+          @if (seriesIsWatched(seriesPage)) { <button type="button" (click)="openShareReview($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button> }
+          @if (episodeRatingsMapRoute()) { <button type="button" (click)="openEpisodeRatingsMap()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18" /></svg><span>{{ copy.episodeRatingsMap }}</span></button> }
+          <app-content-poster-picker [contentId]="seriesPage.details.contentId" [tmdbId]="seriesPage.details.tmdbId || tmdbId()" contentType="SERIES" [selectedPosterPath]="seriesPage.details.customPosterUrl || seriesPage.metadata.presentationPosterPath || seriesPage.details.posterPath" [label]="copy.changePoster" [selectionLabel]="copy.posterSelectionLabel" [loadingLabel]="copy.loadingPosters" [loadErrorLabel]="copy.postersLoadError" [retryLabel]="copy.retry" [emptyLabel]="copy.noPosters" [saveSuccessLabel]="copy.posterUpdated" [saveErrorLabel]="copy.posterUpdateError" (posterSaved)="applyCustomPoster($event)" />
+          <button class="movie-mobile-action-remove-history" type="button" [disabled]="actionPending()" (click)="clearSeriesHistory($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg><span>{{ copy.removeSeriesHistory }}</span></button>
+          @if (watchedEpisodeCount() === 0 && !seriesIsWatched(seriesPage)) { <button class="movie-mobile-action-watchlist" type="button" [attr.aria-pressed]="seriesPage.viewerState.inWatchlist" (click)="toggleWatchlist(); closeMobileActions()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17l-7-4-7 4z" /></svg><span>{{ seriesPage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}</span></button> }
+        </div>
+      </details>
+    </ng-template>
     <section class="movie-overview" aria-labelledby="series-title">
       <div class="movie-backdrop-frame" aria-hidden="true">
         <app-responsive-banner [path]="backdropUrl()" fallbackPath="" appearance="content-detail" />
@@ -83,10 +97,11 @@
             @if (seriesPage.details.productionCompanies.length) { <div class="movie-metadata-wide"><dt>{{ copy.productionCompanies }}</dt><dd>{{ seriesPage.details.productionCompanies.map(company => company.name).join(', ') }}</dd></div> }
           </dl>
 
+          @if (seriesPage.details.overview?.trim()) {
           <section class="movie-synopsis-section" aria-labelledby="series-details-title">
             <h2 id="series-details-title" class="movie-desktop-synopsis-title">{{ copy.synopsis }}</h2>
             <h2 class="movie-mobile-details-title">{{ copy.details }}</h2>
-            <p class="movie-synopsis-copy" [class.movie-synopsis-copy--collapsed]="!detailsExpanded()">{{ seriesPage.details.overview || copy.synopsisEmpty }}</p>
+            <p class="movie-synopsis-copy" [class.movie-synopsis-copy--collapsed]="!detailsExpanded()">{{ seriesPage.details.overview }}</p>
             <button class="movie-details-toggle" type="button" [attr.aria-expanded]="detailsExpanded()" (click)="toggleDetails()">{{ detailsExpanded() ? copy.hideDetails : copy.showDetails }} <span aria-hidden="true">⌄</span></button>
             @if (detailsExpanded()) {
               <dl class="movie-metadata movie-metadata--mobile">
@@ -107,6 +122,7 @@
               </section>
             }
           </section>
+          }
 
           <section class="movie-following" aria-labelledby="series-following-title">
             <div class="movie-following-heading">
@@ -128,39 +144,22 @@
             </button>
           }
           <div class="movie-action-primary-row" [class.movie-action-primary-row--unwatched]="!seriesIsWatched(seriesPage)" [class.series-action-primary-row--has-menu]="watchedEpisodeCount() > 0 || seriesIsWatched(seriesPage)">
-            <div class="movie-action-watch-row" [class.series-action-watch-row--menu-only]="seriesPage.viewerState.dropped && !seriesIsWatched(seriesPage) && watchedEpisodeCount() > 0" [class.series-action-watch-row--partial]="!seriesIsWatched(seriesPage) && !seriesPage.viewerState.dropped" [class.series-action-watch-row--has-menu]="watchedEpisodeCount() > 0 || seriesIsWatched(seriesPage)">
+            <div class="movie-action-watch-row" [style.--watched-progress]="watchedPercentage() + '%'" [class.series-action-watch-row--menu-only]="seriesPage.viewerState.dropped && !seriesIsWatched(seriesPage) && watchedEpisodeCount() > 0" [class.series-action-watch-row--partial]="!seriesIsWatched(seriesPage) && !seriesPage.viewerState.dropped" [class.series-action-watch-row--complete]="seriesIsWatched(seriesPage)" [class.series-action-watch-row--has-menu]="watchedEpisodeCount() > 0 || seriesIsWatched(seriesPage)">
               @if (seriesIsWatched(seriesPage)) {
-                <button class="movie-action-watch" type="button" [disabled]="actionPending()" [attr.aria-label]="copy.watched + ': ' + watchedPercentage() + '% assistido'" (click)="openSeriesWatch($event)">
+                <button class="movie-action-watch series-action-watch-complete" type="button" data-ww-watched-menu-trigger [attr.aria-label]="copy.watched + '. ' + copy.yourRating + ': ' + (seriesPage.viewerState.myRating ?? copy.noRating)" [disabled]="actionPending()" (click)="openWatchedOptions($event)">
                   <span class="movie-watch-check" aria-hidden="true"><app-check-icon /></span>
-                  <span class="movie-watch-copy">
-                    <strong>{{ copy.watched }}</strong>
-                    @if (seriesPage.viewerState.lastWatchedDate) { <small>{{ formatDate(seriesPage.viewerState.lastWatchedDate) }}</small> }
-                    @else { <small>{{ watchedPercentage() }}% assistido · {{ formatNumber(watchedEpisodeCount(), 0) }} de {{ formatNumber(totalWatchedEpisodeCount(), 0) }}</small> }
-                  </span>
-                  <span class="movie-action-rating-inline" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /> {{ formatRating(seriesPage.viewerState.myRating) }}</span>
+                  <span class="movie-watch-copy"><strong>{{ copy.watched }}</strong>@if (seriesLastWatchedDate(seriesPage); as watchedDate) { <small>{{ formatDate(watchedDate) }}</small> }</span>
+                  <span class="movie-action-rating-inline" aria-hidden="true"><ng-container [ngTemplateOutlet]="ratingStar" /> {{ seriesPage.viewerState.myRating ?? copy.noRating }}</span>
                 </button>
               } @else if (!seriesPage.viewerState.dropped) {
                 <button class="movie-action-mark-watched series-action-mark-watched" type="button" [disabled]="actionPending()" (click)="openSeriesWatch($event)">
-                  <app-check-icon />
+                  <app-check-icon [color]="'var(--color-text)'" />
                   <span>{{ copy.markWatched }}<small>{{ watchedPercentage() }}% assistido · {{ formatNumber(watchedEpisodeCount(), 0) }} de {{ formatNumber(totalWatchedEpisodeCount(), 0) }}</small></span>
                 </button>
               }
-              @if (watchedEpisodeCount() > 0 || seriesIsWatched(seriesPage)) {
-                <details class="movie-mobile-more-actions series-mobile-more-actions">
-                  <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions" data-ww-ellipsis-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></summary>
-                  <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions" data-ww-menu>
-                    <button type="button" (click)="openSeriesWatch($event); closeMobileActions()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ seriesIsWatched(seriesPage) ? copy.rewatch : copy.markWatched }}</span>@if (seriesIsWatched(seriesPage)) { <small>{{ formatNumber(seriesPlayCount(seriesPage), 0) }}</small> }</button>
-                    <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
-                    @if (seriesPage.viewerState.latestDiaryEntryId) { <button type="button" (click)="openShareReview($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button> }
-                    @if (episodeRatingsMapRoute()) { <button type="button" (click)="openEpisodeRatingsMap()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18" /></svg><span>{{ copy.episodeRatingsMap }}</span></button> }
-                    <app-content-poster-picker [contentId]="seriesPage.details.contentId" [tmdbId]="seriesPage.details.tmdbId" contentType="SERIES" [selectedPosterPath]="seriesPage.details.customPosterUrl || seriesPage.metadata.presentationPosterPath || seriesPage.details.posterPath" [label]="copy.changePoster" [selectionLabel]="copy.posterSelectionLabel" [loadingLabel]="copy.loadingPosters" [loadErrorLabel]="copy.postersLoadError" [retryLabel]="copy.retry" [emptyLabel]="copy.noPosters" [saveSuccessLabel]="copy.posterUpdated" [saveErrorLabel]="copy.posterUpdateError" (posterSaved)="applyCustomPoster($event)" />
-                    <button class="movie-mobile-action-remove-history" type="button" [disabled]="actionPending()" (click)="clearSeriesHistory()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg><span>{{ copy.removeSeriesHistory }}</span></button>
-                    @if (watchedEpisodeCount() === 0 && !seriesIsWatched(seriesPage)) { <button class="movie-mobile-action-watchlist" type="button" [attr.aria-pressed]="seriesPage.viewerState.inWatchlist" (click)="toggleWatchlist(); closeMobileActions()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17l-7-4-7 4z" /></svg><span>{{ seriesPage.viewerState.inWatchlist ? copy.removeWatchlist : copy.watchlist }}</span></button> }
-                    @if (!seriesIsWatched(seriesPage)) { <button class="movie-mobile-action-dropped" type="button" [attr.aria-pressed]="seriesPage.viewerState.dropped" (click)="toggleDropped(); closeMobileActions()" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m5 5 14 14" /></svg><span>{{ seriesPage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}</span></button> }
-                  </div>
-                </details>
-              }
+              @if (!seriesIsWatched(seriesPage) && (watchedEpisodeCount() > 0 || seriesPage.viewerState.dropped)) { <ng-container [ngTemplateOutlet]="seriesWatchedMenu" /> }
             </div>
+            @if (seriesIsWatched(seriesPage)) { <ng-container [ngTemplateOutlet]="seriesWatchedMenu" /> }
           </div>
           <div class="movie-lists-control">
             <button class="movie-action-lists" type="button" [disabled]="actionPending()" [attr.aria-expanded]="listsExpanded() || dialog() === 'lists'" (click)="toggleListsPanel($event)" data-ww-select-trigger>
@@ -183,7 +182,7 @@
           </div>
           @if (watchedEpisodeCount() === 0 && !seriesIsWatched(seriesPage)) { <button class="movie-action-secondary movie-action-secondary--watchlist" type="button" [attr.aria-pressed]="seriesPage.viewerState.inWatchlist" [disabled]="actionPending()" (click)="toggleWatchlist()" data-ww-button="secondary"><svg class="movie-action-status-icon movie-action-status-icon--watchlist" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v17l-7-4-7 4z" /></svg><span>{{ seriesPage.viewerState.inWatchlist ? copy.inWatchlist : copy.watchlist }}</span></button> }
           @if (!seriesIsWatched(seriesPage)) {
-            <button class="movie-action-secondary movie-action-secondary--dropped" type="button" [attr.aria-pressed]="seriesPage.viewerState.dropped" [disabled]="actionPending()" (click)="toggleDropped()" data-ww-button="secondary"><svg class="movie-action-status-icon movie-action-status-icon--dropped" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m5 5 14 14" /></svg><span>{{ seriesPage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}</span></button>
+            <button class="movie-action-secondary movie-action-secondary--dropped" type="button" [attr.aria-pressed]="seriesPage.viewerState.dropped" [disabled]="actionPending()" (click)="toggleDropped($event)" data-ww-button="secondary"><svg class="movie-action-status-icon movie-action-status-icon--dropped" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m5 5 14 14" /></svg><span>{{ seriesPage.viewerState.dropped ? copy.removeDropped : copy.markDropped }}</span></button>
           }
           <div class="movie-ratings-divider"><section class="movie-ratings-card" aria-labelledby="series-ratings-title">
             <div class="movie-ratings-heading"><h2 id="series-ratings-title">{{ copy.ratings }}</h2></div>
@@ -205,7 +204,7 @@
           @for (episode of episodes(); track episode.seasonNumber + '-' + episode.episodeNumber) {
             <article class="series-episode-card">
               <div class="series-episode-image content-image-card">
-                <a class="series-content-poster-link" [routerLink]="episodeRoute(episode)" [attr.aria-label]="episode.name || 'Abrir episódio'">
+                <a class="series-content-poster-link" [routerLink]="episodeRoute(episode)" [state]="episodeNavigationState(episode)" [attr.aria-label]="episode.name || 'Abrir episódio'">
                   @if (imageUrl(episode.stillPath, 'w500'); as still) { <img [src]="still" alt="" loading="lazy" /> } @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> }
                   @if (episodeIsWatched(episode)) { <span class="content-viewed-badge" [attr.aria-label]="copy.watched"><app-check-icon [color]="'#FFFFFF'" /></span> }
                   @if (episodeIsWatched(episode) && episodeLastWatchedDate(episode); as watchedDate) { <span class="content-watched-date">{{ formatDate(watchedDate) }}</span> }
@@ -218,17 +217,17 @@
                 }
                 <app-content-image-actions
                   [attr.data-menu-key]="episodeMenuKey(episode)"
-                  [ratingValue]="formatRating(episodeScore(episode))"
+                  [ratingValue]="episodeRatingValue(episode)"
                   [ratingLabel]="episodeRatingLabel(episode)"
                   [optionsLabel]="'Opções do episódio'"
                   [expanded]="activeSeriesImageMenu() === episodeMenuKey(episode)"
-                  [actions]="imageActionsFor(episodeIsWatched(episode), 'episode', episodeMyRating(episode) !== null)"
+                  [actions]="imageActionsFor(episodeIsWatched(episode), 'episode', episodeMyRating(episode) !== null, episodeHasDiaryEntry(episode))"
                   (toggle)="toggleSeriesImageMenu(episodeMenuKey(episode), $event)"
                   (actionSelected)="episodeImageAction(episode, $event)"
                 />
               </div>
               <div class="series-episode-copy">
-                <div class="series-episode-heading"><strong><a class="series-content-title-link" [routerLink]="episodeRoute(episode)">{{ episode.name || 'Episódio' }}</a></strong><span>S{{ episode.seasonNumber }} · E{{ episode.episodeNumber }}</span></div>
+                <div class="series-episode-heading"><strong><a class="series-content-title-link" [routerLink]="episodeRoute(episode)" [state]="episodeNavigationState(episode)">{{ episode.name || 'Episódio' }}</a></strong><span>S{{ episode.seasonNumber }} · E{{ episode.episodeNumber }}</span></div>
                 <div class="series-episode-meta"><span>{{ formatDate(episode.airDate) }}</span><span>{{ formatRuntime(episode.runtime) }}</span></div>
               </div>
             </article>
@@ -239,8 +238,8 @@
 
     <section id="series-cast" class="movie-page-section movie-cast-section series-section" aria-labelledby="series-cast-title">
       <div class="movie-section-heading series-cast-heading"><div><h2 id="series-cast-title">{{ copy.castAndCrew }}</h2></div><div class="movie-people-tabs" role="tablist" [attr.aria-label]="copy.castAndCrew" (keydown)="castTabKeydown($event)">
-        <button id="series-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'cast'" [attr.tabindex]="castTab() === 'cast' ? 0 : -1" (click)="setCastTab('cast')">{{ copy.castTab }} <span>{{ formatNumber(seriesPage.details.cast.length, 0) }}</span></button>
-        <button id="series-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'crew'" [attr.tabindex]="castTab() === 'crew' ? 0 : -1" (click)="setCastTab('crew')">{{ copy.crewTab }} <span>{{ formatNumber(seriesPage.details.crew.length, 0) }}</span></button>
+        <button id="series-cast-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'cast'" [attr.tabindex]="castTab() === 'cast' ? 0 : -1" (click)="setCastTab('cast')">{{ copy.castTab }} <span>{{ formatNumber(seriesPage.details.cast.slice(0, 24).length, 0) }}</span></button>
+        <button id="series-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="castTab() === 'crew'" [attr.tabindex]="castTab() === 'crew' ? 0 : -1" (click)="setCastTab('crew')">{{ copy.crewTab }} <span>{{ formatNumber(seriesPage.details.crew.slice(0, 24).length, 0) }}</span></button>
       </div></div>
       @if (castTab() === 'cast') {
         <div class="movie-people-scroll" role="tabpanel" aria-labelledby="series-cast-tab" tabindex="0">@for (person of seriesPage.details.cast.slice(0, 24); track person.id) { <article class="movie-person-card">@if (imageUrl(person.profilePath, 'w185'); as portrait) { <img [src]="portrait" alt="" loading="lazy" /> } @else { <span class="movie-person-fallback">{{ personInitials(person.name) }}</span> }<div><strong>{{ person.name }}</strong><span>{{ person.character || '' }}</span>@if (person.episodeCount) { <small>{{ formatNumber(person.episodeCount, 0) }} episódios</small> }</div></article> }</div>
@@ -258,27 +257,27 @@
                 <div class="series-season-poster content-image-card">
                   <a class="series-content-poster-link" [routerLink]="['/content/series', tmdbId(), 'season', season.seasonNumber]" [attr.aria-label]="season.name || 'Abrir temporada'">
                   @if (imageUrl(season.posterPath, 'w342'); as poster) { <img [src]="poster" alt="" loading="lazy" /> } @else if (posterUrl(); as poster) { <img [src]="poster" alt="" loading="lazy" /> }
-                  @if (seasonIsWatched(season)) { <span class="content-viewed-badge" aria-label="Temporada assistida"><app-check-icon [color]="'#FFFFFF'" /></span> }
+                  @if (seasonIsWatched(season)) { <span class="content-viewed-badge" [attr.aria-label]="copy.seasonWatchedLabel"><app-check-icon [color]="'#FFFFFF'" /></span> }
                   @if (seasonIsWatched(season) && seasonLastWatchedDate(season); as watchedDate) { <span class="content-watched-date">{{ formatDate(watchedDate) }}</span> }
-                  @if (seasonMyRating(season) !== null || seasonIsWatched(season)) {
-                    <span class="content-user-rating" [attr.aria-label]="seasonMyRating(season) !== null ? 'Sua nota: ' + formatRating(seasonMyRating(season)) + ' de 10' : copy.rate">
-                      @if (seasonMyRating(season) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonMyRating(season)) }} }
-                      @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />{{ copy.rate }} }
-                    </span>
-                  }
                 </a>
+                @if (seasonIsWatched(season) && (seasonMyRating(season) !== null || seasonHasWatchActivity(season))) {
+                  <button class="content-user-rating series-season-rating-trigger" type="button" [attr.aria-label]="seasonMyRating(season) !== null ? copy.editRating + ': ' + formatRating(seasonMyRating(season)) + ' de 10' : copy.rate" [disabled]="actionPending()" (click)="openRating({ type: 'SEASON', season }, $event)">
+                    @if (seasonMyRating(season) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonMyRating(season)) }} }
+                    @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />{{ copy.rate }} }
+                  </button>
+                }
                 <app-content-image-actions
                   [attr.data-menu-key]="seasonMenuKey(season)"
                   [ratingValue]="formatRating(seasonScore(season))"
                   [ratingLabel]="seasonRatingLabel(season)"
                   [optionsLabel]="'Opções da temporada'"
                   [expanded]="activeSeriesImageMenu() === seasonMenuKey(season)"
-                  [actions]="imageActionsFor(seasonIsWatched(season), 'season')"
+                  [actions]="imageActionsFor(seasonIsWatched(season), 'season', seasonMyRating(season) !== null)"
                   (toggle)="toggleSeriesImageMenu(seasonMenuKey(season), $event)"
                   (actionSelected)="seasonImageAction(season, $event)"
                 />
               </div>
-                <a class="series-season-details" [routerLink]="['/content/series', tmdbId(), 'season', season.seasonNumber]"><strong>{{ season.name || ('Temporada ' + season.seasonNumber) }}</strong><span>{{ formatNumber(season.episodeCount, 0) }} episódios</span></a>
+                <a class="series-season-details" [routerLink]="['/content/series', tmdbId(), 'season', season.seasonNumber]"><strong>{{ season.name || ('Temporada ' + season.seasonNumber) }}</strong><span>{{ formatNumber(season.airedEpisodeCount ?? season.episodeCount, 0) }} episódios</span></a>
             </article>
           }
         </div>
@@ -340,16 +339,39 @@
       } @else { <p class="movie-section-state ww-empty-message">{{ copy.commentsEmpty }}</p> }
     </section>
 
+    @if (episodeWatchTarget(); as target) {
+      <app-watch-log-dialog
+        [dialogTitle]="target.isRewatch ? copy.rewatch : copy.markWatched"
+        [title]="seriesPage.details.title || copy.untitled"
+        [subtitle]="episodeWatchSubtitle(target.episode)"
+        [initialRewatch]="target.isRewatch"
+        [saving]="actionPending()"
+        (dismiss)="closeEpisodeWatchDialog()"
+        (save)="saveEpisodeWatch($event)"
+      />
+    }
+
     @if (dialog(); as currentDialog) {
       <div class="movie-modal-backdrop series-modal-backdrop" appModalScrollLock (click)="closeDialog()">
-        @if (currentDialog === 'bulk') {
+        @if (currentDialog === 'confirm-mark-dropped') {
+          <section #seriesDialog class="movie-dialog series-action-confirm-dialog" role="alertdialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-dropped-confirm-title" tabindex="-1" (click)="$event.stopPropagation()">
+            <header><h2 id="series-dropped-confirm-title">{{ copy.markDropped }}</h2></header>
+            <p>{{ confirmMarkDroppedText() }}</p>
+            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--secondary" [disabled]="actionPending()" (click)="confirmMarkDropped()" data-ww-button="danger">{{ copy.markDropped }}</button></footer>
+          </section>
+        } @else if (currentDialog === 'confirm-remove-history') {
+          <section #seriesDialog class="movie-dialog series-action-confirm-dialog series-history-confirm-dialog" role="alertdialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-history-confirm-title" tabindex="-1" (click)="$event.stopPropagation()">
+            <header><h2 id="series-history-confirm-title">{{ copy.removeSeriesHistory }}</h2></header>
+            <p>{{ copy.removeSeriesHistoryConfirm.replace('{title}', seriesPage.details.title || copy.untitled) }}</p>
+            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--secondary" [disabled]="actionPending()" (click)="confirmClearSeriesHistory()" data-ww-button="danger">{{ copy.removeSeriesHistory }}</button></footer>
+          </section>
+        } @else if (currentDialog === 'bulk') {
           <section #seriesDialog class="series-bulk-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-bulk-title" tabindex="-1" (click)="$event.stopPropagation()">
             <header class="movie-dialog-header">
               <div class="movie-dialog-heading">
                 <h2 id="series-bulk-title">{{ bulkDialogTitle() }}</h2>
                 <p class="movie-watch-subtitle">{{ bulkTargetName() }} · {{ formatNumber(bulkEpisodeCount(), 0) }} {{ bulkIsRepeatWatch() ? 'episódios' : 'episódios restantes' }}</p>
               </div>
-              <button class="movie-icon-button" type="button" aria-label="Fechar" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
             </header>
             <div class="series-bulk-content">
               @if (bulkIsRepeatWatch()) {
@@ -364,37 +386,36 @@
                 <label class="series-date-option" [class.series-date-option--selected]="watchDateMode() === 'release'"><input type="radio" name="series-watch-date" value="release" [checked]="watchDateMode() === 'release'" (change)="watchDateMode.set('release')" /><span><strong>Na data de lançamento</strong><small>Cada episódio será registrado no dia em que foi ao ar</small></span></label>
               </fieldset>
             </div>
-            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--primary" [disabled]="actionPending() || bulkEpisodeCount() === 0" (click)="saveBulkWatch()" data-ww-button="primary"><app-check-icon [color]="'#FFFFFF'" /> {{ bulkIsRepeatWatch() ? 'Registrar novamente' : 'Marcar ' + formatNumber(bulkEpisodeCount(), 0) + ' episódios' }}</button></footer>
+            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--primary" [disabled]="actionPending() || bulkEpisodeCount() === 0" (click)="saveBulkWatch()" data-ww-button="primary"><app-check-icon [color]="'#FFFFFF'" /><span>{{ bulkIsRepeatWatch() ? 'Registrar novamente' : 'Marcar ' + formatNumber(bulkEpisodeCount(), 0) + ' episódios' }}</span></button></footer>
           </section>
         } @else if (currentDialog === 'completed') {
           <section #seriesDialog class="movie-dialog series-completion-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-completion-title" tabindex="-1" (click)="$event.stopPropagation()">
-            <header><span class="series-completion-icon" aria-hidden="true"><app-check-icon [color]="'var(--color-success)'" /></span><button class="movie-icon-button" type="button" aria-label="Fechar" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button></header>
-            <div class="series-completion-copy"><h2 id="series-completion-title">Você concluiu {{ seriesPage.details.title || copy.untitled }}</h2><p>Todos os episódios foram adicionados ao seu Diário. Quer avaliar a série ou escrever uma resenha?</p></div>
-            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Agora não</button><button type="button" class="movie-button movie-button--primary" (click)="rateCompletedSeries()" data-ww-button="primary"><ng-container [ngTemplateOutlet]="emptyRatingStar" /> Avaliar {{ seriesPage.details.title || 'série' }}</button></footer>
+            <header><span class="series-completion-icon" aria-hidden="true"><app-check-icon [color]="'var(--color-success)'" /></span></header>
+            <div class="series-completion-copy"><h2 id="series-completion-title">{{ completionTitle() }}</h2><p>{{ ratingTarget()?.type === 'SEASON' ? 'Todos os episódios da temporada foram adicionados ao seu Diário. Quer avaliar esta temporada?' : 'Todos os episódios foram adicionados ao seu Diário. Quer avaliar a série ou escrever uma resenha?' }}</p></div>
+            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Agora não</button><button type="button" class="movie-button movie-button--primary" (click)="rateCompletedContent($event)" data-ww-button="primary"><ng-container [ngTemplateOutlet]="emptyRatingStar" /><span>{{ completionRatingLabel() }}</span></button></footer>
           </section>
         } @else if (currentDialog === 'rating') {
           <section #seriesDialog class="movie-dialog rating-dialog ww-dialog-panel series-rating-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-rating-title" tabindex="-1" (click)="$event.stopPropagation()">
             <header class="watch-log-header">
               <div><h2 id="series-rating-title">{{ ratingDialogHeading() }}</h2><span>{{ ratingDialogSubtitle() }}</span></div>
-              <button class="watch-log-close" type="button" aria-label="Fechar" (click)="closeDialog()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
             </header>
             <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
               <span>{{ copy.yourRating }}</span>
               <div>@for (score of ratingOptions; track score) {
                   <button type="button" [attr.aria-label]="'Nota ' + score + ' de 10'" [attr.aria-pressed]="ratingScore() === score" (click)="ratingScore.set(ratingScore() === score ? 0 : score)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="ratingScore() > 0 && score <= ratingScore()"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L11.283 3.453Z" /></svg>
-                  <span>{{ score }}</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="ratingScore() > 0 && score <= ratingScore()"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" /></svg>
+                  <span [class.watch-rating-score-selected]="ratingScore() > 0 && score <= ratingScore()">{{ score }}</span>
                 </button>
               }</div>
             </div>
-            @if (ratingTarget()?.type === 'EPISODE' || ratingTarget()?.type === 'SERIES') {
+            @if (ratingTarget()?.type === 'EPISODE' || ratingTarget()?.type === 'SERIES' || ratingTarget()?.type === 'SEASON') {
               <label class="watch-review"><span>{{ copy.reviewLabel }} <span>{{ copy.optional }}</span></span><textarea rows="5" [placeholder]="copy.reviewPlaceholder" [value]="ratingReview()" (input)="updateRatingReview($event)"></textarea></label>
             }
-            <footer class="watch-log-actions"><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--primary" [disabled]="!canSaveRating() || actionPending()" (click)="saveRating()" data-ww-button="primary">{{ copy.saveRating }}</button></footer>
+            <footer class="watch-log-actions"><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--primary" [disabled]="!canSaveRating() || ratingReviewLoading() || actionPending()" (click)="saveRating()" data-ww-button="primary">{{ copy.saveRating }}</button></footer>
           </section>
         } @else if (currentDialog === 'videos') {
           <section #seriesDialog class="movie-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-videos-title" tabindex="-1" (click)="$event.stopPropagation()">
-            <header class="movie-dialog-header"><div class="movie-dialog-heading"><h2 id="series-videos-title">{{ copy.videos }}</h2><p class="movie-videos-subtitle">{{ seriesPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(seriesPage.details.videos.length, 0)) }}</p></div><button class="movie-icon-button" type="button" [attr.aria-label]="copy.closeDialog" (click)="closeDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button></header>
+            <header class="movie-dialog-header"><div class="movie-dialog-heading"><h2 id="series-videos-title">{{ copy.videos }}</h2><p class="movie-videos-subtitle">{{ seriesPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(seriesPage.details.videos.length, 0)) }}</p></div></header>
             @if (selectedVideo(); as video) {
               <div class="movie-video-feature">
                 <div class="movie-video-player">

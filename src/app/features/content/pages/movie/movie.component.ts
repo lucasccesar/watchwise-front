@@ -46,6 +46,7 @@ import { ResponsiveBannerComponent } from '../../../../shared/components/respons
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { ContentPosterPickerComponent } from '../../../../shared/components/content-poster-picker/content-poster-picker.component';
 import { ToastNotificationsService, ToastNotificationType } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
@@ -184,6 +185,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly title = inject(Title);
   private readonly toasts = inject(ToastNotificationsService);
+  private readonly confirmation = inject(ConfirmationDialogService);
 
   @ViewChild('movieDialog')
   private movieDialog?: ElementRef<HTMLElement>;
@@ -395,6 +397,12 @@ export class MovieComponent implements OnInit, OnDestroy {
       this.watchDetailsLoading.set(false);
       this.watchDetailsError.set(this.copy.diaryLoadError);
     }
+  }
+
+  protected openWatchedOptions(event: Event): void {
+    const row = (event.currentTarget as HTMLElement | null)?.closest('.movie-action-primary-row');
+    const menu = row?.querySelector<HTMLDetailsElement>('.movie-mobile-more-actions');
+    if (menu) menu.open = !menu.open;
   }
 
   protected retryDiaryEntryLoad(): void {
@@ -723,9 +731,14 @@ export class MovieComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected deleteWatch(): void {
+  protected async deleteWatch(): Promise<void> {
     const diaryEntryId = this.page()?.viewerState.latestDiaryEntryId;
-    if (!diaryEntryId || this.actionPending() || !window.confirm(this.copy.removeWatchConfirm)) return;
+    if (!diaryEntryId || this.actionPending()) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: this.copy.removeWatchConfirm,
+      confirmLabel: this.copy.removeWatch,
+    });
+    if (!confirmed || this.actionPending()) return;
     this.runAction(this.api.deleteDiaryEntry(diaryEntryId), () => {
       this.closeDialog();
       this.showToast(this.copy.removed);
@@ -798,10 +811,14 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.commentHasSpoiler.set((event.target as HTMLInputElement).checked);
   }
 
-  protected deleteComment(comment: ContentComment): void {
-    if (this.isOwnComment(comment) && window.confirm(this.copy.commentDeleteConfirm)) {
-      this.runAction(this.api.deleteComment(comment.id), () => this.loadComments(1));
-    }
+  protected async deleteComment(comment: ContentComment): Promise<void> {
+    if (!this.isOwnComment(comment)) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: this.copy.commentDeleteConfirm,
+      confirmLabel: this.copy.commentDelete,
+    });
+    if (!confirmed || !this.isOwnComment(comment)) return;
+    this.runAction(this.api.deleteComment(comment.id), () => this.loadComments(1));
   }
 
   protected toggleCommentLike(comment: ContentComment): void {
@@ -1028,7 +1045,9 @@ export class MovieComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   protected onDocumentClick(event: MouseEvent): void {
     const menu = this.document.querySelector<HTMLDetailsElement>('.movie-mobile-more-actions[open]');
-    if (menu && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    const isWatchedMenuTrigger = event.target instanceof Element
+      && event.target.closest('[data-ww-watched-menu-trigger]') !== null;
+    if (menu && event.target instanceof Node && !menu.contains(event.target) && !isWatchedMenuTrigger) menu.open = false;
   }
 
   private runAction<T>(request: Observable<T>, success: () => void): void {

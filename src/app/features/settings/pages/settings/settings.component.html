@@ -182,7 +182,6 @@
 @if (dialog(); as dialogType) {
   <app-dialog-backdrop (dismiss)="closeDialog()">
     <section class="settings-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" [attr.aria-labelledby]="'settings-dialog-title'" (click)="$event.stopPropagation()">
-      <button type="button" class="settings-dialog-close" aria-label="Fechar" (click)="closeDialog()">×</button>
       @if (dialogType === 'delete') {
         <h2 id="settings-dialog-title">Excluir conta</h2><p>A exclusão é permanente e remove todos os dados. Digite sua senha para confirmar.</p><label class="settings-field settings-delete-confirm-field"><span>Senha atual</span><input type="password" autocomplete="current-password" [value]="deleteAccountPassword()" [disabled]="busy()" (input)="deleteAccountPassword.set($any($event.target).value)" /></label><div class="settings-dialog-actions"><button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button class="settings-danger-button" type="button" [disabled]="busy() || !deleteAccountPassword()" (click)="deleteAccount()" data-ww-button="danger">{{ busy() ? 'Excluindo…' : 'Excluir permanentemente' }}</button></div>
       } @else {

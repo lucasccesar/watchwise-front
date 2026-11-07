@@ -1,0 +1,24 @@
+<!-- @dsCard group="Actions" height=100 subtitle="Segments with selected state" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Button Group — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .group { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .seg { padding:8px 16px; font-size:14px; color:var(--tertiary); background:var(--surface); border-right:1px solid var(--border); cursor:pointer; }
+  .seg:last-child { border-right:none; }
+  .seg.active { background:var(--surface-secondary); color:var(--text); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="group" role="group">
+  <div class="seg active">Week</div>
+  <div class="seg">Month</div>
+  <div class="seg">Year</div>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

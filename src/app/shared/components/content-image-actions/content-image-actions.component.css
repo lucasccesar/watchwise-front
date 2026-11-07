@@ -9,6 +9,10 @@
   right: var(--space-2);
 }
 
+:host-context(.season-episode-card) .content-menu-anchor {
+  pointer-events: auto;
+}
+
 .home-item-rating {
   position: absolute;
   z-index: 4;
@@ -105,6 +109,14 @@
     pointer-events: auto;
   }
 
+  :host-context(.season-episode-card) .content-menu-trigger {
+    opacity: 1;
+  }
+
+  :host-context(.series-season-card) .content-menu-trigger {
+    opacity: 1;
+  }
+
   .content-menu-anchor:focus-within .content-menu-trigger,
   .content-menu-anchor.menu-expanded .content-menu-trigger {
     opacity: 1;
@@ -195,6 +207,10 @@
 
   :host-context(.content-image-card:hover) .content-menu-trigger,
   :host-context(.content-image-card:focus-within) .content-menu-trigger,
+  :host-context(.series-season-card:hover) .content-menu-trigger,
+  :host-context(.series-season-card:focus-within) .content-menu-trigger,
+  :host-context(.season-episode-card:hover) .content-menu-trigger,
+  :host-context(.season-episode-card:focus-within) .content-menu-trigger,
   .content-menu-trigger[aria-expanded='true'] {
     opacity: 1;
     pointer-events: auto;
@@ -202,6 +218,12 @@
 
   :host-context(.content-image-card:hover) .home-item-rating,
   :host-context(.content-image-card:focus-within) .home-item-rating {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  :host-context(.series-season-card:hover) .home-item-rating,
+  :host-context(.series-season-card:focus-within) .home-item-rating {
     opacity: 0;
     pointer-events: none;
   }

@@ -213,6 +213,16 @@ export class DiaryApiService {
     return readAllPages(page => this.getDiaryPage(userId, { page, size: 1000, hasReview, sortBy: 'NEWEST' }));
   }
 
+  getEpisodeDiaryEntriesForSeries(userId: string, seriesTmdbId: string): Observable<DiaryRecord[]> {
+    return readAllPages(page => this.getDiaryPage(userId, {
+      page,
+      size: 1000,
+      type: 'EPISODE',
+      seriesTmdbId,
+      sortBy: 'NEWEST',
+    }));
+  }
+
   getAllDiaryViewItems(userId: string, grouped: boolean): Observable<DiaryViewResponseItem[]> {
     return readAllPages(page => this.getDiaryViewPage(userId, { page, size: 1000, grouped }));
   }

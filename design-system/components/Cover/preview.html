@@ -1,0 +1,62 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watchwise</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:560px; height:288px; }
+  .brand { fill:var(--primary); rx:var(--radius-md); }
+  .sec { fill:var(--secondary); rx:var(--radius-md); }
+  .acc { fill:var(--accent); rx:var(--radius-md); }
+  .tick { fill:var(--chart-5); }
+  .tick.dim { fill:var(--chart-6); }
+  .words { position:absolute; left:var(--space-6); right:var(--space-6); bottom:var(--space-6); max-width:440px; }
+  .name { margin:0; font-size:76px; line-height:.9; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+  .tag { margin:var(--space-2) 0 0 2px; font-size:14px; line-height:20px; color:var(--tertiary); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 560 288" width="560" height="288">
+<!--
+  blocks      primary (marca) 180×300 sangrando topo/base, à esquerda da caixa — a maior, ~1/4 da capa · secondary 160×188 sangrando a base, ao centro · accent 100×28, único bloco pequeno (cor de detalhe, usada com moderação, nunca em área grande)
+  arrangement um slab vertical de marca à esquerda com um bloco secundário satélite ao centro e a base do accent alinhada; espaço reservado à direita para o padrão
+  pattern     "ticks" de progresso — barras horizontais finas (6px), remetendo às barras de episódios assistidos do componente Progress/Table — soltas sobre o chão à direita, mais densas perto do bloco secundário
+  scales      lados em múltiplos de space-2 (8px); pitch do padrão = space-6 (24px); cantos dos blocos = radius-md (token gerado); ticks = pill, rx = metade da altura (3px de 6px)
+-->
+<rect class="brand" x="40" y="-20" width="180" height="308"/>
+<rect class="sec" x="240" y="100" width="160" height="188"/>
+<rect class="acc" x="420" y="40" width="100" height="28"/>
+<rect class="tick" x="264" y="124" width="40" height="6" rx="3"/>
+<rect class="tick dim" x="312" y="124" width="24" height="6" rx="3"/>
+<rect class="tick" x="264" y="148" width="24" height="6" rx="3"/>
+<rect class="tick dim" x="296" y="148" width="48" height="6" rx="3"/>
+<rect class="tick" x="264" y="172" width="48" height="6" rx="3"/>
+<rect class="tick dim" x="320" y="172" width="16" height="6" rx="3"/>
+<rect class="tick" x="264" y="196" width="16" height="6" rx="3"/>
+<rect class="tick dim" x="288" y="196" width="40" height="6" rx="3"/>
+<rect class="tick" x="264" y="220" width="32" height="6" rx="3"/>
+<rect class="tick dim" x="304" y="220" width="24" height="6" rx="3"/>
+<rect class="tick" x="264" y="244" width="24" height="6" rx="3"/>
+<rect class="tick dim" x="296" y="244" width="16" height="6" rx="3"/>
+<rect class="tick" x="424" y="88" width="32" height="6" rx="3"/>
+<rect class="tick dim" x="424" y="112" width="20" height="6" rx="3"/>
+<rect class="tick" x="424" y="136" width="44" height="6" rx="3"/>
+<rect class="tick dim" x="424" y="160" width="16" height="6" rx="3"/>
+<rect class="tick" x="424" y="184" width="28" height="6" rx="3"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Watchwise</h1>
+<p class="tag">Your watchlist, organized.</p>
+</div>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

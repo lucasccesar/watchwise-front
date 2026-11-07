@@ -1,10 +1,10 @@
-<button class="content-poster-picker-trigger" type="button" role="menuitem" data-ww-menu-item [disabled]="savingUrl() !== null" (click)="toggle($event)">
+<button class="content-poster-picker-trigger" type="button" role="menuitem" aria-haspopup="dialog" [attr.aria-expanded]="open()" [attr.aria-controls]="panelId()" data-ww-menu-item [disabled]="savingUrl() !== null" (click)="toggle($event)">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
   <span>{{ label }}</span>
 </button>
 
 @if (open()) {
-  <div class="movie-share-image-options movie-share-image-options--poster content-poster-options" role="group" [attr.aria-label]="selectionLabel" [style.top.px]="position()?.top ?? null" [style.left.px]="position()?.left ?? null">
+  <div #optionsPanel [id]="panelId()" popover="manual" class="movie-share-image-options movie-share-image-options--poster content-poster-options" role="dialog" [attr.aria-label]="selectionLabel" [style.top.px]="position()?.top ?? null" [style.left.px]="position()?.left ?? null">
     @if (status() === 'loading') {
       <div class="movie-share-image-grid movie-share-image-grid--loading movie-share-image-grid--posters" role="status" [attr.aria-label]="loadingLabel">
         @for (skeleton of skeletons; track skeleton) { <span></span> }

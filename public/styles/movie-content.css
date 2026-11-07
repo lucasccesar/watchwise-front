@@ -26,7 +26,6 @@
 .movie-button{min-height:48px;padding:0 var(--space-4);display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);border:1px solid transparent;border-radius:var(--radius-md);color:var(--color-text);cursor:pointer;font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm);text-decoration:none;transition:background-color 120ms ease,border-color 120ms ease}
 .movie-button:disabled{cursor:wait;opacity:.65}
 .movie-button--primary{border-color:var(--color-primary);background:var(--color-primary)}
-.movie-button--primary:hover:not(:disabled){outline:2px solid var(--color-primary);outline-offset:2px}
 .movie-button--secondary{border-color:var(--color-border);background:var(--color-surface-secondary)}
 .movie-button--secondary:hover:not(:disabled),.movie-button--quiet:hover:not(:disabled){border-color:var(--color-tertiary);background:var(--color-secondary)}
 .movie-button--quiet{border-color:var(--color-border);background:color-mix(in srgb,var(--color-surface-secondary) 78%,transparent)}
@@ -275,8 +274,8 @@
 .movie-provider-copy{min-width:0;flex:1;display:flex;flex-direction:column}
 .movie-provider-copy strong{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
 .movie-provider-copy small{color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
-.movie-side-video{width:100%;height:48px;padding:0 var(--space-4);display:flex;align-items:center;gap:var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600;text-align:left}
-.movie-side-video:hover{border-color:var(--color-tertiary)}
+.movie-side-video{width:100%;height:48px;padding:0 var(--space-4);display:flex;align-items:center;gap:var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600;text-align:left;transition:border-color 120ms ease,background-color 120ms ease}
+.movie-side-video:hover{border-color:var(--color-tertiary);background:var(--color-secondary)}
 .movie-side-video>span:nth-child(2){flex:1}
 .movie-video-count{min-width:24px;height:24px;padding:0 var(--space-2);display:grid;place-items:center;border-radius:var(--radius-full);background:var(--color-secondary);font-size:var(--font-size-xs)}
 .movie-external-links{padding-top:var(--space-4);display:flex;flex-wrap:wrap;gap:var(--space-2);border-top:1px solid var(--color-border)}
@@ -303,7 +302,7 @@
 .movie-head-stat:hover span{color:var(--color-accent)}
 .movie-main-details{grid-column:2;grid-row:2;min-width:0;display:flex;flex-direction:column;gap:var(--space-8)}
 .movie-metadata{margin:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--space-2) var(--space-6);color:var(--color-text);font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
-.movie-metadata>div{min-width:0;display:flex;align-items:baseline;gap:var(--space-1);white-space:nowrap}
+.movie-metadata>div{min-width:0;display:flex;align-items:baseline;gap:6px;white-space:nowrap}
 .movie-metadata>div.movie-metadata-wide{white-space:normal}
 .movie-metadata dt{flex:0 0 auto;color:var(--color-tertiary);font-weight:400}
 .movie-metadata dd{margin:0;color:var(--color-text);font-weight:400}
@@ -320,7 +319,7 @@
 .movie-actions-column{grid-column:3;grid-row:2;min-width:0;align-self:start;display:flex;flex-direction:column;gap:var(--space-3)}
 .movie-action-rating{min-height:52px;padding:0 var(--space-4);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600;text-align:left}
 .movie-action-rating>span{color:var(--color-text)}
-.movie-action-rating strong{display:flex;align-items:baseline;gap:var(--space-1);font-size:20px;line-height:1}
+.movie-action-rating strong{display:flex;align-items:flex-end;gap:var(--space-1);font-size:20px;line-height:1}
 .movie-action-rating strong>span:first-child{align-self:center}
 .movie-action-rating strong>span,.movie-action-rating-compact>span{color:var(--color-accent)}
 .movie-action-rating strong svg{width:20px;height:20px;display:block}
@@ -370,6 +369,9 @@
 .movie-action-secondary--watchlist[aria-pressed=true]{border-color:var(--color-accent);background:#422006;color:var(--color-accent)}
 .movie-action-secondary--watchlist[aria-pressed=true] .movie-action-status-icon{fill:var(--color-accent)}
 .movie-action-secondary--dropped[aria-pressed=true]{border-color:var(--color-error);background:#450a0a;color:var(--color-error)}
+.movie-action-secondary--dropped{transition:border-color 120ms ease,background-color 120ms ease,color 120ms ease}
+.movie-action-secondary--dropped:hover:not(:disabled):not([aria-pressed=true]){background:var(--color-secondary)}
+.movie-action-secondary--dropped[aria-pressed=true]:hover:not(:disabled){background:color-mix(in srgb,var(--color-error-soft) 78%,var(--color-error) 22%)}
 .movie-action-secondary:hover:not(:disabled):not([aria-pressed=true]){border-color:var(--color-tertiary)}
 .movie-action-secondary:disabled{cursor:wait;opacity:.65}
 .movie-action-quiet{min-height:40px;padding:0 var(--space-2);border:0;background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);font-weight:600;text-align:left}
@@ -672,6 +674,8 @@
 .series-page .movie-action-primary-row--has-menu{padding-right:40px}
 .series-page .movie-action-watch-row{padding-right:0}
 .series-page .movie-action-watch-row--has-menu{padding-right:44px}
+.series-page .movie-action-watch-row--has-menu{border-radius:var(--radius-md)}
+.series-page .movie-action-watch-row--has-menu .movie-action-watch{border-radius:var(--radius-md) 0 0 var(--radius-md)}
 .series-page .series-episode-rating-trigger{appearance:none;border:0;font-family:inherit;cursor:pointer}
 .series-page .series-episode-rating-trigger:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .series-page .rating-dialog{display:flex;width:100%;max-width:640px;max-height:calc(100dvh - 128px);flex-direction:column;gap:var(--space-5);overflow-y:auto;box-sizing:border-box;padding:var(--space-6);background:var(--dialog-surface)}
@@ -683,17 +687,19 @@
 .series-page .rating-dialog .watch-log-close svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:2}
 .series-page .rating-dialog .watch-rating,.series-page .rating-dialog .watch-review{display:flex;flex-direction:column;gap:var(--space-2)}
 .series-page .rating-dialog .watch-rating>span,.series-page .rating-dialog .watch-review>span:first-child{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
-.series-page .rating-dialog .watch-rating>div{display:flex;flex-wrap:wrap;gap:4px}
+.series-page .rating-dialog .watch-rating>div{display:flex;flex-wrap:nowrap;gap:4px}
 .series-page .rating-dialog .watch-rating button{width:44px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer;font-family:inherit;font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
-.series-page .rating-dialog .watch-rating button:hover{background:var(--color-surface)}
+.series-page .rating-dialog .watch-rating button:hover{background:transparent}
 .series-page .rating-dialog .watch-rating button svg{width:32px;height:32px;fill:none;stroke:var(--color-text-tertiary);stroke-width:2;stroke-linejoin:round}
 .series-page .rating-dialog .watch-rating button svg path{fill:none;stroke:var(--color-text-tertiary)}
 .series-page .rating-dialog .watch-rating button svg.watch-rating-star--selected,.series-page .rating-dialog .watch-rating button svg.watch-rating-star--selected path{fill:var(--color-accent);stroke:var(--color-accent)}
+.series-page .rating-dialog .watch-rating button>span{color:var(--color-text-tertiary);font-weight:600}
+.series-page .rating-dialog .watch-rating button>span.watch-rating-score-selected{color:var(--color-text)}
 .series-page .rating-dialog .watch-review>span:first-child>span{color:var(--color-text-tertiary);font-weight:400}
 .series-page .rating-dialog .watch-review textarea{width:100%;min-height:120px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-family:inherit;font-size:var(--font-size-md);line-height:var(--line-height-md);resize:vertical}
 .series-page .rating-dialog .watch-log-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
 .series-page .rating-dialog .watch-log-actions .movie-button{min-height:40px}
-.series-page .rating-dialog .watch-log-actions .movie-button--primary{margin-left:auto}
+.series-page .rating-dialog .watch-log-actions{justify-content:flex-end}
 @media(max-width:800px){.series-page .movie-action-primary-row{padding-right:0}.series-page .movie-action-primary-row--has-menu{padding-right:40px}.series-page .movie-action-watch-row{padding-right:var(--space-2)}.series-page .movie-action-watch-row--has-menu{padding-right:52px}}
 @media(max-width:560px){.series-page .rating-dialog{max-height:calc(100dvh - 32px - env(safe-area-inset-bottom,0px));gap:var(--space-4);padding:var(--space-5)}}
 .movie-comment-input-wrap{position:relative;min-width:0}
@@ -718,7 +724,8 @@
 
 /* Series page layout */
 .series-page{display:block}
-.series-page .movie-action-mark-watched small{display:block;margin-top:2px;color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400;line-height:var(--line-height-xs)}
+.series-page .movie-action-mark-watched small{display:block;color:var(--color-tertiary);font-size:var(--font-size-xs);font-weight:400;line-height:var(--line-height-xs)}
+.series-page .series-action-mark-watched--complete small{color:var(--color-text)}
 .series-page .movie-action-mark-watched{align-items:center}
 .series-page .series-action-mark-watched{width:auto;min-width:0;flex:1}
 .series-page .series-action-watch-row--menu-only{min-height:60px}
@@ -813,11 +820,11 @@
 .series-page #series-seasons{background:var(--color-surface-secondary)}
 .series-page .movie-synopsis-section{min-height:118px}
 .series-page .movie-external-links{min-height:99px;align-content:flex-start}
-.series-page .movie-provider-more{align-self:flex-start;margin:0;padding:0;border:0;background:transparent;color:var(--color-primary);cursor:pointer;font:inherit;font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
-.series-page .movie-provider-more:hover{text-decoration:underline}
+.movie-page .movie-provider-more{align-self:flex-start;margin:0;padding:0;border:0;background:transparent;color:var(--color-text);cursor:pointer;font:inherit;font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
+.movie-page .movie-provider-more:hover{text-decoration:underline}
 .series-page .movie-providers .movie-provider-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:18px}
 .series-page .movie-providers .movie-provider-copy small{line-height:18px}
-.series-page .movie-providers{min-height:182px;box-sizing:border-box}
+.series-page .movie-providers{height:fit-content;min-height:0;box-sizing:border-box}
 .series-page .movie-side-video,.series-page .movie-action-lists{line-height:20px}
 .series-page .movie-ratings-divider{margin-top:8px}
 .series-page .movie-ratings-card{height:164px;min-height:164px;box-sizing:border-box}
@@ -841,7 +848,8 @@
 .series-page .series-episode-rating{position:absolute;top:var(--space-2);right:var(--space-2);bottom:auto;padding:0 var(--space-2);min-height:24px;display:flex;align-items:center;gap:4px;border-radius:var(--radius-sm);background:var(--color-surface);font-size:var(--font-size-xs);font-weight:600}
 .series-page .series-episode-rating svg{width:14px;height:14px;color:var(--color-accent)}
 .series-page .series-episode-copy{min-height:0;padding:0;display:flex;flex-direction:column;gap:0}
-.series-page .series-episode-heading,.series-page .series-episode-meta{min-width:0;display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2)}
+.series-page:not(.season-page) .series-episode-heading{min-width:0;display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2)}
+.series-page:not(.season-page) .series-episode-meta{min-width:0;display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2)}
 .series-page .series-episode-heading strong{min-width:0;overflow:hidden;color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm);text-overflow:ellipsis;white-space:nowrap}
 .series-page .series-episode-heading>span{flex:0 0 auto;color:var(--color-text);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .series-page .series-episode-meta>span{min-width:0;overflow:hidden;color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs);text-overflow:ellipsis;white-space:nowrap}
@@ -855,6 +863,9 @@
 .series-page .series-season-scroll{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-flow:row;gap:var(--space-6) var(--space-4);overflow:visible}
 .series-page .series-season-card{position:relative;min-width:0;overflow:visible;display:block;border:0;border-radius:0;background:transparent}
 .series-page .series-season-poster{position:relative;aspect-ratio:2/3;overflow:hidden;border-radius:var(--radius-md);background:var(--color-secondary)}
+.series-page .series-season-poster .content-watched-date{max-width:calc(100% - 60px);min-height:18px;padding:0 var(--space-2);display:inline-flex;align-items:center;background:var(--color-surface);line-height:var(--line-height-xs)}
+.series-page .series-season-poster .content-user-rating{min-height:18px;gap:var(--space-1);padding:0 var(--space-2)}
+.series-page .series-season-poster .content-user-rating svg{width:12px;height:12px;flex-basis:12px}
 .series-page .series-season-poster img{width:100%;height:100%;display:block;object-fit:cover}
 .series-page .series-season-poster img{border-radius:var(--radius-md)}
 .series-page .series-season-details{margin-top:8px;padding:0;display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:var(--space-2)}
@@ -938,6 +949,7 @@
 /* Viewer state buttons retain their amber/red treatment despite shared button defaults. */
 .movie-action-secondary--watchlist[data-ww-button='secondary']{background:transparent!important;color:var(--color-text)!important}
 .movie-action-secondary--watchlist[data-ww-button='secondary'][aria-pressed=true]{border-color:var(--color-accent)!important;background:var(--color-warning-soft)!important;color:var(--color-accent)!important}
+.movie-action-secondary--watchlist[data-ww-button='secondary']:hover:not(:disabled){border-color:var(--color-accent)!important;background:var(--color-warning-soft)!important}
 .movie-action-secondary--watchlist[aria-pressed=true] .movie-action-status-icon{fill:var(--color-accent)}
 .movie-action-secondary--dropped[data-ww-button='secondary']{background:transparent!important;color:var(--color-text)!important}
 .movie-action-secondary--dropped[data-ww-button='secondary'][aria-pressed=true]{border-color:var(--color-error)!important;background:var(--color-error-soft)!important;color:var(--color-error)!important}
@@ -993,7 +1005,9 @@
 
 /* Unwatched series have no adjacent ellipsis button, so let the primary action use the full row. */
 .series-page .series-action-watch-row:not(.series-action-watch-row--has-menu){padding-right:0}
-.series-page .series-action-mark-watched{width:100%;min-width:0;flex:1 1 auto;box-sizing:border-box}
+.series-page .series-action-mark-watched{position:relative;z-index:1;width:100%;min-width:0;flex:1 1 auto;box-sizing:border-box;pointer-events:auto}
+.series-page .series-action-mark-watched>span{min-width:0;white-space:nowrap}
+.series-page .series-action-mark-watched:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 @media(max-width:800px){
   .series-page .series-action-watch-row:not(.series-action-watch-row--has-menu){padding-right:var(--space-2)}
   .series-page .series-action-watch-row--has-menu{padding-right:52px}
@@ -1001,24 +1015,80 @@
 
 .movie-action-rating--unrated strong{align-items:center}
 .series-page .series-bulk-dialog .series-bulk-content{margin-top:var(--space-4)}
-.series-page .series-bulk-dialog .movie-button--primary:hover:not(:disabled){outline:none}
 .series-page .series-action-watch-row--partial{box-sizing:border-box;padding:var(--space-1) 48px var(--space-1) var(--space-1);border:1px solid var(--color-primary);border-radius:var(--radius-md)}
 .series-page .series-action-watch-row--partial .series-action-mark-watched{width:auto;min-width:0;min-height:64px;flex:1 1 auto;border:0;border-radius:var(--radius-sm);background:transparent}
-.series-page .series-action-watch-row--partial .movie-mobile-more-actions{top:50%;right:0;transform:translateY(-50%)}
+.series-page .series-action-watch-row--partial .movie-mobile-more-actions{top:50%;right:0;z-index:2;transform:translateY(-50%)}
 .series-page .series-action-watch-row--partial .movie-mobile-more-actions summary{border:0!important;background:transparent!important}
 .series-page .series-completion-dialog{box-sizing:border-box;width:min(100%,480px);display:flex;flex-direction:column;gap:var(--space-5);padding:var(--space-6);border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface-secondary);color:var(--color-text);box-shadow:var(--shadow-xl)}
 .series-page .series-completion-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
-.series-page .series-completion-icon{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:var(--radius-full)}
-.series-page .series-completion-icon app-check-icon{width:20px;height:20px}
+.series-page .series-completion-dialog>header .movie-icon-button,
+.series-page .series-completion-dialog>header .movie-icon-button:hover:not(:disabled){border:0!important;background:transparent!important}
+.series-page .series-completion-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid var(--color-border);border-radius:var(--radius-full)}
+.series-page .series-completion-icon app-check-icon{width:20px;height:20px;display:grid;place-items:center;line-height:0}
+.series-page .series-completion-icon app-check-icon svg{width:20px;height:20px;display:block}
+.series-page .series-bulk-dialog>.movie-dialog-header .movie-icon-button,
+.series-page .series-bulk-dialog>.movie-dialog-header .movie-icon-button:hover:not(:disabled){border:0;background:transparent}
 .series-page .series-completion-copy h2{margin:0;font-size:var(--font-size-lg);font-weight:600;line-height:var(--line-height-lg)}
 .series-page .series-completion-copy p{margin:var(--space-2) 0 0;color:var(--color-text-secondary);font-size:var(--font-size-sm);line-height:var(--line-height-md)}
 .series-page .series-completion-dialog>footer{display:flex;justify-content:flex-end;gap:var(--space-2)}
 .series-page .series-completion-dialog>footer .movie-button{min-height:40px}
 .series-page .series-completion-dialog .movie-button--primary>svg{width:16px;height:16px}
+.series-page .series-action-confirm-dialog{display:flex;flex-direction:column;gap:var(--space-4)}
+.series-page .series-action-confirm-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
+.series-page .series-action-confirm-dialog h2{margin:0;font-size:var(--font-size-lg);font-weight:600;line-height:var(--line-height-lg)}
+.series-page .series-action-confirm-dialog>p{margin:0;color:var(--color-text-tertiary);font-size:var(--font-size-sm);line-height:var(--line-height-md)}
+.series-page .series-action-confirm-dialog>footer{display:flex;justify-content:flex-end;gap:var(--space-2)}
+
+/* Keep action controls compact and prevent long labels from escaping their buttons. */
+.movie-button{min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.movie-button>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.series-page .series-bulk-dialog .movie-button--primary{min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.series-page .series-action-watch-row--partial{box-sizing:border-box;height:52px;min-height:52px;padding:0 44px 0 0;border-radius:var(--radius-md)}
+.series-page .series-action-watch-row--partial{border:1px solid var(--color-primary);background:transparent}
+.series-page .series-action-watch-row--complete{box-sizing:border-box;min-height:64px;padding-right:44px;border-radius:var(--radius-md);background:transparent}
+.season-page .season-actions-column .series-action-watch-row--has-menu>.movie-action-watch,
+.season-page .season-actions-column .series-action-watch-row--has-menu>.series-action-mark-watched{border-top-right-radius:0!important;border-bottom-right-radius:0!important}
+.season-page .season-actions-column .movie-action-primary-row.series-action-primary-row--has-menu details.movie-mobile-more-actions.season-watched-actions--complete{border-radius:0 var(--radius-md) var(--radius-md) 0!important;background:var(--color-primary)!important}
+.season-page .season-actions-column .movie-action-primary-row.series-action-primary-row--has-menu details.movie-mobile-more-actions.season-watched-actions--complete>summary[data-ww-ellipsis-trigger]{border-radius:inherit!important}
+.series-page .series-action-watch-row--partial .series-action-mark-watched{height:50px;min-height:50px;padding-inline:var(--space-4);overflow:hidden;border:0!important;border-radius:var(--radius-sm) 0 0 var(--radius-sm);background:transparent!important;box-shadow:none;color:var(--color-text);font-size:var(--font-size-sm);line-height:var(--line-height-sm);white-space:nowrap}
+.series-page .series-action-watch-row--partial .series-action-mark-watched>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.series-page .series-action-mark-watched>span small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.series-page .series-action-primary-row--has-menu{padding-right:0}
+.series-page .series-action-watch-row--partial .movie-mobile-more-actions{top:0!important;right:0!important;bottom:0!important;width:44px;height:100%;transform:none!important}
+.series-page .series-action-watch-row--partial .movie-mobile-more-actions summary[data-ww-ellipsis-trigger]{width:44px!important;height:100%!important;min-height:0!important;border:0!important;border-radius:0 var(--radius-md) var(--radius-md) 0!important;background:transparent!important;color:var(--color-text)!important}
+.series-page .series-action-watch-row--partial .movie-mobile-more-actions summary[data-ww-ellipsis-trigger]:hover{background:transparent!important}
 
 @media(max-width:800px){
   .series-page .series-action-watch-row--partial{padding-right:48px}
   .series-page .series-action-watch-row--partial .series-action-mark-watched{min-height:60px}
+  .series-page .series-action-watch-row--complete{min-height:0;padding:var(--space-2) 44px var(--space-2) var(--space-2)}
+  .series-page .rating-dialog .watch-rating>div{gap:0}
+  .series-page .rating-dialog .watch-rating button{width:calc((100% - 36px) / 10);min-width:0}
+  .series-page .rating-dialog .watch-rating button svg{width:28px;height:28px}
   .series-page .series-completion-dialog{max-height:calc(100dvh - 32px);padding:var(--space-5)}
   .series-page .series-completion-dialog>footer .movie-button{flex:1}
 }
+
+@media(max-width:800px){
+  .series-page .series-action-watch-row--partial{height:52px;min-height:52px;padding-right:44px}
+  .series-page .series-action-watch-row--partial .series-action-mark-watched{height:50px;min-height:50px}
+}
+
+.series-page .series-action-watch-row--partial .series-action-mark-watched{color:var(--color-primary)}
+.series-page .series-action-watch-row--partial .series-action-mark-watched app-check-icon{color:var(--color-primary)}
+.series-page .series-action-watch-row--partial .series-action-mark-watched>span{color:var(--color-primary)!important}
+.series-page .series-history-confirm-dialog>header .movie-icon-button,
+.series-page .series-history-confirm-dialog>header .movie-icon-button:hover:not(:disabled){border:0!important;background:transparent!important}
+.movie-action-secondary--dropped[data-ww-button='secondary']:hover:not(:disabled):not([aria-pressed=true]){border-color:var(--color-error)!important;background:var(--color-error-soft)!important;color:var(--color-text)!important}
+.movie-action-secondary--dropped[data-ww-button='secondary'][aria-pressed=true]:hover:not(:disabled){border-color:var(--color-error)!important;background:var(--color-error-soft)!important;color:var(--color-error)!important}
+.series-page #series-cast .movie-people-scroll{padding-bottom:0;scrollbar-width:thin;scrollbar-color:var(--color-border) transparent}
+.series-page .series-action-watch-row--partial{position:relative;isolation:isolate;background-image:linear-gradient(var(--color-primary-soft),var(--color-primary-soft));background-position:left center;background-repeat:no-repeat;background-size:var(--watched-progress,0%) 100%;transition:background-size 120ms ease-out}
+.series-page .series-action-watch-row--partial:has(.series-action-mark-watched:hover:not(:disabled)),
+.series-page .series-action-watch-row--partial:has(.series-action-mark-watched:focus-visible:not(:disabled)){background-size:100% 100%}
+@media(prefers-reduced-motion:reduce){.series-page .series-action-watch-row--partial{transition:none}}
+.series-page .series-season-rating-trigger,.season-page .season-card-rating-trigger,.season-page .season-episode-rating-trigger{appearance:none;border:0;font-family:inherit;cursor:pointer}
+.series-page .series-season-rating-trigger:focus-visible,.season-page .season-card-rating-trigger:focus-visible,.season-page .season-episode-rating-trigger:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+.series-page .series-season-rating-trigger:disabled,.season-page .season-card-rating-trigger:disabled,.season-page .season-episode-rating-trigger:disabled{cursor:wait;opacity:.75}
+.series-page .series-action-watch-row--partial{height:66px;min-height:66px}
+.series-page .series-action-watch-row--partial .series-action-mark-watched{height:64px;min-height:64px}
+@media(max-width:800px){.series-page .series-action-watch-row--partial{height:78px;min-height:78px;padding:var(--space-2) 44px var(--space-2) var(--space-2)}.series-page .series-action-watch-row--partial .series-action-mark-watched{height:60px;min-height:60px}}

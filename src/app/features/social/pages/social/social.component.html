@@ -120,7 +120,7 @@
                   <div class="social-content-row">
                     @if (poster) {
                       @if (link) {
-                        <a class="social-poster" [routerLink]="link" [attr.aria-label]="activityTitle(activity)"><img [src]="poster" alt="" loading="lazy" /></a>
+                        <a class="social-poster" [routerLink]="link" [state]="activityNavigationState(activity)" [attr.aria-label]="activityTitle(activity)"><img [src]="poster" alt="" loading="lazy" /></a>
                       } @else {
                         <span class="social-poster"><img [src]="poster" alt="" loading="lazy" /></span>
                       }
@@ -131,7 +131,7 @@
                       <div class="social-content-heading">
                         <h3>
                           @if (link) {
-                            <a [routerLink]="link">{{ activityTitle(activity) }}</a>
+                            <a [routerLink]="link" [state]="activityNavigationState(activity)">{{ activityTitle(activity) }}</a>
                           } @else {
                             {{ activityTitle(activity) }}
                           }
@@ -167,7 +167,7 @@
                       {{ formatCount(commentCount(activity)) }} {{ copy.comments }}
                     </span>
                     @if (link) {
-                      <a class="social-view-activity" [routerLink]="link">{{ copy.viewActivity }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></a>
+                      <a class="social-view-activity" [routerLink]="link" [state]="activityNavigationState(activity)">{{ copy.viewActivity }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></a>
                     }
                   </div>
 
@@ -267,7 +267,6 @@
             <h2 id="social-report-title">{{ reportTitle() }}</h2>
             <p>{{ reportAnonymousNotice() }}</p>
           </div>
-          <button class="social-report-close" type="button" [attr.aria-label]="copy.reportClose" [disabled]="reportBusy()" (click)="cancelReport()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
         </header>
 
         <div class="social-report-evidence">

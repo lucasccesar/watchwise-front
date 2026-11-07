@@ -19,6 +19,7 @@ import { ShareCardModel, SharePreviewComponent } from '../../../../shared/compon
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
+import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { ListComment, ListContentReference, ListDetailItem, ListDetailView, ListOwner, ListsApiService, ListVisibility } from '../../data-access/lists-api.service';
 
@@ -302,8 +303,14 @@ export class ListDetailComponent {
     const id = card.tmdbId || card.seriesTmdbId;
     if (!id) return null;
     if (card.type === 'MOVIE') return ['/content/movie', id];
-    if (card.type === 'SERIES' || card.type === 'SEASON' || card.type === 'EPISODE') return ['/content/series', id];
+    if (card.type === 'EPISODE') return episodeContentRoute(card);
+    if (card.type === 'SEASON' && card.seasonNumber !== null) return ['/content/series', id, 'season', String(card.seasonNumber)];
+    if (card.type === 'SERIES') return ['/content/series', id];
     return null;
+  }
+
+  protected contentNavigationState(item: ListDetailItem): { contentId: string } | undefined {
+    return item.card?.type === 'EPISODE' ? episodeContentNavigationState(item.card.contentId) : undefined;
   }
 
   protected imageActionsFor(item: ListDetailItem): readonly ContentImageAction[] {

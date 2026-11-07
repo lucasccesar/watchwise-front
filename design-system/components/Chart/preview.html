@@ -1,0 +1,51 @@
+<!-- @dsCard group="Data" height=260 subtitle="chart-1..6 (bars) and chartb-1..6 (genre distribution, approved screen)" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chart — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .section-lbl { font-size:12px; color:var(--tertiary); margin:0 0 10px; }
+  .bars { display:flex; align-items:flex-end; gap:10px; height:100px; margin-bottom:var(--space-8); }
+  .bar { width:24px; border-radius:4px 4px 0 0; }
+  .lbl { font-size:10px; color:var(--tertiary); text-align:center; margin-top:4px; }
+  .col { display:flex; flex-direction:column; align-items:center; }
+  .stacked { display:flex; height:20px; border-radius:var(--radius-sm); overflow:hidden; width:100%; max-width:420px; }
+  .seg { height:100%; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:11px; color:var(--tertiary); }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+  .sw { width:8px; height:8px; border-radius:2px; display:inline-block; }
+</style>
+</head>
+<body>
+<p class="section-lbl">chart-1…6 — monochromatic series</p>
+<div class="bars">
+  <div class="col"><div class="bar" style="height:90px; background:var(--chart-1)"></div><div class="lbl">Jan</div></div>
+  <div class="col"><div class="bar" style="height:70px; background:var(--chart-2)"></div><div class="lbl">Feb</div></div>
+  <div class="col"><div class="bar" style="height:55px; background:var(--chart-3)"></div><div class="lbl">Mar</div></div>
+  <div class="col"><div class="bar" style="height:40px; background:var(--chart-4)"></div><div class="lbl">Apr</div></div>
+  <div class="col"><div class="bar" style="height:25px; background:var(--chart-5)"></div><div class="lbl">May</div></div>
+  <div class="col"><div class="bar" style="height:15px; background:var(--chart-6)"></div><div class="lbl">Jun</div></div>
+</div>
+<p class="section-lbl">chartb-1…6 — most-watched genres (approved palette)</p>
+<div class="stacked">
+  <div class="seg" style="width:44%; background:var(--chartb-1)"></div>
+  <div class="seg" style="width:20%; background:var(--chartb-2)"></div>
+  <div class="seg" style="width:15%; background:var(--chartb-3)"></div>
+  <div class="seg" style="width:11%; background:var(--chartb-4)"></div>
+  <div class="seg" style="width:6%; background:var(--chartb-5)"></div>
+  <div class="seg" style="width:4%; background:var(--chartb-6)"></div>
+</div>
+<div class="legend">
+  <span><i class="sw" style="background:var(--chartb-1)"></i>Drama</span>
+  <span><i class="sw" style="background:var(--chartb-2)"></i>Thriller</span>
+  <span><i class="sw" style="background:var(--chartb-3)"></i>Sci-Fi</span>
+  <span><i class="sw" style="background:var(--chartb-4)"></i>Comedy</span>
+  <span><i class="sw" style="background:var(--chartb-5)"></i>Action</span>
+  <span><i class="sw" style="background:var(--chartb-6)"></i>Crime</span>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

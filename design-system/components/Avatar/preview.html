@@ -1,0 +1,34 @@
+<!-- @dsCard group="Data" height=120 subtitle="Photo, initials, online status, group" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Avatar — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .row { display:flex; align-items:center; gap:var(--space-4); }
+  .wrap { position:relative; display:inline-flex; flex:none; }
+  .av { width:40px; height:40px; border-radius:50%; background:var(--secondary); display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:none; }
+  .status { position:absolute; right:-1px; bottom:-1px; width:11px; height:11px; border-radius:50%; border:2px solid var(--surface); }
+  .status.online { background:var(--success); }
+  .status.offline { background:var(--tertiary); }
+  .group { display:flex; }
+  .group .av { margin-left:-10px; border:2px solid var(--surface); }
+  .group .av:first-child { margin-left:0; }
+  .more { background:var(--surface-secondary); color:var(--tertiary); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <span class="wrap"><span class="av">LC</span><span class="status online"></span></span>
+  <span class="wrap"><span class="av">MS</span><span class="status offline"></span></span>
+  <div class="group">
+    <span class="av">AB</span>
+    <span class="av">CD</span>
+    <span class="av more">+5</span>
+  </div>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

@@ -256,14 +256,14 @@
           @let route = contentRoute(entry);
           @let image = poster(entry);
           <article class="diary-review-item">
-            <a class="diary-review-poster" [routerLink]="route" [attr.aria-label]="title(entry)">
+            <a class="diary-review-poster" [routerLink]="route" [state]="episodeNavigationState(entry.content.type, entry.content.id)" [attr.aria-label]="title(entry)">
               @if (image) { <img [src]="image" alt="" loading="lazy" /> }
               @else { <span>{{ title(entry) }}</span> }
             </a>
             <div class="diary-review-main">
               <div class="diary-review-heading">
                 <div class="diary-review-title-line">
-                  <a [routerLink]="route">{{ title(entry) }}</a>
+                  <a [routerLink]="route" [state]="episodeNavigationState(entry.content.type, entry.content.id)">{{ title(entry) }}</a>
                   @if (reviewContext(entry)) { <span>{{ reviewContext(entry) }}</span> }
                 </div>
                 @if (entry.score !== null) {
@@ -354,7 +354,7 @@
                 } @else {
                 @let route = contentRoute(entry);
                 @let image = poster(entry);
-                <a class="diary-entry-link" [routerLink]="route" [attr.aria-label]="entryLabel(entry)" [class.diary-entry-link-disabled]="!route">
+                <a class="diary-entry-link" [routerLink]="route" [state]="episodeNavigationState(entry.content.type, entry.content.id)" [attr.aria-label]="entryLabel(entry)" [class.diary-entry-link-disabled]="!route">
                   <div class="diary-entry-poster content-image-card" [class.diary-entry-poster--collapsed]="!grouped()">
                     @if (image) { <img [src]="image" alt="" loading="lazy" /> }
                     @else { <span class="diary-entry-poster-empty">{{ title(entry) }}</span> }

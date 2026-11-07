@@ -1,0 +1,23 @@
+<!-- @dsCard group="Feedback" height=120 subtitle="Top, centered" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tooltip — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-10) var(--space-6); display:flex; justify-content:center; }
+  .wrap { position:relative; display:inline-block; }
+  .tip { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--surface-secondary); color:var(--text); font-size:12px; padding:6px 10px; border-radius:var(--radius-sm); white-space:nowrap; box-shadow:var(--shadow-lg); }
+  .tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--surface-secondary); }
+  .target { width:32px; height:32px; border-radius:50%; background:var(--secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tip">Add to watchlist</div>
+  <div class="target"></div>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Form" height=100 subtitle="Off and On" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toggle — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-3); }
+  .track { width:36px; height:20px; border-radius:999px; background:var(--surface-secondary); border:1px solid var(--border); position:relative; flex:none; }
+  .track.on { background:var(--primary); border-color:var(--primary); }
+  .knob { width:14px; height:14px; border-radius:50%; background:var(--text); position:absolute; top:2px; left:2px; transition:left .15s; }
+  .track.on .knob { left:19px; }
+  label { font-size:14px; }
+</style>
+</head>
+<body>
+<div class="row"><span class="track"><span class="knob"></span></span><label>Notifications — off</label></div>
+<div class="row"><span class="track on"><span class="knob"></span></span><label>Notifications — on</label></div>
+<script>/* static preview */</script>
+</body>
+</html>

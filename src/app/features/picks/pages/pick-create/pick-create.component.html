@@ -60,7 +60,7 @@
 
 @if (activeCategory(); as category) {
   <app-dialog-backdrop (dismiss)="closeOptions()"><section class="pick-create-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeOptions()" aria-modal="true" [attr.aria-label]="copy.fixedOptions + ': ' + category.name">
-    <header><div><span>{{ typeLabel(category.allowedType) }} · {{ category.group === 'PRIMARY' ? copy.primary : copy.secondary }}</span><h2>{{ category.name }}</h2></div><button type="button" aria-label="{{ copy.cancel }}" (click)="closeOptions()">×</button></header>
+    <header><div><span>{{ typeLabel(category.allowedType) }} · {{ category.group === 'PRIMARY' ? copy.primary : copy.secondary }}</span><h2>{{ category.name }}</h2></div></header>
     <div class="pick-create-dialog-body">
       @if (selectedSeries(); as series) {
         @if (seriesSeasons().length) {

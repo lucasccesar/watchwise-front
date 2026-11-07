@@ -1861,8 +1861,17 @@
   line-height: var(--line-height-xs);
 }
 
+.watch-rating button > span {
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+}
+
+.watch-rating button > span.watch-rating-score-selected {
+  color: var(--color-text);
+}
+
 .watch-rating button:hover {
-  background: var(--color-surface);
+  background: transparent;
 }
 
 .watch-rating button svg {

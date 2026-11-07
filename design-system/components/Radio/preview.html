@@ -1,0 +1,30 @@
+<!-- @dsCard group="Form" height=180 subtitle="Simple radio and selection card" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Radio — preview</title>
+<style>
+  html, body { margin:0; }
+  body { background:var(--surface); color:var(--text); font-family:var(--font-sans); padding:var(--space-6); }
+  .row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-3); }
+  .dot { width:18px; height:18px; border-radius:50%; border:1px solid var(--border); display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .dot.on { border-color:var(--primary); }
+  .dot.on::after { content:''; width:8px; height:8px; border-radius:50%; background:var(--primary); }
+  label { font-size:14px; }
+  .card { display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border); border-radius:var(--radius-md); padding:var(--space-4); max-width:260px; }
+  .card.on { border-color:var(--primary); }
+  .card .t { font-size:14px; font-weight:600; }
+  .card .d { font-size:12px; color:var(--tertiary); }
+</style>
+</head>
+<body>
+<div class="row"><span class="dot on"></span><label>Movies</label></div>
+<div class="row"><span class="dot"></span><label>TV Shows</label></div>
+<div class="card on" style="margin-top:var(--space-4);">
+  <div><div class="t">Annual plan</div><div class="d">Billed once a year</div></div>
+  <span class="dot on"></span>
+</div>
+<script>/* static preview */</script>
+</body>
+</html>

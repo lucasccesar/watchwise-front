@@ -296,6 +296,22 @@
   font-weight: 600;
 }
 
+.notification-episode-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.notification-episode-title-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.notification-episode-title-link:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .notification-content-copy small {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);

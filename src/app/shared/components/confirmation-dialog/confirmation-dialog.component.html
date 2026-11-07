@@ -1,0 +1,22 @@
+@if (request(); as dialog) {
+  <app-dialog-backdrop (dismiss)="dismiss()">
+    <section
+      class="ww-confirmation-dialog ww-dialog-panel"
+      role="alertdialog"
+      appModalFocus
+      (modalDismiss)="dismiss()"
+      aria-modal="true"
+      aria-labelledby="ww-confirmation-title"
+      aria-describedby="ww-confirmation-message"
+      tabindex="-1"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="ww-confirmation-title">{{ dialog.title || copy.title }}</h2>
+      <p id="ww-confirmation-message">{{ dialog.message }}</p>
+      <footer class="ww-confirmation-actions">
+        <button class="ww-confirmation-cancel" data-ww-button="secondary" type="button" (click)="dismiss()">{{ copy.cancel }}</button>
+        <button class="ww-confirmation-submit" data-ww-button="danger" type="button" (click)="confirm()">{{ dialog.confirmLabel }}</button>
+      </footer>
+    </section>
+  </app-dialog-backdrop>
+}

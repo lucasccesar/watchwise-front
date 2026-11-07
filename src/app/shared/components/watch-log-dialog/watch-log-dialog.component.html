@@ -1,0 +1,70 @@
+<app-dialog-backdrop placement="top" (dismiss)="dismiss.emit()">
+  <section
+    class="watch-log-dialog ww-dialog-panel"
+    appModalFocus
+    (modalDismiss)="dismiss.emit()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="watch-log-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="watch-log-header">
+      <div>
+        <h2 id="watch-log-title">{{ dialogTitle() }}</h2>
+        <span>{{ title() }}<span aria-hidden="true"> · </span>{{ subtitle() }}</span>
+      </div>
+    </header>
+
+    <div class="watch-log-controls">
+      <div class="watch-date-picker">
+        <button class="watch-date-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="watchCalendarOpen()" (click)="toggleWatchCalendar()" data-ww-select-trigger>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+          <span><span>{{ copy.watchedOn }}</span> {{ watchLogDateLabel() }}</span>
+          <svg class="watch-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+        @if (watchCalendarOpen()) {
+          <div class="watch-calendar" role="dialog" [attr.aria-label]="copy.chooseWatchDate">
+            <div class="watch-calendar-header">
+              <button type="button" [attr.aria-label]="copy.previousMonth" (click)="changeWatchCalendarMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+              <span>{{ watchCalendarMonthLabel() }}</span>
+              <button type="button" [attr.aria-label]="copy.nextMonth" [disabled]="!canAdvanceWatchCalendar()" (click)="changeWatchCalendarMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+            </div>
+            <div class="watch-calendar-grid watch-calendar-weekdays" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
+            <div class="watch-calendar-grid">
+              @for (day of watchCalendarDays(); track day.date) {
+                @if (day.inMonth) {
+                  <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled" [class.watch-calendar-day--selected]="day.selected" (click)="selectWatchLogDate(day.date)">{{ day.day }}</button>
+                } @else { <span aria-hidden="true"></span> }
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <label class="watch-rewatch-option"><input type="checkbox" [checked]="watchLogRewatch()" (change)="setWatchLogRewatch($event)" />{{ copy.watchedBefore }}</label>
+    </div>
+
+    <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
+      <span>{{ copy.watchedWith }}</span>
+      <div><span class="watch-log-just-you">{{ copy.justYou }}</span><button type="button" disabled [title]="copy.actionUnavailableShort"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.addPerson }}</button></div>
+    </div>
+
+    <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
+      <span>{{ copy.yourRating }}</span>
+      <div>
+        @for (rating of ratingOptions; track rating) {
+          <button type="button" [attr.aria-label]="copy.rateWith + ' ' + rating + ' ' + copy.outOfTen" [attr.aria-pressed]="watchLogRating() === rating" (click)="setWatchLogRating(rating)">
+            <svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="watchLogRating() !== null && rating <= watchLogRating()!"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L11.283 3.453Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" /></svg>
+            <span [class.watch-rating-score-selected]="watchLogRating() !== null && rating <= watchLogRating()!">{{ rating }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <label class="watch-review"><span>{{ copy.yourReview }} <span>{{ copy.optional }}</span></span><textarea rows="5" [placeholder]="copy.reviewPlaceholder" [value]="watchLogReview()" (input)="updateWatchLogReview($event)"></textarea></label>
+
+    <footer class="watch-log-actions">
+      <button class="watch-log-cancel" type="button" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">{{ copy.cancel }}</button>
+      <button class="watch-log-save" type="button" [disabled]="saving()" (click)="submit()" data-ww-button="primary">{{ saving() ? copy.saving : copy.save }}</button>
+    </footer>
+  </section>
+</app-dialog-backdrop>
