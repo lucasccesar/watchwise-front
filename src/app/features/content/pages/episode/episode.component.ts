@@ -649,7 +649,7 @@ export class EpisodeComponent implements OnDestroy {
         }
         this.page.set(episode);
         const seriesName = episode.details.parentTitle?.trim() || 'Série';
-        this.title.setTitle(`${seriesName} • S${episode.details.seasonNumber} E${episode.details.episodeNumber} | Watchwise`);
+        this.title.setTitle(`${seriesName} • S${seasonNumber} E${episodeNumber} | Watchwise`);
         this.reviews.set(reviews.content);
         this.comments.set(comments.content);
         this.reviewPage.set(reviews);
