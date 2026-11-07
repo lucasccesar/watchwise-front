@@ -1199,7 +1199,7 @@ export class SeasonComponent implements OnDestroy {
             stats: season.stats,
             viewerState: season.viewerState,
           })));
-        this.title.setTitle(`${page.details.parentTitle || 'Série'} · ${page.details.title || `Temporada ${seasonNumber}`} | Watchwise`);
+        this.title.setTitle(`${this.seriesName()} • S${seasonNumber} | Watchwise`);
         this.status.set('ready');
         if (this.ratingPromptSeasonAfterLoad?.seriesTmdbId === tmdbId) {
           const targetSeasonNumber = this.ratingPromptSeasonAfterLoad.seasonNumber;

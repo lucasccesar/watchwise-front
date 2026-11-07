@@ -24,6 +24,7 @@ export const routes: Routes = [
       },
       {
         path: 'register',
+        title: 'Criar conta | Watchwise',
         loadComponent: () =>
           import('./features/auth/pages/signup/signup.component').then(
             (module) => module.SignupComponent,
@@ -31,6 +32,7 @@ export const routes: Routes = [
       },
       {
         path: 'forgot-password',
+        title: 'Recuperar senha | Watchwise',
         loadComponent: () =>
           import('./features/auth/pages/password-recovery/password-recovery.component').then(
             (module) => module.PasswordRecoveryComponent,

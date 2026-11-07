@@ -1,5 +1,6 @@
-import { Component, HostListener } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, HostListener, inject } from '@angular/core';
+import { Title } from '@angular/platform-browser';
+import { NavigationStart, Router, RouterOutlet, RoutesRecognized, TitleStrategy } from '@angular/router';
 import { ConfirmationDialogComponent } from './shared/components/confirmation-dialog/confirmation-dialog.component';
 import { ToastNotificationsComponent } from './shared/components/toast-notifications/toast-notifications.component';
 
@@ -10,6 +11,20 @@ import { ToastNotificationsComponent } from './shared/components/toast-notificat
   templateUrl: './app.component.html',
 })
 export class AppComponent {
+  private readonly router = inject(Router);
+  private readonly title = inject(Title);
+  private readonly titleStrategy = inject(TitleStrategy);
+
+  constructor() {
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.title.setTitle('Watchwise');
+      } else if (event instanceof RoutesRecognized) {
+        this.title.setTitle(this.titleStrategy.buildTitle(event.state) ?? 'Watchwise');
+      }
+    });
+  }
+
   @HostListener('document:pointerdown', ['$event'])
   protected dismissOpenDropdowns(event: PointerEvent): void {
     const target = event.target;

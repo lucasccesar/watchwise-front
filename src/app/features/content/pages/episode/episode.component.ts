@@ -2,7 +2,7 @@ import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, Title } from '@angular/platform-browser';
 import { forkJoin, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
@@ -146,6 +146,7 @@ export class EpisodeComponent implements OnDestroy {
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly title = inject(Title);
   private readonly api = inject(ContentApiService);
   protected readonly session = inject(AuthSessionService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -617,6 +618,8 @@ export class EpisodeComponent implements OnDestroy {
           return;
         }
         this.page.set(episode);
+        const seriesName = episode.details.parentTitle?.trim() || 'Série';
+        this.title.setTitle(`${seriesName} • S${episode.details.seasonNumber} E${episode.details.episodeNumber} | Watchwise`);
         this.reviews.set(reviews.content);
         this.comments.set(comments.content);
         this.reviewPage.set(reviews);
