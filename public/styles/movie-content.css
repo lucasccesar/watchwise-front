@@ -328,8 +328,8 @@
 .movie-action-mark-watched svg{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .movie-action-mark-watched span{flex:1}
 .movie-action-mark-watched:disabled{cursor:wait;opacity:.65}
-.movie-mark-watched-row{position:relative;isolation:isolate;box-sizing:border-box;width:100%;height:66px;min-height:66px;overflow:hidden;border:1px solid var(--color-primary);border-radius:var(--radius-md);background-color:transparent;background-image:linear-gradient(var(--color-primary-soft),var(--color-primary-soft));background-position:left center;background-repeat:no-repeat;background-size:0% 100%;transition:background-size 120ms ease-out}
-.movie-mark-watched-row:has(.movie-action-mark-watched--fill:hover:not(:disabled)),.movie-mark-watched-row:has(.movie-action-mark-watched--fill:focus-visible:not(:disabled)){background-size:100% 100%}
+.movie-mark-watched-row{position:relative;isolation:isolate;box-sizing:border-box;width:100%;height:66px;min-height:66px;overflow:hidden;border:1px solid var(--color-primary);border-radius:var(--radius-md);background-color:transparent;transition:background-color 120ms ease-out}
+.movie-mark-watched-row:has(.movie-action-mark-watched--fill:hover:not(:disabled)),.movie-mark-watched-row:has(.movie-action-mark-watched--fill:focus-visible:not(:disabled)){background-color:var(--color-primary-soft)}
 .movie-action-mark-watched--fill{position:relative;z-index:1;box-sizing:border-box;width:100%;height:64px;min-height:64px;padding:0 var(--space-4);border:0!important;border-radius:var(--radius-sm);background:transparent!important;box-shadow:none;color:var(--color-primary);font-size:var(--font-size-md);font-weight:600;line-height:var(--line-height-md)}
 .movie-action-mark-watched--fill app-check-icon{color:var(--color-primary)}
 .movie-action-mark-watched--fill:focus-visible{outline:2px solid var(--color-primary);outline-offset:-3px}
