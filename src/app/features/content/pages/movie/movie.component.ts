@@ -93,6 +93,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly reviewCount = computed(() => this.page()?.visibleReviewsCount ?? 0);
   protected readonly dialog = signal<DialogState>(null);
   protected readonly watchMode = signal<WatchMode>('new');
+  protected readonly isEditingWatchDialog = computed(() => this.dialog() === 'watch' && this.watchMode() === 'edit');
   protected readonly watchCalendarOpen = signal(false);
   protected readonly watchCalendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   protected readonly watchDate = signal(this.localDate(new Date()));

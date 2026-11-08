@@ -6,6 +6,8 @@ import { DomSanitizer, SafeResourceUrl, Title } from '@angular/platform-browser'
 import { forkJoin, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
+import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
+import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import {
@@ -31,6 +33,7 @@ import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
+import { movieMessages } from '../../i18n/movie.messages';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type EpisodeDialog = 'watch' | 'videos' | null;
@@ -38,12 +41,14 @@ type EpisodeDialog = 'watch' | 'videos' | null;
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [NgTemplateOutlet, ModalFocusDirective, ModalScrollLockDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ContentListSkeletonComponent, WatchLogDialogComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
+  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ContentListSkeletonComponent, WatchLogDialogComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',
 })
 export class EpisodeComponent implements OnDestroy {
+  protected readonly watchCopy = movieMessages['pt-BR'];
+  protected readonly dialogCopy = messageCatalog['pt-BR'].home;
   protected readonly page = signal<EpisodeContentPage | null>(null);
   protected readonly reviews = signal<ContentReview[]>([]);
   protected readonly comments = signal<ContentComment[]>([]);
@@ -65,6 +70,32 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly dialog = signal<EpisodeDialog>(null);
   protected readonly watchLogOpen = signal(false);
   protected readonly watchDate = signal(this.localDate(new Date()));
+  protected readonly watchCalendarOpen = signal(false);
+  protected readonly watchCalendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  protected readonly calendarWeekdays = this.watchCopy.calendarWeekdays.split(' ');
+  protected readonly watchCalendarMonthLabel = computed(() => new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(this.watchCalendarMonth()));
+  protected readonly canAdvanceWatchCalendar = computed(() => {
+    const month = this.watchCalendarMonth();
+    const today = new Date();
+    return month.getFullYear() * 12 + month.getMonth() < today.getFullYear() * 12 + today.getMonth();
+  });
+  protected readonly watchCalendarDays = computed(() => {
+    const month = this.watchCalendarMonth();
+    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+    const start = new Date(month.getFullYear(), month.getMonth(), 1 - firstDay.getDay());
+    return Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+      const key = this.localDate(date);
+      return {
+        date: key,
+        day: date.getDate(),
+        inMonth: date.getMonth() === month.getMonth(),
+        selected: key === this.watchDate(),
+        disabled: key > this.maxWatchedDate,
+        ariaLabel: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${key}T12:00:00Z`)),
+      };
+    });
+  });
   protected readonly selectedRating = signal(0);
   protected readonly reviewText = signal('');
   protected readonly userLists = signal<UserListSummary[]>([]);
@@ -273,6 +304,9 @@ export class EpisodeComponent implements OnDestroy {
     const page = this.page();
     if (!page) return;
     this.watchDate.set(page.viewerState.lastWatchedDate ?? this.localDate(new Date()));
+    const selectedDate = new Date(`${this.watchDate()}T12:00:00Z`);
+    this.watchCalendarMonth.set(new Date(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), 1));
+    this.watchCalendarOpen.set(false);
     this.selectedRating.set(page.viewerState.myRating ?? 0);
     this.reviewText.set(page.viewerState.myReview ?? '');
     this.dialog.set('watch');
@@ -306,8 +340,29 @@ export class EpisodeComponent implements OnDestroy {
   }
 
   protected closeDialog(): void {
+    this.watchCalendarOpen.set(false);
     this.dialog.set(null);
     this.videoPlaying.set(false);
+  }
+
+  protected toggleWatchCalendar(): void {
+    this.watchCalendarOpen.update(open => !open);
+  }
+
+  protected changeWatchCalendarMonth(offset: number): void {
+    const current = this.watchCalendarMonth();
+    const next = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+    if (next > new Date(new Date().getFullYear(), new Date().getMonth(), 1)) return;
+    this.watchCalendarMonth.set(next);
+  }
+
+  protected selectWatchDate(date: string): void {
+    this.watchDate.set(date);
+    this.watchCalendarOpen.set(false);
+  }
+
+  protected watchDateLabel(): string {
+    return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${this.watchDate()}T12:00:00Z`));
   }
 
   protected saveWatch(): void {
@@ -478,10 +533,6 @@ export class EpisodeComponent implements OnDestroy {
 
   protected selectRating(score: number): void {
     this.selectedRating.set(this.selectedRating() === score ? 0 : score);
-  }
-
-  protected dateDraft(event: Event): void {
-    this.watchDate.set((event.target as HTMLInputElement).value);
   }
 
   protected isYoutubeVideo(video: MovieVideo): boolean {

@@ -546,48 +546,83 @@
 
 @if (page(); as episode) {
   @if (dialog(); as currentDialog) {
-    <div class="movie-modal-backdrop" appModalScrollLock (click)="closeDialog()">
-      <section class="movie-dialog episode-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="currentDialog === 'watch' ? 'episode-watch-title' : 'episode-videos-title'" (click)="$event.stopPropagation()">
-        <header class="movie-dialog-header">
-          <div class="movie-dialog-heading">
-            <h2 [id]="currentDialog === 'watch' ? 'episode-watch-title' : 'episode-videos-title'">
-              {{ currentDialog === 'watch' ? 'Editar registro' : 'Vídeos' }}
-            </h2>
-            @if (currentDialog === 'watch') {
-              <span class="movie-watch-subtitle">{{ seriesTitle() }} · T{{ seasonNumber() }} · E{{ episodeNumber() }} · {{ episodeTitle() }}</span>
-            }
-            @if (currentDialog === 'videos') {
-              <p class="movie-videos-subtitle">{{ episodeTitle() }} · {{ episode.details.videos.length }} vídeos</p>
-            }
-          </div>
-          <button class="movie-icon-button" type="button" aria-label="Fechar" (click)="closeDialog()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
-          </button>
-        </header>
-
-        @if (currentDialog === 'watch') {
-          <form class="movie-watch-form" (submit)="$event.preventDefault(); saveWatch()">
-            <label for="episode-watched-date">Data em que assistiu<input id="episode-watched-date" type="date" [value]="watchDate()" [max]="maxWatchedDate" (input)="dateDraft($event)" /></label>
-            <div class="movie-watch-rating" role="group" aria-label="Sua nota">
-              <span class="movie-watch-section-label">Sua nota</span>
-              <div class="movie-watch-stars">
-                @for (score of ratingOptions; track score) {
-                  <button class="movie-watch-star" type="button" [class.movie-watch-star--selected]="selectedRating() >= score" [attr.aria-label]="score + ' de 10'" [attr.aria-pressed]="selectedRating() === score" (click)="selectRating(score)">
-                    <ng-container [ngTemplateOutlet]="episodeRatingStar" /><small>{{ score }}</small>
-                  </button>
-                }
-              </div>
+    @if (currentDialog === 'watch') {
+      <app-dialog-backdrop placement="top" (dismiss)="closeDialog()">
+        <section class="watch-log-dialog episode-edit-dialog ww-dialog-panel" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="episode-watch-title" tabindex="-1" (click)="$event.stopPropagation()">
+          <header class="watch-log-header">
+            <div>
+              <h2 id="episode-watch-title">{{ watchCopy.editLogTitle }}</h2>
+              <span>{{ seriesTitle() }} · T{{ seasonNumber() }} · E{{ episodeNumber() }} · {{ episodeTitle() }}</span>
             </div>
-            <label for="episode-review-text">Sua resenha <span>(opcional)</span><textarea id="episode-review-text" rows="5" [value]="reviewText()" (input)="reviewComment($event)" maxlength="20000" placeholder="O que você achou deste episódio?"></textarea></label>
-            <div class="movie-dialog-actions">
-              @if (episode.viewerState.latestDiaryEntryId) {
-                <button class="movie-text-button movie-remove-watch" type="button" [disabled]="busy()" (click)="removeFromDiary()">Remover do histórico</button>
+          </header>
+          <div class="watch-log-controls">
+            <div class="watch-date-picker">
+              <button class="watch-date-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="watchCalendarOpen()" [disabled]="busy()" (click)="toggleWatchCalendar()" data-ww-select-trigger>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+                <span><span>{{ watchCopy.watchedOnLabel }}</span> {{ watchDateLabel() }}</span>
+                <svg class="watch-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              @if (watchCalendarOpen()) {
+                <div class="watch-calendar" role="dialog" [attr.aria-label]="watchCopy.chooseWatchDate">
+                  <div class="watch-calendar-header">
+                    <button type="button" [attr.aria-label]="watchCopy.previousMonth" (click)="changeWatchCalendarMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                    <span>{{ watchCalendarMonthLabel() }}</span>
+                    <button type="button" [attr.aria-label]="watchCopy.nextMonth" [disabled]="!canAdvanceWatchCalendar()" (click)="changeWatchCalendarMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                  </div>
+                  <div class="watch-calendar-grid watch-calendar-weekdays" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
+                  <div class="watch-calendar-grid">
+                    @for (day of watchCalendarDays(); track day.date) {
+                      @if (day.inMonth) {
+                        <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="busy() || day.disabled" [class.watch-calendar-day--selected]="day.selected" (click)="selectWatchDate(day.date)">{{ day.day }}</button>
+                      } @else { <span aria-hidden="true"></span> }
+                    }
+                  </div>
+                </div>
               }
-              <button class="movie-button movie-button--secondary" type="button" (click)="closeDialog()">Cancelar</button>
-              <button class="movie-button movie-button--primary" type="submit" [disabled]="busy() || !watchDate() || watchDate() > maxWatchedDate">{{ busy() ? 'Salvando…' : 'Salvar' }}</button>
             </div>
-          </form>
-        } @else {
+          </div>
+          <div class="watch-log-companions" role="group" [attr.aria-label]="watchCopy.watchedWith">
+            <span>{{ watchCopy.watchedWith }}</span>
+            <div>
+              <button type="button" disabled [title]="dialogCopy.actionUnavailableShort">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                {{ watchCopy.addPerson }}
+              </button>
+            </div>
+          </div>
+          <div class="watch-rating" role="group" [attr.aria-label]="watchCopy.scoreLabel">
+            <span>{{ watchCopy.scoreLabel }}</span>
+            <div>
+              @for (score of ratingOptions; track score) {
+                <button type="button" [class.episode-rating-option-selected]="selectedRating() > 0 && score <= selectedRating()" [attr.aria-label]="'Nota ' + score + ' de 10'" [attr.aria-pressed]="selectedRating() === score" [disabled]="busy()" (click)="selectRating(score)">
+                  <ng-container [ngTemplateOutlet]="episodeRatingStar" />
+                  <span [class.watch-rating-score-selected]="selectedRating() > 0 && score <= selectedRating()">{{ score }}</span>
+                </button>
+              }
+            </div>
+          </div>
+          <label class="watch-review"><span>{{ watchCopy.reviewLabel }} <span>{{ watchCopy.optional }}</span></span><textarea rows="5" [disabled]="busy()" maxlength="20000" [placeholder]="watchCopy.reviewPlaceholder" [value]="reviewText()" (input)="reviewComment($event)"></textarea></label>
+          <footer class="watch-log-actions">
+            @if (episode.viewerState.latestDiaryEntryId) {
+              <button class="episode-edit-remove" type="button" [disabled]="busy()" (click)="removeFromDiary()">{{ watchCopy.removeEpisodeHistory }}</button>
+            }
+            <button class="watch-log-cancel" type="button" (click)="closeDialog()">{{ watchCopy.cancel }}</button>
+            <button class="watch-log-save" type="button" [disabled]="busy() || !watchDate() || watchDate() > maxWatchedDate" (click)="saveWatch()">{{ busy() ? 'Salvando…' : watchCopy.saveWatch }}</button>
+          </footer>
+        </section>
+      </app-dialog-backdrop>
+    } @else {
+      <div class="movie-modal-backdrop" appModalScrollLock (click)="closeDialog()">
+        <section class="movie-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="episode-videos-title" tabindex="-1" (click)="$event.stopPropagation()">
+          <header class="movie-dialog-header">
+            <div class="movie-dialog-heading">
+              <h2 id="episode-videos-title">Vídeos</h2>
+              <p class="movie-videos-subtitle">{{ episodeTitle() }} · {{ episode.details.videos.length }} vídeos</p>
+            </div>
+            <button class="movie-icon-button" type="button" aria-label="Fechar" (click)="closeDialog()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </button>
+          </header>
           @if (selectedVideo(); as video) {
             <div class="movie-video-feature">
               <div class="movie-video-player">
@@ -623,9 +658,9 @@
           } @else {
             <p class="movie-empty-inline">Não há vídeos disponíveis.</p>
           }
-        }
-      </section>
-    </div>
+        </section>
+      </div>
+    }
   }
 }
 

@@ -218,12 +218,14 @@
 .movie-watch-theater input::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--color-text);box-shadow:var(--shadow-sm);transition:transform .15s ease}
 .movie-watch-theater input:checked::after{transform:translateX(20px)}
 .movie-watch-rating{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-2)}
-.movie-watch-stars{display:flex;flex-wrap:wrap;gap:var(--space-1)}
-.movie-watch-star{width:44px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-tertiary);cursor:pointer}
+.movie-watch-stars{display:flex;flex-wrap:nowrap;gap:4px}
+.movie-watch-star{width:44px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer;font-family:inherit;font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .movie-watch-star span{font-size:32px;line-height:32px}
 .movie-watch-star small{font-size:var(--font-size-xs);font-weight:600}
-.movie-watch-star--selected{color:var(--color-accent)}
-.movie-watch-star:hover{background:var(--color-surface)}
+.movie-watch-star--selected{color:var(--color-text)}
+.movie-watch-star small{color:var(--color-tertiary)}
+.movie-watch-star--selected small{color:var(--color-text)}
+.movie-watch-star:hover{background:transparent}
 .movie-watch-fields>label[for=movie-watch-review]{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
 .movie-watch-form textarea{background:var(--color-surface)}
 .movie-watch-form .movie-watched-with{margin:0;padding:0;border:0}
@@ -245,11 +247,12 @@
 .movie-watch-form .movie-following-option:has(input:checked){outline:2px solid var(--color-primary)}
 .movie-watch-form .movie-dialog-actions{margin-top:0}
 .movie-watch-form .movie-button{min-height:40px}
-.movie-watch-star svg{width:32px;height:32px;fill:none;stroke:var(--color-tertiary);stroke-width:1.5;stroke-linejoin:round}
+.movie-watch-star svg{width:32px;height:32px;fill:none;stroke:var(--color-tertiary);stroke-width:2;stroke-linejoin:round}
+.movie-watch-star svg path{fill:none;stroke:var(--color-tertiary)}
 .movie-watch-star--selected svg{fill:var(--color-accent);stroke:var(--color-accent)}
-.movie-watch-star small{color:var(--color-text)}
+.movie-watch-star--selected svg path{fill:var(--color-accent);stroke:var(--color-accent)}
 .movie-watch-form :is(button,input,textarea):focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
-@media(max-width:560px){.movie-modal-backdrop{place-items:start center;overflow-y:auto}.movie-modal-backdrop:has(.movie-watch-form){padding:16px 12px max(16px,env(safe-area-inset-bottom,0px))}.movie-dialog:has(.movie-watch-form){max-height:calc(100dvh - 32px);padding:var(--space-5);gap:var(--space-4)}.movie-watch-calendar{width:min(296px,calc(100vw - 48px))}.movie-watch-stars{gap:0}.movie-watch-star{width:10%;min-width:30px}.movie-watch-star svg{width:26px;height:26px}.movie-watch-form .movie-dialog-actions{flex-wrap:wrap}}
+@media(max-width:560px){.movie-modal-backdrop{place-items:start center;overflow-y:auto}.movie-modal-backdrop:has(.movie-watch-form){padding:16px 12px max(16px,env(safe-area-inset-bottom,0px))}.movie-dialog:has(.movie-watch-form){max-height:calc(100dvh - 32px);padding:var(--space-5);gap:var(--space-4)}.movie-watch-calendar{width:min(296px,calc(100vw - 48px))}.movie-watch-stars{width:100%;gap:0}.movie-watch-star{width:calc((100% - 36px) / 10);min-width:0}.movie-watch-star svg{width:28px;height:28px}.movie-watch-form .movie-dialog-actions{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.movie-watch-theater input::after{transition:none}}
 
 /* Layout aligned to the approved Movie prototype. */
@@ -1099,3 +1102,60 @@
 .series-page .series-action-watch-row--partial{height:66px;min-height:66px}
 .series-page .series-action-watch-row--partial .series-action-mark-watched{height:64px;min-height:64px}
 @media(max-width:800px){.series-page .series-action-watch-row--partial{height:78px;min-height:78px;padding:var(--space-2) 44px var(--space-2) var(--space-2)}.series-page .series-action-watch-row--partial .series-action-mark-watched{height:60px;min-height:60px}}
+
+/* Movie edit-log dialog follows the Episode dialog layout. */
+.movie-modal-backdrop.movie-modal-backdrop--watch-edit{z-index:1200;padding:64px 24px;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;background:var(--dialog-backdrop)}
+.movie-dialog.movie-dialog--watch-edit{display:flex;width:100%;max-width:640px;max-height:calc(100dvh - 128px);flex-direction:column;gap:var(--space-5);overflow-y:auto;box-sizing:border-box;padding:var(--space-6);border:1px solid var(--dialog-border);border-radius:var(--dialog-radius);background:var(--dialog-surface);color:var(--color-text);box-shadow:var(--dialog-shadow)}
+.movie-dialog--watch-edit .movie-dialog-header.watch-log-header{margin:0;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}
+.movie-dialog--watch-edit .movie-dialog-heading{display:flex;min-width:0;flex-direction:column}
+.movie-dialog--watch-edit .movie-dialog-header h2{margin:0;color:var(--color-text);font-size:var(--font-size-md);font-weight:600;line-height:var(--line-height-lg)}
+.movie-dialog--watch-edit .movie-watch-subtitle.watch-log-subtitle{overflow:hidden;color:var(--color-text-tertiary);font-size:var(--font-size-sm);line-height:var(--line-height-sm);text-overflow:ellipsis;white-space:nowrap}
+.movie-dialog--watch-edit .movie-watch-form--watch-edit{display:flex;width:100%;flex-direction:column;align-items:stretch;gap:var(--space-5)}
+.movie-dialog--watch-edit .movie-watch-fields--watch-edit{display:flex;min-width:0;flex-direction:column;gap:var(--space-5);margin:0;padding:0;border:0}
+.movie-dialog--watch-edit .movie-watch-fields--watch-edit>.movie-watch-theater{margin-top:calc(var(--space-2) - var(--space-5))}
+.movie-dialog--watch-edit .movie-watch-fields--watch-edit>.movie-watched-with{margin-block:calc(var(--space-2) - var(--space-5))}
+.movie-dialog--watch-edit .movie-watch-top-row.watch-log-controls{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4)}
+.movie-dialog--watch-edit .movie-watch-date-field.watch-date-picker{position:relative;display:flex;flex-direction:column;gap:0}
+.movie-dialog--watch-edit .movie-watch-date-trigger.watch-date-trigger{display:inline-flex;height:40px;align-items:center;gap:var(--space-2);box-sizing:border-box;padding:0 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:pointer;font-family:inherit;font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
+.movie-dialog--watch-edit .movie-watch-date-trigger.watch-date-trigger>svg:first-child{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
+.movie-dialog--watch-edit .movie-watch-date-trigger.watch-date-trigger>span>span{font-weight:400}
+.movie-dialog--watch-edit .movie-watch-date-trigger.watch-date-trigger .watch-date-chevron{width:14px;height:14px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
+.movie-dialog--watch-edit .movie-watch-date-trigger.watch-date-trigger:disabled,.movie-dialog--watch-edit .watch-calendar-header button:disabled{color:var(--color-text-tertiary);cursor:not-allowed;opacity:.5}
+.movie-dialog--watch-edit .movie-watch-calendar.watch-calendar{position:absolute;z-index:20;top:calc(100% + var(--space-2));left:0;width:296px;display:flex;flex-direction:column;gap:var(--space-2);box-sizing:border-box;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface-secondary);box-shadow:0 4px 8px rgb(0 0 0 / 40%)}
+.movie-dialog--watch-edit .movie-watch-calendar-header.watch-calendar-header{display:flex;align-items:center;justify-content:space-between}
+.movie-dialog--watch-edit .watch-calendar-header>span{font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm);text-transform:capitalize}
+.movie-dialog--watch-edit .watch-calendar-header button{display:flex;width:32px;height:32px;flex:0 0 auto;align-items:center;justify-content:center;padding:0;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer;font:inherit}
+.movie-dialog--watch-edit .watch-calendar-header button:hover:not(:disabled){background:var(--color-secondary)}
+.movie-dialog--watch-edit .watch-calendar-header button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
+.movie-dialog--watch-edit .movie-watch-calendar-grid.watch-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.movie-dialog--watch-edit .watch-calendar-weekdays{color:var(--color-text-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs);text-align:center}
+.movie-dialog--watch-edit .watch-calendar-grid>button,.movie-dialog--watch-edit .watch-calendar-grid>span{display:flex;width:100%;height:36px;align-items:center;justify-content:center;box-sizing:border-box}
+.movie-dialog--watch-edit .watch-calendar-grid>button{padding:0;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer;font-family:inherit;font-size:var(--font-size-sm);font-weight:600}
+.movie-dialog--watch-edit .watch-calendar-grid>button:hover:not(:disabled){background:var(--color-secondary)}
+.movie-dialog--watch-edit .watch-calendar-grid>button:disabled{color:var(--color-text-tertiary);cursor:not-allowed;opacity:.45}
+.movie-dialog--watch-edit .watch-calendar-grid>button.watch-calendar-day--selected{background:var(--color-primary);color:var(--color-text)}
+.movie-dialog--watch-edit .movie-watch-rewatch.watch-rewatch-option{display:flex;min-height:40px;align-items:center;gap:var(--space-2);color:var(--color-text);cursor:pointer;font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
+.movie-dialog--watch-edit .movie-watch-rewatch.watch-rewatch-option input{width:18px;height:18px;margin:0;accent-color:var(--color-primary);cursor:pointer}
+.movie-dialog--watch-edit .movie-watch-rating.watch-rating{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-2)}
+.movie-dialog--watch-edit .watch-rating>.movie-watch-section-label{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
+.movie-dialog--watch-edit .movie-watch-stars.watch-rating-options{display:flex;width:auto;flex-wrap:wrap;gap:4px}
+.movie-dialog--watch-edit .movie-watch-star{display:flex;width:44px;flex-direction:column;align-items:center;gap:2px;padding:4px 0;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer;font-family:inherit;font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
+.movie-dialog--watch-edit .movie-watch-star>small{color:var(--color-text-tertiary);font-size:var(--font-size-xs);font-weight:600}
+.movie-dialog--watch-edit .movie-watch-star>small.watch-rating-score-selected{color:var(--color-text)}
+.movie-dialog--watch-edit .movie-watch-star:hover{background:transparent}
+.movie-dialog--watch-edit .movie-watch-star svg{width:32px;height:32px;fill:none;stroke:var(--color-text-tertiary);stroke-linejoin:round;stroke-width:2;opacity:1}
+.movie-dialog--watch-edit .movie-watch-star svg path{fill:none;stroke:var(--color-text-tertiary)}
+.movie-dialog--watch-edit .movie-watch-star.movie-watch-star--selected svg,.movie-dialog--watch-edit .movie-watch-star.movie-watch-star--selected svg path{fill:var(--color-accent);stroke:var(--color-accent)}
+.movie-dialog--watch-edit .watch-review{display:flex;flex-direction:column;gap:var(--space-2)}
+.movie-dialog--watch-edit .watch-review>span:first-child{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
+.movie-dialog--watch-edit .watch-review>span:first-child>span{color:var(--color-text-tertiary);font-weight:400}
+.movie-dialog--watch-edit .watch-review textarea{width:100%;min-height:120px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-family:inherit;font-size:var(--font-size-md);line-height:var(--line-height-md);resize:vertical}
+.movie-dialog--watch-edit .watch-review textarea:focus-visible,.movie-dialog--watch-edit .watch-calendar button:focus-visible,.movie-dialog--watch-edit .watch-rating button:focus-visible,.movie-dialog--watch-edit .watch-log-actions button:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+.movie-dialog--watch-edit .movie-dialog-actions.watch-log-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);margin:0}
+.movie-dialog--watch-edit .watch-log-actions button{display:inline-flex;min-height:40px;align-items:center;justify-content:center;box-sizing:border-box;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
+.movie-dialog--watch-edit .watch-log-remove{margin-right:auto;padding:0;border:0;background:transparent;color:var(--color-error)}
+.movie-dialog--watch-edit .watch-log-cancel{padding:0 14px;border:1px solid var(--color-border);background:var(--color-surface-secondary);color:var(--color-text)}
+.movie-dialog--watch-edit .watch-log-save{padding:0 16px;border:0;background:var(--color-primary);color:var(--color-text)}
+.movie-dialog--watch-edit .watch-log-save:disabled{cursor:not-allowed;opacity:.55}
+.movie-dialog--watch-edit .movie-watch-form--watch-edit :is(button,input,textarea):focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+@media(max-width:600px){.movie-modal-backdrop.movie-modal-backdrop--watch-edit{padding:16px 12px max(16px,env(safe-area-inset-bottom,0px))}.movie-dialog.movie-dialog--watch-edit{max-height:calc(100dvh - 32px - env(safe-area-inset-bottom,0px));gap:var(--space-4);padding:var(--space-5)}.movie-dialog--watch-edit .movie-watch-calendar.watch-calendar{width:min(296px,calc(100vw - 48px))}.movie-dialog--watch-edit .movie-watch-stars.watch-rating-options{gap:4px}.movie-dialog--watch-edit .movie-watch-star svg{width:32px;height:32px}}

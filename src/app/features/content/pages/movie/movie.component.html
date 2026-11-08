@@ -638,17 +638,19 @@
         <app-share-review-dialog [model]="model" [copy]="copy" [returnFocusTarget]="modalOpener" (closed)="closeDialog()" />
       }
     } @else {
-    <div class="movie-modal-backdrop" appModalScrollLock (click)="closeDialog()">
+    <div class="movie-modal-backdrop" [class.movie-modal-backdrop--watch-edit]="isEditingWatchDialog()" appModalScrollLock (click)="closeDialog()">
       <section
         #movieDialog
         class="movie-dialog"
+        [class.movie-dialog--watch-edit]="isEditingWatchDialog()"
+        [class.ww-dialog-panel]="isEditingWatchDialog()"
         role="dialog"
         aria-modal="true"
         tabindex="-1"
         [attr.aria-labelledby]="currentDialog === 'watch' ? 'movie-watch-title' : currentDialog === 'videos' ? 'movie-videos-title' : 'movie-lists-title'"
         (click)="$event.stopPropagation()"
       >
-        <header class="movie-dialog-header">
+        <header class="movie-dialog-header" [class.watch-log-header]="isEditingWatchDialog()">
           <div class="movie-dialog-heading">
           <h2 [id]="currentDialog === 'watch' ? 'movie-watch-title' : currentDialog === 'videos' ? 'movie-videos-title' : 'movie-lists-title'">
             @if (currentDialog === 'videos') {
@@ -660,7 +662,7 @@
             }
           </h2>
           @if (currentDialog === 'watch' && page(); as moviePage) {
-            <span class="movie-watch-subtitle">{{ moviePage.details.title || copy.untitled }}@if (moviePage.details.releaseDate) { · {{ moviePage.details.releaseDate.slice(0, 4) }} }@if (moviePage.details.runtimeMinutes) { · {{ formatRuntime(moviePage.details.runtimeMinutes) }} }</span>
+            <span class="movie-watch-subtitle" [class.watch-log-subtitle]="isEditingWatchDialog()">{{ moviePage.details.title || copy.untitled }}@if (moviePage.details.releaseDate) { · {{ moviePage.details.releaseDate.slice(0, 4) }} }@if (moviePage.details.runtimeMinutes) { · {{ formatRuntime(moviePage.details.runtimeMinutes) }} }</span>
           }
           @if (currentDialog === 'videos' && page(); as videoPage) {
             <p class="movie-videos-subtitle">{{ videoPage.details.title || copy.untitled }} · {{ copy.videoCount.replace('{count}', formatNumber(videoPage.details.videos.length, 0)) }}</p>
@@ -669,7 +671,7 @@
         </header>
 
         @if (currentDialog === 'watch') {
-          <form class="movie-watch-form" [formGroup]="watchForm" [attr.aria-busy]="watchDetailsLoading()" (ngSubmit)="saveWatch()">
+          <form class="movie-watch-form" [class.movie-watch-form--watch-edit]="isEditingWatchDialog()" [formGroup]="watchForm" [attr.aria-busy]="watchDetailsLoading()" (ngSubmit)="saveWatch()">
             @if (watchDetailsLoading()) {
               <p class="movie-field-hint" role="status">{{ copy.loading }}</p>
             } @else if (watchDetailsError()) {
@@ -680,33 +682,33 @@
                 }
               </div>
             }
-            <fieldset class="movie-watch-fields" [disabled]="watchDetailsLoading() || !watchDetailsReady()">
-            <div class="movie-watch-top-row">
-              <div class="movie-watch-date-field">
-                <button class="movie-watch-date-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="watchCalendarOpen()" (click)="toggleWatchCalendar()" data-ww-select-trigger>
+            <fieldset class="movie-watch-fields" [class.movie-watch-fields--watch-edit]="isEditingWatchDialog()" [disabled]="watchDetailsLoading() || !watchDetailsReady()">
+            <div class="movie-watch-top-row" [class.watch-log-controls]="isEditingWatchDialog()">
+              <div class="movie-watch-date-field" [class.watch-date-picker]="isEditingWatchDialog()">
+                <button class="movie-watch-date-trigger" [class.watch-date-trigger]="isEditingWatchDialog()" type="button" aria-haspopup="dialog" [attr.aria-expanded]="watchCalendarOpen()" (click)="toggleWatchCalendar()" data-ww-select-trigger>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
                   <span><span>{{ copy.watchedOnLabel }}</span> {{ watchDateLabel() }}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  <svg [class.watch-date-chevron]="isEditingWatchDialog()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
                 @if (watchCalendarOpen()) {
-                  <div class="movie-watch-calendar" role="dialog" [attr.aria-label]="copy.chooseWatchDate">
-                    <div class="movie-watch-calendar-header">
-                      <button type="button" [attr.aria-label]="copy.previousMonth" (click)="changeWatchCalendarMonth(-1)">‹</button>
+                  <div class="movie-watch-calendar" [class.watch-calendar]="isEditingWatchDialog()" role="dialog" [attr.aria-label]="copy.chooseWatchDate">
+                    <div class="movie-watch-calendar-header" [class.watch-calendar-header]="isEditingWatchDialog()">
+                      <button type="button" [attr.aria-label]="copy.previousMonth" (click)="changeWatchCalendarMonth(-1)">@if (isEditingWatchDialog()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg> } @else { ‹ }</button>
                       <span>{{ watchCalendarMonthLabel() }}</span>
-                      <button type="button" [attr.aria-label]="copy.nextMonth" [disabled]="!canAdvanceWatchCalendar()" (click)="changeWatchCalendarMonth(1)">›</button>
+                      <button type="button" [attr.aria-label]="copy.nextMonth" [disabled]="!canAdvanceWatchCalendar()" (click)="changeWatchCalendarMonth(1)">@if (isEditingWatchDialog()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> } @else { › }</button>
                     </div>
-                    <div class="movie-watch-calendar-grid movie-watch-calendar-weekdays" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
-                    <div class="movie-watch-calendar-grid">
+                    <div class="movie-watch-calendar-grid movie-watch-calendar-weekdays" [class.watch-calendar-grid]="isEditingWatchDialog()" [class.watch-calendar-weekdays]="isEditingWatchDialog()" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
+                    <div class="movie-watch-calendar-grid" [class.watch-calendar-grid]="isEditingWatchDialog()">
                       @for (day of watchCalendarDays(); track day.date) {
                         @if (day.inMonth) {
-                          <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled" [class.movie-watch-calendar-day--selected]="day.selected" (click)="selectWatchDate(day.date)">{{ day.day }}</button>
+                          <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled" [class.movie-watch-calendar-day--selected]="day.selected" [class.watch-calendar-day--selected]="isEditingWatchDialog() && day.selected" (click)="selectWatchDate(day.date)">{{ day.day }}</button>
                         } @else { <span aria-hidden="true"></span> }
                       }
                     </div>
                   </div>
                 }
               </div>
-              <label class="movie-checkbox-label movie-watch-rewatch">
+              <label class="movie-checkbox-label movie-watch-rewatch" [class.watch-rewatch-option]="isEditingWatchDialog()">
                 <input type="checkbox" formControlName="isRewatch" />
                 <span>{{ copy.rewatchLabel }}</span>
               </label>
@@ -769,32 +771,39 @@
                 <button class="movie-text-button" type="button" (click)="loadFollowing(1)">{{ copy.retrySection }}</button>
               }
             </fieldset>
-            <div class="movie-watch-rating" role="group" [attr.aria-label]="copy.scoreLabel">
+            <div class="movie-watch-rating" [class.watch-rating]="isEditingWatchDialog()" role="group" [attr.aria-label]="copy.scoreLabel">
               <span class="movie-watch-section-label">{{ copy.scoreLabel }}</span>
-              <div class="movie-watch-stars">
+              <div class="movie-watch-stars" [class.watch-rating-options]="isEditingWatchDialog()">
                 @for (score of ratingOptions; track score) {
                   <button type="button" class="movie-watch-star" [class.movie-watch-star--selected]="watchForm.controls.score.value >= score" [attr.aria-label]="score + '/10'" [attr.aria-pressed]="watchForm.controls.score.value === score" [disabled]="watchDetailsLoading() || !watchDetailsReady()" (click)="setWatchScore(score)">
-                    <ng-container [ngTemplateOutlet]="ratingStar" /><small>{{ score }}</small>
+                    <ng-container [ngTemplateOutlet]="ratingStar" /><small [class.watch-rating-score-selected]="isEditingWatchDialog() && watchForm.controls.score.value > 0 && score <= watchForm.controls.score.value">{{ score }}</small>
                   </button>
                 }
               </div>
             </div>
 
-            <label for="movie-watch-review">{{ copy.reviewLabel }} <span>{{ copy.optional }}</span></label>
-            <textarea id="movie-watch-review" rows="5" formControlName="comment" [placeholder]="copy.reviewPlaceholder"></textarea>
+            @if (isEditingWatchDialog()) {
+              <label class="watch-review" for="movie-watch-review">
+                <span>{{ copy.reviewLabel }} <span>{{ copy.optional }}</span></span>
+                <textarea id="movie-watch-review" rows="5" formControlName="comment" [placeholder]="copy.reviewPlaceholder"></textarea>
+              </label>
+            } @else {
+              <label for="movie-watch-review">{{ copy.reviewLabel }} <span>{{ copy.optional }}</span></label>
+              <textarea id="movie-watch-review" rows="5" formControlName="comment" [placeholder]="copy.reviewPlaceholder"></textarea>
+            }
             @if (watchForm.controls.comment.touched && watchForm.controls.comment.invalid) {
               <p class="movie-field-error" role="alert">{{ copy.invalid }}</p>
             }
 
             </fieldset>
-            <div class="movie-dialog-actions">
+            <div class="movie-dialog-actions" [class.watch-log-actions]="isEditingWatchDialog()">
               @if (watchMode() === 'edit') {
-                <button class="movie-text-button movie-remove-watch" type="button" [disabled]="actionPending()" (click)="deleteWatch()">
+                <button class="movie-text-button movie-remove-watch watch-log-remove" type="button" [disabled]="actionPending()" (click)="deleteWatch()">
                   {{ copy.removeWatch }}
                 </button>
               }
-              <button class="movie-button movie-button--secondary" type="button" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button>
-              <button class="movie-button movie-button--primary" type="submit" [disabled]="actionPending() || watchDetailsLoading() || !watchDetailsReady() || isScoreClearUnsupported()" data-ww-button="primary">
+              <button class="movie-button movie-button--secondary watch-log-cancel" type="button" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button>
+              <button class="movie-button movie-button--primary watch-log-save" type="submit" [disabled]="actionPending() || watchDetailsLoading() || !watchDetailsReady() || isScoreClearUnsupported()" data-ww-button="primary">
                 {{ actionPending() ? copy.loading : copy.saveWatch }}
               </button>
             </div>
