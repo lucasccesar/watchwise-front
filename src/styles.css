@@ -557,3 +557,14 @@ input:focus-visible {
   border: 0 !important;
   background: transparent !important;
 }
+
+:where([role='dialog'], [role='alertdialog']) > footer:has(> button) {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end !important;
+}
+
+:where([role='dialog'], [role='alertdialog']) > footer:has(> button) > :first-child:not(button):not(a) {
+  margin-right: auto;
+}
