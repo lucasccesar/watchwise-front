@@ -70,6 +70,7 @@ export class SeasonComponent implements OnDestroy {
   protected readonly episodes = computed(() => this.page()?.sections?.episodes ?? []);
   protected readonly cast = computed(() => this.page()?.details.cast ?? []);
   protected readonly castTab = signal<'cast' | 'crew'>('cast');
+  protected readonly peoplePane = signal<'watched' | 'watching'>('watched');
   protected readonly comments = signal<ContentComment[]>([]);
   protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
   protected readonly reviews = signal<ContentReview[]>([]);

@@ -100,9 +100,15 @@
             }
           </section>
           }
-          <section class="movie-following season-following" aria-labelledby="season-following-title">
-            <h2 id="season-following-title">Pessoas que você segue</h2>
-            <p class="ww-empty-message">A atividade das pessoas que você segue aparecerá aqui.</p>
+          <section class="movie-following" aria-labelledby="season-following-title">
+            <div class="movie-following-heading">
+              <h2 id="season-following-title">{{ copy.peopleYouFollow }}</h2>
+              <div class="series-following-tabs" role="tablist" aria-label="Quem assistiu à temporada">
+                <button type="button" role="tab" [attr.aria-selected]="peoplePane() === 'watched'" (click)="peoplePane.set('watched')">Assistiram <span>0</span></button>
+                <button type="button" role="tab" [attr.aria-selected]="peoplePane() === 'watching'" (click)="peoplePane.set('watching')">Assistindo agora <span>0</span></button>
+              </div>
+            </div>
+            <p class="series-following-empty ww-empty-message" aria-live="polite">A atividade das pessoas que você segue aparecerá aqui.</p>
           </section>
         </div>
 

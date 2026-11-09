@@ -214,10 +214,6 @@
   background: var(--color-surface-secondary);
 }
 
-.movie-page.series-page.season-page #season-following-title {
-  font-size: 18px;
-}
-
 .movie-page.series-page.season-page .season-season-scroll {
   align-content: start;
   align-items: start;
@@ -548,19 +544,6 @@
 .movie-page.series-page.season-page .season-episode-card:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
-}
-
-.movie-page.series-page.season-page .season-overview .movie-following {
-  min-height: 92px;
-}
-
-.movie-page.series-page.season-page .season-following .ww-empty-message {
-  margin: var(--space-4) 0 0;
-  padding: var(--space-4);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-tertiary);
-  text-align: center;
 }
 
 .movie-page.series-page.season-page .season-section .movie-section-state {
