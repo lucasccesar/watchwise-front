@@ -20,6 +20,8 @@ export interface ShareReviewDialogModel {
   avatarUrl: string | null;
   selectionType: ContentImageSelectionType | null;
   tmdbId: string | null;
+  showPosterPicker?: boolean;
+  posterPreserveAspectRatio?: boolean;
 }
 
 export interface ShareReviewDialogCopy {
@@ -292,7 +294,10 @@ export class ShareReviewDialogComponent implements OnDestroy {
       context.fillRect(0, 0, 540, 960);
 
       const poster = this.sharePosterUrl() || this.selectedPoster();
-      const hasPoster = Boolean(poster);
+      const posterImage = poster ? await this.loadShareImage(poster) : null;
+      const posterSize = posterImage
+        ? this.sharePosterSize(posterImage, model.posterPreserveAspectRatio === true)
+        : null;
       const titleLines = this.wrapShareTitle(context, model.title, model.subtitle, model.subtitleBelowTitle);
       const hasRating = model.rating !== null;
       const reviewLines = this.shareShowReview() && model.review
@@ -300,7 +305,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
         : [];
       const reviewHeight = reviewLines.length ? Math.min(190, reviewLines.length * 24 + 34) : 0;
       const totalContentHeight = 34 + 20
-        + (hasPoster ? 360 : 0)
+        + (posterSize?.height ?? 0)
         + 28 + titleLines.length * 38
         + (hasRating ? 12 + 38 : 0)
         + (reviewLines.length ? 20 + reviewHeight : 0)
@@ -331,25 +336,29 @@ export class ShareReviewDialogComponent implements OnDestroy {
 
       contentY += 34 + 20;
 
-      if (poster) {
-        const image = await this.loadShareImage(poster);
+      if (posterImage && posterSize) {
+        const posterX = (540 - posterSize.width) / 2;
         context.save();
         context.shadowColor = 'rgba(0,0,0,.52)';
         context.shadowBlur = 40;
         context.shadowOffsetY = 20;
         context.beginPath();
-        context.roundRect(150, contentY, 240, 360, 12);
+        context.roundRect(posterX, contentY, posterSize.width, posterSize.height, 12);
         context.fillStyle = 'rgba(0,0,0,.01)';
         context.fill();
         context.restore();
 
         context.save();
         context.beginPath();
-        context.roundRect(150, contentY, 240, 360, 12);
+        context.roundRect(posterX, contentY, posterSize.width, posterSize.height, 12);
         context.clip();
-        this.drawImageCover(context, image, 150, contentY, 240, 360);
+        if (model.posterPreserveAspectRatio) {
+          context.drawImage(posterImage, posterX, contentY, posterSize.width, posterSize.height);
+        } else {
+          this.drawImageCover(context, posterImage, posterX, contentY, posterSize.width, posterSize.height);
+        }
         context.restore();
-        contentY += 360;
+        contentY += posterSize.height;
       }
 
       contentY += 28;
@@ -535,6 +544,12 @@ export class ShareReviewDialogComponent implements OnDestroy {
     const sourceX = (image.naturalWidth - sourceWidth) / 2;
     const sourceY = (image.naturalHeight - sourceHeight) / 2;
     context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+  }
+
+  private sharePosterSize(image: HTMLImageElement, preserveAspectRatio: boolean): { width: number; height: number } {
+    if (!preserveAspectRatio || !image.naturalWidth || !image.naturalHeight) return { width: 240, height: 360 };
+    const scale = Math.min(360 / image.naturalWidth, 360 / image.naturalHeight);
+    return { width: image.naturalWidth * scale, height: image.naturalHeight * scale };
   }
 
   private loadShareImage(url: string): Promise<HTMLImageElement> {

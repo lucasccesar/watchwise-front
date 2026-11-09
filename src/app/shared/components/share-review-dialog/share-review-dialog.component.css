@@ -17,6 +17,7 @@
 .movie-share-author { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; padding: 4px 12px 4px 4px; border: 1px solid var(--color-border); border-radius: var(--radius-full); background: color-mix(in srgb, var(--color-surface) 72%, transparent); font-size: var(--font-size-sm); font-weight: 600; }
 .movie-share-author img { width: 24px; height: 24px; border-radius: var(--radius-full); object-fit: cover; }
 .movie-share-poster { display: block; width: 240px; height: 360px; border-radius: 12px; object-fit: cover; box-shadow: var(--shadow-2xl); }
+.movie-share-poster--natural { width: auto; height: auto; max-width: 360px; max-height: 360px; object-fit: contain; }
 .movie-share-card-content h3 { max-width: 444px; margin: 28px 0 0; color: var(--color-text); font-size: 30px; font-weight: 700; line-height: 38px; letter-spacing: -.02em; text-wrap: balance; }
 .movie-share-card-content h3 small { color: var(--color-text); font-size: 20px; font-weight: 400; letter-spacing: 0; opacity: .7; }
 .movie-share-episode-details { max-width: 444px; color: var(--color-text); font-size: 20px; font-weight: 400; line-height: 38px; opacity: .7; text-wrap: balance; }

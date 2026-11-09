@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl, Title } from '@angular/platform-browser';
 import { forkJoin, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
+import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
@@ -42,13 +42,14 @@ type EpisodeDialog = 'watch' | 'videos' | null;
 @Component({
   selector: 'app-episode-content',
   standalone: true,
-  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, RouterLink, SharePreviewComponent, PageSkeletonComponent, ContentListSkeletonComponent, WatchLogDialogComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
+  imports: [NgTemplateOutlet, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, RouterLink, ShareReviewDialogComponent, PageSkeletonComponent, ContentListSkeletonComponent, WatchLogDialogComponent, ResponsiveBannerComponent, CommentItemComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './episode.component.html',
   styleUrl: './episode.component.css',
 })
 export class EpisodeComponent implements OnDestroy {
   protected readonly watchCopy = movieMessages['pt-BR'];
+  protected readonly shareCopy = this.watchCopy;
   protected readonly dialogCopy = messageCatalog['pt-BR'].home;
   protected readonly page = signal<EpisodeContentPage | null>(null);
   protected readonly reviews = signal<ContentReview[]>([]);
@@ -124,7 +125,7 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly commentText = signal('');
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly busy = signal(false);
-  protected readonly sharePreviewOpen = signal(false);
+  protected readonly shareReviewOpen = signal(false);
   protected readonly tmdbId = signal('');
   protected readonly seasonNumber = signal(0);
   protected readonly episodeNumber = signal(0);
@@ -158,24 +159,27 @@ export class EpisodeComponent implements OnDestroy {
       return route ? { episodeNumber, route } : null;
     }).filter((item): item is { episodeNumber: number; route: string[] } => item !== null);
   });
-  protected readonly shareModel = computed<ShareCardModel>(() => {
+  protected readonly shareModel = computed<ShareReviewDialogModel>(() => {
     const page = this.page();
     const user = this.session.user();
-    const subtitle = `Temporada ${this.seasonNumber()} · Episódio ${this.episodeNumber()}`;
+    const seasonNumber = page?.details.seasonNumber ?? this.seasonNumber();
+    const episodeNumber = page?.details.episodeNumber ?? this.episodeNumber();
     return {
-      kind: 'episode',
       title: page?.details.title || this.episodeTitle(),
-      subtitle: `${this.seriesTitle()} · ${subtitle}`,
-      authorName: user?.name || user?.username || 'Watchwise',
-      username: user?.username,
-      avatarUrl: user?.profilePicture,
-      backgroundUrl: this.backdrop(),
-      imageUrl: this.imageUrl(page?.details.backdropPath, 'w1280'),
-      rating: page?.viewerState.myRating,
-      quote: page?.viewerState.myReview,
+      subtitle: `${this.seriesTitle()} · T${seasonNumber} · E${episodeNumber}`,
+      subtitleBelowTitle: true,
+      rating: page?.viewerState.myRating ?? null,
+      review: page?.viewerState.myReview ?? null,
+      backgroundUrl: this.imageUrl(page?.details.backdropPath, 'w1280'),
+      posterUrl: this.imageUrl(page?.details.backdropPath, 'w1280'),
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: 'SERIES',
+      tmdbId: page?.details.seriesTmdbId || this.tmdbId() || null,
+      showPosterPicker: false,
+      posterPreserveAspectRatio: true,
     };
   });
-  protected readonly shareUrl = computed(() => `${window.location.origin}/content/series/${encodeURIComponent(this.tmdbId())}/season/${this.seasonNumber()}/episode/${this.episodeNumber()}`);
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -215,12 +219,12 @@ export class EpisodeComponent implements OnDestroy {
     this.load(this.tmdbId(), this.seasonNumber(), this.episodeNumber());
   }
 
-  protected openSharePreview(): void {
-    this.sharePreviewOpen.set(true);
+  protected openShareReview(): void {
+    this.shareReviewOpen.set(true);
   }
 
-  protected closeSharePreview(): void {
-    this.sharePreviewOpen.set(false);
+  protected closeShareReview(): void {
+    this.shareReviewOpen.set(false);
     const returnUrl = this.shareReturnUrl;
     this.shareReturnUrl = null;
     if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
@@ -710,7 +714,7 @@ export class EpisodeComponent implements OnDestroy {
         this.status.set('ready');
         if (this.openShareReviewAfterLoad) {
           this.openShareReviewAfterLoad = false;
-          this.openSharePreview();
+          this.openShareReview();
         }
       },
       error: (error: unknown) => { this.status.set('error'); this.actionError.set(this.errorText(error)); },
