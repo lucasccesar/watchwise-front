@@ -247,7 +247,7 @@
 
         <aside class="movie-actions-column episode-actions-column" aria-label="Ações do episódio">
           @if (alreadyWatched()) {
-            <button class="movie-action-rating" type="button" (click)="openRating()">
+            <button class="movie-action-rating" [class.movie-action-rating--unrated]="!episode.viewerState.myRating" type="button" (click)="openRating()">
               <span>Sua nota</span>
               <strong>
                 @if (episode.viewerState.myRating) {
