@@ -50,7 +50,7 @@
       <section class="lists-reorder-banner" aria-live="polite">
         <span class="lists-reorder-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01" /></svg></span>
         <div><h2>{{ copy.reorderBannerTitle }}</h2><p>{{ copy.reorderBannerDescription }}</p></div>
-        <div class="lists-reorder-banner-actions"><button type="button" [disabled]="savingOrder()" (click)="cancelReorder()">{{ copy.cancel }}</button><button class="lists-reorder-save" type="button" [disabled]="savingOrder() || !reorderHasChanges()" (click)="saveReorder()" data-ww-button="primary">{{ savingOrder() ? copy.savingOrder : copy.saveOrder }}</button></div>
+        <div class="lists-reorder-banner-actions"><button type="button" [disabled]="savingOrder()" (click)="cancelReorder()" data-ww-button="secondary">{{ copy.cancel }}</button><button class="lists-reorder-save" type="button" [disabled]="savingOrder() || !reorderHasChanges()" (click)="saveReorder()" data-ww-button="primary">{{ savingOrder() ? copy.savingOrder : copy.saveOrder }}</button></div>
       </section>
     }
     <section class="lists-grid" [attr.aria-label]="isCommunity ? copy.communityLists : copy.myLists" cdkDropList cdkDropListOrientation="vertical" cdkDropListLockAxis="y" [cdkDropListData]="reorderDraft()" [cdkDropListDisabled]="!reorderMode() || savingOrder()" (cdkDropListDropped)="dropList($event)">
@@ -121,7 +121,7 @@
       <h2 id="lists-delete-title">{{ detailCopy.deleteListTitle }}</h2>
       <p>{{ detailCopy.deleteListDescription }}</p>
       <div class="lists-delete-actions">
-        <button type="button" [disabled]="deletingList()" (click)="cancelDeleteList()">{{ detailCopy.cancel }}</button>
+        <button type="button" [disabled]="deletingList()" (click)="cancelDeleteList()" data-ww-button="secondary">{{ detailCopy.cancel }}</button>
         <button class="lists-delete-confirm" type="button" [disabled]="deletingList()" (click)="confirmDeleteList()" data-ww-button="danger">{{ deletingList() ? detailCopy.deleting : detailCopy.confirmDelete }}</button>
       </div>
     </section>

@@ -415,10 +415,18 @@
 
 .episode-edit-dialog .episode-edit-remove {
   margin-right: auto;
-  padding: 0;
+  padding: 0 8px;
   border: 0;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-error);
+  color: color-mix(in srgb, var(--color-error) 90%, var(--dialog-surface) 10%);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.episode-edit-dialog .episode-edit-remove:hover:not(:disabled) {
+  background: var(--color-error-soft);
+  color: color-mix(in srgb, var(--color-error) 90%, var(--dialog-surface) 10%);
+  text-decoration: none;
 }
 
 @media (max-width: 600px) {

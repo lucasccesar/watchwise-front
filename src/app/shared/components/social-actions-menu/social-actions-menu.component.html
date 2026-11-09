@@ -46,7 +46,7 @@
       <h2 id="ww-social-action-confirm-title">{{ confirmationTitle }}</h2>
       <p>{{ copy.userActionConfirmPrompt }}</p>
       <div class="ww-social-actions-dialog-buttons">
-        <button type="button" [disabled]="busy()" (click)="cancelUserAction()">{{ copy.confirmCancel }}</button>
+        <button type="button" [disabled]="busy()" (click)="cancelUserAction()" data-ww-button="secondary">{{ copy.confirmCancel }}</button>
         <button class="ww-social-actions-confirm" [class.ww-social-actions-confirm--danger]="pendingAction() === 'block'" type="button" [disabled]="busy()" (click)="confirmUserAction()" [attr.data-ww-button]="pendingAction() === 'block' ? 'danger' : 'primary'">{{ confirmationButtonLabel }}</button>
       </div>
     </section>
@@ -77,7 +77,7 @@
           <span>{{ reportDetails().length }} / 280</span>
         </div>
         <footer class="ww-social-report-actions">
-          <button type="button" [disabled]="busy()" (click)="cancelReport()">{{ copy.reportCancel }}</button>
+          <button type="button" [disabled]="busy()" (click)="cancelReport()" data-ww-button="secondary">{{ copy.reportCancel }}</button>
           <button class="ww-social-report-submit" type="submit" [disabled]="!reportReason() || busy()" data-ww-button="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4m0 0c6-4 10 4 16 0v12c-6-4-10 4-16 0"/></svg>{{ busy() ? copy.reportSubmitting : copy.reportSubmit }}</button>
         </footer>
       </form>

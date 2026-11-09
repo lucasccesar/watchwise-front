@@ -606,8 +606,8 @@
             @if (episode.viewerState.latestDiaryEntryId) {
               <button class="episode-edit-remove" type="button" [disabled]="busy()" (click)="removeFromDiary()">{{ watchCopy.removeEpisodeHistory }}</button>
             }
-            <button class="watch-log-cancel" type="button" (click)="closeDialog()">{{ watchCopy.cancel }}</button>
-            <button class="watch-log-save" type="button" [disabled]="busy() || !watchDate() || watchDate() > maxWatchedDate" (click)="saveWatch()">{{ busy() ? 'Salvando…' : watchCopy.saveWatch }}</button>
+            <button class="watch-log-cancel" type="button" (click)="closeDialog()" data-ww-button="secondary">{{ watchCopy.cancel }}</button>
+            <button class="watch-log-save" type="button" [disabled]="busy() || !watchDate() || watchDate() > maxWatchedDate" (click)="saveWatch()" data-ww-button="primary">{{ busy() ? 'Salvando…' : watchCopy.saveWatch }}</button>
           </footer>
         </section>
       </app-dialog-backdrop>
