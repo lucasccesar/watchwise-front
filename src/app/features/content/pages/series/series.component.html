@@ -399,6 +399,10 @@
             <header class="watch-log-header">
               <div><h2 id="series-rating-title">{{ ratingDialogHeading() }}</h2><span>{{ ratingDialogSubtitle() }}</span></div>
             </header>
+            <div class="watch-log-companions" role="group" [attr.aria-label]="copy.watchedWith">
+              <span>{{ copy.watchedWith }}</span>
+              <div><button type="button" disabled [title]="dialogCopy.actionUnavailableShort"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.addPerson }}</button></div>
+            </div>
             <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
               <span>{{ copy.yourRating }}</span>
               <div>@for (score of ratingOptions; track score) {

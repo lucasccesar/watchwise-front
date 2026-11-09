@@ -170,7 +170,7 @@
 .movie-watch-fields{display:flex;flex-direction:column;gap:var(--space-2)}
 .movie-watch-fields>label:not(.movie-checkbox-label) span{color:var(--color-tertiary);font-weight:400}
 .movie-watched-with{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border)}
-.movie-watched-with legend{margin-bottom:var(--space-2);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600}
+.movie-watched-with legend{margin-bottom:var(--space-2);color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
 .movie-watched-with input[type=checkbox]{width:20px;height:20px;accent-color:var(--color-primary)}
 .movie-share-card{isolation:isolate}
 .movie-share-card img.movie-share-background{position:absolute;z-index:-2;inset:0;width:100%;height:100%;border-radius:inherit;box-shadow:none;object-fit:cover}
@@ -230,7 +230,6 @@
 .movie-watch-form textarea{background:var(--color-surface)}
 .movie-watch-form .movie-watched-with{margin:0;padding:0;border:0}
 .movie-watch-companion-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
-.movie-watch-just-you{color:var(--color-tertiary);font-size:var(--font-size-xs);line-height:var(--line-height-xs)}
 .movie-watch-selected-people{display:flex;flex-wrap:wrap;gap:var(--space-2)}
 .movie-watch-selected-person{padding:4px var(--space-2);border-radius:var(--radius-full);background:var(--color-secondary);color:var(--color-text);font-size:var(--font-size-sm)}
 .movie-watch-people-picker{position:relative}
@@ -695,6 +694,11 @@
 .series-page .rating-dialog .watch-log-header>div>span{overflow:hidden;color:var(--color-text-tertiary);font-size:var(--font-size-sm);line-height:var(--line-height-sm);text-overflow:ellipsis;white-space:nowrap}
 .series-page .rating-dialog .watch-log-close{width:40px;height:40px;display:grid;flex:0 0 40px;place-items:center;padding:0;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text);cursor:pointer}
 .series-page .rating-dialog .watch-log-close svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:2}
+.series-page .series-rating-dialog .watch-log-companions{display:flex;flex-direction:column;gap:var(--space-2)}
+.series-page .series-rating-dialog .watch-log-companions>span{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
+.series-page .series-rating-dialog .watch-log-companions>div{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+.series-page .series-rating-dialog .watch-log-companions button{display:inline-flex;height:32px;align-items:center;gap:var(--space-2);box-sizing:border-box;padding:0 12px;border:1px dashed var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:not-allowed;font-family:inherit;font-size:var(--font-size-sm);line-height:var(--line-height-sm);opacity:.55}
+.series-page .series-rating-dialog .watch-log-companions button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:2}
 .series-page .rating-dialog .watch-rating,.series-page .rating-dialog .watch-review{display:flex;flex-direction:column;gap:var(--space-2)}
 .series-page .rating-dialog .watch-rating>span,.series-page .rating-dialog .watch-review>span:first-child{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
 .series-page .rating-dialog .watch-rating>div{display:flex;flex-wrap:nowrap;gap:4px}

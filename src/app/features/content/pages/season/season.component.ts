@@ -30,6 +30,7 @@ import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../
 import { ToastNotificationType, ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
+import { messageCatalog } from '../../../../shared/i18n/messages';
 import { DiaryApiService } from '../../../diary/data-access/diary-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
 import { sortCrewByRole } from '../../utils/crew-order';
@@ -60,6 +61,7 @@ type EpisodeWatchTarget = { episode: SeasonEpisodeCard; isRewatch: boolean };
 })
 export class SeasonComponent implements OnDestroy {
   protected readonly copy = movieMessages['pt-BR'];
+  protected readonly dialogCopy = messageCatalog['pt-BR'].home;
   protected readonly page = signal<SeasonContentPage | null>(null);
   protected readonly seasons = signal<SeasonListItem[]>([]);
   protected readonly status = signal<PageStatus>('loading');

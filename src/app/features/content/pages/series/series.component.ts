@@ -47,6 +47,7 @@ import { ToastNotificationsService, ToastNotificationType } from '../../../../sh
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ContentPosterPickerComponent } from '../../../../shared/components/content-poster-picker/content-poster-picker.component';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
@@ -71,6 +72,7 @@ type EpisodeWatchTarget = { episode: SeriesEpisodeSummary; isRewatch: boolean };
 })
 export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly copy = movieMessages['pt-BR'];
+  protected readonly dialogCopy = messageCatalog['pt-BR'].home;
   protected readonly page = signal<SeriesPage | null>(null);
   protected readonly crew = computed(() => sortCrewByRole(this.page()?.details.crew ?? [], 'SERIES'));
   protected readonly progressRecord = signal<SeriesInProgressRecord | null>(null);

@@ -726,9 +726,7 @@
             <fieldset class="movie-watched-with">
               <legend>{{ copy.watchedWith }}</legend>
               <div class="movie-watch-companion-row">
-                @if (!watchForm.controls.watchedWith.value.length) {
-                  <span class="movie-watch-just-you">{{ copy.justYou }}</span>
-                } @else {
+                @if (watchForm.controls.watchedWith.value.length) {
                   <div class="movie-watch-selected-people">
                     @for (friend of following(); track friend.id) {
                       @if (isWatchedWithSelected(friend.id)) {
