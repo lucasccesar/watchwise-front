@@ -1917,7 +1917,7 @@
   font-family: inherit;
   font-size: var(--font-size-md);
   line-height: var(--line-height-md);
-  resize: vertical;
+  resize: none;
 }
 
 .watch-review textarea:focus-visible {

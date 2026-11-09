@@ -154,7 +154,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-modal > p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
 .list-detail-modal > label { display: flex; flex-direction: column; gap: 7px; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 600; }
 .list-detail-modal input, .list-detail-modal textarea, .list-detail-modal select { width: 100%; min-height: 42px; padding: 10px 12px; box-sizing: border-box; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); }
-.list-detail-modal textarea { min-height: 90px; resize: vertical; }
+.list-detail-modal textarea { min-height: 90px; resize: none; }
 .list-detail-modal :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .list-detail-modal-close { position: absolute; top: 12px; right: 12px; display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary); font-size: 24px; cursor: pointer; }
 .list-detail-modal-close:hover { background: var(--color-surface); color: var(--color-text); }

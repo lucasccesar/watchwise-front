@@ -634,7 +634,7 @@
   background: var(--color-surface-secondary);
   color: var(--color-text);
   font: inherit;
-  resize: vertical;
+  resize: none;
 }
 
 .social-comment-edit-actions {
@@ -872,7 +872,7 @@
   font: inherit;
   font-size: var(--font-size-md);
   line-height: var(--line-height-md);
-  resize: vertical;
+  resize: none;
 }
 
 .social-report-details textarea::placeholder {

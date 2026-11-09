@@ -99,6 +99,10 @@ body.ww-modal-scroll-locked {
   box-sizing: border-box;
 }
 
+textarea {
+  resize: none;
+}
+
 .ww-empty-message,
 .profile-empty {
   display: block;

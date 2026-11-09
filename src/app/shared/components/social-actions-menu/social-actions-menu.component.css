@@ -40,7 +40,7 @@
 .ww-social-report-reason small { color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
 .ww-social-report-details { display: flex; flex-direction: column; gap: var(--space-2); }
 .ww-social-report-details label { color: var(--color-text); font-size: var(--font-size-sm); font-weight: 650; }
-.ww-social-report-details textarea { min-height: 96px; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); resize: vertical; }
+.ww-social-report-details textarea { min-height: 96px; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); resize: none; }
 .ww-social-report-details > span { align-self: flex-end; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .ww-social-report-actions { display: flex; justify-content: flex-end; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .ww-social-report-actions .ww-social-report-submit { display: inline-flex; align-items: center; gap: var(--space-2); border-color: var(--color-primary); background: var(--color-primary); color: #fff; }

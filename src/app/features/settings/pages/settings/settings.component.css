@@ -48,7 +48,7 @@
 .settings-field > span b { color: var(--color-error); font-size: var(--font-size-xs); }
 .settings-field > span small { margin-left: auto; color: var(--color-text-tertiary); font-size: var(--font-size-xs); font-weight: 400; }
 .settings-field > input, .settings-field > textarea, .settings-field > select { width: 100%; min-height: 40px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); outline: none; }
-.settings-field > textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+.settings-field > textarea { min-height: 96px; resize: none; line-height: 1.5; }
 .settings-field > input:focus, .settings-field > textarea:focus, .settings-field > select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 18%, transparent); }
 .settings-field > small { color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: 1.35; }
 .settings-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 22px; }

@@ -94,7 +94,7 @@
 .watchlist-watch-rating button svg.watchlist-watch-star-selected { opacity: 1; fill: var(--color-accent); stroke: var(--color-accent); }
 .watchlist-watch-rating button svg.watchlist-watch-star-selected path { fill: var(--color-accent); stroke: var(--color-accent); }
 .watchlist-watch-review > span:first-child > span { color: var(--color-text-tertiary); font-weight: 400; }
-.watchlist-watch-review textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-md); line-height: var(--line-height-md); resize: vertical; }
+.watchlist-watch-review textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-md); line-height: var(--line-height-md); resize: none; }
 .watchlist-watch-review textarea:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .watchlist-watch-log-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .watchlist-watch-log-actions button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; box-sizing: border-box; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: var(--font-size-sm); font-weight: 600; line-height: var(--line-height-sm); }

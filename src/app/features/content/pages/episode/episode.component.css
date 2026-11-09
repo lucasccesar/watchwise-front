@@ -361,7 +361,7 @@
   font-family: inherit;
   font-size: var(--font-size-md);
   line-height: var(--line-height-md);
-  resize: vertical;
+  resize: none;
 }
 
 .episode-edit-dialog .watch-review textarea:focus-visible,

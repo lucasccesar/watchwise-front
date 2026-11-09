@@ -70,7 +70,7 @@
 .community-preview { grid-template-columns: repeat(2, minmax(0,1fr)); }
 .pick-template-comments { padding-top: 16px; border-top: 1px solid var(--color-border); }
 .pick-comment-form { display: flex; flex-direction: column; gap: 8px; }
-.pick-comment-form textarea { width: 100%; min-height: 76px; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); resize: vertical; }
+.pick-comment-form textarea { width: 100%; min-height: 76px; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); resize: none; }
 .pick-comment-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .pick-comment-controls label { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .pick-comment-controls button { min-height: 36px; padding: 0 12px; border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text); font: inherit; font-size: var(--font-size-xs); font-weight: 650; cursor: pointer; }

@@ -97,7 +97,7 @@
 .movie-load-more{margin:var(--space-4) auto 0;display:flex}
 .movie-comments{padding:var(--space-5)}
 .movie-comment-form{display:flex;flex-direction:column;gap:var(--space-2)}
-.movie-comment-form textarea,.movie-watch-form textarea{width:100%;min-height:96px;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font:inherit;resize:vertical}
+.movie-comment-form textarea,.movie-watch-form textarea{width:100%;min-height:96px;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font:inherit;resize: none}
 .movie-watch-form textarea{min-height:140px}
 .movie-comment-form textarea::placeholder,.movie-watch-form textarea::placeholder{color:var(--color-tertiary)}
 .movie-comment-form-footer,.movie-checkbox-label{display:flex;align-items:center;gap:var(--space-2)}
@@ -708,7 +708,7 @@
 .series-page .rating-dialog .watch-rating button>span{color:var(--color-text-tertiary);font-weight:600}
 .series-page .rating-dialog .watch-rating button>span.watch-rating-score-selected{color:var(--color-text)}
 .series-page .rating-dialog .watch-review>span:first-child>span{color:var(--color-text-tertiary);font-weight:400}
-.series-page .rating-dialog .watch-review textarea{width:100%;min-height:120px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-family:inherit;font-size:var(--font-size-md);line-height:var(--line-height-md);resize:vertical}
+.series-page .rating-dialog .watch-review textarea{width:100%;min-height:120px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-family:inherit;font-size:var(--font-size-md);line-height:var(--line-height-md);resize: none}
 .series-page .rating-dialog .watch-log-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
 .series-page .rating-dialog .watch-log-actions .movie-button{min-height:40px}
 .series-page .rating-dialog .watch-log-actions{justify-content:flex-end}
@@ -1148,7 +1148,7 @@
 .movie-dialog--watch-edit .watch-review{display:flex;flex-direction:column;gap:var(--space-2)}
 .movie-dialog--watch-edit .watch-review>span:first-child{color:var(--color-text);font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}
 .movie-dialog--watch-edit .watch-review>span:first-child>span{color:var(--color-text-tertiary);font-weight:400}
-.movie-dialog--watch-edit .watch-review textarea{width:100%;min-height:120px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-family:inherit;font-size:var(--font-size-md);line-height:var(--line-height-md);resize:vertical}
+.movie-dialog--watch-edit .watch-review textarea{width:100%;min-height:120px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font-family:inherit;font-size:var(--font-size-md);line-height:var(--line-height-md);resize: none}
 .movie-dialog--watch-edit .watch-review textarea:focus-visible,.movie-dialog--watch-edit .watch-calendar button:focus-visible,.movie-dialog--watch-edit .watch-rating button:focus-visible,.movie-dialog--watch-edit .watch-log-actions button:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .movie-dialog--watch-edit .movie-dialog-actions.watch-log-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);margin:0}
 .movie-dialog--watch-edit .watch-log-actions button{display:inline-flex;min-height:40px;align-items:center;justify-content:center;box-sizing:border-box;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm)}

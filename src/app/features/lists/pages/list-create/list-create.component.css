@@ -16,7 +16,7 @@
 .list-create-field label, .list-create-choice-group legend { color: var(--color-text); font-size: var(--font-size-sm); font-weight: 650; }
 .list-create-name-field label span { color: #ff7777; }
 .list-create-field input, .list-create-field textarea, .list-create-inline-select select { width: 100%; min-height: 40px; box-sizing: border-box; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); }
-.list-create-field textarea { min-height: 82px; resize: vertical; }
+.list-create-field textarea { min-height: 82px; resize: none; }
 .list-create-field input:focus, .list-create-field textarea:focus, .list-create-search-box:focus-within, .list-create-inline-select select:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .list-create-counter { align-self: flex-end; margin-top: -2px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .list-create-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }

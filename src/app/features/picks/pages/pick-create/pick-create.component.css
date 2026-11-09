@@ -29,7 +29,7 @@
 .pick-create-field b { color: #ff777f; }
 .pick-create-field > input, .pick-create-field > textarea { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); outline: none; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-sm); }
 .pick-create-field > input { min-height: 39px; }
-.pick-create-field > textarea { min-height: 79px; line-height: 1.45; resize: vertical; }
+.pick-create-field > textarea { min-height: 79px; line-height: 1.45; resize: none; }
 .pick-create-field > input:focus, .pick-create-field > textarea:focus { border-color: var(--color-primary); }
 .pick-create-field > small { color: var(--color-text-tertiary); font-size: 10px; }
 .pick-create-period { display: grid; grid-template-columns: 1fr auto; gap: 10px 15px; margin-top: 21px; padding-top: 16px; border-top: 1px solid var(--color-border); }
