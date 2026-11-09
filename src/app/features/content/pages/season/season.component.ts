@@ -32,6 +32,7 @@ import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.d
 import { ModalScrollLockDirective } from '../../../../shared/directives/modal-scroll-lock.directive';
 import { DiaryApiService } from '../../../diary/data-access/diary-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
+import { sortCrewByRole } from '../../utils/crew-order';
 import { ContentApiService, ContentComment, ContentPageStats, ContentPageResult, ContentReview, ContentSeasonSelection, ReviewSort, SeasonContentPage, SeasonEpisodeCard, SeriesChildCard, UserListSummary } from '../../data-access/content-api.service';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
@@ -163,7 +164,7 @@ export class SeasonComponent implements OnDestroy {
     return runtimes.length ? Math.round(runtimes.reduce((sum, value) => sum + value, 0) / runtimes.length) : null;
   });
   protected readonly providers = computed(() => this.page()?.metadata.watchProviders ?? []);
-  protected readonly crew = computed(() => this.page()?.details.crew ?? []);
+  protected readonly crew = computed(() => sortCrewByRole(this.page()?.details.crew ?? [], 'SEASON'));
   protected readonly creators = computed(() => this.page()?.details.creators ?? []);
   protected readonly genres = computed(() => this.page()?.details.genres ?? []);
   protected readonly countries = computed(() => this.page()?.details.countries ?? []);

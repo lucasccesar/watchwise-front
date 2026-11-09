@@ -35,6 +35,7 @@ import {
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
+import { sortCrewByRole } from '../../utils/crew-order';
 import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
@@ -71,6 +72,7 @@ type EpisodeWatchTarget = { episode: SeriesEpisodeSummary; isRewatch: boolean };
 export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly copy = movieMessages['pt-BR'];
   protected readonly page = signal<SeriesPage | null>(null);
+  protected readonly crew = computed(() => sortCrewByRole(this.page()?.details.crew ?? [], 'SERIES'));
   protected readonly progressRecord = signal<SeriesInProgressRecord | null>(null);
   protected readonly watchProgress = computed(() => this.calculateWatchProgress(this.page()));
   protected readonly pageStatus = signal<PageStatus>('loading');

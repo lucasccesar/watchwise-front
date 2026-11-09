@@ -40,6 +40,7 @@ import {
 } from '../../data-access/content-api.service';
 import { movieMessages } from '../../i18n/movie.messages';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
+import { sortCrewByRole } from '../../utils/crew-order';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
@@ -76,6 +77,7 @@ type WatchForm = FormGroup<{
 export class MovieComponent implements OnInit, OnDestroy {
   protected readonly copy = movieMessages['pt-BR'];
   protected readonly page = signal<ContentPage | null>(null);
+  protected readonly crew = computed(() => sortCrewByRole(this.page()?.details.crew ?? [], 'MOVIE'));
   protected readonly pageStatus = signal<PageStatus>('loading');
   protected readonly pageError = signal('');
   protected readonly contentId = signal('');

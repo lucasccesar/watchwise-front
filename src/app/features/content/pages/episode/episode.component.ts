@@ -32,6 +32,7 @@ import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
+import { sortCrewByRole } from '../../utils/crew-order';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { movieMessages } from '../../i18n/movie.messages';
 
@@ -245,9 +246,10 @@ export class EpisodeComponent implements OnDestroy {
   }
 
   protected episodeCrew(page: EpisodeContentPage): EpisodeContentPage['details']['crew'] {
-    return page.metadata.crewInherited && page.metadata.presentationCrew
+    const crew = page.metadata.crewInherited && page.metadata.presentationCrew
       ? page.metadata.presentationCrew
       : page.details.crew;
+    return sortCrewByRole(crew, 'EPISODE');
   }
 
   protected productionCompanyNames(page: EpisodeContentPage): string {

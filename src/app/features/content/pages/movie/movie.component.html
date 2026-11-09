@@ -440,7 +440,7 @@
             {{ copy.castTab }} <span>{{ formatNumber(moviePage.details.cast.slice(0, 24).length, 0) }}</span>
           </button>
           <button id="movie-crew-tab" class="movie-people-tab" type="button" role="tab" [attr.aria-selected]="peopleTab() === 'crew'" [attr.tabindex]="peopleTab() === 'crew' ? 0 : -1" (click)="setPeopleTab('crew')">
-            {{ copy.crewTab }} <span>{{ formatNumber(moviePage.details.crew.slice(0, 24).length, 0) }}</span>
+            {{ copy.crewTab }} <span>{{ formatNumber(crew().slice(0, 24).length, 0) }}</span>
           </button>
         </div>
       </div>
@@ -466,9 +466,9 @@
         } @else {
           <p class="movie-empty-inline" role="tabpanel" aria-labelledby="movie-cast-tab">{{ copy.unavailable }}</p>
         }
-      } @else if (moviePage.details.crew.length) {
+      } @else if (crew().length) {
         <div id="movie-crew-panel" class="movie-people-scroll" role="tabpanel" aria-labelledby="movie-crew-tab" tabindex="0">
-          @for (person of moviePage.details.crew.slice(0, 24); track person.id) {
+          @for (person of crew().slice(0, 24); track person.id) {
             <article class="movie-person-card movie-person-card--crew">
               @if (imageUrl(person.profilePath, 'w185'); as portrait) {
                 <img [src]="portrait" alt="" loading="lazy" />
