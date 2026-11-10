@@ -45,6 +45,7 @@
 .picks-card-footer button { margin-left: auto; }
 .picks-card-footer button svg, .picks-comment-count svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 .picks-card-footer button.liked { color: #f06c83; }
+.picks-card-footer button.liked svg { stroke: var(--color-like); }
 .picks-my-answer { color: var(--color-primary); font-weight: 600; text-decoration: none; }
 .picks-catalog-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px auto; }
 .picks-catalog-pagination button { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); cursor: pointer; }

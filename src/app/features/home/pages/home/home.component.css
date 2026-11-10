@@ -1418,12 +1418,12 @@
 }
 
 .social-count--likes svg {
-  stroke: var(--color-error);
+  stroke: var(--color-like);
 }
 
 .social-count--likes:not(.social-like-button) svg,
 .social-like-button.is-liked svg {
-  fill: var(--color-error);
+  fill: var(--color-like);
 }
 
 .social-like-button {

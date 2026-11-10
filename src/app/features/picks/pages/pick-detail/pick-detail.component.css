@@ -19,7 +19,8 @@
 .pick-detail-actions button, .pick-detail-actions a { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); text-decoration: none; cursor: pointer; }
 .pick-detail-actions button:hover, .pick-detail-actions a:hover, .pick-detail-actions button[aria-pressed='true'] { color: #f06c83; }
 .pick-detail-actions svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
-.pick-detail-actions button[aria-pressed='true'] svg { fill: currentColor; }
+.pick-detail-actions .pick-detail-like:hover svg, .pick-detail-actions .pick-detail-like[aria-pressed='true'] svg { stroke: var(--color-like); }
+.pick-detail-actions .pick-detail-like[aria-pressed='true'] svg { fill: var(--color-like); }
 .pick-detail-visibility-editor { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
 .pick-detail-visibility-editor fieldset { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; margin: 0; padding: 0; border: 0; }
 .pick-detail-visibility-editor legend { width: 100%; margin-bottom: 8px; color: var(--color-text); font-size: var(--font-size-xs); font-weight: 650; }

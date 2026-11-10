@@ -5330,7 +5330,7 @@
 }
 
 .profile-overview-review-body > footer span:first-child svg {
-  color: var(--color-error);
+  color: var(--color-like);
 }
 
 .profile-overview-review-body > footer span:last-child svg {

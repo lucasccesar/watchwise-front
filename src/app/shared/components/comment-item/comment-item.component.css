@@ -236,12 +236,12 @@
   width: 16px;
   height: 16px;
   fill: none;
-  stroke: var(--color-error);
+  stroke: var(--color-like);
   stroke-width: 1.8;
 }
 
 .ww-comment-item [comment-actions] .ww-comment-like.is-liked svg {
-  fill: var(--color-error);
+  fill: var(--color-like);
 }
 
 .ww-comment-item .ww-comment-replies {

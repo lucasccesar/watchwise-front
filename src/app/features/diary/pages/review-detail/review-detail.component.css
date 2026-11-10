@@ -37,7 +37,7 @@
 .review-detail-actions > .review-detail-comments-link { border-color: transparent; background: transparent; }
 .review-detail-share { width: 40px; justify-content: center; padding: 0; border-color: transparent; background: var(--color-secondary); }
 .review-detail-actions svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
-.review-detail-like svg { color: #f04469; }
+.review-detail-like svg { color: var(--color-like); stroke: var(--color-like); }
 .review-detail-like.is-liked { border-color: rgba(240,68,105,.42); color: #ff6582; }
 .review-detail-comments-link svg { color: #407dff; }
 .review-detail-share-wrap { position: relative; margin-left: auto; }
@@ -102,8 +102,8 @@
 .review-comment-actions { display: flex; align-items: center; gap: 15px; }
 .review-comment-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: #e2e2e6; font: inherit; font-size: 12px; cursor: pointer; }
 .review-comment-actions .review-comment-like { color: #fff; }
-.review-comment-actions .review-comment-like svg { width: 15px; height: 15px; fill: none; stroke: #ff667c; stroke-width: 1.8; }
-.review-comment-actions .review-comment-like.is-liked svg { fill: #ff667c; }
+.review-comment-actions .review-comment-like svg { width: 15px; height: 15px; fill: none; stroke: var(--color-like); stroke-width: 1.8; }
+.review-comment-actions .review-comment-like.is-liked svg { fill: var(--color-like); }
 .review-comment-state { color: #9a9aa2; font-size: 13px; }
 .review-comment-state.ww-empty-message { color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
 .review-detail-state { display: flex; min-height: 55vh; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px; color: #e9e9ed; text-align: center; }

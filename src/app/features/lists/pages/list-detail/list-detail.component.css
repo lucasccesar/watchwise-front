@@ -24,7 +24,7 @@
 .list-detail-like small, .list-detail-comments-link small { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .list-detail-like:hover, .list-detail-comments-link:hover { color: var(--color-text); background: var(--color-secondary); }
 .list-detail-like-active, .list-detail-liked { color: #ff7082 !important; }
-.list-detail-like-active svg, .list-detail-liked svg { fill: currentColor; }
+.list-detail-like-active svg, .list-detail-liked svg { fill: var(--color-like); stroke: var(--color-like); }
 .list-detail-actions-wrap { position: relative; }
 .list-detail-more { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); cursor: pointer; }
 .list-detail-more:hover { background: var(--color-secondary); }
@@ -138,8 +138,8 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .review-comment-actions { display: flex; align-items: center; gap: 15px; }
 .review-comment-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: #e2e2e6; font: inherit; font-size: 12px; cursor: pointer; }
 .review-comment-actions .review-comment-like { color: #fff; }
-.review-comment-actions .review-comment-like svg { width: 15px; height: 15px; fill: none; stroke: #ff667c; stroke-width: 1.8; }
-.review-comment-actions .review-comment-like.is-liked svg { fill: #ff667c; }
+.review-comment-actions .review-comment-like svg { width: 15px; height: 15px; fill: none; stroke: var(--color-like); stroke-width: 1.8; }
+.review-comment-actions .review-comment-like.is-liked svg { fill: var(--color-like); }
 .review-comment-menu-wrap { position: relative; margin-left: auto; }
 .review-comment-menu-wrap > button { padding: 0 3px; border: 0; background: transparent; color: #888890; font-size: 20px; line-height: 1; cursor: pointer; }
 .list-detail-spoiler { margin-top: 6px; padding: 5px 9px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-secondary); color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
@@ -245,10 +245,10 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-stats button { color: var(--color-text); }
 .list-detail-stats a { color: var(--color-text); }
 .list-detail-stats svg { width: 16px; height: 16px; }
-.list-detail-stats button svg { color: var(--color-error); }
+.list-detail-stats button:not(.list-detail-comments-count-button) svg { color: var(--color-like); }
 .list-detail-stats .list-detail-comments-count-button svg { color: var(--color-primary); }
 .list-detail-stats button svg path { fill: none; }
-.list-detail-stats button.list-detail-liked svg path { fill: currentColor; }
+.list-detail-stats button.list-detail-liked svg path { fill: var(--color-like); }
 .list-detail-actions-wrap { flex: 0 0 auto; }
 .list-detail-more { width: 40px; height: 40px; }
 .list-detail-page-bar { display: grid; width: min(1334px, calc(100% - 48px)); min-height: 68px; grid-template-columns: 1fr auto 1fr; align-items: center; box-sizing: border-box; margin: 0 auto 20px; }

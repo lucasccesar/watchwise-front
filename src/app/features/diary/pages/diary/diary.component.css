@@ -803,8 +803,8 @@
 .diary-review-engagement > .diary-review-like:disabled { cursor: wait; opacity: .72; }
 .diary-review-engagement > .diary-review-like:hover:not(:disabled) { color: #ef4444; }
 .diary-review-engagement > a:hover { color: var(--color-primary); }
-.diary-review-engagement > .diary-review-like svg { color: #ef4444; }
-.diary-review-engagement > .diary-review-like.is-liked svg { fill: #ef4444; stroke: #ef4444; }
+.diary-review-engagement > .diary-review-like svg { color: var(--color-like); }
+.diary-review-engagement > .diary-review-like.is-liked svg { fill: var(--color-like); stroke: var(--color-like); }
 .diary-review-engagement > a svg { color: var(--color-primary); }
 .diary-review-engagement svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 
@@ -1083,8 +1083,8 @@
 }
 
 .diary-entry-social .diary-like-count svg {
-  fill: #ef4444;
-  stroke: #ef4444;
+  fill: var(--color-like);
+  stroke: var(--color-like);
 }
 
 .diary-entry-social .diary-comment-count svg {

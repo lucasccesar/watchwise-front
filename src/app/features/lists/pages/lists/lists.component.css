@@ -139,8 +139,8 @@
 .list-card-footer > span, .list-card-footer > button.list-card-like { display: inline-flex; align-items: center; gap: 5px; }
 .list-card-footer > button.list-card-like { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .list-card-footer svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
-.list-card-footer > button.list-card-like svg { stroke: var(--color-error); }
-.list-card-footer > button.list-card-like--active svg { fill: var(--color-error); }
+.list-card-footer > button.list-card-like svg { stroke: var(--color-like); }
+.list-card-footer > button.list-card-like--active svg { fill: var(--color-like); }
 .list-card-footer > button.list-card-like:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: var(--radius-sm); }
 .list-card-footer > button.list-card-like:disabled { cursor: wait; opacity: .65; }
 .list-card-footer > span svg { color: var(--color-primary); }

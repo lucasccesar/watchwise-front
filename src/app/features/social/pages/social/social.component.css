@@ -461,11 +461,11 @@
 
 .social-action-like svg {
   fill: none;
-  stroke: var(--color-error);
+  stroke: var(--color-like);
 }
 
 .social-action-like[aria-pressed='true'] svg {
-  fill: var(--color-error);
+  fill: var(--color-like);
 }
 
 .social-action-like[aria-pressed='true'] {

@@ -19,7 +19,8 @@
 .pick-template-like, .pick-template-comments-link { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); text-decoration: none; cursor: pointer; }
 .pick-template-like:hover, .pick-template-like[aria-pressed='true'] { color: #f06c83; }
 .pick-template-like svg, .pick-template-comments-link svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
-.pick-template-like[aria-pressed='true'] svg { fill: currentColor; }
+.pick-template-like:hover svg, .pick-template-like[aria-pressed='true'] svg { stroke: var(--color-like); }
+.pick-template-like[aria-pressed='true'] svg { fill: var(--color-like); }
 .pick-template-categories, .pick-template-my-picks, .pick-template-community, .pick-template-comments { margin-top: 28px; }
 .pick-template-categories > header, .pick-template-my-picks > header, .pick-template-community > header, .pick-template-comments > header { display: flex; min-height: 43px; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
 .pick-template-categories h2, .pick-template-my-picks h2, .pick-template-community h2, .pick-template-comments h2 { margin: 0; font-size: var(--font-size-lg); font-weight: 650; }
@@ -56,6 +57,8 @@
 .pick-own-footer a, .pick-community-footer a { margin-left: auto; color: var(--color-primary); font-weight: 650; text-decoration: none; }
 .pick-community-footer button { padding: 0; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; cursor: pointer; }
 .pick-community-footer button[aria-pressed='true'] { color: #f06c83; }
+.pick-community-footer button[aria-pressed='true'] .pick-like-heart,
+.pick-own-footer .pick-like-heart { color: var(--color-like); }
 .pick-sort-buttons { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
 .pick-sort-buttons button { min-height: 30px; padding: 0 9px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-tertiary); font: inherit; font-size: 10px; cursor: pointer; }
 .pick-sort-buttons button.active { background: var(--color-primary); color: var(--color-text); }
