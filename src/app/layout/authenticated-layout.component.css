@@ -193,6 +193,7 @@
 
 .account-menu-viewer-button {
   width: 100%;
+  padding: 6px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
