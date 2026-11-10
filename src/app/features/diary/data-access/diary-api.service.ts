@@ -13,6 +13,7 @@ export interface DiaryRecord {
   id: string;
   reviewSource?: 'DIARY' | 'CONTENT_REVIEW';
   seriesTitle?: string | null;
+  seriesCustomPosterUrl?: string | null;
   seriesPosterPath?: string | null;
   content: {
     id: string | null;
@@ -65,6 +66,7 @@ interface DiaryReviewApiRecord {
   likedByMe: boolean;
   watchedWith: DiaryRecord['watchedWith'];
   seriesTitle: string | null;
+  seriesCustomPosterUrl?: string | null;
   seriesPosterPath: string | null;
 }
 

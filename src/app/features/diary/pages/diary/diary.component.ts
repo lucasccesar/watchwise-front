@@ -54,6 +54,7 @@ interface DiaryReviewCompanion {
 
 interface DiaryGridEntry extends HomeRecentlyWatched {
   reviewSource: 'DIARY' | 'CONTENT_REVIEW';
+  seriesCustomPosterUrl: string | null;
   seriesPosterPath: string | null;
   likesCount: number;
   likedByMe: boolean;
@@ -82,6 +83,7 @@ interface DiaryGroupedGridEntry {
   watchedInTheater: boolean | null;
   seriesTitle: string | null;
   customPosterUrl: string | null;
+  seriesCustomPosterUrl: string | null;
   seriesPosterPath: string | null;
   backdropPath: string | null;
   groupType: DiaryViewGroupedItem['groupType'];
@@ -559,7 +561,7 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected groupedPoster(entry: DiaryGroupedGridEntry): string | null {
-    return tmdbImageUrl(entry.customPosterUrl || entry.seriesPosterPath, 'w342');
+    return tmdbImageUrl(entry.seriesCustomPosterUrl || entry.customPosterUrl || entry.seriesPosterPath, 'w342');
   }
 
   protected groupedBackdrop(entry: DiaryGroupedGridEntry): string | null {
@@ -668,11 +670,12 @@ export class DiaryComponent implements OnDestroy {
   protected poster(entry: DiaryGridEntry): string | null {
     const type = entry.content.type?.toUpperCase();
     const customPoster = entry.customPosterUrl || entry.card?.customPosterUrl;
+    const seriesCustomPoster = entry.seriesCustomPosterUrl;
     const seriesPoster = type === 'EPISODE' || type === 'SEASON' || type === 'SERIES'
       ? entry.seriesPosterPath
       : null;
     const path = type === 'SERIES'
-      ? customPoster || seriesPoster || entry.card?.posterPath
+      ? seriesCustomPoster || customPoster || seriesPoster || entry.card?.posterPath
       : seriesPoster || customPoster || entry.card?.posterPath;
     return tmdbImageUrl(path, 'w342');
   }
@@ -779,6 +782,7 @@ export class DiaryComponent implements OnDestroy {
       ?? {
         id: entry.id,
         reviewSource: 'DIARY',
+        seriesCustomPosterUrl: entry.seriesCustomPosterUrl,
         seriesPosterPath: entry.seriesPosterPath,
         content: { id: null, tmdbId: entry.content.tmdbId, type: 'SERIES', seriesTmdbId: entry.content.seriesTmdbId, seasonNumber: null, episodeNumber: null, runtimeMinutes: entry.totalRuntimeMinutes },
         watchedDate: entry.watchedDate,
@@ -1024,6 +1028,7 @@ export class DiaryComponent implements OnDestroy {
       && (record.content.tmdbId === seriesId || record.content.seriesTmdbId === seriesId));
     const seriesTitle = members.find(member => member.seriesTitle)?.seriesTitle || matchingSeries?.title || null;
     const customPosterUrl = seriesRecord?.customPosterUrl || seriesRecord?.card?.customPosterUrl || null;
+    const seriesCustomPosterUrl = members.find(member => member.seriesCustomPosterUrl)?.seriesCustomPosterUrl ?? null;
     const seriesPosterPath = members.find(member => member.seriesPosterPath)?.seriesPosterPath
       || members.find(member => member.content.type === 'SERIES')?.card?.posterPath
       || null;
@@ -1044,6 +1049,7 @@ export class DiaryComponent implements OnDestroy {
       watchedInTheater: members.some(member => member.watchedInTheater === true),
       seriesTitle,
       customPosterUrl,
+      seriesCustomPosterUrl,
       seriesPosterPath,
       backdropPath: item.backdropPath ?? null,
       groupType: item.groupType,
@@ -1082,6 +1088,9 @@ export class DiaryComponent implements OnDestroy {
       id: item.completionKey || `completion:${item.content.type}:${item.content.tmdbId ?? item.content.seriesTmdbId ?? item.orderedAt}`,
       reviewSource: 'DIARY',
       derivedCompletion: true,
+      seriesCustomPosterUrl: sourceEntries.find(entry => entry.seriesCustomPosterUrl)?.seriesCustomPosterUrl
+        ?? relatedEntry?.seriesCustomPosterUrl
+        ?? null,
       seriesPosterPath: relatedEntry?.seriesPosterPath ?? null,
       content: {
         id: item.content.id,
@@ -1139,6 +1148,7 @@ export class DiaryComponent implements OnDestroy {
     return {
       id: record.id,
       reviewSource: record.reviewSource ?? 'DIARY',
+      seriesCustomPosterUrl: record.seriesCustomPosterUrl ?? null,
       seriesPosterPath: record.seriesPosterPath ?? null,
       content: {
         id: content.id,
