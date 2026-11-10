@@ -6428,3 +6428,102 @@
     padding-top: var(--space-2);
   }
 }
+
+/* Full-width bands and centered content follow the Profile prototype. */
+.profile-page--overview {
+  --profile-overview-inline-padding: max(16px, calc((100% - min(70vw, 1334px)) / 2));
+}
+
+.profile-page--overview .profile-type-switch {
+  width: 100%;
+  margin: 0;
+  padding: 12px var(--profile-overview-inline-padding);
+  box-sizing: border-box;
+  background: var(--color-surface);
+}
+
+.profile-overview-content {
+  width: 100%;
+  margin: 0;
+}
+
+.profile-overview-content .profile-summary-grid {
+  padding-right: var(--profile-overview-inline-padding);
+  padding-left: var(--profile-overview-inline-padding);
+  box-sizing: border-box;
+  background: var(--color-surface-secondary);
+}
+
+.profile-overview-content .profile-section {
+  margin: 0;
+  padding: 48px var(--profile-overview-inline-padding);
+  box-sizing: border-box;
+  background: var(--color-surface);
+}
+
+.profile-overview-content .profile-section-heading {
+  min-height: 28px;
+  margin-bottom: 24px;
+}
+
+.profile-overview-content .profile-section-heading h2 {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.profile-overview-content .profile-overview-recent-section,
+.profile-overview-content .profile-ratings-section {
+  background: var(--color-surface-secondary);
+}
+
+.profile-overview-content .profile-home-genre-section {
+  background: var(--color-surface);
+}
+
+.profile-overview-content .profile-overview-reviews-section {
+  padding-bottom: 64px;
+  background: var(--color-surface);
+}
+
+.profile-overview-content--series .profile-overview-recent-section,
+.profile-overview-content--series .profile-ratings-section {
+  background: var(--color-surface);
+}
+
+.profile-overview-content--series .profile-home-genre-section,
+.profile-overview-content--series .profile-overview-reviews-section {
+  background: var(--color-surface-secondary);
+}
+
+.profile-overview-content .profile-ratings-section {
+  margin-top: 0;
+}
+
+@media (max-width: 800px) {
+  .profile-page--overview {
+    --profile-overview-inline-padding: 16px;
+  }
+
+  .profile-page--overview .profile-type-switch {
+    width: 100%;
+    margin: 0;
+  }
+
+  .profile-overview-content {
+    width: 100%;
+    margin: 0;
+  }
+
+  .profile-overview-content .profile-summary-grid {
+    margin-inline: 0;
+    padding-inline: 16px;
+  }
+
+  .profile-overview-content .profile-section {
+    padding: 32px 16px;
+  }
+
+  .profile-overview-content .profile-overview-reviews-section {
+    padding-bottom: 40px;
+  }
+}
