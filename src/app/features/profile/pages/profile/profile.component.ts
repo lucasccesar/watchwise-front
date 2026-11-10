@@ -34,7 +34,7 @@ import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.d
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
-import { ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveEntry } from '../../data-access/profile-api.service';
+import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
@@ -951,6 +951,40 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     return tmdbImageUrl(path, size);
   }
 
+  protected episodeMapProgress(item: EpisodeRatingsMapItem): number | null {
+    const total = item.totalEpisodeCount;
+    if (typeof total !== 'number' || total <= 0) return null;
+    const watched = Math.max(0, item.watchedEpisodeCount ?? 0);
+    if (watched === 0) return 0;
+    return Math.min(100, Math.max(1, Math.floor((watched / total) * 100)));
+  }
+
+  protected episodeMapComplete(item: EpisodeRatingsMapItem): boolean {
+    return typeof item.totalEpisodeCount === 'number'
+      && item.totalEpisodeCount > 0
+      && (item.watchedEpisodeCount ?? 0) >= item.totalEpisodeCount;
+  }
+
+  protected episodeMapWatchedBadge(count: number | null): string {
+    const watched = count ?? 0;
+    return `${watched} ${watched === 1 ? 'ep' : 'eps'}`;
+  }
+
+  protected episodeMapSeriesCountLabel(): string {
+    const count = this.episodeMap()?.totalElements ?? 0;
+    return `${count.toLocaleString('pt-BR')} ${count === 1 ? 'série' : 'séries'}`;
+  }
+
+  protected episodeMapPageRangeLabel(): string {
+    const data = this.episodeMap();
+    if (!data || data.totalElements === 0) return 'Mostrando 0 de 0 séries';
+    const start = (data.page - 1) * data.size + 1;
+    const end = Math.min(data.page * data.size, data.totalElements);
+    const format = (value: number) => value.toLocaleString('pt-BR');
+    const seriesLabel = data.totalElements === 1 ? 'série' : 'séries';
+    return `Mostrando ${format(start)}–${format(end)} de ${format(data.totalElements)} ${seriesLabel}`;
+  }
+
   protected runtimeLabel(minutes: number | null | undefined): string {
     return minutes && minutes > 0 ? `${minutes} min` : '';
   }
@@ -1378,7 +1412,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       return;
     }
     if (section === 'episode-ratings-map') {
-      this.profileApi.getEpisodeMap(userId, this.currentPage())
+      this.profileApi.getEpisodeMap(userId, this.currentPage(), 12)
         .subscribe({ next: (data) => this.episodeMap.set(data), error: (error: unknown) => this.handleError(error) });
       return;
     }

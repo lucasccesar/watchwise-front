@@ -296,7 +296,7 @@ export class ProfileApiService {
     );
   }
 
-  getEpisodeMap(userId: string, page = 1, size = 11): Observable<EpisodeRatingsMap> {
+  getEpisodeMap(userId: string, page = 1, size = 12): Observable<EpisodeRatingsMap> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<EpisodeRatingsMap>(
       '/api/v1/users/' + encodeURIComponent(userId) + '/episode-ratings-map',

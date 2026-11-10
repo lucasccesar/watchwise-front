@@ -815,38 +815,85 @@
       }
 
       @case ('episode-ratings-map') {
-        <section class="profile-content profile-section-page">
-          <header class="profile-subpage-hero profile-subpage-hero--identity"><app-responsive-banner [path]="profile()?.banner" fallbackPath="" />
-            <div class="profile-subpage-hero-copy">
-              <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
-                  @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
-                <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
+        <section class="profile-content profile-section-page profile-map-page">
+          <header class="profile-subpage-hero profile-map-hero" aria-labelledby="profile-map-title">
+            <app-responsive-banner [path]="profile()?.banner ?? null" fallbackPath="" appearance="profile-hero" />
+            <div class="profile-map-hero-copy">
+              <a class="profile-subpage-owner profile-map-owner" [routerLink]="selectedSectionUrl('')">
+                @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
+                <span class="profile-subpage-owner-copy profile-map-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
               </a>
-              <h1 class="ww-detail-hero-title">{{ copy.mapTitle }}</h1>
-              <p class="profile-subpage-accent">{{ episodeMap()?.totalElements ?? 0 | number }} séries · {{ episodeMap()?.totalWatchedEpisodeCount ?? 0 | number }} / {{ episodeMap()?.totalEpisodeCount ?? 0 | number }} episódios</p>
-              <p>Como {{ userName() }} avaliou cada episódio das séries que acompanha, em todos os capítulos assistidos.</p>
+              <h1 id="profile-map-title" class="profile-map-title">
+                <span>{{ copy.mapTitle }}</span>
+                <span class="profile-map-title-count"><span aria-hidden="true"></span>{{ episodeMapSeriesCountLabel() }}<span aria-hidden="true"></span></span>
+              </h1>
+              <p>Como {{ userName() }} avaliou cada episódio das séries que acompanha, temporada por temporada.</p>
             </div>
           </header>
+
           <section class="profile-map-summary" aria-label="Resumo das notas de episódios">
-            <div class="profile-map-summary-inner">
-              <dl><div><dt>{{ episodeMap()?.totalElements ?? 0 | number }}</dt><dd>séries</dd></div></dl>
-              <dl><div><dt>{{ episodeMap()?.totalWatchedEpisodeCount ?? 0 | number }} / {{ episodeMap()?.totalEpisodeCount ?? 0 | number }}</dt><dd>episódios assistidos</dd></div></dl>
-            </div>
+            <dl>
+              <div>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2 12 7 7 2M6.8 22h10.4c1.68 0 2.52 0 3.162-.327a3 3 0 0 0 1.311-1.311C22 19.72 22 18.88 22 17.2v-5.4c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C19.72 7 18.88 7 17.2 7H6.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C2 9.28 2 10.12 2 11.8v5.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C4.28 22 5.12 22 6.8 22Z" /></svg>
+                <dt>{{ episodeMap()?.totalElements ?? 0 | number }}</dt><dd>séries</dd>
+              </div>
+              <div>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+                <dt>{{ episodeMap()?.totalWatchedEpisodeCount ?? 0 | number }}@if (episodeMap()?.totalEpisodeCount !== null && episodeMap()?.totalEpisodeCount !== undefined) { <span> / {{ episodeMap()?.totalEpisodeCount | number }}</span> }</dt><dd>episódios assistidos</dd>
+              </div>
+            </dl>
           </section>
-          <div class="profile-map-grid">
-            @for (item of episodeMap()?.series ?? []; track item.seriesTmdbId) {
-              <a class="profile-map-card" [routerLink]="mapRoute(item.seriesTmdbId)">
-                @if (imageUrl(item.customPosterUrl || item.posterPath); as poster) { <img [src]="poster" [alt]="item.title || ''" /> }
-                <div><h2>{{ item.title || copy.unavailable }}</h2><span>{{ item.releaseYear ?? '—' }}</span><strong>{{ item.watchedEpisodeCount ?? 0 }} / {{ item.totalEpisodeCount ?? 0 }} episódios</strong></div>
-              </a>
-            } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
-          </div>
+
+          <section class="profile-map-list-section" aria-label="Séries com episódios assistidos">
+            <ul class="profile-map-grid">
+              @for (item of episodeMap()?.series ?? []; track item.seriesTmdbId) {
+                <li>
+                  <article class="profile-map-show-card" [attr.aria-label]="(item.title || copy.unavailable) + ', ' + (item.watchedEpisodeCount ?? 0) + ' episódios assistidos'">
+                    <a class="profile-map-poster" [routerLink]="mapRoute(item.seriesTmdbId)" [attr.aria-label]="item.title || copy.unavailable">
+                      @if (imageUrl(item.customPosterUrl || item.posterPath); as poster) { <img [src]="poster" alt="" /> }
+                      @if (episodeMapComplete(item)) {
+                        <span class="profile-map-watched-badge profile-map-watched-badge--complete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5" /></svg>{{ episodeMapWatchedBadge(item.watchedEpisodeCount) }}</span>
+                      } @else {
+                        <span class="profile-map-watched-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.99c0-.972 0-1.457.202-1.724a1.5 1.5 0 0 1 .738-.394c.334-.02.738.249 1.545.788l10.518 7.012c.667.445 1.001.667 1.117.947a1 1 0 0 1 0 .765c-.116.28-.45.502-1.117.947L7.485 20.344c-.807.538-1.211.807-1.545.787a1.5 1.5 0 0 1-.738-.394C5 20.47 5 19.985 5 19.014V4.99Z" /></svg>{{ episodeMapWatchedBadge(item.watchedEpisodeCount) }}</span>
+                      }
+                    </a>
+                    <div class="profile-map-show-info">
+                      <div class="profile-map-show-heading">
+                        <div class="profile-map-show-title">
+                          <h2><a [routerLink]="mapRoute(item.seriesTmdbId)">{{ item.title || copy.unavailable }}</a></h2>
+                          <span>{{ item.releaseYear ?? '—' }}</span>
+                        </div>
+                        @if (episodeMapProgress(item) !== null) { <span class="profile-map-percent">{{ episodeMapProgress(item) }}%</span> }
+                      </div>
+                      @if (episodeMapProgress(item); as progress) {
+                        <div class="profile-map-progress">
+                          <span><strong>{{ item.watchedEpisodeCount ?? 0 }}</strong>@if (item.totalEpisodeCount !== null && item.totalEpisodeCount !== undefined) { /{{ item.totalEpisodeCount }} }</span>
+                          <div role="progressbar" [attr.aria-label]="(item.title || copy.unavailable) + ': ' + (item.watchedEpisodeCount ?? 0) + ' episódios assistidos'" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progress">
+                            <span [style.width.%]="progress" [class.profile-map-progress--complete]="episodeMapComplete(item)"></span>
+                          </div>
+                        </div>
+                      }
+                      <p class="profile-map-mobile-count" [class.profile-map-mobile-count--unknown-total]="item.totalEpisodeCount === null || item.totalEpisodeCount === undefined"><strong>{{ item.watchedEpisodeCount ?? 0 }}</strong>@if (item.totalEpisodeCount !== null && item.totalEpisodeCount !== undefined) { de {{ item.totalEpisodeCount }} } episódios assistidos</p>
+                    </div>
+                  </article>
+                </li>
+              } @empty { <li class="profile-map-empty"><p class="profile-empty">{{ copy.noItems }}</p></li> }
+            </ul>
+          </section>
+
           @if (pageTotalPages() > 1) {
-            <nav class="profile-pagination" [attr.aria-label]="copy.ratingsMapPagination">
-              <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="copy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-              @for (page of pageNumbers(pageTotalPages()); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
-              <button type="button" [disabled]="!pageHasNext()" [attr.aria-label]="copy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
-            </nav>
+            <div class="profile-map-pagination">
+              <span aria-hidden="true"></span>
+              <nav class="profile-pagination" [attr.aria-label]="copy.ratingsMapPagination">
+                <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="copy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                @for (page of progressPageNumbers(pageTotalPages()); track page ?? 'ellipsis-' + $index) {
+                  @if (page === null) { <span class="profile-map-page-ellipsis" aria-hidden="true">…</span> }
+                  @else { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                }
+                <button type="button" [disabled]="!pageHasNext()" [attr.aria-label]="copy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+              </nav>
+              <p class="profile-map-pagination-summary">{{ episodeMapPageRangeLabel() }}</p>
+            </div>
           }
         </section>
       }
