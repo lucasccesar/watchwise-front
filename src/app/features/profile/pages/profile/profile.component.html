@@ -135,11 +135,11 @@
 
     <div class="profile-type-switch ww-segmented-control" role="group" [attr.aria-label]="copy.type">
       <button type="button" [class.profile-type-active]="mode() === 'MOVIE'" [attr.aria-pressed]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16m10-16v16M3 9h4m-4 6h4m10-6h4m-4 6h4"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12H2M22 7H17M7 7H2M22 17H17M7 17H2M17 2V22M7 2V22M2 6.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.073 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.926 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V6.8C22 5.12 22 4.28 21.673 3.638C21.385 3.074 20.926 2.615 20.362 2.327C19.72 2 18.88 2 17.2 2H6.8C5.12 2 4.28 2 3.638 2.327C3.073 2.615 2.615 3.074 2.327 3.638C2 4.28 2 5.12 2 6.8Z"/></svg>
         {{ copy.movies }}
       </button>
       <button type="button" [class.profile-type-active]="mode() === 'EPISODE'" [attr.aria-pressed]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 2v3m8-3v3"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2L12 7L7 2M6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.927 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V11.8C22 10.12 22 9.28 21.673 8.638C21.385 8.074 20.927 7.615 20.362 7.327C19.72 7 18.88 7 17.2 7H6.8C5.12 7 4.28 7 3.638 7.327C3.074 7.615 2.615 8.074 2.327 8.638C2 9.28 2 10.12 2 11.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.074 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22Z"/></svg>
         {{ copy.series }}
       </button>
     </div>

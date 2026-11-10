@@ -283,7 +283,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 0;
+  border: 0 !important;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text);
@@ -6435,11 +6435,16 @@
 }
 
 .profile-page--overview .profile-type-switch {
-  width: 100%;
-  margin: 0;
-  padding: 12px var(--profile-overview-inline-padding);
+  width: min(70vw, 1334px);
+  margin: 0 auto;
+  padding: 12px 0;
   box-sizing: border-box;
   background: var(--color-surface);
+  border: 0 !important;
+}
+
+.profile-page--overview .profile-hero {
+  border-bottom: 0;
 }
 
 .profile-overview-content {
