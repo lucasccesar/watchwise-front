@@ -174,6 +174,7 @@
   justify-content: center;
   padding-block: 12px;
   border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .diary-tabs-inner {
