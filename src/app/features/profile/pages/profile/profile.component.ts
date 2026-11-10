@@ -112,6 +112,7 @@ export class ProfileComponent {
   protected readonly recentSeriesPosterPaths = signal<Record<string, string>>({});
   protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
+  private readonly latestMovieReviewBackdropPath = signal<string | null | undefined>(undefined);
   protected readonly episodeStillPaths = signal<Record<string, string>>({});
   protected readonly summarySlide = signal(0);
   protected readonly historySummarySlide = signal(0);
@@ -244,7 +245,10 @@ export class ProfileComponent {
     this.reviewComments()[review.id] || review.comment || null;
   protected readonly profileHeroBackdrop = computed(() => {
     if (this.status() !== 'ready') return undefined;
-    return this.profile()?.banner ?? null;
+    const profile = this.profile();
+    if (!profile) return undefined;
+    if (profile.banner) return profile.banner;
+    return this.latestMovieReviewBackdropPath();
   });
   protected readonly profileProgressBackdrop = computed(() => {
     if (this.status() !== 'ready') return undefined;
@@ -1226,6 +1230,8 @@ export class ProfileComponent {
       }).subscribe({
         next: ({ summary, topFive, recentMovies, recentEpisodes, recentSeries, ratedEpisodes, reviews }) => {
           this.summary.set(summary);
+          const latestMovieReview = reviews?.content.find((review) => review.content.type === 'MOVIE');
+          this.latestMovieReviewBackdropPath.set(latestMovieReview?.card?.backdropPath ?? null);
           this.recentMovieEntries.set(recentMovies?.content ?? []);
           this.recentEpisodeEntries.set(recentEpisodes?.content ?? []);
           this.recentSeriesProgress.set(recentSeries);
@@ -1439,6 +1445,7 @@ export class ProfileComponent {
 
   private resetSectionData(): void {
     this.summary.set(null);
+    this.latestMovieReviewBackdropPath.set(undefined);
     this.recentMovieEntries.set([]);
     this.recentEpisodeEntries.set([]);
     this.recentSeriesProgress.set([]);
