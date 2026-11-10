@@ -389,66 +389,142 @@
       @case ('progress') {
         <section class="profile-content profile-section-page profile-progress-page">
           @if (progress(); as data) {
-            <header class="profile-subpage-hero"><app-responsive-banner [path]="profile()?.banner || profileProgressBackdrop()" fallbackPath="" />
-              <div class="profile-subpage-hero-copy">
-                <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
+            <header class="profile-subpage-hero profile-progress-hero">
+              <app-responsive-banner [path]="profile()?.banner ?? null" fallbackPath="" appearance="profile-hero" />
+              <div class="profile-subpage-hero-copy profile-progress-hero-copy">
+                <a class="profile-subpage-owner profile-subpage-owner--progress profile-progress-owner" [routerLink]="selectedSectionUrl('')">
                   @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                   <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
                 </a>
-                <h1 class="ww-detail-hero-title">{{ copy.tabs.progress }}</h1>
-                <p class="profile-subpage-accent">{{ data.aggregate.totalSeriesCount | number }} {{ copy.showsInProgress }}</p>
-                <p>{{ copy.progressDescription }}</p>
+                <h1 id="profile-progress-title" class="ww-detail-hero-title">
+                  <span class="profile-progress-hero-title">{{ progressCopy.title }}</span>
+                  <span class="profile-progress-hero-subtitle"><span aria-hidden="true"></span>{{ progressCopy.inProgress.replace('{count}', formatCount(data.aggregate.totalSeriesCount)) }}<span aria-hidden="true"></span></span>
+                </h1>
+                <p>{{ progressCopy.description }}</p>
               </div>
             </header>
-            <section class="profile-progress-summary" aria-label="{{ copy.progressSummary }}">
-              <div class="profile-progress-metrics">
-                <span><strong>{{ data.aggregate.remainingEpisodeCount | number }}</strong> {{ copy.episodesRemaining }}</span>
-                <span><strong>@if (data.aggregate.remainingRuntimeMinutes !== null) { {{ formatDuration(data.aggregate.remainingRuntimeMinutes) }} } @else { — }</strong> {{ copy.timeRemaining }}</span>
-                <span><strong>{{ data.aggregate.totalSeriesCount | number }}</strong> {{ copy.showsInProgress }}</span>
-              </div>
-              <div class="profile-progress-summary-controls ww-filter-surface">
-                <label>{{ copy.sortBy }}
-                  <select aria-label="{{ copy.sortBy }}" [value]="progressSort()" (change)="setProgressSort($any($event.target).value)" data-ww-select-trigger>
-                    <option value="LAST_WATCHED">{{ copy.progressSortWatched }}</option>
-                    <option value="LAST_RELEASED">{{ copy.progressSortRelease }}</option>
-                    <option value="REMAINING_EPISODES">{{ copy.progressSortEpisodesLeft }}</option>
-                    <option value="REMAINING_RUNTIME">{{ copy.progressSortTimeLeft }}</option>
-                  </select>
-                </label>
-                <button type="button" class="profile-sort-direction" [attr.aria-label]="progressDirection() === 'DESC' ? copy.ascending : copy.descending" (click)="toggleProgressDirection()">{{ progressDirection() === 'DESC' ? '↓' : '↑' }}</button>
+            <section class="profile-progress-summary" aria-label="{{ progressCopy.summary }}">
+              <div class="profile-progress-summary-inner">
+                <dl class="profile-progress-metrics" aria-label="{{ progressCopy.summary }}">
+                  <div>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+                    <dt>{{ formatCount(data.aggregate.remainingEpisodeCount) }}</dt><dd>{{ progressCopy.episodesLeft }}</dd>
+                  </div>
+                  <div>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg>
+                    <dt>@if (data.aggregate.remainingRuntimeMinutes !== null) { {{ formatDuration(data.aggregate.remainingRuntimeMinutes) }} } @else { — }</dt><dd>{{ progressCopy.timeRemaining }}</dd>
+                  </div>
+                  <div>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2-5 5-5-5M6.8 22h10.4c1.68 0 2.52 0 3.162-.327.565-.288 1.023-.746 1.311-1.311C22 19.72 22 18.88 22 17.2v-5.4c0-1.68 0-2.52-.327-3.162-.288-.565-.746-1.023-1.311-1.311C19.72 7 18.88 7 17.2 7H6.8c-1.68 0-2.52 0-3.162.327-.565.288-1.023.746-1.311 1.311C2 9.28 2 10.12 2 11.8v5.4c0 1.68 0 2.52.327 3.162.288.565.746 1.023 1.311 1.311C4.28 22 5.12 22 6.8 22Z" /></svg>
+                    <dt>{{ formatCount(data.aggregate.totalSeriesCount) }}</dt><dd>{{ progressCopy.shows }}</dd>
+                  </div>
+                </dl>
+                <div class="profile-progress-controls">
+                  <div class="profile-progress-sort-control">
+                    <button type="button" class="profile-progress-sort-trigger" aria-haspopup="listbox" [attr.aria-expanded]="progressSortOpen()" [attr.aria-label]="progressCopy.sortBy + ' ' + progressSortLabel()" (click)="toggleProgressSort()">
+                      <svg class="profile-progress-sort-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h12M3 6h18M3 18h6" /></svg>
+                      <span class="profile-progress-sort-label"><span>{{ progressCopy.sortBy }}</span> {{ progressSortLabel() }}</span>
+                      <svg class="profile-progress-sort-chevron" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="progressSortOpen() ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'" /></svg>
+                    </button>
+                    @if (progressSortOpen()) {
+                      <div class="profile-progress-sort-menu">
+                        <div role="listbox" aria-label="{{ progressCopy.sortBy }}">
+                          @for (option of progressSortOptions; track option.value) {
+                            <button type="button" role="option" [attr.aria-selected]="progressSort() === option.value" (click)="setProgressSort(option.value)">
+                              <span>{{ option.label }}</span>
+                              @if (progressSort() === option.value) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5" /></svg> }
+                            </button>
+                          }
+                        </div>
+                        <button type="button" class="profile-progress-mobile-direction" [attr.aria-label]="progressDirection() === 'DESC' ? copy.ascending : copy.descending" (click)="toggleProgressDirection()">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="progressDirection() === 'ASC' ? 'M12 19V5m0 0L5 12m7-7 7 7' : 'M12 5v14m0 0 7-7m-7 7-7-7'" /></svg>
+                          {{ progressDirection() === 'DESC' ? copy.ascending : copy.descending }}
+                        </button>
+                      </div>
+                    }
+                  </div>
+                  <button type="button" class="profile-progress-sort-direction" [attr.aria-label]="progressDirection() === 'DESC' ? copy.ascending : copy.descending" [title]="progressDirection() === 'DESC' ? copy.ascending : copy.descending" (click)="toggleProgressDirection()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="progressDirection() === 'ASC' ? 'M12 19V5m0 0L5 12m7-7 7 7' : 'M12 5v14m0 0 7-7m-7 7-7-7'" /></svg>
+                  </button>
+                </div>
               </div>
             </section>
             <div class="profile-progress-pagebar">
+              <span aria-hidden="true"></span>
               @if (data.totalPages > 1) {
-                <nav class="profile-pagination" aria-label="{{ copy.progressPagination }}">
-                  <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="copy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-                  @for (page of pageNumbers(data.totalPages); track page) { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
-                  <button type="button" [disabled]="!data.hasNext" [attr.aria-label]="copy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                <nav class="profile-pagination" aria-label="{{ progressCopy.pagination }}">
+                  <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="progressCopy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  @for (page of progressPageNumbers(data.totalPages); track $index) {
+                    @if (page === null) { <span class="profile-progress-ellipsis" aria-hidden="true">…</span> }
+                    @else { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                  }
+                  <button type="button" [disabled]="!data.hasNext" [attr.aria-label]="progressCopy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
                 </nav>
               }
-              <p class="profile-pagination-summary">{{ copy.showingRange.replace('{start}', asText(progressRangeStart(data))).replace('{end}', asText(progressRangeEnd(data))).replace('{total}', asText(data.totalElements)) }} {{ copy.showsInProgress }}</p>
+              <p class="profile-pagination-summary">{{ progressCopy.showing.replace('{start}', asText(progressRangeStart(data))).replace('{end}', asText(progressRangeEnd(data))).replace('{total}', formatCount(data.totalElements)) }}</p>
             </div>
-            <div class="profile-progress-grid">
+            <section class="profile-progress-grid" aria-label="{{ progressCopy.title }}">
               @for (item of data.content; track item.seriesTmdbId) {
-                <article class="profile-progress-card">
-                  <div class="profile-progress-poster">@if (imageUrl(item.customPosterUrl || item.seriesPosterPath || item.posterPath); as poster) { <a [routerLink]="['/content/series', item.seriesTmdbId]" aria-label="{{ item.seriesTitle || item.title }}"><img [src]="poster" [alt]="item.seriesTitle || item.title || ''" /></a> } @else { <span>{{ item.seriesTitle || item.title || copy.unavailable }}</span> }</div>
+                <article class="profile-progress-card" [attr.aria-label]="progressCopy.progressFor.replace('{title}', item.seriesTitle || item.title || copy.unavailable)">
+                  <div class="profile-progress-poster">@if (imageUrl(item.customPosterUrl || item.seriesPosterPath || item.posterPath); as poster) { <a [routerLink]="['/content/series', item.seriesTmdbId]" aria-label="{{ item.seriesTitle || item.title }}"><img [src]="poster" [alt]="item.seriesTitle || item.title || ''" /></a> } @else { <span>{{ copy.unavailable }}</span> }</div>
                   <div class="profile-progress-main">
                     <div class="profile-progress-title-row"><a [routerLink]="['/content/series', item.seriesTmdbId]"><h2>{{ item.seriesTitle || item.title }}</h2></a><strong>{{ progressPercent(item.watchedPercentage) }}%</strong></div>
-                    <div class="profile-progress-bar"><i [style.width]="progressPercent(item.watchedPercentage) + '%'" ></i></div>
-                    <p class="profile-progress-count"><strong>{{ item.watchedEpisodeCount }}</strong> de {{ item.totalEpisodeCount ?? item.totalReleasedEpisodeCount ?? 0 }} {{ copy.episodes }} · <strong>{{ item.remainingEpisodeCount ?? 0 }} {{ copy.episodesRemaining }}</strong>@if (item.remainingRuntimeMinutes !== null && item.remainingRuntimeMinutes !== undefined) { <span> ({{ formatDuration(item.remainingRuntimeMinutes) }})</span> }</p>
-                    @if (item.lastWatchedDate) { <p class="profile-progress-last-watched">{{ copy.lastWatched }} @if (watchedEpisodeRoute(item); as route) { <a [routerLink]="route">{{ item.lastWatchedEpisodeTitle || progressEpisodeCoordinates(item) }}</a> } @else { <span>{{ item.lastWatchedEpisodeTitle || progressEpisodeCoordinates(item) }}</span> } <span>· {{ dateLabel(item.lastWatchedDate) }}</span></p> }
-                    <button class="profile-progress-seasons-toggle" type="button" [attr.aria-expanded]="progressSeasonsExpanded(item.seriesTmdbId)" (click)="toggleProgressSeasons(item.seriesTmdbId, $event)">{{ progressSeasonsExpanded(item.seriesTmdbId) ? '−' : '+' }} {{ progressSeasonsExpanded(item.seriesTmdbId) ? copy.hideSeasons : copy.viewSeasons }}</button>
-                    @if (progressSeasonsExpanded(item.seriesTmdbId)) { <div class="profile-progress-seasons" aria-label="{{ copy.seasons }}">@for (season of item.seasonProgress; track season.seasonNumber) { <div><span><strong>{{ copy.season }} {{ season.seasonNumber }}</strong><small>{{ season.watchedEpisodeCount }}/{{ season.totalEpisodeCount }} {{ copy.episodes }} · @if (season.remainingRuntimeMinutes !== null) { {{ formatDuration(season.remainingRuntimeMinutes) }} } @else { — }</small></span><div class="profile-progress-season-row"><div class="profile-progress-bar" [class.profile-progress-bar--complete]="progressPercent(season.watchedPercentage) >= 100"><i [style.width]="progressPercent(season.watchedPercentage) + '%'" ></i></div><strong>{{ progressPercent(season.watchedPercentage) }}%</strong></div></div> } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }</div> }
+                    <div class="profile-progress-bar" role="progressbar" [attr.aria-label]="progressCopy.progressFor.replace('{title}', item.seriesTitle || item.title || copy.unavailable)" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progressPercent(item.watchedPercentage)"><i [style.width]="progressPercent(item.watchedPercentage) + '%'" ></i></div>
+                    <div class="profile-progress-details">
+                      <p class="profile-progress-count"><strong>{{ item.watchedEpisodeCount }}</strong> de {{ item.totalEpisodeCount ?? item.totalReleasedEpisodeCount ?? 0 }} {{ copy.episodes }} · <strong>{{ item.remainingEpisodeCount ?? 0 }} {{ copy.episodesRemaining }}</strong>@if (item.remainingRuntimeMinutes !== null) { <span> ({{ formatDuration(item.remainingRuntimeMinutes) }})</span> }</p>
+                      @if (item.lastWatchedDate) { <p class="profile-progress-last-watched">{{ copy.lastWatched }} @if (watchedEpisodeRoute(item); as route) { <a [routerLink]="route">{{ progressEpisodeCoordinates(item) }} “{{ item.lastWatchedEpisodeTitle || progressEpisodeCoordinates(item) }}”</a> } @else { <span>{{ progressEpisodeCoordinates(item) }} “{{ item.lastWatchedEpisodeTitle || progressEpisodeCoordinates(item) }}”</span> } · {{ dateLabel(item.lastWatchedDate) }}</p> }
+                    </div>
+                    <button class="profile-progress-seasons-toggle" type="button" [attr.aria-expanded]="progressSeasonsExpanded(item.seriesTmdbId)" (click)="toggleProgressSeasons(item.seriesTmdbId, $event)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="progressSeasonsExpanded(item.seriesTmdbId) ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'" /></svg>
+                      {{ progressSeasonsExpanded(item.seriesTmdbId) ? copy.hideSeasons : copy.viewSeasons }}
+                    </button>
                   </div>
-                  <div class="profile-progress-last-episode">
-                    @if (item.lastWatchedDate) {
-                      @if (progressStill(item.seriesTmdbId, item.seriesPosterPath || item.posterPath); as still) { <a class="profile-progress-still" [routerLink]="watchedEpisodeRoute(item) || ['/content/series', item.seriesTmdbId]"><img [src]="still" [alt]="item.lastWatchedEpisodeTitle || item.seriesTitle || item.title || ''" /></a> }
-                      <div><a class="profile-progress-episode-title" [routerLink]="watchedEpisodeRoute(item) || ['/content/series', item.seriesTmdbId]">{{ item.lastWatchedEpisodeTitle || progressEpisodeCoordinates(item) }}</a><span>{{ progressEpisodeCoordinates(item) }}</span><small>{{ dateLabel(item.lastWatchedDate) }}</small></div>
-                    }
-                  </div>
+                  @if (progressSeasonsExpanded(item.seriesTmdbId)) {
+                    <div class="profile-progress-seasons" aria-label="{{ copy.seasons }}">
+                      @for (season of item.seasonProgress; track season.seasonNumber) {
+                        <div class="profile-progress-season">
+                          <div class="profile-progress-season-heading"><strong>{{ copy.season }} {{ season.seasonNumber }}</strong><small>{{ season.watchedEpisodeCount }}/{{ season.totalEpisodeCount }} {{ copy.episodes }} · @if (season.remainingRuntimeMinutes !== null) { {{ formatDuration(season.remainingRuntimeMinutes) }} } @else { — }</small></div>
+                          <div class="profile-progress-season-bar" role="progressbar" [attr.aria-label]="copy.season + ' ' + season.seasonNumber" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progressPercent(season.watchedPercentage)"><i [style.width]="progressPercent(season.watchedPercentage) + '%'" ></i></div>
+                          <strong class="profile-progress-season-percent">{{ progressPercent(season.watchedPercentage) }}%</strong>
+                        </div>
+                      } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+                    </div>
+                  }
+                  @if (item.nextEpisode; as nextEpisode) {
+                    <div class="profile-progress-next-episode">
+                      <span class="profile-progress-next-heading">{{ progressCopy.episodeUnavailable }}</span>
+                      <a class="profile-progress-next-link" [routerLink]="episodeRoute(item.seriesTmdbId, nextEpisode.seasonNumber, nextEpisode.episodeNumber)" [attr.aria-label]="progressCopy.episodeUnavailable + ': ' + (item.seriesTitle || item.title || copy.unavailable) + ', S' + nextEpisode.seasonNumber + ' · E' + nextEpisode.episodeNumber + ', ' + (nextEpisode.title || copy.unavailable)">
+                        <span class="profile-progress-still">
+                          @if (imageUrl(nextEpisode.stillPath, 'w780'); as still) { <img [src]="still" alt="" /> }
+                        </span>
+                        <span class="profile-progress-next-copy">
+                          <span class="profile-progress-next-coordinates">S{{ nextEpisode.seasonNumber }} · E{{ nextEpisode.episodeNumber }}</span>
+                          <span class="profile-progress-next-title">{{ nextEpisode.title || copy.unavailable }}</span>
+                          <span class="profile-progress-next-meta">{{ nextEpisode.releaseDate ? dateLabel(nextEpisode.releaseDate) : progressCopy.releaseDateUnknown }} · {{ nextEpisode.runtimeMinutes !== null ? runtimeLabel(nextEpisode.runtimeMinutes) : copy.unavailable }}</span>
+                        </span>
+                      </a>
+                      @if (followState() === 'SELF' && nextEpisode.availableToWatch !== false) {
+                        <button type="button" class="profile-progress-mark-watched" [disabled]="savingProgressSeriesId() === item.seriesTmdbId" [attr.aria-label]="homeCopy.markWatched + ': ' + (nextEpisode.title || progressCopy.episodeUnavailable)" (click)="markProgressEpisodeWatched(item)">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5" /></svg><span>{{ homeCopy.markWatched }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
                 </article>
               } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
-            </div>
+            </section>
+            @if (data.totalPages > 1) {
+              <div class="profile-progress-bottom-pagination">
+                <nav class="profile-pagination" aria-label="{{ progressCopy.pagination }}">
+                  <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="progressCopy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  @for (page of progressPageNumbers(data.totalPages); track $index) {
+                    @if (page === null) { <span class="profile-progress-ellipsis" aria-hidden="true">…</span> }
+                    @else { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                  }
+                  <button type="button" [disabled]="!data.hasNext" [attr.aria-label]="progressCopy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                </nav>
+              </div>
+            }
           }
         </section>
       }

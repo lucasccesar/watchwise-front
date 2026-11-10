@@ -4,6 +4,7 @@
 @import './app/shared/components/dialog-backdrop/dialog-panel.css';
 @import './app/shared/hero-media.css';
 @import './app/shared/design-system-controls.css';
+@import './app/features/profile/pages/profile/profile-progress-page.css';
 
 :root {
   color-scheme: dark;

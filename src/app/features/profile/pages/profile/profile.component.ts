@@ -6,6 +6,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   OnDestroy,
   QueryList,
   ViewChild,
@@ -139,36 +140,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly hoveredOverviewRatingIndex = signal<number | null>(null);
   protected readonly topFive = signal<ResolvedTopFive[]>([]);
   protected readonly diary = signal<DiaryRecordPage | null>(null);
-  private readonly progressEntries = signal<SeriesInProgressRecord[]>([]);
-  private readonly progressLoaded = signal(false);
-  protected readonly progress = computed<SeriesInProgressPage | null>(() => {
-    if (!this.progressLoaded()) return null;
-    const activeEntries = this.progressEntries().filter((entry) => !this.isCompletedProgress(entry));
-    const totalElements = activeEntries.length;
-    const totalPages = Math.ceil(totalElements / this.progressPageSize);
-    const page = Math.max(1, Math.min(this.currentPage(), totalPages || 1));
-    const content = activeEntries.slice((page - 1) * this.progressPageSize, page * this.progressPageSize);
-    const remainingRuntimeValues = activeEntries.map((entry) => entry.remainingRuntimeMinutes);
-    return {
-      content,
-      page,
-      size: this.progressPageSize,
-      totalElements,
-      totalPages,
-      hasNext: page < totalPages,
-      aggregate: {
-        totalSeriesCount: totalElements,
-        watchedEpisodeCount: activeEntries.reduce((sum, entry) => sum + (entry.watchedEpisodeCount ?? 0), 0),
-        totalReleasedEpisodeCount: activeEntries.reduce((sum, entry) => sum + (entry.totalReleasedEpisodeCount ?? entry.totalEpisodeCount ?? 0), 0),
-        remainingEpisodeCount: activeEntries.reduce((sum, entry) => sum + (entry.remainingEpisodeCount ?? 0), 0),
-        remainingRuntimeMinutes: remainingRuntimeValues.some((value) => value === null)
-          ? null
-          : remainingRuntimeValues.reduce<number>((sum, value) => sum + (value ?? 0), 0),
-      },
-    };
-  });
-  protected readonly progressStillPaths = signal<Record<string, string>>({});
-  private readonly progressBackdropPath = signal<string | null>(null);
+  protected readonly progress = signal<SeriesInProgressPage | null>(null);
   private profileLoadVersion = 0;
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
@@ -209,6 +181,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly historyDateTo = signal('');
   protected readonly collapsedHistoryDays = signal<ReadonlySet<string>>(new Set());
   protected readonly progressSort = signal<ProgressSortBy>('LAST_WATCHED');
+  protected readonly progressSortOpen = signal(false);
+  protected readonly progressSortOptions: Array<{ value: ProgressSortBy; label: string }> = [
+    { value: 'LAST_WATCHED', label: this.copy.progressSortWatched },
+    { value: 'LAST_RELEASED', label: this.copy.progressSortRelease },
+    { value: 'REMAINING_EPISODES', label: this.copy.progressSortEpisodesLeft },
+    { value: 'REMAINING_RUNTIME', label: this.copy.progressSortTimeLeft },
+  ];
   protected readonly progressDirection = signal<'ASC' | 'DESC'>('DESC');
   protected readonly expandedProgress = signal<ReadonlySet<string>>(new Set());
   protected readonly mapRatingMode = signal<'PERSONAL' | 'COMMUNITY'>('PERSONAL');
@@ -217,7 +196,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly followBusy = signal(false);
   protected readonly activePosterMenu = signal<string | null>(null);
   protected readonly pageSize = 20;
-  protected readonly progressPageSize = 8;
+  protected readonly progressPageSize = 6;
   protected readonly watchlistGenreOptions = signal<string[]>([]);
   private genreUserId = '';
   private genreRequest?: Subscription;
@@ -273,27 +252,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (!profile) return undefined;
     if (profile.banner) return profile.banner;
     return this.latestMovieReviewBackdropPath();
-  });
-  protected readonly profileProgressBackdrop = computed(() => {
-    if (this.status() !== 'ready') return undefined;
-
-    const summary = this.summary();
-    const selectedRecent = this.mode() === 'MOVIE' ? summary?.recentReviews[0] : summary?.recentEpisodes[0];
-    const fallbackRecent = summary?.recentReviews[0] || summary?.recentEpisodes[0];
-    const highlightedContent = summary?.highlights?.rewatch?.content || summary?.highlights?.longestWatch?.content;
-    const activeProgress = this.progress()?.content[0];
-    return this.progressBackdropPath()
-      || this.topFive()[0]?.posterPath
-      || activeProgress?.seriesPosterPath
-      || activeProgress?.posterPath
-      || selectedRecent?.customPosterUrl
-      || selectedRecent?.card?.customPosterUrl
-      || selectedRecent?.card?.posterPath
-      || fallbackRecent?.customPosterUrl
-      || fallbackRecent?.card?.customPosterUrl
-      || fallbackRecent?.card?.posterPath
-      || highlightedContent?.backdropPath
-      || null;
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const profile = this.profile();
@@ -565,10 +523,31 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected setProgressSort(value: string): void {
     if (value !== 'LAST_WATCHED' && value !== 'LAST_RELEASED' && value !== 'REMAINING_EPISODES' && value !== 'REMAINING_RUNTIME') return;
+    this.progressSortOpen.set(false);
     if (this.progressSort() === value) return;
     this.progressSort.set(value);
     this.currentPage.set(1);
     this.loadSectionData();
+  }
+
+  protected progressSortLabel(): string {
+    return this.progressSortOptions.find((option) => option.value === this.progressSort())?.label ?? this.copy.progressSortWatched;
+  }
+
+  protected toggleProgressSort(): void {
+    this.progressSortOpen.update((open) => !open);
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected closeProgressSortOutside(event: MouseEvent): void {
+    if (!(event.target instanceof Element) || !event.target.closest('.profile-progress-sort-control')) {
+      this.progressSortOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeProgressSortOnEscape(): void {
+    this.progressSortOpen.set(false);
   }
 
   protected toggleProgressDirection(): void {
@@ -679,11 +658,19 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (this.currentPage() <= 1) return;
     this.currentPage.update((page) => page - 1);
     if (this.section() === 'progress') {
-      this.loadProgressStillPaths(this.progress()?.content ?? []);
+      this.loadSectionData();
       return;
     }
     const profile = this.profile();
     if (profile) this.loadSection(profile.id);
+  }
+
+  protected progressPageNumbers(totalPages: number): Array<number | null> {
+    if (totalPages <= 5) return Array.from({ length: Math.max(0, totalPages) }, (_, index) => index + 1);
+    const current = this.currentPage();
+    if (current <= 3) return [1, 2, 3, null, totalPages];
+    if (current >= totalPages - 2) return [1, null, totalPages - 2, totalPages - 1, totalPages];
+    return [1, null, current - 1, current, current + 1, null, totalPages];
   }
 
   protected pageNumbers(totalPages: number): number[] {
@@ -697,7 +684,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (page < 1 || page > maximum || page === this.currentPage()) return;
     this.currentPage.set(page);
     if (this.section() === 'progress') {
-      this.loadProgressStillPaths(this.progress()?.content ?? []);
+      this.loadSectionData();
       return;
     }
     const profile = this.profile();
@@ -710,10 +697,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected progressPercent(value: number | null | undefined): number {
     return typeof value === 'number' && Number.isFinite(value) ? Math.round(Math.min(100, Math.max(0, value))) : 0;
-  }
-
-  protected progressStill(seriesTmdbId: string, fallback: string | null | undefined): string | null {
-    return this.imageUrl(this.progressStillPaths()[seriesTmdbId] || fallback, 'w780');
   }
 
   protected progressEpisodeCoordinates(item: SeriesInProgressRecord): string {
@@ -1204,7 +1187,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (this.currentPage() >= this.pageTotalPages()) return;
     this.currentPage.update((page) => page + 1);
     if (this.section() === 'progress') {
-      this.loadProgressStillPaths(this.progress()?.content ?? []);
+      this.loadSectionData();
       return;
     }
     const profile = this.profile();
@@ -1285,9 +1268,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadSection(userId: string): void {
-    this.resetSectionData();
     const section = this.section();
     const mode = this.mode();
+    if (section !== 'progress') this.resetSectionData();
 
     if (section === 'profile') {
       forkJoin({
@@ -1328,28 +1311,24 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     }
 
     if (section === 'progress') {
-      this.progressStillPaths.set({});
-      this.progressBackdropPath.set(null);
-      forkJoin({
-        entries: this.diaryApi.getAllSeriesInProgress(userId, { sortBy: this.progressSort(), direction: this.progressDirection() }),
-        topFive: this.profileApi.getTopFive(userId, 'MOVIE').pipe(catchError(() => of([]))),
-      })
-        .subscribe({
-          next: ({ entries, topFive }) => {
-            this.resolveTopFive(topFive);
-            this.progressEntries.set(entries);
-            this.progressLoaded.set(true);
-            const firstItem = entries.find((entry) => !this.isCompletedProgress(entry));
-            this.expandedProgress.set(firstItem ? new Set([firstItem.seriesTmdbId]) : new Set());
-            this.loadProgressStillPaths(this.progress()?.content ?? []);
-            if (firstItem) {
-              this.contentApi.getSeriesPage(firstItem.seriesTmdbId)
-                .pipe(catchError(() => of(null)))
-                .subscribe((page) => this.progressBackdropPath.set(page?.details.backdropPath ?? null));
-            }
-          },
-          error: (error: unknown) => this.handleError(error),
-        });
+      this.diaryApi.getSeriesInProgress(userId, {
+        page: this.currentPage(),
+        size: this.progressPageSize,
+        sortBy: this.progressSort(),
+        direction: this.progressDirection(),
+      }).subscribe({
+        next: (data) => {
+          const lastPage = Math.max(1, data.totalPages);
+          if (data.page > lastPage) {
+            this.currentPage.set(lastPage);
+            this.loadSectionData();
+            return;
+          }
+          this.progress.set(data);
+          this.expandedProgress.set(data.content[0] ? new Set([data.content[0].seriesTmdbId]) : new Set());
+        },
+        error: (error: unknown) => this.handleError(error),
+      });
       return;
     }
     if (section === 'history' || section === 'reviews') {
@@ -1534,9 +1513,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.episodeStillPaths.set({});
     this.topFive.set([]);
     this.diary.set(null);
-    this.progressEntries.set([]);
-    this.progressLoaded.set(false);
-    this.progressStillPaths.set({});
+    this.progress.set(null);
+    this.expandedProgress.set(new Set());
+    this.progressSortOpen.set(false);
     this.lists.set(null);
     this.watchlist.set(null);
     this.picks.set(null);
@@ -1597,33 +1576,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         this.recentSeriesPosterPaths.set(Object.fromEntries(
           posters.filter(([, path]) => Boolean(path)),
         ) as Record<string, string>);
-      });
-  }
-
-  private loadProgressStillPaths(entries: readonly SeriesInProgressRecord[]): void {
-    const seasons = new Map<string, { seriesTmdbId: string; seasonNumber: number }>();
-    for (const entry of entries) {
-      if (!entry.seriesTmdbId || entry.lastWatchedSeasonNumber === null) continue;
-      seasons.set(`${entry.seriesTmdbId}:${entry.lastWatchedSeasonNumber}`, {
-        seriesTmdbId: entry.seriesTmdbId,
-        seasonNumber: entry.lastWatchedSeasonNumber,
-      });
-    }
-    if (!seasons.size) return;
-    const requests = [...seasons.entries()].map(([key, season]) => this.contentApi
-      .getSeasonEpisodes(season.seriesTmdbId, season.seasonNumber)
-      .pipe(map((episodes) => [key, episodes] as const), catchError(() => of([key, []] as const))));
-    forkJoin(requests)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((seasonEpisodes) => {
-        const paths: Record<string, string> = {};
-        for (const entry of entries) {
-          if (entry.lastWatchedSeasonNumber === null || entry.lastWatchedEpisodeNumber === null) continue;
-          const episodes = seasonEpisodes.find(([key]) => key === `${entry.seriesTmdbId}:${entry.lastWatchedSeasonNumber}`)?.[1] ?? [];
-          const stillPath = episodes.find((episode) => episode.episodeNumber === entry.lastWatchedEpisodeNumber)?.stillUrl;
-          if (stillPath) paths[entry.seriesTmdbId] = stillPath;
-        }
-        this.progressStillPaths.update((current) => ({ ...current, ...paths }));
       });
   }
 

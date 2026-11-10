@@ -1,0 +1,1058 @@
+/* User Progress matches the desktop, notebook, tablet, and mobile prototypes. */
+.profile-page .profile-content.profile-progress-page {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+}
+
+.profile-page .profile-content.profile-progress-page .profile-progress-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 100%;
+  height: 342px;
+  min-height: 342px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 96px 15%;
+  border: 0;
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.profile-progress-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(800px, 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  text-shadow: none;
+}
+
+.profile-progress-owner {
+  display: inline-flex;
+  min-height: 0;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border: 0;
+  border-radius: 9999px;
+  background: #30343b;
+  color: #f2f7fa;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.profile-progress-owner > img {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-progress-owner-copy > small {
+  display: none;
+}
+
+.profile-progress-hero h1.ww-detail-hero-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: #f2f7fa;
+  font-size: 72px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 90px !important;
+}
+
+.profile-progress-hero-title {
+  color: #f2f7fa;
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 90px;
+}
+
+.profile-progress-hero-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #f59e0b;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.profile-progress-hero-subtitle > span {
+  width: 32px;
+  height: 2px;
+  flex: 0 0 32px;
+  background: #f59e0b;
+}
+
+.profile-progress-hero-copy > p {
+  display: block;
+  max-width: 480px;
+  margin: 0;
+  color: #f2f7fa;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.profile-progress-summary {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #30343b;
+  background: #1c1c1c;
+  box-sizing: border-box;
+}
+
+.profile-progress-summary-inner {
+  display: flex;
+  width: 70%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 16px 0;
+  box-sizing: border-box;
+}
+
+.profile-progress-metrics {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 20px;
+  margin: 0;
+  color: #f2f7fa;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.profile-progress-metrics > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.profile-progress-metrics svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: #757575;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.profile-progress-metrics dt {
+  font-weight: 600;
+}
+
+.profile-progress-metrics dd {
+  margin: 0;
+  color: #757575;
+}
+
+.profile-progress-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-progress-sort-control {
+  position: relative;
+}
+
+.profile-progress-sort-trigger,
+.profile-progress-sort-direction {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #30343b;
+  border-radius: 8px;
+  background: #181818;
+  color: #f2f7fa;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.profile-progress-sort-trigger:hover,
+.profile-progress-sort-direction:hover {
+  background: #30343b;
+}
+
+.profile-progress-sort-label {
+  white-space: nowrap;
+}
+
+.profile-progress-sort-label > span {
+  font-weight: 400;
+}
+
+.profile-progress-sort-icon,
+.profile-progress-sort-chevron,
+.profile-progress-sort-direction svg,
+.profile-progress-sort-menu svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.profile-progress-sort-direction {
+  width: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+}
+
+.profile-progress-sort-menu {
+  position: absolute;
+  z-index: 20;
+  top: 44px;
+  right: 0;
+  width: 200px;
+  padding: 4px;
+  border: 1px solid #30343b;
+  border-radius: 8px;
+  background: #1c1c1c;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 40%);
+  box-sizing: border-box;
+}
+
+.profile-progress-sort-menu [role='listbox'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-progress-sort-menu button {
+  display: flex;
+  width: 100%;
+  height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #f2f7fa;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-progress-sort-menu button:hover,
+.profile-progress-sort-menu button:focus-visible {
+  background: #30343b;
+}
+
+.profile-progress-sort-menu button[aria-selected='true'] svg {
+  color: #2563eb;
+}
+
+.profile-progress-mobile-direction {
+  display: none !important;
+}
+
+.profile-progress-pagebar {
+  display: grid;
+  width: 70%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 0 auto;
+  padding: 24px 0 0;
+  border: 0;
+  box-sizing: border-box;
+}
+
+.profile-progress-pagebar .profile-pagination {
+  display: flex;
+  grid-column: 2;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-progress-pagebar .profile-pagination button,
+.profile-progress-bottom-pagination .profile-pagination button {
+  display: flex;
+  min-width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #f2f7fa;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.profile-progress-pagebar .profile-pagination button:hover:not(:disabled),
+.profile-progress-bottom-pagination .profile-pagination button:hover:not(:disabled) {
+  background: #30343b;
+}
+
+.profile-progress-pagebar .profile-pagination button:disabled,
+.profile-progress-bottom-pagination .profile-pagination button:disabled {
+  color: #757575;
+  cursor: default;
+}
+
+.profile-progress-pagebar .profile-pagination button.profile-page-number--active,
+.profile-progress-bottom-pagination .profile-pagination button.profile-page-number--active {
+  background: #2563eb;
+  color: #f2f7fa;
+}
+
+.profile-progress-pagebar .profile-pagination svg,
+.profile-progress-bottom-pagination .profile-pagination svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.profile-progress-ellipsis {
+  display: inline-flex;
+  min-width: 24px;
+  align-items: center;
+  justify-content: center;
+  color: #757575;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.profile-progress-pagebar .profile-pagination-summary {
+  grid-column: 3;
+  justify-self: end;
+  margin: 0;
+  color: #f2f7fa;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  text-align: right;
+}
+
+.profile-progress-grid {
+  display: flex;
+  width: 70%;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 auto;
+  padding-top: 16px;
+}
+
+.profile-progress-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 240px;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0 32px;
+  padding: 16px 0;
+  border: 0;
+  border-bottom: 1px solid #30343b;
+  border-radius: 0;
+  background: transparent;
+  color: #f2f7fa;
+}
+
+.profile-progress-poster {
+  width: 150px;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  grid-column: 1;
+  grid-row: 1;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #1c1c1c;
+}
+
+.profile-progress-poster > a {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-progress-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-progress-poster > span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  padding: 8px;
+  color: #757575;
+  font-size: 12px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.profile-progress-main {
+  display: flex;
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-progress-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-progress-title-row > a {
+  min-width: 0;
+  color: #f2f7fa;
+  text-decoration: none;
+}
+
+.profile-progress-title-row > a:hover {
+  color: #f59e0b;
+}
+
+.profile-progress-card h2 {
+  overflow: hidden;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-progress-title-row > strong {
+  flex: 0 0 auto;
+  color: #f2f7fa;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.profile-progress-main > .profile-progress-bar {
+  height: 8px;
+  margin: 0;
+  border-radius: 9999px;
+  background: #30343b;
+}
+
+.profile-progress-main > .profile-progress-bar i,
+.profile-progress-season-bar i {
+  border-radius: 9999px;
+  background: #2563eb;
+}
+
+.profile-progress-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.profile-progress-count,
+.profile-progress-last-watched {
+  margin: 0;
+  color: #757575;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.profile-progress-count strong {
+  color: #f2f7fa;
+  font-weight: 600;
+}
+
+.profile-progress-last-watched {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.profile-progress-last-watched a {
+  color: #f59e0b;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.profile-progress-last-watched a:hover {
+  text-decoration: underline;
+}
+
+.profile-progress-seasons-toggle {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #f2f7fa;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.profile-progress-seasons-toggle:hover,
+.profile-progress-seasons-toggle:focus-visible {
+  background: #30343b;
+}
+
+.profile-progress-seasons-toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.profile-progress-seasons {
+  display: flex;
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #1c1c1c;
+}
+
+.profile-progress-season {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.profile-progress-season-heading {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  grid-column: 1;
+}
+
+.profile-progress-season-heading > strong,
+.profile-progress-season-percent {
+  color: #f2f7fa;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.profile-progress-season-heading > small {
+  overflow: hidden;
+  color: #757575;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-progress-season-bar {
+  height: 4px;
+  overflow: hidden;
+  grid-column: 1;
+  border-radius: 9999px;
+  background: #30343b;
+}
+
+.profile-progress-season-percent {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  text-align: right;
+}
+
+.profile-progress-season .profile-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #757575;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.profile-progress-next-episode {
+  position: relative;
+  min-width: 0;
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.profile-progress-next-heading {
+  display: none;
+}
+
+.profile-progress-next-link {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  color: #f2f7fa;
+  text-decoration: none;
+}
+
+.profile-progress-next-link:hover .profile-progress-next-title {
+  color: #f59e0b;
+}
+
+.profile-progress-still {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  background: #1c1c1c;
+}
+
+.profile-progress-still img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-progress-next-copy {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 8px;
+}
+
+.profile-progress-next-coordinates {
+  overflow: hidden;
+  grid-column: 2;
+  grid-row: 1;
+  color: #757575;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-progress-next-title {
+  overflow: hidden;
+  grid-column: 1;
+  grid-row: 1;
+  color: #f2f7fa;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-progress-next-meta {
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: #757575;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.profile-progress-next-meta > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-progress-mark-watched {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  display: flex;
+  height: 22px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 6px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #2563eb;
+  border-radius: 9999px;
+  background: #181818;
+  box-shadow: 0 0 0 2px #181818;
+  color: #2563eb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 150ms ease;
+}
+
+.profile-progress-mark-watched svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3px;
+}
+
+.profile-progress-next-episode:hover .profile-progress-mark-watched,
+.profile-progress-next-episode:focus-within .profile-progress-mark-watched,
+.profile-progress-mark-watched:disabled {
+  opacity: 1;
+}
+
+.profile-progress-mark-watched:disabled {
+  cursor: wait;
+}
+
+.profile-progress-bottom-pagination {
+  display: flex;
+  width: 70%;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 32px 0 48px;
+  box-sizing: border-box;
+}
+
+.profile-progress-bottom-pagination .profile-pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 801px) and (max-width: 1599px) {
+  .profile-progress-summary-inner,
+.profile-progress-pagebar,
+.profile-progress-grid,
+.profile-progress-bottom-pagination {
+    width: auto;
+    margin-right: 80px;
+    margin-left: 80px;
+  }
+
+  .profile-page .profile-content.profile-progress-page .profile-progress-hero {
+    padding-right: 80px;
+    padding-left: 80px;
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1279px) {
+  .profile-progress-card {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .profile-progress-next-episode {
+    width: 100%;
+    max-width: 320px;
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .profile-progress-seasons {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 800px) {
+  .profile-page .profile-content.profile-progress-page {
+    left: 50%;
+    width: 100vw;
+    margin: 0;
+    transform: translateX(-50%);
+  }
+
+  .profile-page .profile-content.profile-progress-page .profile-progress-hero {
+    height: auto;
+    min-height: 0;
+    padding: 32px;
+  }
+
+  .profile-progress-hero-copy {
+    gap: 12px;
+  }
+
+  .profile-progress-owner {
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+  }
+
+  .profile-progress-owner > img {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    border: 3px solid #181818;
+    box-shadow: 0 0 0 2px #2563eb;
+  }
+
+  .profile-progress-owner-copy {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile-progress-owner-copy > small {
+    display: block;
+    color: #757575;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .profile-progress-hero h1,
+.profile-progress-hero-copy > p {
+    display: none;
+  }
+
+  .profile-progress-summary-inner {
+    width: auto;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 32px;
+    padding: 12px 0;
+  }
+
+  .profile-progress-metrics {
+    gap: 16px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .profile-progress-metrics > div {
+    gap: 4px;
+  }
+
+  .profile-progress-metrics svg {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
+
+  .profile-progress-controls {
+    flex: 0 0 auto;
+  }
+
+  .profile-progress-sort-trigger {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
+  .profile-progress-sort-label,
+.profile-progress-sort-chevron,
+.profile-progress-sort-direction {
+    display: none;
+  }
+
+  .profile-progress-mobile-direction {
+    display: flex !important;
+    margin-top: 2px;
+    border-top: 1px solid #30343b !important;
+    border-radius: 0 !important;
+    font-weight: 500 !important;
+  }
+
+  .profile-progress-pagebar {
+    display: none;
+  }
+
+  .profile-progress-grid,
+.profile-progress-bottom-pagination {
+    width: auto;
+    margin-right: 32px;
+    margin-left: 32px;
+  }
+
+  .profile-progress-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .profile-progress-poster {
+    width: 64px;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .profile-progress-main {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 8px;
+  }
+
+  .profile-progress-card h2,
+.profile-progress-title-row > strong {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .profile-progress-main > .profile-progress-bar {
+    height: 6px;
+  }
+
+  .profile-progress-count,
+.profile-progress-last-watched {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .profile-progress-seasons {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: 0;
+    background: transparent;
+  }
+
+  .profile-progress-next-episode {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding: 12px;
+    border: 1px solid #30343b;
+    border-radius: 8px;
+    background: #1c1c1c;
+    box-sizing: border-box;
+  }
+
+  .profile-progress-next-heading {
+    display: block;
+    margin-bottom: 8px;
+    color: #f2f7fa;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  .profile-progress-next-link {
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .profile-progress-next-link > .profile-progress-still {
+    width: 136px;
+    flex: 0 0 136px;
+  }
+
+  .profile-progress-mark-watched {
+    top: 38px;
+    left: 80px;
+  }
+
+  .profile-progress-next-copy {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-progress-next-coordinates {
+    order: 0;
+  }
+
+  .profile-progress-next-title {
+    order: 1;
+  }
+
+  .profile-progress-next-meta {
+    width: 100%;
+    order: 2;
+  }
+}
+
+@media (max-width: 719px) {
+  .profile-page .profile-content.profile-progress-page .profile-progress-hero {
+    padding: 32px 16px;
+  }
+
+  .profile-progress-summary-inner {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .profile-progress-metrics {
+    gap: 8px;
+  }
+
+  .profile-progress-grid,
+.profile-progress-bottom-pagination {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .profile-progress-card {
+    column-gap: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-progress-mark-watched {
+    transition: none;
+  }
+}
