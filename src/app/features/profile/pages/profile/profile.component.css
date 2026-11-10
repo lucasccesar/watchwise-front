@@ -7266,3 +7266,18 @@
     gap: 8px;
   }
 }
+
+.profile-overview-content .profile-summary-grid .profile-summary-card .profile-highlight::after {
+  inset: 0;
+  height: auto;
+  background: linear-gradient(
+    180deg,
+    rgba(24, 24, 24, 0.45) 0%,
+    rgba(24, 24, 24, 0.8) 62%,
+    rgb(24, 24, 24) 100%
+  );
+}
+
+.profile-overview-content .profile-summary-grid .profile-summary-card .profile-highlight img {
+  opacity: 1;
+}
