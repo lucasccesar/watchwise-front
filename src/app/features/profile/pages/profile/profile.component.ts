@@ -147,6 +147,7 @@ export class ProfileComponent {
   });
   protected readonly progressStillPaths = signal<Record<string, string>>({});
   private readonly progressBackdropPath = signal<string | null>(null);
+  private profileLoadVersion = 0;
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
   protected readonly listSort = signal<ProfileListSort>('rank');
@@ -243,14 +244,17 @@ export class ProfileComponent {
     this.reviewComments()[review.id] || review.comment || null;
   protected readonly profileHeroBackdrop = computed(() => {
     if (this.status() !== 'ready') return undefined;
+    return this.profile()?.banner ?? null;
+  });
+  protected readonly profileProgressBackdrop = computed(() => {
+    if (this.status() !== 'ready') return undefined;
 
-    const profile = this.profile();
     const summary = this.summary();
     const selectedRecent = this.mode() === 'MOVIE' ? summary?.recentReviews[0] : summary?.recentEpisodes[0];
     const fallbackRecent = summary?.recentReviews[0] || summary?.recentEpisodes[0];
     const highlightedContent = summary?.highlights?.rewatch?.content || summary?.highlights?.longestWatch?.content;
     const activeProgress = this.progress()?.content[0];
-    const fallbackImage = this.progressBackdropPath()
+    return this.progressBackdropPath()
       || this.topFive()[0]?.posterPath
       || activeProgress?.seriesPosterPath
       || activeProgress?.posterPath
@@ -261,8 +265,8 @@ export class ProfileComponent {
       || fallbackRecent?.card?.customPosterUrl
       || fallbackRecent?.card?.posterPath
       || highlightedContent?.customPosterUrl
-      || highlightedContent?.posterPath;
-    return profile?.banner || fallbackImage || null;
+      || highlightedContent?.posterPath
+      || null;
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const profile = this.profile();
@@ -1141,6 +1145,7 @@ export class ProfileComponent {
   }
 
   private loadProfile(): void {
+    const loadVersion = ++this.profileLoadVersion;
     const username = this.username().replace(/^@/, '');
     if (!username) {
       this.status.set('error');
@@ -1148,10 +1153,11 @@ export class ProfileComponent {
     }
     this.status.set('loading');
     this.profile.set(null);
+    this.foundUser.set(null);
     this.searchApi.search(username, 'USER').subscribe({
       next: (results) => {
-        const found = results.users.find((user) => user.username.toLocaleLowerCase() === username.toLocaleLowerCase())
-          ?? results.users[0];
+        if (loadVersion !== this.profileLoadVersion) return;
+        const found = results.users.find((user) => user.username.toLocaleLowerCase() === username.toLocaleLowerCase());
         if (!found) {
           this.status.set('error');
           return;
@@ -1162,23 +1168,31 @@ export class ProfileComponent {
         if (!found.profileDetailsVisible) {
           this.profileApi.getUser(found.id).subscribe({
             next: (profile) => {
+              if (loadVersion !== this.profileLoadVersion) return;
               this.profile.set(profile);
               this.status.set('private');
             },
-            error: () => this.status.set('private'),
+            error: () => {
+              if (loadVersion === this.profileLoadVersion) this.status.set('private');
+            },
           });
           return;
         }
         this.profileApi.getUser(found.id).subscribe({
           next: (profile) => {
+            if (loadVersion !== this.profileLoadVersion) return;
             this.profile.set(profile);
             this.status.set('ready');
             this.loadSection(profile.id);
           },
-          error: (error: unknown) => this.handleError(error),
+          error: (error: unknown) => {
+            if (loadVersion === this.profileLoadVersion) this.handleError(error);
+          },
         });
       },
-      error: (error: unknown) => this.handleError(error),
+      error: (error: unknown) => {
+        if (loadVersion === this.profileLoadVersion) this.handleError(error);
+      },
     });
   }
 

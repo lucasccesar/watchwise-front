@@ -359,7 +359,7 @@
       @case ('progress') {
         <section class="profile-content profile-section-page profile-progress-page">
           @if (progress(); as data) {
-            <header class="profile-subpage-hero"><app-responsive-banner [path]="profile()?.banner || profileHeroBackdrop()" fallbackPath="" />
+            <header class="profile-subpage-hero"><app-responsive-banner [path]="profile()?.banner || profileProgressBackdrop()" fallbackPath="" />
               <div class="profile-subpage-hero-copy">
                 <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
                   @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
