@@ -1,6 +1,19 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  OnDestroy,
+  QueryList,
+  ViewChild,
+  ViewChildren,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { combineLatest, forkJoin, Observable, of, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -85,7 +98,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
-export class ProfileComponent {
+export class ProfileComponent implements AfterViewInit, OnDestroy {
   private readonly toasts = inject(ToastNotificationsService);
   @ViewChild('profileMenuButton') protected profileMenuTrigger?: ElementRef<HTMLElement>;
   protected readonly shareReturnFocus = signal<HTMLElement | null>(null);
@@ -106,6 +119,11 @@ export class ProfileComponent {
   protected readonly username = signal('');
   protected readonly mode = signal<ProfileContentMode>('MOVIE');
   protected readonly summary = signal<ProfileSummary | null>(null);
+  protected readonly profileOverviewGenreCounts = computed(() =>
+    [...(this.summary()?.genreCounts ?? [])]
+      .sort((first, second) => second.count - first.count)
+      .slice(0, 6),
+  );
   protected readonly recentMovieEntries = signal<DiaryRecord[]>([]);
   protected readonly recentEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly recentSeriesProgress = signal<SeriesInProgressRecord[]>([]);
@@ -116,6 +134,9 @@ export class ProfileComponent {
   protected readonly episodeStillPaths = signal<Record<string, string>>({});
   protected readonly summarySlide = signal(0);
   protected readonly historySummarySlide = signal(0);
+  protected readonly hoveredProfileGenreIndex = signal<number | null>(null);
+  protected readonly profileGenreMinimumWidths = signal<number[]>([]);
+  protected readonly hoveredOverviewRatingIndex = signal<number | null>(null);
   protected readonly topFive = signal<ResolvedTopFive[]>([]);
   protected readonly diary = signal<DiaryRecordPage | null>(null);
   private readonly progressEntries = signal<SeriesInProgressRecord[]>([]);
@@ -177,6 +198,9 @@ export class ProfileComponent {
 
   @ViewChild('summaryGrid') private summaryGrid?: ElementRef<HTMLElement>;
   @ViewChild('historySummaryGrid') private historySummaryGrid?: ElementRef<HTMLElement>;
+  @ViewChildren('profileGenreLabel') private profileGenreLabels!: QueryList<ElementRef<HTMLElement>>;
+  private profileGenreLabelObserver: ResizeObserver | null = null;
+  private profileGenreLabelChanges?: Subscription;
   protected readonly historySort = signal<DiarySortBy>('NEWEST');
   protected readonly historyType = signal<'ALL' | 'MOVIE' | 'EPISODE'>('ALL');
   protected readonly historySeries = signal('');
@@ -396,6 +420,19 @@ export class ProfileComponent {
         this.resetSectionData();
         this.loadProfile();
       });
+  }
+
+  ngAfterViewInit(): void {
+    if (typeof ResizeObserver !== 'undefined') {
+      this.profileGenreLabelObserver = new ResizeObserver(() => this.updateProfileGenreMinimumWidths());
+    }
+    this.profileGenreLabelChanges = this.profileGenreLabels.changes.subscribe(() => this.observeProfileGenreLabels());
+    this.observeProfileGenreLabels();
+  }
+
+  ngOnDestroy(): void {
+    this.profileGenreLabelChanges?.unsubscribe();
+    this.profileGenreLabelObserver?.disconnect();
   }
 
   protected chooseMode(mode: ProfileContentMode): void {
@@ -883,6 +920,49 @@ export class ProfileComponent {
   protected profileGenrePercentage(count: number, items: readonly { count: number }[]): string {
     const total = items.reduce((sum, item) => sum + item.count, 0);
     return total ? Math.round((count / total) * 100) + '%' : '0%';
+  }
+
+  protected profileGenreWeight(count: number, items: readonly { count: number }[]): number {
+    const total = items.reduce((sum, item) => sum + Math.max(1, item.count), 0);
+    return total ? Math.max(1, count) / total : 0;
+  }
+
+  protected setProfileGenreHover(index: number): void {
+    this.hoveredProfileGenreIndex.set(index);
+  }
+
+  protected clearProfileGenreHover(): void {
+    this.hoveredProfileGenreIndex.set(null);
+  }
+
+  protected setHoveredOverviewRating(index: number): void {
+    this.hoveredOverviewRatingIndex.set(index);
+  }
+
+  protected clearHoveredOverviewRating(): void {
+    this.hoveredOverviewRatingIndex.set(null);
+  }
+
+  private observeProfileGenreLabels(): void {
+    this.profileGenreLabelObserver?.disconnect();
+    if (this.profileGenreLabels.length === 0) {
+      this.profileGenreMinimumWidths.set([]);
+      return;
+    }
+    this.profileGenreLabels.forEach((label) => this.profileGenreLabelObserver?.observe(label.nativeElement));
+    if (!this.profileGenreLabelObserver) {
+      window.requestAnimationFrame(() => this.updateProfileGenreMinimumWidths());
+    }
+  }
+
+  private updateProfileGenreMinimumWidths(): void {
+    const widths = this.profileGenreLabels
+      .toArray()
+      .map((label) => Math.ceil(label.nativeElement.getBoundingClientRect().width));
+    const currentWidths = this.profileGenreMinimumWidths();
+    if (widths.length !== currentWidths.length || widths.some((width, index) => width !== currentWidths[index])) {
+      this.profileGenreMinimumWidths.set(widths);
+    }
   }
 
   protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w342'): string | null {

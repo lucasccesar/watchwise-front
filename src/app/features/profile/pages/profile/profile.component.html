@@ -119,12 +119,16 @@
             <img src="/default-user-avatar.png" alt="" />
           }
         </div>
-        <h1 class="ww-detail-hero-title">{{ userName() }}</h1>
-        <div class="profile-handle">
-          <span>@{{ profile()!.username }}</span>
-          @if (followsViewer()) { <span class="profile-follows-you">{{ copy.followsYou }}</span> }
+        <div class="profile-identity-copy">
+          <div class="profile-identity-title-group">
+            <h1 class="ww-detail-hero-title">{{ userName() }}</h1>
+            <div class="profile-handle">
+              <span>@{{ profile()!.username }}</span>
+              @if (followsViewer()) { <span class="profile-follows-you">{{ copy.followsYou }}</span> }
+            </div>
+          </div>
+          <p class="profile-description" [attr.aria-hidden]="profile()!.description ? null : 'true'">{{ profile()!.description || '' }}</p>
         </div>
-        <p class="profile-description" [attr.aria-hidden]="profile()!.description ? null : 'true'">{{ profile()!.description || '' }}</p>
         <div class="profile-follow-counts">
           <span><strong>{{ profile()!.followersCount ?? 0 | number }}</strong> {{ copy.followers }}</span>
           <span><strong>{{ profile()!.followingCount ?? 0 | number }}</strong> {{ copy.followingCount }}</span>
@@ -132,16 +136,17 @@
       </div>
     </section>
 
-
-    <div class="profile-type-switch ww-segmented-control" role="group" [attr.aria-label]="copy.type">
-      <button type="button" [class.profile-type-active]="mode() === 'MOVIE'" [attr.aria-pressed]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12H2M22 7H17M7 7H2M22 17H17M7 17H2M17 2V22M7 2V22M2 6.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.073 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.926 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V6.8C22 5.12 22 4.28 21.673 3.638C21.385 3.074 20.926 2.615 20.362 2.327C19.72 2 18.88 2 17.2 2H6.8C5.12 2 4.28 2 3.638 2.327C3.073 2.615 2.615 3.074 2.327 3.638C2 4.28 2 5.12 2 6.8Z"/></svg>
-        {{ copy.movies }}
-      </button>
-      <button type="button" [class.profile-type-active]="mode() === 'EPISODE'" [attr.aria-pressed]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2L12 7L7 2M6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.927 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V11.8C22 10.12 22 9.28 21.673 8.638C21.385 8.074 20.927 7.615 20.362 7.327C19.72 7 18.88 7 17.2 7H6.8C5.12 7 4.28 7 3.638 7.327C3.074 7.615 2.615 8.074 2.327 8.638C2 9.28 2 10.12 2 11.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.074 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22Z"/></svg>
-        {{ copy.series }}
-      </button>
+    <div class="profile-type-switch-bar">
+      <div class="profile-type-switch ww-segmented-control" role="group" [attr.aria-label]="copy.type">
+        <button type="button" [class.profile-type-active]="mode() === 'MOVIE'" [attr.aria-pressed]="mode() === 'MOVIE'" (click)="chooseMode('MOVIE')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12H2M22 7H17M7 7H2M22 17H17M7 17H2M17 2V22M7 2V22M2 6.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.073 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.926 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V6.8C22 5.12 22 4.28 21.673 3.638C21.385 3.074 20.926 2.615 20.362 2.327C19.72 2 18.88 2 17.2 2H6.8C5.12 2 4.28 2 3.638 2.327C3.073 2.615 2.615 3.074 2.327 3.638C2 4.28 2 5.12 2 6.8Z"/></svg>
+          {{ copy.movies }}
+        </button>
+        <button type="button" [class.profile-type-active]="mode() === 'EPISODE'" [attr.aria-pressed]="mode() === 'EPISODE'" (click)="chooseMode('EPISODE')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2L12 7L7 2M6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.927 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V11.8C22 10.12 22 9.28 21.673 8.638C21.385 8.074 20.927 7.615 20.362 7.327C19.72 7 18.88 7 17.2 7H6.8C5.12 7 4.28 7 3.638 7.327C3.074 7.615 2.615 8.074 2.327 8.638C2 9.28 2 10.12 2 11.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.074 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22Z"/></svg>
+          {{ copy.series }}
+        </button>
+      </div>
     </div>
     }
 
@@ -183,7 +188,7 @@
             </nav>
 
             <section class="profile-section profile-top-five">
-              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10l2 5-7 5L5 9l2-5Zm-2 5-3 2 4 4 3-1m10-5 3 2-4 4-3-1" /></svg>{{ mode() === 'MOVIE' ? copy.topFiveMovies : copy.topFiveSeries }}</h2></div>
+              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15C8.686 15 6 12.314 6 9V3.444C6 3.031 6 2.824 6.06 2.658C6.161 2.38 6.38 2.161 6.658 2.06C6.824 2 7.031 2 7.444 2H16.556C16.969 2 17.176 2 17.342 2.06C17.62 2.161 17.839 2.38 17.94 2.658C18 2.824 18 3.031 18 3.444V9C18 12.314 15.314 15 12 15ZM12 15V18M18 4H20.5C20.966 4 21.199 4 21.383 4.076C21.628 4.178 21.822 4.372 21.924 4.617C22 4.801 22 5.034 22 5.5V6C22 6.93 22 7.395 21.898 7.776C21.62 8.812 20.812 9.62 19.776 9.898C19.395 10 18.93 10 18 10M6 4H3.5C3.034 4 2.801 4 2.617 4.076C2.372 4.178 2.178 4.372 2.076 4.617C2 4.801 2 5.034 2 5.5V6C2 6.93 2 7.395 2.102 7.776C2.38 8.812 3.188 9.62 4.224 9.898C4.605 10 5.07 10 6 10M7.444 22H16.556C16.801 22 17 21.801 17 21.556C17 19.592 15.408 18 13.444 18H10.556C8.592 18 7 19.592 7 21.556C7 21.801 7.199 22 7.444 22Z" /></svg>{{ mode() === 'MOVIE' ? copy.topFiveMovies : copy.topFiveSeries }}</h2></div>
               @if (topFive().length) {
                 <div class="profile-top-five-grid">
                   @for (entry of topFive(); track entry.id) {
@@ -216,7 +221,7 @@
 
             @if (mode() === 'MOVIE') {
               <section class="profile-section profile-overview-recent-section">
-                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v18H4zM8 3v18m8-18v18M4 8h4m-4 8h4m8-8h4m-4 8h4" /></svg>{{ copy.recentMovies }}</h2><a [routerLink]="selectedSectionUrl('history')">{{ copy.tabs.history }} <span aria-hidden="true">›</span></a></div>
+                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12H2M22 7H17M7 7H2M22 17H17M7 17H2M17 2V22M7 2V22M2 6.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.073 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.926 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V6.8C22 5.12 22 4.28 21.673 3.638C21.385 3.074 20.926 2.615 20.362 2.327C19.72 2 18.88 2 17.2 2H6.8C5.12 2 4.28 2 3.638 2.327C3.073 2.615 2.615 3.073 2.327 3.638C2 4.28 2 5.12 2 6.8Z" /></svg>{{ copy.recentMovies }}</h2></div>
                 @if (recentMovieEntries().length) {
                   <div class="profile-recent-grid">
                     @for (entry of recentMovieEntries(); track entry.id) {
@@ -243,7 +248,7 @@
               </section>
             } @else {
               <section class="profile-section profile-overview-recent-section">
-                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z" /></svg>{{ copy.lastEpisodesWatched }}</h2><a [routerLink]="selectedSectionUrl('history')">{{ copy.tabs.history }} <span aria-hidden="true">›</span></a></div>
+                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z" /></svg>{{ copy.lastEpisodesWatched }}</h2></div>
                 @if (recentEpisodeEntries().length) {
                   <div class="profile-last-episodes-grid">
                     @for (entry of recentEpisodeEntries().slice(0, 4); track entry.id) {
@@ -269,7 +274,7 @@
               </section>
 
               <section class="profile-section profile-overview-recent-section">
-                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v18H4zM8 3v18m8-18v18M4 8h4m-4 8h4m8-8h4m-4 8h4" /></svg>{{ copy.recentSeries }}</h2><a [routerLink]="selectedSectionUrl('history')">{{ copy.tabs.history }} <span aria-hidden="true">›</span></a></div>
+                <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12H2M22 7H17M7 7H2M22 17H17M7 17H2M17 2V22M7 2V22M2 6.8V17.2C2 18.88 2 19.72 2.327 20.362C2.615 20.927 3.073 21.385 3.638 21.673C4.28 22 5.12 22 6.8 22H17.2C18.88 22 19.72 22 20.362 21.673C20.926 21.385 21.385 20.927 21.673 20.362C22 19.72 22 18.88 22 17.2V6.8C22 5.12 22 4.28 21.673 3.638C21.385 3.074 20.926 2.615 20.362 2.327C19.72 2 18.88 2 17.2 2H6.8C5.12 2 4.28 2 3.638 2.327C3.073 2.615 2.615 3.073 2.327 3.638C2 4.28 2 5.12 2 6.8Z" /></svg>{{ copy.recentSeries }}</h2></div>
                 @if (recentSeriesItems().length) {
                   <div class="profile-recent-grid">
                     @for (entry of recentSeriesItems(); track entry.seriesTmdbId) {
@@ -295,13 +300,13 @@
 
             <section class="profile-section profile-home-genre-section">
               <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 16v-5m6 5V4m6 12V8" /></svg>{{ copy.mostWatchedGenres }}</h2></div>
-              @if (data.genreCounts.length) {
-                <ol class="profile-home-genre-chart" [attr.aria-label]="copy.mostWatchedGenres">
-                  @for (genre of data.genreCounts; track genre.genre; let i = $index) {
-                    <li class="profile-home-genre-item" [class.profile-home-genre-item--lower]="i % 2 === 1" [attr.data-color]="i % 6" [style.flex-grow]="genre.count" [attr.aria-label]="genre.genre + ', ' + genre.count">
-                      <span class="profile-home-genre-label"><strong>{{ genre.genre }}</strong><small>{{ genre.count }} {{ mode() === 'MOVIE' ? copy.movies.toLocaleLowerCase() : copy.series.toLocaleLowerCase() }}</small></span>
+              @if (profileOverviewGenreCounts().length) {
+                <ol class="profile-home-genre-chart" [class.profile-home-genre-chart--hovered]="hoveredProfileGenreIndex() !== null" [attr.aria-label]="copy.mostWatchedGenres" (mouseleave)="clearProfileGenreHover()">
+                  @for (genre of profileOverviewGenreCounts(); track genre.genre; let i = $index) {
+                    <li class="profile-home-genre-item" [class.profile-home-genre-item--lower]="i % 2 === 1" [class.profile-home-genre-item--active]="hoveredProfileGenreIndex() === i" [class.profile-home-genre-item--muted]="hoveredProfileGenreIndex() !== null && hoveredProfileGenreIndex() !== i" [attr.data-color]="i % 6" [style.--genre-weight]="profileGenreWeight(genre.count, profileOverviewGenreCounts())" [style.min-width.px]="profileGenreMinimumWidths()[i] ?? null" [attr.aria-label]="genre.genre + ', ' + genre.count" (mouseenter)="setProfileGenreHover(i)">
+                      <span #profileGenreLabel class="profile-home-genre-label"><strong>{{ genre.genre }}</strong><small>{{ genre.count }} {{ mode() === 'MOVIE' ? copy.movies.toLocaleLowerCase() : copy.series.toLocaleLowerCase() }}</small></span>
                       <span class="profile-home-genre-bar" aria-hidden="true"></span>
-                      <span class="profile-home-genre-percent">{{ profileGenrePercentage(genre.count, data.genreCounts) }}</span>
+                      <span class="profile-home-genre-percent" [attr.aria-hidden]="hoveredProfileGenreIndex() === null ? 'true' : null">{{ profileGenrePercentage(genre.count, profileOverviewGenreCounts()) }}</span>
                     </li>
                   }
                 </ol>
@@ -309,17 +314,41 @@
             </section>
 
             <section class="profile-section profile-ratings-section">
-              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" /></svg>{{ copy.ratings }}</h2></div>
+              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" /></svg>{{ copy.ratings }}</h2></div>
               @if (overviewRatingsSummary(); as ratings) { <p class="profile-rating-summary">{{ copy.ratingCount.replace('{count}', asText(ratings.totalRatings)) }} <span>{{ copy.averageRating.replace('{rating}', ratings.averageScore?.toFixed(1) || '0') }}</span></p> }
-              <div class="profile-rating-bars">
-                @for (score of ratingScores; track score) {
-                  <div [attr.aria-label]="score + ' de 10: ' + ratingCount(overviewRatingsDistribution(), score)" [title]="ratingCount(overviewRatingsDistribution(), score) + ' avaliações com nota ' + score"><i><b [style.height]="ratingCount(overviewRatingsDistribution(), score) ? ratingBarHeight(ratingCount(overviewRatingsDistribution(), score), overviewRatingsDistribution()) : '0%' "></b></i><span>{{ score }}</span><small>{{ ratingCount(overviewRatingsDistribution(), score) }}</small></div>
-                }
+              <div class="profile-rating-chart" [class.profile-rating-chart--empty]="ratingTotal(overviewRatingsDistribution()) === 0" (mouseleave)="clearHoveredOverviewRating()">
+                <div class="profile-rating-chart-bars" role="group" [attr.aria-label]="copy.ratings">
+                  @for (score of ratingScores; track score; let index = $index) {
+                    <div
+                      class="profile-rating-chart-column"
+                      [class.profile-rating-chart-column--active]="hoveredOverviewRatingIndex() === index"
+                      [class.profile-rating-chart-column--muted]="hoveredOverviewRatingIndex() !== null && hoveredOverviewRatingIndex() !== index"
+                      [style.--rating-bar-height]="ratingCount(overviewRatingsDistribution(), score) ? ratingBarHeight(ratingCount(overviewRatingsDistribution(), score), overviewRatingsDistribution()) : '0%'"
+                      role="img"
+                      [attr.aria-label]="copy.rating + ' ' + score + ': ' + copy.ratingCount.replace('{count}', asText(ratingCount(overviewRatingsDistribution(), score)))"
+                      (mouseenter)="setHoveredOverviewRating(index)"
+                    >
+                      <span
+                        class="profile-rating-chart-bar"
+                        aria-hidden="true"
+                        [style.height]="ratingCount(overviewRatingsDistribution(), score) ? ratingBarHeight(ratingCount(overviewRatingsDistribution(), score), overviewRatingsDistribution()) : '0%'"
+                      ></span>
+                      <span class="profile-rating-chart-tooltip" aria-hidden="true">
+                        <strong>{{ copy.rating }} {{ score }}</strong>
+                        <span>{{ copy.ratingCount.replace('{count}', asText(ratingCount(overviewRatingsDistribution(), score))) }}</span>
+                      </span>
+                    </div>
+                  }
+                </div>
+                <div class="profile-rating-chart-labels" aria-hidden="true">
+                  @for (score of ratingScores; track score; let index = $index) {
+                    <span [class.profile-rating-chart-label--muted]="hoveredOverviewRatingIndex() !== null && hoveredOverviewRatingIndex() !== index">{{ score }}</span>
+                  }
+                </div>
               </div>
             </section>
 
             <section class="profile-section profile-overview-reviews-section">
-              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" /></svg>{{ copy.recentReviews }}</h2><a [routerLink]="selectedSectionUrl('reviews')">{{ copy.tabs.reviews }} <span aria-hidden="true">›</span></a></div>
               <div class="profile-overview-reviews">
                 @for (review of data.recentReviews; track review.id) {
                   <article class="profile-overview-review">
@@ -346,7 +375,7 @@
                         @if (review.score !== null) { <strong class="profile-overview-review-score"><span aria-hidden="true"><svg data-dc-tpl="170" width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.12em" aria-hidden="true"><path data-dc-tpl="171" d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z"></path></svg></span> {{ review.score }}<small>/10</small></strong> }
                       </header>
                       @if (recentReviewComment(review); as comment) { <p>{{ comment }}</p> }
-                      <footer><span><b aria-hidden="true">♥</b> {{ review.likesCount ?? 0 }} curtidas</span><span><b aria-hidden="true">◯</b> {{ review.commentsCount ?? 0 }} comentários</span></footer>
+                      <footer><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg> {{ review.likesCount ?? 0 }} curtidas</span><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" /></svg> {{ review.commentsCount ?? 0 }} comentários</span></footer>
                     </div>
                   </article>
                 } @empty { <p class="profile-empty">{{ copy.noReviews }}</p> }
