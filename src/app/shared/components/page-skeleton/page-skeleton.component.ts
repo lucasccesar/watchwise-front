@@ -8,20 +8,71 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="ww-page-skeleton" [class]="'ww-page-skeleton ww-page-skeleton--' + variant()" [class.ww-page-skeleton--compact]="compact()" role="status" [attr.aria-label]="label()" aria-busy="true">
-      @if (!compact() && variant() !== 'calendar' && variant() !== 'content' && variant() !== 'episode-content') {
+      @if (!compact() && variant() !== 'calendar' && variant() !== 'content' && variant() !== 'episode-content' && variant() !== 'profile') {
         <span class="ww-skeleton-shape ww-skeleton-title" aria-hidden="true"></span>
         <span class="ww-skeleton-shape ww-skeleton-subtitle" aria-hidden="true"></span>
       }
 
       @switch (variant()) {
         @case ('profile') {
-          <span class="ww-skeleton-shape ww-skeleton-banner" aria-hidden="true"></span>
-          <div class="ww-skeleton-profile-row" aria-hidden="true">
-            <span class="ww-skeleton-shape ww-skeleton-avatar"></span>
-            <div><span class="ww-skeleton-shape ww-skeleton-line ww-skeleton-line--wide"></span><span class="ww-skeleton-shape ww-skeleton-line"></span></div>
+          <div class="ww-profile-skeleton">
+            <nav class="ww-profile-skeleton-tabs" aria-hidden="true">
+              @for (tab of profileTabs; track tab) { <span class="ww-skeleton-shape"></span> }
+            </nav>
+            <section class="ww-profile-skeleton-hero" aria-hidden="true">
+              <span class="ww-skeleton-shape ww-profile-skeleton-banner"></span>
+              <span class="ww-skeleton-shape ww-profile-skeleton-options"></span>
+              <div class="ww-profile-skeleton-identity">
+                <span class="ww-skeleton-shape ww-profile-skeleton-avatar"></span>
+                <span class="ww-skeleton-shape ww-profile-skeleton-name"></span>
+                <span class="ww-skeleton-shape ww-profile-skeleton-handle"></span>
+                <span class="ww-skeleton-shape ww-profile-skeleton-description"></span>
+                <div class="ww-profile-skeleton-follow-counts"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+              </div>
+            </section>
+            <div class="ww-profile-skeleton-type-switch" aria-hidden="true"><div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div></div>
+            <div class="ww-profile-skeleton-content">
+              <section class="ww-profile-skeleton-summary" aria-hidden="true">
+                @for (summary of profileSummaryCards; track summary) {
+                  <div class="ww-profile-skeleton-summary-card">
+                    <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                    <span class="ww-skeleton-shape ww-profile-skeleton-highlight"></span>
+                  </div>
+                }
+              </section>
+              <section class="ww-profile-skeleton-section" aria-hidden="true">
+                <div class="ww-profile-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                <div class="ww-profile-skeleton-posters ww-profile-skeleton-posters--top-five">
+                  @for (poster of profileTopFiveCards; track poster) { <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div> }
+                </div>
+              </section>
+              <section class="ww-profile-skeleton-section ww-profile-skeleton-recent" aria-hidden="true">
+                <div class="ww-profile-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                <div class="ww-profile-skeleton-posters">
+                  @for (poster of profileRecentCards; track poster) { <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div> }
+                </div>
+              </section>
+              <section class="ww-profile-skeleton-section" aria-hidden="true">
+                <div class="ww-profile-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                <div class="ww-profile-skeleton-genre-chart">
+                  @for (genre of profileGenres; track genre) { <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div> }
+                  <span class="ww-skeleton-shape ww-profile-skeleton-genre-bar"></span>
+                </div>
+              </section>
+              <section class="ww-profile-skeleton-section" aria-hidden="true">
+                <div class="ww-profile-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                <div class="ww-profile-skeleton-rating-chart">
+                  <div>@for (bar of profileRatingBars; track bar) { <span class="ww-skeleton-shape"></span> }</div>
+                  <div>@for (bar of profileRatingBars; track bar) { <span class="ww-skeleton-shape"></span> }</div>
+                </div>
+              </section>
+              <section class="ww-profile-skeleton-section ww-profile-skeleton-reviews" aria-hidden="true">
+                @for (review of profileReviews; track review) {
+                  <article><span class="ww-skeleton-shape"></span><div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div></article>
+                }
+              </section>
+            </div>
           </div>
-          <div class="ww-skeleton-tabs" aria-hidden="true"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
-          <div class="ww-skeleton-card-grid" aria-hidden="true">@for (card of cards; track card) { <div class="ww-skeleton-card"><span class="ww-skeleton-shape ww-skeleton-poster"></span><span class="ww-skeleton-shape ww-skeleton-line"></span></div> }</div>
         }
         @case ('calendar') {
           <div class="ww-calendar-skeleton-heading" aria-hidden="true">
@@ -147,4 +198,11 @@ export class PageSkeletonComponent {
   protected readonly calendarDays = Array.from({ length: 10 }, (_, index) => index);
   protected readonly calendarEventRows = [0, 1];
   protected readonly calendarSingleEvent = [0];
+  protected readonly profileTabs = [1, 2, 3, 4, 5, 6, 7];
+  protected readonly profileSummaryCards = [1, 2];
+  protected readonly profileTopFiveCards = [1, 2, 3, 4, 5];
+  protected readonly profileRecentCards = [1, 2, 3, 4, 5, 6];
+  protected readonly profileGenres = [1, 2, 3, 4, 5, 6];
+  protected readonly profileRatingBars = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  protected readonly profileReviews = [1, 2, 3];
 }
