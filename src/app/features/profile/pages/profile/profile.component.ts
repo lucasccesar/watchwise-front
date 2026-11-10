@@ -292,8 +292,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       || fallbackRecent?.customPosterUrl
       || fallbackRecent?.card?.customPosterUrl
       || fallbackRecent?.card?.posterPath
-      || highlightedContent?.customPosterUrl
-      || highlightedContent?.posterPath
+      || highlightedContent?.backdropPath
       || null;
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {

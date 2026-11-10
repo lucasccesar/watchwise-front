@@ -163,7 +163,7 @@
                 </div>
                 @if (data.highlights?.rewatch; as highlight) {
                   <div class="profile-highlight">
-                    @if (imageUrl(highlight.content?.customPosterUrl || highlight.content?.posterPath); as poster) { <img [src]="poster" alt="" /> }
+                    @if (imageUrl(highlight.content?.backdropPath, 'w500'); as backdrop) { <img [src]="backdrop" alt="" /> }
                     <div><small>{{ copy.mostRewatched }}</small><div class="profile-highlight-title-row"><strong>{{ highlight.content?.title || copy.unavailable }}</strong><span aria-hidden="true">·</span><span>{{ highlight.count }}×</span></div></div>
                   </div>
                 } @else { <div class="profile-highlight profile-highlight--empty" aria-hidden="true"></div> }
@@ -176,7 +176,7 @@
                 </div>
                 @if (data.highlights?.longestWatch; as highlight) {
                   <div class="profile-highlight">
-                    @if (imageUrl(highlight.content?.customPosterUrl || highlight.content?.posterPath); as poster) { <img [src]="poster" alt="" /> }
+                    @if (imageUrl(highlight.content?.backdropPath, 'w500'); as backdrop) { <img [src]="backdrop" alt="" /> }
                     <div><small>{{ copy.longestWatch }}</small><div class="profile-highlight-title-row"><strong>{{ highlight.content?.title || copy.unavailable }}</strong><span aria-hidden="true">·</span><span>{{ formatDuration(highlight.totalMinutesWatched) }}</span></div></div>
                   </div>
                 } @else { <div class="profile-highlight profile-highlight--empty" aria-hidden="true"></div> }

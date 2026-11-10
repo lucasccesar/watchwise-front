@@ -56,6 +56,10 @@ export interface ProfileContentCard {
   viewerState?: { watchStatus?: string | null; myRating?: number | null } | null;
 }
 
+export type ProfileHighlightContentCard = Omit<ProfileContentCard, 'backdropPath'> & {
+  backdropPath: string | null;
+};
+
 export interface ProfileDiaryPreview {
   id: string;
   source?: string | null;
@@ -94,11 +98,11 @@ export interface ProfileSummary {
   highlights: {
     rewatch: {
       kind: string;
-      content: ProfileContentCard | null;
+      content: ProfileHighlightContentCard | null;
       count: number;
     } | null;
     longestWatch: {
-      content: ProfileContentCard | null;
+      content: ProfileHighlightContentCard | null;
       totalMinutesWatched: number;
       watchedEpisodeCount: number | null;
     } | null;
