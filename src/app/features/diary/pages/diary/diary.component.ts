@@ -81,6 +81,7 @@ interface DiaryGroupedGridEntry {
   score: number | null;
   watchedInTheater: boolean | null;
   seriesTitle: string | null;
+  customPosterUrl: string | null;
   seriesPosterPath: string | null;
   backdropPath: string | null;
   groupType: DiaryViewGroupedItem['groupType'];
@@ -558,7 +559,7 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected groupedPoster(entry: DiaryGroupedGridEntry): string | null {
-    return tmdbImageUrl(entry.seriesPosterPath, 'w342');
+    return tmdbImageUrl(entry.customPosterUrl || entry.seriesPosterPath, 'w342');
   }
 
   protected groupedBackdrop(entry: DiaryGroupedGridEntry): string | null {
@@ -666,8 +667,13 @@ export class DiaryComponent implements OnDestroy {
 
   protected poster(entry: DiaryGridEntry): string | null {
     const type = entry.content.type?.toUpperCase();
-    const path = (type === 'EPISODE' || type === 'SEASON' || type === 'SERIES' ? entry.seriesPosterPath : null)
-      || entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath;
+    const customPoster = entry.customPosterUrl || entry.card?.customPosterUrl;
+    const seriesPoster = type === 'EPISODE' || type === 'SEASON' || type === 'SERIES'
+      ? entry.seriesPosterPath
+      : null;
+    const path = type === 'SERIES'
+      ? customPoster || seriesPoster || entry.card?.posterPath
+      : seriesPoster || customPoster || entry.card?.posterPath;
     return tmdbImageUrl(path, 'w342');
   }
 
@@ -1014,7 +1020,10 @@ export class DiaryComponent implements OnDestroy {
   private toGroupedGridEntry(item: DiaryViewGroupedItem, members: DiaryGridEntry[]): DiaryGroupedGridEntry {
     const seriesId = item.content.tmdbId || item.content.seriesTmdbId;
     const matchingSeries = this.diarySeries().find(option => option.seriesTmdbId === seriesId);
+    const seriesRecord = this.diaryEntries().find(record => record.content.type === 'SERIES'
+      && (record.content.tmdbId === seriesId || record.content.seriesTmdbId === seriesId));
     const seriesTitle = members.find(member => member.seriesTitle)?.seriesTitle || matchingSeries?.title || null;
+    const customPosterUrl = seriesRecord?.customPosterUrl || seriesRecord?.card?.customPosterUrl || null;
     const seriesPosterPath = members.find(member => member.seriesPosterPath)?.seriesPosterPath
       || members.find(member => member.content.type === 'SERIES')?.card?.posterPath
       || null;
@@ -1034,6 +1043,7 @@ export class DiaryComponent implements OnDestroy {
       score: scores.length ? Math.max(...scores) : null,
       watchedInTheater: members.some(member => member.watchedInTheater === true),
       seriesTitle,
+      customPosterUrl,
       seriesPosterPath,
       backdropPath: item.backdropPath ?? null,
       groupType: item.groupType,
