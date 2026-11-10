@@ -1407,14 +1407,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
       .sort((left, right) => right.localeCompare(left))[0] ?? null;
   }
 
-  protected seasonHasWatchActivity(season: SeriesSeasonSummary): boolean {
-    const card = this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber);
-    return this.seasonIsWatched(season)
-      || card?.viewerState.watchStatus === 'PARTIALLY_WATCHED'
-      || this.seasonWatched(season) > 0
-      || Boolean(this.seasonLastWatchedDate(season));
-  }
-
   protected seasonIsWatched(season: SeriesSeasonSummary): boolean {
     return this.page()?.sections.seasons.find((entry) => entry.seasonNumber === season.seasonNumber)
       ?.viewerState.watchStatus === 'WATCHED';

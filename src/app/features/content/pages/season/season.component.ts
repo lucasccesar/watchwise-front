@@ -338,11 +338,6 @@ export class SeasonComponent implements OnDestroy {
     return season.viewerState.watchStatus === 'WATCHED';
   }
 
-  protected seasonItemHasWatchActivity(season: SeasonListItem): boolean {
-    return season.viewerState.watchStatus === 'WATCHED'
-      || season.viewerState.watchStatus === 'PARTIALLY_WATCHED';
-  }
-
   protected seasonItemMyRating(season: SeasonListItem): number | null {
     return season.viewerState.myRating ?? null;
   }

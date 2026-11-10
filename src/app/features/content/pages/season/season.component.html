@@ -203,10 +203,9 @@
                   @if (seasonItemIsWatched(season)) { <span class="content-viewed-badge" [attr.aria-label]="copy.seasonWatchedLabel"><app-check-icon [color]="'#FFFFFF'" /></span> }
                   @if (seasonItemIsWatched(season) && seasonItemLastWatchedDate(season); as watchedDate) { <span class="content-watched-date">{{ formatDate(watchedDate) }}</span> }
                 </a>
-                @if (seasonItemIsWatched(season) && (seasonItemMyRating(season) !== null || seasonItemHasWatchActivity(season))) {
-                  <button class="content-user-rating season-card-rating-trigger" type="button" [attr.aria-label]="seasonItemMyRating(season) !== null ? copy.editRating + ': ' + formatRating(seasonItemMyRating(season)) + ' de 10' : copy.rate" [disabled]="actionPending()" (click)="openRating({ type: 'SEASON', season })">
-                    @if (seasonItemMyRating(season) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonItemMyRating(season)) }} }
-                    @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />{{ copy.rate }} }
+                @if (seasonItemIsWatched(season) && seasonItemMyRating(season) !== null) {
+                  <button class="content-user-rating season-card-rating-trigger" type="button" [attr.aria-label]="copy.editRating + ': ' + formatRating(seasonItemMyRating(season)) + ' de 10'" [disabled]="actionPending()" (click)="openRating({ type: 'SEASON', season })">
+                    <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(seasonItemMyRating(season)) }}
                   </button>
                 }
               </div>
@@ -241,10 +240,9 @@
                   @if (episodeIsWatched(episode)) { <span class="content-viewed-badge" aria-label="Episódio assistido"><app-check-icon [color]="'#FFFFFF'" /></span> }
                   @if (episodeIsWatched(episode) && episode.viewerState.lastWatchedDate; as watchedDate) { <span class="content-watched-date">{{ formatDate(watchedDate) }}</span> }
                 </a>
-                @if (episodeMyRating(episode) !== null || episodeIsWatched(episode)) {
-                  <button class="content-user-rating season-episode-rating-trigger" type="button" [attr.aria-label]="episodeMyRating(episode) !== null ? copy.editRating + ': ' + formatRating(episodeMyRating(episode)) + ' de 10' : copy.rate" [disabled]="actionPending()" (click)="openEpisodeRating(episode, $event)">
-                    @if (episodeMyRating(episode) !== null) { <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(episodeMyRating(episode)) }} }
-                    @else { <ng-container [ngTemplateOutlet]="emptyRatingStar" />{{ copy.rate }} }
+                @if (episodeMyRating(episode) !== null) {
+                  <button class="content-user-rating season-episode-rating-trigger" type="button" [attr.aria-label]="copy.editRating + ': ' + formatRating(episodeMyRating(episode)) + ' de 10'" [disabled]="actionPending()" (click)="openEpisodeRating(episode, $event)">
+                    <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(episodeMyRating(episode)) }}
                   </button>
                 }
                 <app-content-image-actions class="season-card-menu" [attr.data-menu-key]="episodeKey(episode)" [optionsLabel]="'Opções do episódio'" [expanded]="activeEpisodeMenu() === episodeKey(episode)" [actions]="episodeActions(episode)" (toggle)="toggleEpisodeMenu(episodeKey(episode), $event)" (actionSelected)="episodeAction(episode, $event)" />
