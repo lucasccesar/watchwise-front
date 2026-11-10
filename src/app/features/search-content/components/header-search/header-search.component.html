@@ -1,26 +1,28 @@
 <div class="search-control" [class.search-control--open]="isOpen()" (keydown.escape)="onEscape($event)">
-  @if (!isOpen()) {
-    <button
-      #searchTrigger
-      class="search-trigger"
-      type="button"
-      [attr.aria-label]="copy.searchOpen"
-      aria-haspopup="dialog"
-      aria-expanded="false"
-      (click)="openSearch()"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21 17.5 17.5M20 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z" /></svg>
-    </button>
-  } @else {
+  <button
+    #searchTrigger
+    class="search-trigger"
+    type="button"
+    [attr.aria-label]="isOpen() ? copy.searchClose : copy.searchOpen"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen()"
+    (click)="toggleSearch()"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21 17.5 17.5M20 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z" /></svg>
+  </button>
+  @if (isOpen()) {
     <button
       class="search-backdrop"
+      [class.search-backdrop--visible]="isAnimatedIn()"
+      [class.search-backdrop--closing]="isClosing()"
+      [disabled]="isClosing()"
       type="button"
       tabindex="-1"
       [attr.aria-label]="copy.searchClose"
       (click)="closeSearch()"
     ></button>
-    <div class="search-layer" appModalScrollLock role="dialog" aria-modal="true" [attr.aria-label]="copy.search">
-      <form class="search-form" role="search" (submit)="onSubmit($event)">
+    <div class="search-layer" [class.search-layer--closing]="isClosing()" appModalScrollLock role="dialog" aria-modal="true" [attr.aria-label]="copy.search">
+      <form class="search-form" [class.search-form--visible]="isAnimatedIn()" role="search" (submit)="onSubmit($event)">
         <button class="mobile-search-close" type="button" [attr.aria-label]="copy.searchClose" (click)="closeSearch()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" /></svg>
         </button>
@@ -89,7 +91,7 @@
       </div>
 
       @if (showSearchPanel()) {
-        <section class="search-results-panel" aria-live="polite">
+        <section class="search-results-panel" [class.search-results-panel--visible]="isAnimatedIn()" aria-live="polite">
           @if (isLoading()) {
             <div class="search-skeletons" role="status" [attr.aria-label]="copy.searching">
               @for (row of [1, 2, 3]; track row) {

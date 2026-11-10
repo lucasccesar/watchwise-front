@@ -61,6 +61,8 @@ type SearchResult =
 export class HeaderSearchComponent {
   protected readonly copy = messageCatalog['pt-BR'].home;
   protected readonly isOpen = signal(false);
+  protected readonly isAnimatedIn = signal(false);
+  protected readonly isClosing = signal(false);
   protected readonly isScopeMenuOpen = signal(false);
   protected readonly query = signal('');
   protected readonly selectedScope = signal<SearchScope>('CONTENT');
@@ -77,6 +79,7 @@ export class HeaderSearchComponent {
   private readonly searchApi = inject(SearchApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly searchScopes: Array<{ value: SearchScope; label: string }> = [
     { value: 'CONTENT', label: this.copy.searchScopeContent },
@@ -110,6 +113,10 @@ export class HeaderSearchComponent {
   }
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.closeTimer !== null) clearTimeout(this.closeTimer);
+    });
+
     this.searchRequests
       .pipe(
         switchMap((request) => {
@@ -139,25 +146,64 @@ export class HeaderSearchComponent {
   }
 
   protected openSearch(): void {
+    if (this.closeTimer !== null) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = null;
+    }
+
+    this.isClosing.set(false);
+    this.isAnimatedIn.set(false);
     this.isOpen.set(true);
     this.isScopeMenuOpen.set(false);
     this.opened.emit();
-    requestAnimationFrame(() => this.searchInput?.nativeElement.focus());
+    requestAnimationFrame(() => {
+      if (!this.isOpen() || this.isClosing()) return;
+      this.isAnimatedIn.set(true);
+      this.searchInput?.nativeElement.focus();
+    });
     this.runSearch(this.query());
   }
 
+  protected toggleSearch(): void {
+    if (this.isClosing()) {
+      this.openSearch();
+      return;
+    }
+
+    if (this.isOpen()) {
+      this.closeSearch();
+      return;
+    }
+
+    this.openSearch();
+  }
+
   protected closeSearch(restoreFocus = true): void {
-    this.isOpen.set(false);
+    if (!this.isOpen() || this.isClosing()) return;
+
     this.isScopeMenuOpen.set(false);
     this.isLoading.set(false);
     this.hasSearched.set(false);
     this.results.set([]);
     this.errorMessage.set(null);
     this.searchRequests.next(null);
+    this.isAnimatedIn.set(false);
 
-    if (restoreFocus) {
-      requestAnimationFrame(() => this.searchTrigger?.nativeElement.focus());
+    const closeDelay = this.searchCloseDelay();
+    if (closeDelay === 0) {
+      this.isOpen.set(false);
+      if (restoreFocus) requestAnimationFrame(() => this.searchTrigger?.nativeElement.focus());
+      return;
     }
+
+    this.isClosing.set(true);
+    this.closeTimer = setTimeout(() => {
+      this.closeTimer = null;
+      this.isOpen.set(false);
+      this.isClosing.set(false);
+
+      if (restoreFocus) requestAnimationFrame(() => this.searchTrigger?.nativeElement.focus());
+    }, closeDelay);
   }
 
   protected toggleScopeMenu(): void {
@@ -191,7 +237,7 @@ export class HeaderSearchComponent {
   }
 
   protected showSearchPanel(): boolean {
-    return this.isOpen() && this.query().trim().length >= 3;
+    return this.isOpen() && !this.isClosing() && this.query().trim().length >= 3;
   }
 
   protected resultQueryParams(): { q: string; scope: SearchScope } {
@@ -215,6 +261,13 @@ export class HeaderSearchComponent {
     this.results.set([]);
     this.errorMessage.set(null);
     this.searchRequests.next({ query, scope: this.selectedScope() });
+  }
+
+  private searchCloseDelay(): number {
+    if (typeof window === 'undefined') return 0;
+    if (!window.matchMedia('(min-width: 801px)').matches) return 0;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
+    return 420;
   }
 
   private applySearchResult(result: SearchResult): void {
