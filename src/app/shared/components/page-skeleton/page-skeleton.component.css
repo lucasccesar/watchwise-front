@@ -745,6 +745,8 @@
 
 .ww-profile-skeleton-reviews { gap: 0; }
 
+.ww-profile-skeleton-reviews > .ww-profile-skeleton-heading { margin-bottom: 24px; }
+
 .ww-profile-skeleton-reviews article {
   display: grid;
   grid-template-columns: 74px minmax(0, 1fr);
@@ -798,4 +800,5 @@
   .ww-profile-skeleton-genre-chart > div:nth-child(n + 4) { display: none; }
   .ww-profile-skeleton-reviews article { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
   .ww-profile-skeleton-reviews article > span { width: 64px; }
+  .ww-profile-skeleton-reviews > .ww-profile-skeleton-heading { margin-bottom: 8px; }
 }

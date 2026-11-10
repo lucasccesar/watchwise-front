@@ -67,6 +67,7 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
                 </div>
               </section>
               <section class="ww-profile-skeleton-section ww-profile-skeleton-reviews" aria-hidden="true">
+                <div class="ww-profile-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
                 @for (review of profileReviews; track review) {
                   <article><span class="ww-skeleton-shape"></span><div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div></article>
                 }
