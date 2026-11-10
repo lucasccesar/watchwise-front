@@ -6447,6 +6447,12 @@
   border-bottom: 0;
 }
 
+.profile-page--overview .profile-identity h1.ww-detail-hero-title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
 .profile-overview-content {
   width: 100%;
   margin: 0;

@@ -25,6 +25,7 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
           class="responsive-banner-shade"
           [class.responsive-banner-shade--content-detail]="appearance() === 'content-detail'"
           [class.responsive-banner-shade--episode-detail]="appearance() === 'episode-detail'"
+          [class.responsive-banner-shade--profile-hero]="appearance() === 'profile-hero'"
           aria-hidden="true"
         ></span>
       }
@@ -95,13 +96,22 @@ import { tmdbImageUrl } from '../../utils/tmdb-image-url';
         linear-gradient(90deg, rgba(12, 13, 17, .96) 0%, rgba(12, 13, 17, .72) 46%, rgba(12, 13, 17, .28) 100%),
         linear-gradient(0deg, #111113 0%, transparent 42%);
     }
+
+    .responsive-banner-shade--profile-hero {
+      background: linear-gradient(
+        180deg,
+        rgba(24, 24, 24, 0.45) 0%,
+        rgba(24, 24, 24, 0.8) 62%,
+        rgb(24, 24, 24) 100%
+      );
+    }
   `,
 })
 export class ResponsiveBannerComponent {
   readonly path = input<string | null | undefined>(undefined);
   readonly fallbackPath = input.required<string>();
   readonly shade = input(true);
-  readonly appearance = input<'standard' | 'content-detail' | 'episode-detail'>('standard');
+  readonly appearance = input<'standard' | 'content-detail' | 'episode-detail' | 'profile-hero'>('standard');
   readonly imageLoaded = output<void>();
   readonly imageError = output<void>();
 

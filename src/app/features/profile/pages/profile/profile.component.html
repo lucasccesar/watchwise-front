@@ -82,7 +82,7 @@
 
     @if (section() === 'profile') {
     <section class="profile-hero">
-      <app-responsive-banner [path]="profileHeroBackdrop()" fallbackPath="https://image.tmdb.org/t/p/w{size}/dg3OindVAGZBjlT3xYKqIAdukPL.jpg" />
+      <app-responsive-banner [path]="profileHeroBackdrop()" fallbackPath="https://image.tmdb.org/t/p/w{size}/dg3OindVAGZBjlT3xYKqIAdukPL.jpg" appearance="profile-hero" />
       <div class="profile-hero-actions">
         @if (followState() !== 'SELF') {
           <button class="profile-follow-button" type="button" [disabled]="followBusy()" (click)="follow()">
