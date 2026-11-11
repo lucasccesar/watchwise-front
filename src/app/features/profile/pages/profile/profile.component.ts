@@ -1358,7 +1358,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             this.loadSectionData();
             return;
           }
-          this.progress.set(data);
+          this.progress.set(this.withCompletedSeasonProgress(data));
           this.expandedProgress.set(data.content[0] ? new Set([data.content[0].seriesTmdbId]) : new Set());
         },
         error: (error: unknown) => this.handleError(error),
@@ -1458,6 +1458,19 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       case 'episode-ratings-map': return this.episodeMap();
       default: return null;
     }
+  }
+
+  private withCompletedSeasonProgress(page: SeriesInProgressPage): SeriesInProgressPage {
+    return {
+      ...page,
+      content: page.content.map((series) => ({
+        ...series,
+        seasonProgress: [
+          ...(series.seasonProgress ?? []),
+          ...(series.completedSeasonProgress ?? []),
+        ].sort((first, second) => first.seasonNumber - second.seasonNumber),
+      })),
+    };
   }
 
   private resolveTopFive(entries: TopFiveEntry[]): void {

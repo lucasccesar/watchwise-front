@@ -181,6 +181,7 @@ export interface SeriesInProgressRecord {
   lastWatchedEpisodeTitle: string | null;
   nextEpisode: ProgressEpisode | null;
   seasonProgress: SeriesSeasonProgress[];
+  completedSeasonProgress?: SeriesSeasonProgress[] | null;
 }
 
 export interface SeriesInProgressPage {

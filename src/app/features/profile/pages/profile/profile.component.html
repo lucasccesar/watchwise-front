@@ -478,18 +478,18 @@
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="progressSeasonsExpanded(item.seriesTmdbId) ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'" /></svg>
                       {{ progressSeasonsExpanded(item.seriesTmdbId) ? copy.hideSeasons : copy.viewSeasons }}
                     </button>
+                    @if (progressSeasonsExpanded(item.seriesTmdbId)) {
+                      <div class="profile-progress-seasons" aria-label="{{ copy.seasons }}">
+                        @for (season of item.seasonProgress; track season.seasonNumber) {
+                          <div class="profile-progress-season" [class.profile-progress-season--complete]="progressPercent(season.watchedPercentage) === 100">
+                            <div class="profile-progress-season-heading"><strong>{{ copy.season }} {{ season.seasonNumber }}</strong><small>{{ season.watchedEpisodeCount }}/{{ season.totalEpisodeCount }} {{ copy.episodes }} · @if (season.watchedRuntimeMinutes !== null) { {{ formatDuration(season.watchedRuntimeMinutes) }} } @else { — }@if ((season.remainingEpisodeCount ?? 0) > 0) { · {{ season.remainingEpisodeCount }} {{ copy.episodesRemaining }}@if (season.remainingRuntimeMinutes !== null) { ({{ formatDuration(season.remainingRuntimeMinutes) }}) } }</small></div>
+                            <div class="profile-progress-season-bar" role="progressbar" [attr.aria-label]="copy.season + ' ' + season.seasonNumber" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progressPercent(season.watchedPercentage)"><i [style.width]="progressPercent(season.watchedPercentage) + '%'" ></i></div>
+                            <strong class="profile-progress-season-percent">{{ progressPercent(season.watchedPercentage) }}%</strong>
+                          </div>
+                        } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
+                      </div>
+                    }
                   </div>
-                  @if (progressSeasonsExpanded(item.seriesTmdbId)) {
-                    <div class="profile-progress-seasons" aria-label="{{ copy.seasons }}">
-                      @for (season of item.seasonProgress; track season.seasonNumber) {
-                        <div class="profile-progress-season">
-                          <div class="profile-progress-season-heading"><strong>{{ copy.season }} {{ season.seasonNumber }}</strong><small>{{ season.watchedEpisodeCount }}/{{ season.totalEpisodeCount }} {{ copy.episodes }} · @if (season.remainingRuntimeMinutes !== null) { {{ formatDuration(season.remainingRuntimeMinutes) }} } @else { — }</small></div>
-                          <div class="profile-progress-season-bar" role="progressbar" [attr.aria-label]="copy.season + ' ' + season.seasonNumber" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progressPercent(season.watchedPercentage)"><i [style.width]="progressPercent(season.watchedPercentage) + '%'" ></i></div>
-                          <strong class="profile-progress-season-percent">{{ progressPercent(season.watchedPercentage) }}%</strong>
-                        </div>
-                      } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
-                    </div>
-                  }
                   @if (item.nextEpisode; as nextEpisode) {
                     <div class="profile-progress-next-episode">
                       <span class="profile-progress-next-heading">{{ progressCopy.episodeUnavailable }}</span>

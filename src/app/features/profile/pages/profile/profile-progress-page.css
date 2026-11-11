@@ -14,14 +14,16 @@
   isolation: isolate;
   display: flex;
   width: 100%;
-  height: 342px;
   min-height: 342px;
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: 96px 15%;
-  border: 0;
-  background: var(--color-surface);
+  padding: 32px var(--content-margin);
+  border-bottom: 1px solid var(--color-border);
+  background-color: #222;
+  background-position: center 30%;
+  background-size: cover;
+  text-align: center;
   box-sizing: border-box;
 }
 
@@ -29,26 +31,12 @@
   position: relative;
   z-index: 1;
   display: flex;
-  width: min(800px, 100%);
+  width: min(720px, 100%);
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 0;
   text-align: center;
-  text-shadow: none;
-}
-
-.profile-progress-owner {
-  display: inline-flex;
-  min-height: 0;
-  gap: 8px;
-  padding: 4px 12px 4px 4px;
-  border: 0;
-  border-radius: 9999px;
-  background: #30343b;
-  color: #f2f7fa;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 56%);
 }
 
 .profile-progress-owner > img {
@@ -68,29 +56,22 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin: 0;
-  color: #f2f7fa;
-  font-size: 72px !important;
+  margin: 16px 0 0;
+  color: var(--color-text);
+  font-size: clamp(42px, 5vw, 72px) !important;
   font-weight: 700 !important;
   letter-spacing: -0.02em !important;
-  line-height: 90px !important;
-}
-
-.profile-progress-hero-title {
-  color: #f2f7fa;
-  font-size: 72px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 90px;
+  line-height: 1.25 !important;
 }
 
 .profile-progress-hero-subtitle {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #f59e0b;
+  color: var(--color-accent);
   font-size: 16px;
   font-weight: 600;
+  letter-spacing: normal;
   line-height: 24px;
 }
 
@@ -98,14 +79,14 @@
   width: 32px;
   height: 2px;
   flex: 0 0 32px;
-  background: #f59e0b;
+  background: var(--color-accent);
 }
 
 .profile-progress-hero-copy > p {
   display: block;
   max-width: 480px;
-  margin: 0;
-  color: #f2f7fa;
+  margin: 16px auto 0;
+  color: #d1d1d1;
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;
@@ -481,16 +462,21 @@
 
 .profile-progress-main > .profile-progress-bar {
   height: 8px;
+  overflow: hidden;
   margin: 0;
   border-radius: 9999px;
-  background: #30343b;
+  background: var(--color-secondary);
 }
 
 .profile-progress-main > .profile-progress-bar i,
 .profile-progress-season-bar i {
+  display: block;
+  height: 100%;
   border-radius: 9999px;
-  background: #2563eb;
+  background: var(--color-primary);
 }
+
+.profile-progress-season--complete .profile-progress-season-bar i { background: var(--color-success); }
 
 .profile-progress-details {
   display: flex;
@@ -563,8 +549,6 @@
 
 .profile-progress-seasons {
   display: flex;
-  grid-column: 2;
-  grid-row: 2;
   min-width: 0;
   flex-direction: column;
   gap: 10px;
@@ -612,7 +596,7 @@
   overflow: hidden;
   grid-column: 1;
   border-radius: 9999px;
-  background: #30343b;
+  background: var(--color-secondary);
 }
 
 .profile-progress-season-percent {
@@ -794,8 +778,8 @@
   }
 
   .profile-page .profile-content.profile-progress-page .profile-progress-hero {
-    padding-right: 80px;
-    padding-left: 80px;
+    padding-right: var(--content-margin);
+    padding-left: var(--content-margin);
   }
 }
 
@@ -809,11 +793,6 @@
     max-width: 320px;
     grid-column: 2;
     grid-row: 2;
-  }
-
-  .profile-progress-seasons {
-    grid-column: 2;
-    grid-row: 3;
   }
 }
 
@@ -930,7 +909,7 @@
 
   .profile-progress-card {
     grid-template-columns: 64px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto;
     gap: 12px;
     padding: 16px 0;
   }
@@ -964,15 +943,13 @@
   }
 
   .profile-progress-seasons {
-    grid-column: 1 / -1;
-    grid-row: 2;
     padding: 0;
     background: transparent;
   }
 
   .profile-progress-next-episode {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 2;
     padding: 12px;
     border: 1px solid #30343b;
     border-radius: 8px;
