@@ -501,30 +501,6 @@
   background: var(--color-surface);
 }
 
-.ww-profile-skeleton-tabs {
-  display: flex;
-  min-height: 60px;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 12px 32px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.ww-profile-skeleton-tabs > span {
-  width: 72px;
-  height: 36px;
-  border-radius: var(--radius-md);
-}
-
-.ww-profile-skeleton-tabs > span:nth-child(3),
-.ww-profile-skeleton-tabs > span:nth-child(4),
-.ww-profile-skeleton-tabs > span:nth-child(5) { width: 112px; }
-
-.ww-profile-skeleton-tabs > span:nth-child(6) { width: 96px; }
-
 .ww-profile-skeleton-hero {
   position: relative;
   display: flex;
@@ -584,22 +560,6 @@
 }
 
 .ww-profile-skeleton-follow-counts > span { width: 76px; height: 16px; }
-
-.ww-profile-skeleton-type-switch {
-  display: flex;
-  justify-content: center;
-  padding: 12px 16px;
-  background: var(--color-surface);
-}
-
-.ww-profile-skeleton-type-switch > div {
-  display: grid;
-  width: var(--ww-profile-skeleton-content);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.ww-profile-skeleton-type-switch .ww-skeleton-shape { height: 40px; }
 
 .ww-profile-skeleton-content { display: flex; flex-direction: column; }
 
@@ -775,12 +735,6 @@
 
 @media (max-width: 800px) {
   .ww-profile-skeleton { --ww-profile-skeleton-content: calc(100% - 32px); }
-  .ww-profile-skeleton-tabs { justify-content: flex-start; flex-wrap: nowrap; overflow: hidden; padding-inline: 16px; }
-  .ww-profile-skeleton-tabs > span { flex: 0 0 64px; }
-  .ww-profile-skeleton-tabs > span:nth-child(3),
-  .ww-profile-skeleton-tabs > span:nth-child(4),
-  .ww-profile-skeleton-tabs > span:nth-child(5) { flex-basis: 96px; }
-  .ww-profile-skeleton-tabs > span:nth-child(6) { flex-basis: 84px; }
   .ww-profile-skeleton-hero { min-height: 260px; padding: 24px 16px; }
   .ww-profile-skeleton-options { top: 16px; right: 16px; }
   .ww-profile-skeleton-summary { display: flex; overflow: hidden; padding-inline: 16px; }
@@ -793,7 +747,6 @@
 @media (max-width: 560px) {
   .ww-profile-skeleton-hero { min-height: 248px; }
   .ww-profile-skeleton-description { width: 84%; height: 28px; }
-  .ww-profile-skeleton-type-switch { padding-inline: 16px; }
   .ww-profile-skeleton-posters--top-five,
   .ww-profile-skeleton-posters:not(.ww-profile-skeleton-posters--top-five) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
   .ww-profile-skeleton-genre-chart { grid-template-columns: repeat(3, minmax(0, 1fr)); }

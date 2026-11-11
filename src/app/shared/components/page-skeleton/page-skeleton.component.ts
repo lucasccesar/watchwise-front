@@ -16,9 +16,7 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
       @switch (variant()) {
         @case ('profile') {
           <div class="ww-profile-skeleton">
-            <nav class="ww-profile-skeleton-tabs" aria-hidden="true">
-              @for (tab of profileTabs; track tab) { <span class="ww-skeleton-shape"></span> }
-            </nav>
+            <ng-content select="[profile-skeleton-tabs]"></ng-content>
             <section class="ww-profile-skeleton-hero" aria-hidden="true">
               <span class="ww-skeleton-shape ww-profile-skeleton-banner"></span>
               <span class="ww-skeleton-shape ww-profile-skeleton-options"></span>
@@ -30,7 +28,7 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
                 <div class="ww-profile-skeleton-follow-counts"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
               </div>
             </section>
-            <div class="ww-profile-skeleton-type-switch" aria-hidden="true"><div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div></div>
+            <ng-content select="[profile-skeleton-type-switch]"></ng-content>
             <div class="ww-profile-skeleton-content">
               <section class="ww-profile-skeleton-summary" aria-hidden="true">
                 @for (summary of profileSummaryCards; track summary) {
@@ -199,7 +197,6 @@ export class PageSkeletonComponent {
   protected readonly calendarDays = Array.from({ length: 10 }, (_, index) => index);
   protected readonly calendarEventRows = [0, 1];
   protected readonly calendarSingleEvent = [0];
-  protected readonly profileTabs = [1, 2, 3, 4, 5, 6, 7];
   protected readonly profileSummaryCards = [1, 2];
   protected readonly profileTopFiveCards = [1, 2, 3, 4, 5];
   protected readonly profileRecentCards = [1, 2, 3, 4, 5, 6];

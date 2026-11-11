@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   AfterViewInit,
@@ -94,7 +94,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent, PageSkeletonComponent],
+  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
@@ -115,6 +115,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly progressCopy = messageCatalog['pt-BR'].progressPage;
   protected readonly section = signal<ProfileSection>('profile');
   protected readonly status = signal<LoadState>('loading');
+  protected readonly profileOverviewLoading = signal(false);
   protected readonly profile = signal<PublicUserProfile | null>(null);
   protected readonly foundUser = signal<SearchUserView | null>(null);
   protected readonly username = signal('');
@@ -1304,6 +1305,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   private loadSection(userId: string): void {
     const section = this.section();
     const mode = this.mode();
+    if (section === 'profile') this.profileOverviewLoading.set(true);
+    else this.profileOverviewLoading.set(false);
     if (section !== 'progress') this.resetSectionData();
 
     if (section === 'profile') {
@@ -1325,6 +1328,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         reviews: this.diaryApi.getUserReviewsPage(userId, 1, 50).pipe(catchError(() => of(null))),
       }).subscribe({
         next: ({ summary, topFive, recentMovies, recentEpisodes, recentSeries, ratedEpisodes, reviews }) => {
+          if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
           this.summary.set(summary);
           const latestMovieReview = reviews?.content.find((review) => review.content.type === 'MOVIE');
           this.latestMovieReviewBackdropPath.set(latestMovieReview?.card?.backdropPath ?? null);
@@ -1337,9 +1341,25 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             .filter((review) => Boolean(review.comment))
             .map((review) => [review.id, review.comment as string])));
           this.loadEpisodeStillPaths(recentEpisodes?.content ?? []);
-          this.resolveTopFive(topFive);
+          this.resolveTopFive(topFive).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (items) => {
+              if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
+              this.topFive.set(items);
+              this.profileOverviewLoading.set(false);
+            },
+            error: () => {
+              if (this.profile()?.id === userId && this.mode() === mode && this.section() === 'profile') {
+                this.profileOverviewLoading.set(false);
+              }
+            },
+          });
         },
-        error: (error: unknown) => this.handleError(error),
+        error: (error: unknown) => {
+          if (this.profile()?.id === userId && this.mode() === mode && this.section() === 'profile') {
+            this.profileOverviewLoading.set(false);
+            this.handleError(error);
+          }
+        },
       });
       return;
     }
@@ -1473,13 +1493,10 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     };
   }
 
-  private resolveTopFive(entries: TopFiveEntry[]): void {
-    if (entries.length === 0) {
-      this.topFive.set([]);
-      return;
-    }
-    forkJoin(entries.map((entry) => this.resolveTopFiveEntry(entry)))
-      .subscribe((items) => this.topFive.set(items));
+  private resolveTopFive(entries: TopFiveEntry[]): Observable<ResolvedTopFive[]> {
+    return entries.length === 0
+      ? of([])
+      : forkJoin(entries.map((entry) => this.resolveTopFiveEntry(entry)));
   }
 
   private resolveTopFiveEntry(entry: TopFiveEntry): Observable<ResolvedTopFive> {
