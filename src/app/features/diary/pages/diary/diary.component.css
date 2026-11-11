@@ -630,26 +630,29 @@
   font-size: var(--font-size-sm);
 }
 
+.diary-review-list,
+.diary-review-loading {
+  width: min(1334px, calc(100% - 64px));
+}
+
 .diary-review-list {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 0;
 }
 
 .diary-review-item {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
   gap: 32px;
-  padding-bottom: 40px;
+  padding: 24px 0 40px;
   border-bottom: 1px solid var(--color-border);
 }
-
-.diary-review-item:last-child { border-bottom: 0; }
 
 .diary-review-poster {
   display: block;
   width: 150px;
-  aspect-ratio: 2 / 3;
+  height: 225px;
   overflow: hidden;
   border-radius: var(--radius-md);
   background: var(--color-surface-secondary);
@@ -683,7 +686,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
 }
 
 .diary-review-title-line {
@@ -691,14 +694,14 @@
   min-width: 0;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: 12px;
 }
 
 .diary-review-title-line > a {
   color: var(--color-text);
-  font-size: var(--font-size-lg);
-  font-weight: 650;
-  line-height: var(--line-height-lg);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
   text-decoration: none;
 }
 
@@ -707,45 +710,48 @@
 .diary-review-title-line > span {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
+  line-height: 20px;
 }
 
 .diary-review-score {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
   color: var(--color-text);
+  font-size: 19px;
+  line-height: 24px;
   white-space: nowrap;
 }
 
 .diary-review-score svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   align-self: center;
   fill: var(--color-accent);
   stroke: var(--color-accent);
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 
-.diary-review-score strong { font-size: var(--font-size-lg); }
-.diary-review-score small { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.diary-review-score strong { font-size: inherit; line-height: inherit; }
+.diary-review-score small { color: var(--color-text-tertiary); font-size: 12px; font-weight: 400; }
 
 .diary-review-meta {
   display: flex;
-  min-height: 24px;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 8px 12px;
+  margin-top: 8px;
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 
 .diary-review-companions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--color-text);
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 
@@ -753,31 +759,34 @@
   display: grid;
   width: 20px;
   height: 20px;
+  flex: 0 0 20px;
   overflow: hidden;
   place-items: center;
   border-radius: 50%;
   background: var(--color-primary);
-  color: var(--color-text);
-  font-size: 10px;
-  font-weight: 650;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .diary-review-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .diary-review-comment {
-  max-width: 780px;
-  margin: 16px 0 24px;
+  max-width: 760px;
+  margin: 20px 0 0;
   color: var(--color-text);
   font-size: var(--font-size-md);
-  line-height: 1.6;
+  line-height: 24px;
   white-space: pre-wrap;
 }
 
 .diary-review-engagement {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 18px;
   margin-top: auto;
+  padding-top: 22px;
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -806,11 +815,11 @@
 .diary-review-engagement > .diary-review-like svg { color: var(--color-like); }
 .diary-review-engagement > .diary-review-like.is-liked svg { fill: var(--color-like); stroke: var(--color-like); }
 .diary-review-engagement > a svg { color: var(--color-primary); }
-.diary-review-engagement svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.diary-review-engagement svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 
-.diary-review-skeleton-list { display: flex; flex-direction: column; gap: 32px; }
-.diary-review-skeleton { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 32px; }
-.diary-review-skeleton-poster { width: 150px; aspect-ratio: 2 / 3; border-radius: var(--radius-md); }
+.diary-review-skeleton-list { display: flex; flex-direction: column; gap: 0; }
+.diary-review-skeleton { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 32px; padding: 24px 0 40px; border-bottom: 1px solid var(--color-border); }
+.diary-review-skeleton-poster { width: 150px; height: 225px; border-radius: var(--radius-md); }
 .diary-review-skeleton-copy { display: flex; min-height: 225px; flex-direction: column; align-items: flex-start; gap: 14px; padding-top: 4px; }
 .diary-review-skeleton-title, .diary-review-skeleton-meta, .diary-review-skeleton-text { height: 14px; border-radius: var(--radius-sm); }
 .diary-review-skeleton-title { width: min(320px, 45%); height: 20px; }
@@ -1323,34 +1332,6 @@
 
   .diary-pagination-row--reviews { margin-bottom: var(--space-8); }
 
-  .diary-review-item,
-  .diary-review-skeleton {
-    grid-template-columns: 84px minmax(0, 1fr);
-    gap: 14px;
-  }
-
-  .diary-review-item { padding-bottom: var(--space-5); }
-  .diary-review-list { gap: var(--space-5); }
-  .diary-review-poster,
-  .diary-review-skeleton-poster { width: 84px; }
-  .diary-review-main,
-  .diary-review-skeleton-copy { min-height: 126px; }
-  .diary-review-heading { gap: 8px; }
-  .diary-review-title-line { gap: 2px 6px; }
-  .diary-review-title-line > a { font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
-  .diary-review-title-line > span { font-size: 10px; }
-  .diary-review-score { gap: 2px; }
-  .diary-review-score svg { width: 14px; height: 14px; }
-  .diary-review-score strong { font-size: var(--font-size-sm); }
-  .diary-review-meta { gap: 6px; font-size: 10px; }
-  .diary-review-comment { margin: 10px 0 12px; font-size: var(--font-size-sm); line-height: 1.45; }
-  .diary-review-engagement { gap: 10px; font-size: var(--font-size-xs); }
-  .diary-review-engagement svg { width: 14px; height: 14px; }
-  .diary-review-skeleton-copy { gap: 8px; }
-  .diary-review-skeleton-title { width: 72%; }
-  .diary-review-skeleton-meta { width: 90%; }
-  .diary-review-skeleton-text { width: 100%; height: 40px; margin-top: 2px; }
-
   .diary-showing {
     align-self: center;
     text-align: center;
@@ -1546,4 +1527,57 @@
 
 @media (min-width: 600px) and (max-width: 800px) {
   .diary-stats-card { flex-basis: calc(50% - 22px); }
+}
+
+@media (max-width: 1100px) {
+  .diary-review-item,
+  .diary-review-skeleton {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px 0 24px;
+  }
+
+  .diary-review-poster,
+  .diary-review-skeleton-poster {
+    width: 92px;
+    height: 138px;
+  }
+
+  .diary-review-main { min-height: 0; }
+  .diary-review-skeleton-copy { min-height: 138px; }
+  .diary-review-title-line > a { font-size: 15px; line-height: 20px; }
+  .diary-review-title-line > span,
+  .diary-review-meta > span:first-child { font-size: 11px; }
+  .diary-review-meta { gap: 6px 8px; }
+  .diary-review-score { gap: 3px; font-size: 15px; }
+  .diary-review-comment { margin-top: 14px; font-size: 13px; line-height: 20px; }
+  .diary-review-engagement { gap: 12px; padding-top: 16px; font-size: 11px; }
+}
+
+@media (max-width: 800px) {
+  .diary-review-list,
+  .diary-review-loading { width: calc(100% - 32px); }
+}
+
+@media (max-width: 560px) {
+  .diary-review-item,
+  .diary-review-skeleton {
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .diary-review-poster,
+  .diary-review-skeleton-poster {
+    width: 74px;
+    height: 111px;
+  }
+
+  .diary-review-skeleton-copy { min-height: 111px; }
+  .diary-review-heading { flex-direction: column; gap: 8px; }
+  .diary-review-score { font-size: 14px; line-height: 18px; }
+  .diary-review-engagement { flex-direction: column; align-items: flex-start; gap: 5px; }
+  .diary-review-skeleton-copy { gap: 8px; }
+  .diary-review-skeleton-title { width: 72%; }
+  .diary-review-skeleton-meta { width: 90%; }
+  .diary-review-skeleton-text { width: 100%; height: 40px; margin-top: 2px; }
 }
