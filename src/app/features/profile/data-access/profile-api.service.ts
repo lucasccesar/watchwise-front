@@ -242,6 +242,12 @@ export interface TopFiveEntry {
   score: number | null;
 }
 
+export interface TopFiveCreateRequest {
+  tmdbId: string;
+  position?: number | null;
+  customPosterUrl?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProfileApiService {
   constructor(private readonly http: HttpClient) {}
@@ -260,6 +266,16 @@ export class ProfileApiService {
   getTopFive(userId: string, type: TopFiveContentType): Observable<TopFiveEntry[]> {
     return this.http.get<TopFiveEntry[]>(
       '/api/v1/users/' + encodeURIComponent(userId) + '/top5/' + type,
+    );
+  }
+
+  addTopFive(type: TopFiveContentType, request: TopFiveCreateRequest): Observable<TopFiveEntry> {
+    return this.http.post<TopFiveEntry>('/api/v1/users/me/top5/' + type, request);
+  }
+
+  removeTopFive(type: TopFiveContentType, entryId: string): Observable<void> {
+    return this.http.delete<void>(
+      '/api/v1/users/me/top5/' + type + '/' + encodeURIComponent(entryId),
     );
   }
 

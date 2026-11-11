@@ -203,7 +203,12 @@
             </nav>
 
             <section class="profile-section profile-top-five">
-              <div class="profile-section-heading"><h2><svg class="profile-section-heading-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15C8.686 15 6 12.314 6 9V3.444C6 3.031 6 2.824 6.06 2.658C6.161 2.38 6.38 2.161 6.658 2.06C6.824 2 7.031 2 7.444 2H16.556C16.969 2 17.176 2 17.342 2.06C17.62 2.161 17.839 2.38 17.94 2.658C18 2.824 18 3.031 18 3.444V9C18 12.314 15.314 15 12 15ZM12 15V18M18 4H20.5C20.966 4 21.199 4 21.383 4.076C21.628 4.178 21.822 4.372 21.924 4.617C22 4.801 22 5.034 22 5.5V6C22 6.93 22 7.395 21.898 7.776C21.62 8.812 20.812 9.62 19.776 9.898C19.395 10 18.93 10 18 10M6 4H3.5C3.034 4 2.801 4 2.617 4.076C2.372 4.178 2.178 4.372 2.076 4.617C2 4.801 2 5.034 2 5.5V6C2 6.93 2 7.395 2.102 7.776C2.38 8.812 3.188 9.62 4.224 9.898C4.605 10 5.07 10 6 10M7.444 22H16.556C16.801 22 17 21.801 17 21.556C17 19.592 15.408 18 13.444 18H10.556C8.592 18 7 19.592 7 21.556C7 21.801 7.199 22 7.444 22Z" /></svg>{{ mode() === 'MOVIE' ? copy.topFiveMovies : copy.topFiveSeries }}</h2></div>
+              <div class="profile-section-heading">
+                <h2><svg class="profile-section-heading-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15C8.686 15 6 12.314 6 9V3.444C6 3.031 6 2.824 6.06 2.658C6.161 2.38 6.38 2.161 6.658 2.06C6.824 2 7.031 2 7.444 2H16.556C16.969 2 17.176 2 17.342 2.06C17.62 2.161 17.839 2.38 17.94 2.658C18 2.824 18 3.031 18 3.444V9C18 12.314 15.314 15 12 15ZM12 15V18M18 4H20.5C20.966 4 21.199 4 21.383 4.076C21.628 4.178 21.822 4.372 21.924 4.617C22 4.801 22 5.034 22 5.5V6C22 6.93 22 7.395 21.898 7.776C21.62 8.812 20.812 9.62 19.776 9.898C19.395 10 18.93 10 18 10M6 4H3.5C3.034 4 2.801 4 2.617 4.076C2.372 4.178 2.178 4.372 2.076 4.617C2 4.801 2 5.034 2 5.5V6C2 6.93 2 7.395 2.102 7.776C2.38 8.812 3.188 9.62 4.224 9.898C4.605 10 5.07 10 6 10M7.444 22H16.556C16.801 22 17 21.801 17 21.556C17 19.592 15.408 18 13.444 18H10.556C8.592 18 7 19.592 7 21.556C7 21.801 7.199 22 7.444 22Z" /></svg>{{ mode() === 'MOVIE' ? copy.topFiveMovies : copy.topFiveSeries }}</h2>
+                @if (followState() === 'SELF') {
+                  <button type="button" class="profile-top-five-edit-button" data-ww-button="secondary" [attr.aria-label]="mode() === 'MOVIE' ? copy.editTopFiveMovies : copy.editTopFiveSeries" aria-haspopup="dialog" (click)="openTopFiveEditor($event)">{{ copy.editTopFive }}</button>
+                }
+              </div>
               @if (topFive().length) {
                 <div class="profile-top-five-grid">
                   @for (entry of topFive(); track entry.id) {
@@ -228,11 +233,90 @@
                       </div>
                     </article>
                   }
+                  @for (slot of topFiveDisplayEmptySlots(); track slot) {
+                    <div class="profile-empty profile-top-five-empty-slot" aria-hidden="true"></div>
+                  }
                 </div>
               } @else {
-                <p class="profile-empty">{{ copy.noItems }}</p>
+                <div class="profile-top-five-grid">
+                  @for (slot of topFiveDisplayEmptySlots(); track slot) {
+                    <div class="profile-empty profile-top-five-empty-slot" aria-hidden="true"></div>
+                  }
+                </div>
               }
             </section>
+
+            @if (topFiveEditorOpen()) {
+              <app-dialog-backdrop (dismiss)="closeTopFiveEditor()">
+                <section class="profile-top-five-dialog ww-dialog-panel" role="dialog" appModalFocus [modalReturnFocus]="topFiveEditorOpener()" (modalDismiss)="closeTopFiveEditor()" aria-modal="true" aria-labelledby="profile-top-five-dialog-title" (click)="$event.stopPropagation()">
+                  <header>
+                    <div>
+                      <h2 id="profile-top-five-dialog-title">{{ mode() === 'MOVIE' ? copy.editTopFiveMovies : copy.editTopFiveSeries }}</h2>
+                      <p>{{ copy.topFiveEditorDescription }}</p>
+                    </div>
+                  </header>
+                  <div class="profile-top-five-editor-grid" cdkDropList cdkDropListOrientation="horizontal" cdkDropListLockAxis="x" [cdkDropListData]="topFiveEditorItems()" [cdkDropListDisabled]="topFiveSaving() || topFiveEditorItems().length < 2" (cdkDropListDropped)="dropTopFiveEntry($event)" role="list">
+                    @for (entry of topFiveEditorItems(); track entry.id) {
+                      <article class="profile-top-five-editor-card" cdkDrag [cdkDragData]="entry" [cdkDragStartDelay]="topFiveEditorDragStartDelay" role="listitem" [attr.aria-label]="copy.topFiveDragItem.replace('{position}', entry.position.toString()).replace('{title}', entry.title || copy.unavailable)">
+                        <div class="profile-top-five-editor-media">
+                          <div class="profile-top-five-editor-poster" cdkDragHandle>
+                            @if (imageUrl(entry.posterPath, 'w342'); as poster) { <img [src]="poster" alt="" /> }
+                            @else { <span>{{ entry.title || copy.unavailable }}</span> }
+                            <span class="profile-top-five-editor-rank" aria-hidden="true">{{ entry.position }}</span>
+                          </div>
+                          <button type="button" class="profile-top-five-editor-remove" [disabled]="topFiveSaving()" [attr.aria-label]="copy.topFiveRemoveItem.replace('{title}', entry.title || copy.unavailable)" (click)="removeTopFiveEditorEntry(entry.id)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+                        </div>
+                        <div class="profile-top-five-editor-copy">
+                          <strong>{{ entry.title || copy.unavailable }}</strong>
+                          <span>{{ entry.releaseYear ?? '—' }}</span>
+                        </div>
+                      </article>
+                    }
+                    @for (slot of topFiveEmptySlots(); track slot) {
+                      <button type="button" class="profile-empty profile-top-five-editor-empty-slot" role="listitem" [attr.aria-label]="copy.topFiveAddPlaceholder.replace('{position}', slot.toString())" (click)="openTopFiveSearch($event)"><span aria-hidden="true">+</span></button>
+                    }
+                  </div>
+                  <footer>
+                    <button type="button" data-ww-button="secondary" [disabled]="topFiveSaving()" (click)="cancelTopFiveEditor()">{{ homeCopy.cancel }}</button>
+                    <button #topFiveEditorSave type="button" data-ww-button="primary" [disabled]="topFiveSaving()" (click)="saveTopFiveEditor()">{{ topFiveSaving() ? copy.topFiveSaving : homeCopy.save }}</button>
+                  </footer>
+                  @if (topFiveSearchOpen()) {
+                    <div class="profile-top-five-search-backdrop" (click)="closeTopFiveSearch()">
+                      <section class="profile-top-five-search" role="dialog" appModalFocus [modalReturnFocus]="topFiveSearchOpener()" (modalDismiss)="closeTopFiveSearch()" aria-modal="true" [attr.aria-label]="topFiveSearchPlaceholder()" (click)="$event.stopPropagation()">
+                        <form class="search-form profile-top-five-search-form" role="search" (submit)="preventTopFiveSearchSubmit($event)">
+                          <span class="search-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 21 17.5 17.5M20 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z" /></svg></span>
+                          <input #topFiveSearchInput type="search" [value]="topFiveSearchQuery()" [attr.aria-label]="topFiveSearchPlaceholder()" [placeholder]="topFiveSearchPlaceholder()" maxlength="100" autocomplete="off" (input)="onTopFiveSearchInput($any($event.target).value)" />
+                          <button class="profile-top-five-search-close" type="button" [attr.aria-label]="homeCopy.searchClose" (click)="closeTopFiveSearch()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+                        </form>
+                        @if (topFiveSearchQuery().trim().length >= 3) {
+                          <section class="search-results-panel profile-top-five-search-results" role="listbox" [attr.aria-label]="topFiveSearchPlaceholder()" [attr.aria-busy]="topFiveSearchLoading()">
+                            @if (topFiveSearchLoading()) {
+                              <div class="search-skeletons" role="status" [attr.aria-label]="homeCopy.searching">
+                                @for (row of [1, 2, 3]; track row) {
+                                  <div class="search-skeleton search-pulse" aria-hidden="true"><span class="search-skeleton-image"></span><span class="search-skeleton-copy"><span></span><span></span></span></div>
+                                }
+                              </div>
+                            } @else if (topFiveSearchError(); as error) {
+                              <p class="search-feedback" role="alert">{{ error }}</p>
+                            } @else if (topFiveSearchResults().length) {
+                              @for (result of topFiveSearchResults(); track result.type + ':' + result.tmdbId) {
+                                <button type="button" class="search-result profile-top-five-search-result" role="option" [disabled]="isTopFiveSearchResultAdded(result)" [attr.aria-selected]="false" (click)="selectTopFiveSearchResult(result)">
+                                  @if (imageUrl(result.posterUrl, 'w185'); as poster) { <img class="search-result-image search-result-image--poster" [src]="poster" alt="" /> }
+                                  @else { <span class="search-result-image search-result-image--poster" aria-hidden="true"></span> }
+                                  <span class="search-result-copy"><span class="search-result-title-row"><span class="search-result-title">{{ result.title || copy.unavailable }}</span></span><span class="search-result-meta">{{ result.releaseYear ?? '' }}</span></span>
+                                </button>
+                              }
+                            } @else {
+                              <p class="search-feedback">{{ homeCopy.searchNoResults.replace('{query}', topFiveSearchQuery().trim()) }}</p>
+                            }
+                          </section>
+                        }
+                      </section>
+                    </div>
+                  }
+                </section>
+              </app-dialog-backdrop>
+            }
 
             @if (mode() === 'MOVIE') {
               <section class="profile-section profile-overview-recent-section">

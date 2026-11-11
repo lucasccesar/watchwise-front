@@ -16,14 +16,15 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { combineLatest, forkJoin, Observable, of, Subscription } from 'rxjs';
+import { CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
+import { combineLatest, firstValueFrom, forkJoin, Observable, of, Subject, Subscription, switchMap, timer } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { DiaryApiService, DiaryRecord, DiaryRecordPage, DiarySortBy, ProgressSortBy, SeriesInProgressPage, SeriesInProgressRecord } from '../../../diary/data-access/diary-api.service';
 import { ListItemType, ListsApiService, UserListCard, UserListCardPage } from '../../../lists/data-access/lists-api.service';
 import { PicksApiService, UserPickPreviewPage } from '../../../picks/data-access/picks-api.service';
-import { SearchApiService, SearchUserView } from '../../../search-content/data-access/search-api.service';
+import { SearchApiService, SearchContentView, SearchUserView, SearchView } from '../../../search-content/data-access/search-api.service';
 import { WatchlistApiService, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../../watchlist/data-access/watchlist-api.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
@@ -34,7 +35,7 @@ import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.d
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
-import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveEntry } from '../../data-access/profile-api.service';
+import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
@@ -46,6 +47,8 @@ type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
 type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; contentType: 'MOVIE' | 'SERIES' };
+type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
+type TopFiveSearchResult = { request: TopFiveSearchRequest; response: SearchView } | { request: TopFiveSearchRequest; error: unknown } | null;
 type RecentSeriesCard = {
   seriesTmdbId: string;
   title: string;
@@ -94,7 +97,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent, PageSkeletonComponent],
+  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, CdkDrag, CdkDragHandle, CdkDropList, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
@@ -140,6 +143,24 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileGenreMinimumWidths = signal<number[]>([]);
   protected readonly hoveredOverviewRatingIndex = signal<number | null>(null);
   protected readonly topFive = signal<ResolvedTopFive[]>([]);
+  protected readonly topFiveEditorOpen = signal(false);
+  protected readonly topFiveEditorItems = signal<ResolvedTopFive[]>([]);
+  protected readonly topFiveSaving = signal(false);
+  protected readonly topFiveSearchOpen = signal(false);
+  protected readonly topFiveSearchQuery = signal('');
+  protected readonly topFiveSearchLoading = signal(false);
+  protected readonly topFiveSearchResults = signal<SearchContentView[]>([]);
+  protected readonly topFiveSearchError = signal<string | null>(null);
+  protected readonly topFiveEmptySlots = computed(() => Array.from(
+    { length: Math.max(0, 5 - this.topFiveEditorItems().length) },
+    (_, index) => this.topFiveEditorItems().length + index + 1,
+  ));
+  protected readonly topFiveDisplayEmptySlots = computed(() => Array.from(
+    { length: Math.max(0, 5 - this.topFive().length) },
+    (_, index) => this.topFive().length + index + 1,
+  ));
+  protected readonly topFiveEditorOpener = signal<HTMLElement | null>(null);
+  protected readonly topFiveEditorDragStartDelay = { touch: 150, mouse: 0 };
   protected readonly diary = signal<DiaryRecordPage | null>(null);
   protected readonly progress = signal<SeriesInProgressPage | null>(null);
   private profileLoadVersion = 0;
@@ -171,6 +192,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('summaryGrid') private summaryGrid?: ElementRef<HTMLElement>;
   @ViewChild('historySummaryGrid') private historySummaryGrid?: ElementRef<HTMLElement>;
+  @ViewChild('topFiveSearchInput') private topFiveSearchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('topFiveEditorSave') private topFiveEditorSave?: ElementRef<HTMLButtonElement>;
   @ViewChildren('profileGenreLabel') private profileGenreLabels!: QueryList<ElementRef<HTMLElement>>;
   private profileGenreLabelObserver: ResizeObserver | null = null;
   private profileGenreLabelChanges?: Subscription;
@@ -334,6 +357,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchApi = inject(SearchApiService);
+  private readonly topFiveSearchRequests = new Subject<TopFiveSearchRequest | null>();
+  protected readonly topFiveSearchOpener = signal<HTMLElement | null>(null);
   private readonly profileApi = inject(ProfileApiService);
   private readonly diaryApi = inject(DiaryApiService);
   private readonly listsApi = inject(ListsApiService);
@@ -343,6 +368,19 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   constructor() {
     this.destroyRef.onDestroy(() => this.genreRequest?.unsubscribe());
+    this.topFiveSearchRequests
+      .pipe(
+        switchMap((request) => request
+          ? timer(300).pipe(
+            switchMap(() => this.searchApi.search(request.query, request.scope).pipe(
+              map((response): TopFiveSearchResult => ({ request, response })),
+              catchError((error: unknown) => of({ request, error })),
+            )),
+          )
+          : of(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => this.applyTopFiveSearchResult(result));
     combineLatest([this.route.paramMap, this.route.data])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(([params, data]) => {
@@ -365,6 +403,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         this.watchlistSort.set('DATE_ADDED');
         this.watchlistDirection.set('DESC');
         this.profileFiltersOpen.set(false);
+        this.topFiveEditorOpen.set(false);
+        this.topFiveEditorItems.set([]);
+        this.topFiveEditorOpener.set(null);
         this.progressSort.set('LAST_WATCHED');
         this.progressDirection.set('DESC');
         this.mapRatingMode.set('PERSONAL');
@@ -395,6 +436,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected chooseMode(mode: ProfileContentMode): void {
     if (this.mode() === mode) return;
+    this.topFiveEditorOpen.set(false);
+    this.topFiveEditorItems.set([]);
+    this.resetTopFiveSearch();
     this.mode.set(mode);
     this.currentPage.set(1);
     const profile = this.profile();
@@ -403,6 +447,224 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected toggleProfileFilters(): void { this.profileFiltersOpen.update((open) => !open); }
   protected closeProfileFilters(): void { this.profileFiltersOpen.set(false); }
+  protected openTopFiveEditor(event: Event): void {
+    if (this.followState() !== 'SELF') return;
+    this.topFiveEditorOpener.set(event.currentTarget as HTMLElement);
+    this.topFiveEditorItems.set([...this.topFive()].sort((a, b) => a.position - b.position));
+    this.topFiveEditorOpen.set(true);
+  }
+  protected closeTopFiveEditor(): void { if (!this.topFiveSaving()) this.cancelTopFiveEditor(); }
+  protected cancelTopFiveEditor(): void {
+    if (this.topFiveSaving()) return;
+    this.resetTopFiveSearch();
+    this.topFiveEditorItems.set([]);
+    this.topFiveEditorOpen.set(false);
+  }
+  protected async saveTopFiveEditor(): Promise<void> {
+    if (this.topFiveSaving() || this.followState() !== 'SELF') return;
+    const userId = this.profile()?.id;
+    if (!userId) return;
+
+    const type: TopFiveContentType = this.mode() === 'MOVIE' ? 'MOVIE' : 'SERIES';
+    const draft = this.topFiveEditorItems().map((entry, index) => ({ ...entry, position: index + 1 }));
+    this.topFiveSaving.set(true);
+    try {
+      const savedEntries = await this.persistTopFiveDraft(userId, type, draft);
+      this.topFive.set(this.mergeResolvedTopFive(savedEntries, [...this.topFive(), ...draft]));
+      this.resetTopFiveSearch();
+      this.topFiveEditorItems.set([]);
+      this.topFiveEditorOpen.set(false);
+      this.toasts.success(this.copy.topFiveSaveSuccess);
+    } catch {
+      this.toasts.error(this.copy.topFiveSaveError);
+      try {
+        const currentEntries = await firstValueFrom(this.profileApi.getTopFive(userId, type));
+        this.topFive.set(this.mergeResolvedTopFive(currentEntries, [...this.topFive(), ...draft]));
+      } catch {
+        // Keep the editor draft available so the user can retry.
+      }
+    } finally {
+      this.topFiveSaving.set(false);
+    }
+  }
+  protected openTopFiveSearch(event: Event): void {
+    if (this.topFiveEditorItems().length >= 5) return;
+    this.topFiveSearchOpener.set(event.currentTarget as HTMLElement);
+    this.topFiveSearchQuery.set('');
+    this.topFiveSearchResults.set([]);
+    this.topFiveSearchError.set(null);
+    this.topFiveSearchLoading.set(false);
+    this.topFiveSearchRequests.next(null);
+    this.topFiveSearchOpen.set(true);
+    requestAnimationFrame(() => this.topFiveSearchInput?.nativeElement.focus());
+  }
+  protected closeTopFiveSearch(): void {
+    this.resetTopFiveSearch();
+  }
+  protected onTopFiveSearchInput(value: string): void {
+    this.topFiveSearchQuery.set(value);
+    this.topFiveSearchResults.set([]);
+    this.topFiveSearchError.set(null);
+    const query = value.trim();
+    if (!this.topFiveSearchOpen() || query.length < 3) {
+      this.topFiveSearchLoading.set(false);
+      this.topFiveSearchRequests.next(null);
+      return;
+    }
+    this.topFiveSearchLoading.set(true);
+    this.topFiveSearchRequests.next({
+      query,
+      scope: this.mode() === 'EPISODE' ? 'SERIES' : 'MOVIE',
+    });
+  }
+  protected preventTopFiveSearchSubmit(event: SubmitEvent): void { event.preventDefault(); }
+  protected topFiveSearchPlaceholder(): string {
+    return this.mode() === 'EPISODE' ? this.homeCopy.searchPlaceholderSeries : this.homeCopy.searchPlaceholderMovies;
+  }
+  protected isTopFiveSearchResultAdded(result: SearchContentView): boolean {
+    return this.topFiveEditorItems().some((entry) => entry.content.type === result.type && entry.content.tmdbId === result.tmdbId);
+  }
+  protected selectTopFiveSearchResult(result: SearchContentView): void {
+    if (this.isTopFiveSearchResultAdded(result) || this.topFiveEditorItems().length >= 5) return;
+    const type = this.mode() === 'EPISODE' ? 'SERIES' : 'MOVIE';
+    if (result.type !== type) return;
+    const draftId = `draft:${type}:${result.tmdbId}`;
+    const rating = resolveRating(null, result.voteAverage);
+    const entry: ResolvedTopFive = {
+      id: draftId,
+      type,
+      content: { id: draftId, tmdbId: result.tmdbId, type },
+      position: this.topFiveEditorItems().length + 1,
+      customPosterUrl: null,
+      score: null,
+      title: result.title || this.copy.unavailable,
+      posterPath: result.posterUrl ?? null,
+      releaseYear: result.releaseYear ?? null,
+      averageScore: rating.value,
+      ratingSource: rating.source,
+      contentType: type,
+    };
+    this.topFiveEditorItems.update((items) => [...items, { ...entry, position: items.length + 1 }]);
+    this.topFiveSearchOpener.set(this.topFiveEditorSave?.nativeElement ?? this.topFiveSearchOpener());
+    this.closeTopFiveSearch();
+  }
+  protected removeTopFiveEditorEntry(entryId: string): void {
+    if (this.topFiveSaving()) return;
+    const remaining = this.topFiveEditorItems().filter((entry) => entry.id !== entryId);
+    this.topFiveEditorItems.set(remaining.map((entry, index) => ({ ...entry, position: index + 1 })));
+  }
+  protected dropTopFiveEntry(event: CdkDragDrop<ResolvedTopFive[]>): void {
+    if (this.topFiveSaving()) return;
+    if (event.previousContainer !== event.container) return;
+    const reordered = [...this.topFiveEditorItems()];
+    moveItemInArray(reordered, event.previousIndex, event.currentIndex);
+    const ranked = reordered.map((entry, index) => ({ ...entry, position: index + 1 }));
+    this.topFiveEditorItems.set(ranked);
+  }
+
+  private resetTopFiveSearch(): void {
+    this.topFiveSearchRequests.next(null);
+    this.topFiveSearchOpen.set(false);
+    this.topFiveSearchQuery.set('');
+    this.topFiveSearchLoading.set(false);
+    this.topFiveSearchResults.set([]);
+    this.topFiveSearchError.set(null);
+  }
+
+  private async persistTopFiveDraft(
+    userId: string,
+    type: TopFiveContentType,
+    draft: ResolvedTopFive[],
+  ): Promise<TopFiveEntry[]> {
+    let current = (await firstValueFrom(this.profileApi.getTopFive(userId, type)))
+      .slice()
+      .sort((first, second) => first.position - second.position);
+    const desiredKeys = new Set(draft.map((entry) => this.topFiveContentKey(entry)));
+
+    for (const entry of [...current].reverse()) {
+      if (desiredKeys.has(this.topFiveContentKey(entry))) continue;
+      await firstValueFrom(this.profileApi.removeTopFive(type, entry.id));
+      current = current
+        .filter((item) => item.id !== entry.id)
+        .map((item, index) => ({ ...item, position: index + 1 }));
+    }
+
+    for (let index = 0; index < draft.length; index += 1) {
+      const entry = draft[index];
+      const contentKey = this.topFiveContentKey(entry);
+      const currentIndex = current.findIndex((item) => this.topFiveContentKey(item) === contentKey);
+      if (currentIndex === index) continue;
+
+      if (currentIndex >= 0) {
+        const existing = current[currentIndex];
+        await firstValueFrom(this.profileApi.removeTopFive(type, existing.id));
+        current = current
+          .filter((item) => item.id !== existing.id)
+          .map((item, itemIndex) => ({ ...item, position: itemIndex + 1 }));
+      }
+
+      const created = await firstValueFrom(this.profileApi.addTopFive(type, {
+        tmdbId: entry.content.tmdbId,
+        position: index + 1,
+        customPosterUrl: entry.customPosterUrl,
+      }));
+      current.splice(index, 0, created);
+      current = current.map((item, itemIndex) => ({ ...item, position: itemIndex + 1 }));
+    }
+
+    return firstValueFrom(this.profileApi.getTopFive(userId, type));
+  }
+
+  private topFiveContentKey(entry: Pick<TopFiveEntry, 'type' | 'content'>): string {
+    return `${entry.type}:${entry.content.tmdbId}`;
+  }
+
+  private mergeResolvedTopFive(entries: TopFiveEntry[], candidates: ResolvedTopFive[]): ResolvedTopFive[] {
+    return entries
+      .map((entry) => {
+        const candidate = candidates.find((item) => this.topFiveContentKey(item) === this.topFiveContentKey(entry));
+        if (!candidate) {
+          return {
+            ...entry,
+            title: this.copy.unavailable,
+            posterPath: entry.customPosterUrl,
+            releaseYear: null,
+            averageScore: null,
+            ratingSource: 'none' as const,
+            contentType: entry.type,
+          };
+        }
+        return {
+          ...candidate,
+          ...entry,
+          title: candidate.title,
+          posterPath: entry.customPosterUrl || candidate.posterPath,
+          releaseYear: candidate.releaseYear,
+          averageScore: candidate.averageScore,
+          ratingSource: candidate.ratingSource,
+          contentType: entry.type,
+        };
+      })
+      .sort((first, second) => first.position - second.position);
+  }
+
+  private applyTopFiveSearchResult(result: TopFiveSearchResult): void {
+    if (!result || !this.topFiveSearchOpen()) return;
+    this.topFiveSearchLoading.set(false);
+    if ('error' in result) {
+      this.topFiveSearchError.set(this.topFiveSearchErrorMessage(result.error));
+      return;
+    }
+    this.topFiveSearchResults.set(result.response.contents
+      .filter((content) => content.type === result.request.scope)
+      .slice(0, 5));
+  }
+
+  private topFiveSearchErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse && error.status === 401) return this.homeCopy.searchSessionError;
+    if (error instanceof HttpErrorResponse && error.status === 429) return this.homeCopy.searchRateLimitError;
+    return this.homeCopy.searchError;
+  }
 
   protected setProfileListSource(value: string): void {
     if (value !== 'ALL' && value !== 'CREATED' && value !== 'LIKED') return;
