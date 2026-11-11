@@ -890,6 +890,41 @@
   object-fit: cover;
 }
 
+.profile-top-five-content-link {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+}
+
+.profile-top-five-content-link:focus-visible,
+.profile-content-title-link:focus-visible,
+.profile-overview-review-poster-link:focus-visible,
+.profile-highlight-content-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.profile-highlight-content-link {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-content-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-content-title-link:hover {
+  color: var(--color-accent);
+}
+
 .profile-poster-fallback {
   display: grid;
   height: 100%;
@@ -5233,6 +5268,12 @@
   overflow: hidden;
   border-radius: var(--radius-md);
   background: var(--color-surface-secondary);
+}
+
+.profile-overview-review-poster-link {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .profile-overview-review-poster img {

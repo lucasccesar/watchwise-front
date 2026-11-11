@@ -35,7 +35,7 @@ import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.d
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
-import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
+import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
@@ -1430,6 +1430,27 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     }
     if (content.type === 'EPISODE') return episodeContentRoute(content);
     return null;
+  }
+
+  protected profileContentCardRoute(card: ProfileContentCard | null): string[] | null {
+    if (!card) return null;
+    if (card.type === 'MOVIE' && card.tmdbId) return ['/content/movie', card.tmdbId];
+    if (card.type === 'SERIES' && (card.seriesTmdbId || card.tmdbId)) {
+      return ['/content/series', card.seriesTmdbId || card.tmdbId!];
+    }
+    if (card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) {
+      return ['/content/series', card.seriesTmdbId, 'season', String(card.seasonNumber)];
+    }
+    if (card.type === 'EPISODE') return episodeContentRoute(card);
+    return null;
+  }
+
+  protected profileContentCardNavigationState(card: ProfileContentCard | null): { contentId: string } | undefined {
+    return card?.type === 'EPISODE' ? episodeContentNavigationState(card.contentId) : undefined;
+  }
+
+  protected profilePreviewNavigationState(entry: ProfileDiaryPreview): { contentId: string } | undefined {
+    return entry.content?.type === 'EPISODE' ? episodeContentNavigationState(entry.content.id) : undefined;
   }
 
   protected contentRoute(type: string | null, tmdbId: string | null, seriesTmdbId: string | null): string[] | null {
