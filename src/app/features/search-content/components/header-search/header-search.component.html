@@ -112,7 +112,6 @@
                 class="search-result"
                 [routerLink]="result.kind === 'user' && result.username ? ['/users', result.username] : result.kind === 'content' && (result.scope === 'MOVIE' || result.scope === 'SERIES') ? ['/content', result.scope.toLowerCase(), result.tmdbId] : ['/search']"
                 [queryParams]="result.kind === 'user' || result.kind === 'content' && result.scope === 'MOVIE' ? null : resultQueryParams()"
-                (click)="closeSearch(false)"
               >
                 @if (result.imageUrl) {
                   <img
@@ -155,7 +154,6 @@
               class="search-more-link"
               [routerLink]="['/search']"
               [queryParams]="resultQueryParams()"
-              (click)="closeSearch(false)"
             >
               <span>{{ copy.searchMore.replace('{query}', query().trim()) }}</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-7-7m7 7-7 7" /></svg>

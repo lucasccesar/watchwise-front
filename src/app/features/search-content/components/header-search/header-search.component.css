@@ -605,6 +605,7 @@ app-header-search.header-search-host--open {
     opacity: 0;
     transform: translateX(-50%);
     transition: top 360ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 360ms ease-out;
+    pointer-events: auto;
   }
 
   .search-results-panel--visible {
