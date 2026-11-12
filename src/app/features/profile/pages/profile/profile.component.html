@@ -226,7 +226,7 @@
                           [optionsLabel]="'Opções para ' + entry.title"
                           [listTarget]="{ type: entry.type, tmdbId: entry.content.tmdbId }"
                           [expanded]="activePosterMenu() === entry.id"
-                          [actions]="profileContentActionsFor(entry.score)"
+                          [actions]="profileContentActionsFor(entry.score, true, entry.hasWatched)"
                           (toggle)="togglePosterMenu(entry.id, $event)"
                           (actionSelected)="handlePosterAction(entry, $event)"
                         />

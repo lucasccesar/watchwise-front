@@ -36,7 +36,7 @@ import { ToastNotificationsService } from '../../../../shared/components/toast-n
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ShareReviewDialogComponent, type ShareReviewDialogCopy, type ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
-import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
+import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileSummaryTopFiveEntry, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
@@ -51,7 +51,7 @@ type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
 type ProfileActionViewerState = Pick<ContentViewerState, 'myRating' | 'myReview' | 'latestDiaryEntryId' | 'currentRatingVersion'> & { reviewIds?: string[] };
-type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; backdropPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; viewerRating: number | null; viewerReview: string | null; contentType: 'MOVIE' | 'SERIES'; actionViewerState?: ProfileActionViewerState };
+type ResolvedTopFive = TopFiveEntry & { hasWatched: boolean; card: ProfileContentCard | null; title: string; posterPath: string | null; backdropPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; viewerRating: number | null; viewerReview: string | null; contentType: 'MOVIE' | 'SERIES' };
 type ProfileActionContent = {
   type: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE';
   contentId: string | null;
@@ -65,6 +65,10 @@ type ProfileActionContent = {
   reviewId?: string | null;
 };
 type ProfileRatingDialogTarget = ProfileActionContent & { viewerState: ProfileActionViewerState; allowComment?: boolean };
+type TopFiveActionPage = {
+  details: { title: string | null; releaseDate: string | null; backdropPath: string | null };
+  viewerState: ContentViewerState;
+};
 type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
 type TopFiveSearchResult = { request: TopFiveSearchRequest; response: SearchView } | { request: TopFiveSearchRequest; error: unknown } | null;
 type RecentSeriesCard = {
@@ -172,6 +176,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileWatchSaving = signal(false);
   protected readonly profileRatingTarget = signal<ProfileRatingDialogTarget | null>(null);
   protected readonly profileRatingOpener = signal<HTMLElement | null>(null);
+  protected readonly profileRatingLoading = signal(false);
   protected readonly profileRatingSaving = signal(false);
   protected readonly shareReviewDialogReturnFocus = signal<HTMLElement | null>(null);
   protected readonly recentReviewLikeBusyIds = signal<ReadonlySet<string>>(new Set());
@@ -514,14 +519,19 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (type === 'SERIES' && (tmdbId || seriesTmdbId)) return { type: 'SERIES', tmdbId: tmdbId || seriesTmdbId! };
     return null;
   }
-  protected profileContentActionsFor(score: number | null | undefined, canShareReview = true): readonly ContentImageAction[] {
+  protected profileContentActionsFor(
+    score: number | null | undefined,
+    canShareReview = true,
+    hasWatched = true,
+  ): readonly ContentImageAction[] {
     const profileId = this.profile()?.id;
     const isOwnProfile = !!profileId && profileId === this.session.user()?.id;
-    return [
+    const actions: ContentImageAction[] = [
       { id: 'rate', label: isOwnProfile && score !== null && score !== undefined ? this.homeCopy.editRating : this.homeCopy.rate, icon: 'star' },
       { id: 'rewatch', label: this.homeCopy.rewatch, icon: 'rewatch' },
       { id: 'share-review', label: this.homeCopy.shareReview, icon: 'share', disabled: isOwnProfile && !canShareReview },
     ];
+    return actions.filter((action) => action.id !== 'rewatch' || hasWatched);
   }
 
   private readonly route = inject(ActivatedRoute);
@@ -637,21 +647,26 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const userId = this.profile()?.id;
     if (!userId) return;
 
-    const type: TopFiveContentType = this.mode() === 'MOVIE' ? 'MOVIE' : 'SERIES';
+    const mode = this.mode();
+    const type: TopFiveContentType = mode === 'MOVIE' ? 'MOVIE' : 'SERIES';
     const draft = this.topFiveEditorItems().map((entry, index) => ({ ...entry, position: index + 1 }));
     this.topFiveSaving.set(true);
     try {
-      const savedEntries = await this.persistTopFiveDraft(userId, type, draft);
+      const savedEntries = await this.persistTopFiveDraft(type, draft);
       this.topFive.set(this.mergeResolvedTopFive(savedEntries, [...this.topFive(), ...draft]));
       this.resetTopFiveSearch();
       this.topFiveEditorItems.set([]);
       this.topFiveEditorOpen.set(false);
+      try {
+        await this.refreshTopFiveFromSummary(userId, mode);
+      } catch {
+        // The Top 5 write succeeded; a later Summary load will refresh card and watched state.
+      }
       this.toasts.success(this.copy.topFiveSaveSuccess);
     } catch {
       this.toasts.error(this.copy.topFiveSaveError);
       try {
-        const currentEntries = await firstValueFrom(this.profileApi.getTopFive(userId, type));
-        this.topFive.set(this.mergeResolvedTopFive(currentEntries, [...this.topFive(), ...draft]));
+        await this.refreshTopFiveFromSummary(userId, mode);
       } catch {
         // Keep the editor draft available so the user can retry.
       }
@@ -709,6 +724,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       position: this.topFiveEditorItems().length + 1,
       customPosterUrl: null,
       score: null,
+      hasWatched: false,
+      card: null,
       title: result.title || this.copy.unavailable,
       posterPath: result.posterUrl ?? null,
       backdropPath: null,
@@ -747,12 +764,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   private async persistTopFiveDraft(
-    userId: string,
     type: TopFiveContentType,
     draft: ResolvedTopFive[],
   ): Promise<TopFiveEntry[]> {
-    let current = (await firstValueFrom(this.profileApi.getTopFive(userId, type)))
-      .slice()
+    let current: TopFiveEntry[] = this.topFive()
+      .map(({ id, type: entryType, content, position, customPosterUrl, score }) => ({
+        id, type: entryType, content, position, customPosterUrl, score,
+      }))
       .sort((first, second) => first.position - second.position);
     const desiredKeys = new Set(draft.map((entry) => this.topFiveContentKey(entry)));
 
@@ -787,7 +805,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       current = current.map((item, itemIndex) => ({ ...item, position: itemIndex + 1 }));
     }
 
-    return firstValueFrom(this.profileApi.getTopFive(userId, type));
+    return current;
+  }
+
+  private async refreshTopFiveFromSummary(userId: string, mode: ProfileContentMode): Promise<void> {
+    const summary = await firstValueFrom(this.profileApi.getSummary(userId, mode));
+    if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
+    this.summary.set(summary);
+    this.topFive.set(this.resolveTopFive(summary.top5 ?? []));
   }
 
   private topFiveContentKey(entry: Pick<TopFiveEntry, 'type' | 'content'>): string {
@@ -801,6 +826,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         if (!candidate) {
           return {
             ...entry,
+            hasWatched: false,
+            card: null,
             title: this.copy.unavailable,
             posterPath: entry.customPosterUrl,
             backdropPath: null,
@@ -1274,23 +1301,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected handlePosterAction(entry: ResolvedTopFive, selection: ContentImageActionSelection): void {
     this.activePosterMenu.set(null);
-    if (selection.action.id === 'share-review') {
-      const user = this.session.user();
-      this.openShareReviewDialog({
-        title: entry.title || this.copy.unavailable,
-        subtitle: entry.releaseYear ? String(entry.releaseYear) : null,
-        rating: entry.viewerRating,
-        review: entry.viewerReview,
-        backgroundUrl: this.imageUrl(entry.backdropPath || entry.posterPath, 'w1280'),
-        posterUrl: this.imageUrl(entry.posterPath, 'w780'),
-        username: user?.username ?? null,
-        avatarUrl: user?.profilePicture ?? null,
-        selectionType: entry.contentType,
-        tmdbId: entry.content.tmdbId,
-      }, selection.event);
-      return;
-    }
-    if (!this.isOwnProfile()) return;
     const target: ProfileActionContent = {
       type: entry.contentType,
       contentId: entry.content.id,
@@ -1301,12 +1311,48 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title || this.copy.unavailable,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
     };
-    if (selection.action.id === 'rewatch') this.openProfileWatchDialog(target, selection.event);
-    else if (selection.action.id === 'rate' && entry.actionViewerState) {
-      this.openProfileRatingDialog({ ...target, viewerState: entry.actionViewerState }, selection.event);
+    if (selection.action.id === 'rewatch') {
+      if (this.isOwnProfile() && entry.hasWatched) this.openProfileWatchDialog(target, selection.event);
+      return;
+    }
+    if (selection.action.id === 'rate' && !this.isOwnProfile()) return;
+    if (selection.action.id !== 'rate' && selection.action.id !== 'share-review') return;
+
+    const onPage = (page: TopFiveActionPage) => this.handleTopFivePageAction(entry, selection, target, page);
+    const onError = (error: unknown) => this.handleError(error);
+    if (entry.contentType === 'SERIES') {
+      this.contentApi.getSeriesPage(entry.content.id).pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: onPage, error: onError });
+    } else {
+      this.contentApi.getPage(entry.content.id).pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: onPage, error: onError });
     }
   }
 
+  private handleTopFivePageAction(
+    entry: ResolvedTopFive,
+    selection: ContentImageActionSelection,
+    target: ProfileActionContent,
+    page: TopFiveActionPage,
+  ): void {
+    if (selection.action.id === 'rate') {
+      this.openProfileRatingDialog({ ...target, viewerState: page.viewerState }, selection.event);
+      return;
+    }
+    const user = this.session.user();
+    this.openShareReviewDialog({
+      title: page.details.title || target.title,
+      subtitle: page.details.releaseDate?.slice(0, 4) ?? target.subtitle,
+      rating: page.viewerState.myRating,
+      review: page.viewerState.myReview,
+      backgroundUrl: this.imageUrl(page.details.backdropPath || entry.backdropPath || entry.posterPath, 'w1280'),
+      posterUrl: this.imageUrl(entry.posterPath, 'w780'),
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: entry.contentType,
+      tmdbId: entry.content.tmdbId,
+    }, selection.event);
+  }
   protected handleRecentDiaryAction(entry: DiaryRecord, selection: ContentImageActionSelection): void {
     if (selection.action.id === 'share-review') {
       const isOwnProfile = !!this.profile()?.id && this.profile()?.id === this.session.user()?.id;
@@ -1489,7 +1535,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected closeProfileRatingDialog(): void {
-    if (this.profileRatingSaving()) return;
+    if (this.profileRatingSaving() || this.profileRatingLoading()) return;
     this.profileRatingTarget.set(null);
     this.restoreProfileActionFocus(this.profileRatingOpener);
   }
@@ -2140,7 +2186,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (section === 'profile') {
       forkJoin({
         summary: this.profileApi.getSummary(userId, mode),
-        topFive: this.profileApi.getTopFive(userId, mode === 'MOVIE' ? 'MOVIE' : 'SERIES'),
         recentMovies: mode === 'MOVIE'
           ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 6, type: 'MOVIE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
           : of(null),
@@ -2152,7 +2197,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           : of([] as DiaryRecord[]),
         reviews: this.diaryApi.getUserReviewsPage(userId, 1, 50).pipe(catchError(() => of(null))),
       }).subscribe({
-        next: ({ summary, topFive, recentMovies, recentEpisodes, diaryEntries, reviews }) => {
+        next: ({ summary, recentMovies, recentEpisodes, diaryEntries, reviews }) => {
           if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
           this.summary.set(summary);
           const latestMovieReview = reviews?.content.find((review) => review.content.type === 'MOVIE');
@@ -2173,18 +2218,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             seriesTitle: review.seriesTitle,
           })));
           this.loadEpisodeStillPaths(recentEpisodes?.content ?? []);
-          this.resolveTopFive(topFive).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: (items) => {
-              if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
-              this.topFive.set(items);
-              this.profileOverviewLoading.set(false);
-            },
-            error: () => {
-              if (this.profile()?.id === userId && this.mode() === mode && this.section() === 'profile') {
-                this.profileOverviewLoading.set(false);
-              }
-            },
-          });
+          this.topFive.set(this.resolveTopFive(summary.top5 ?? []));
+          this.profileOverviewLoading.set(false);
         },
         error: (error: unknown) => {
           if (this.profile()?.id === userId && this.mode() === mode && this.section() === 'profile') {
@@ -2325,69 +2360,23 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     };
   }
 
-  private resolveTopFive(entries: TopFiveEntry[]): Observable<ResolvedTopFive[]> {
-    return entries.length === 0
-      ? of([])
-      : forkJoin(entries.map((entry) => this.resolveTopFiveEntry(entry)));
+  private resolveTopFive(entries: ProfileSummaryTopFiveEntry[]): ResolvedTopFive[] {
+    return entries.map((entry) => {
+      const rating = resolveRating(entry.card?.stats?.averageScore ?? null, entry.card?.tmdbVoteAverage ?? null);
+      return {
+        ...entry,
+        title: entry.card?.title ?? '',
+        posterPath: entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath || null,
+        backdropPath: entry.card?.backdropPath ?? null,
+        releaseYear: entry.card?.releaseYear ?? null,
+        averageScore: rating.value,
+        ratingSource: rating.source,
+        viewerRating: entry.score,
+        viewerReview: null,
+        contentType: entry.type,
+      };
+    });
   }
-
-  private resolveTopFiveEntry(entry: TopFiveEntry): Observable<ResolvedTopFive> {
-    const unavailable: ResolvedTopFive = {
-      ...entry,
-      title: '',
-      posterPath: entry.customPosterUrl,
-      backdropPath: null,
-      releaseYear: null,
-      averageScore: null,
-      ratingSource: 'none',
-      viewerRating: null,
-      viewerReview: null,
-      contentType: entry.type,
-    };
-
-    if (entry.type === 'SERIES') {
-      return this.contentApi.getSeriesPage(entry.content.id).pipe(
-        map((page) => {
-          const rating = resolveRating(page.stats.averageScore, page.stats.tmdbVoteAverage);
-          return {
-            ...entry,
-            title: page.details.title ?? '',
-            posterPath: entry.customPosterUrl || page.details.posterPath,
-            backdropPath: page.details.backdropPath,
-            releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
-            averageScore: rating.value,
-            ratingSource: rating.source,
-            viewerRating: page.viewerState.myRating,
-            viewerReview: page.viewerState.myReview,
-            actionViewerState: page.viewerState,
-            contentType: 'SERIES' as const,
-          };
-        }),
-        catchError(() => of(unavailable)),
-      );
-    }
-
-    return this.contentApi.getPage(entry.content.id).pipe(
-      map((page) => {
-        const rating = resolveRating(page.stats.averageScore, page.stats.tmdbVoteAverage);
-        return {
-          ...entry,
-          title: page.details.title ?? '',
-          posterPath: entry.customPosterUrl || page.details.posterPath,
-          backdropPath: page.details.backdropPath,
-          releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
-          averageScore: rating.value,
-          ratingSource: rating.source,
-          viewerRating: page.viewerState.myRating,
-          viewerReview: page.viewerState.myReview,
-          actionViewerState: page.viewerState,
-          contentType: 'MOVIE' as const,
-        };
-      }),
-      catchError(() => of(unavailable)),
-    );
-  }
-
   protected topFiveRatingLabel(entry: ResolvedTopFive): string {
     if (entry.averageScore === null) return '';
     const source = entry.ratingSource === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage;

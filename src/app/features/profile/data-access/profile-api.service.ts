@@ -137,6 +137,7 @@ export interface ProfileSummary {
   recentEpisodes: ProfileDiaryPreview[];
   recentReviews: ProfileDiaryPreview[];
   recentActivity: ProfileRecentActivity[];
+  top5: ProfileSummaryTopFiveEntry[];
 }
 
 export interface ProfileMonthReview {
@@ -266,6 +267,11 @@ export interface TopFiveEntry {
   score: number | null;
 }
 
+export interface ProfileSummaryTopFiveEntry extends TopFiveEntry {
+  hasWatched: boolean;
+  card: ProfileContentCard | null;
+}
+
 export interface TopFiveCreateRequest {
   tmdbId: string;
   position?: number | null;
@@ -285,12 +291,6 @@ export class ProfileApiService {
     return following
       ? this.http.post(url, {})
       : this.http.delete(url);
-  }
-
-  getTopFive(userId: string, type: TopFiveContentType): Observable<TopFiveEntry[]> {
-    return this.http.get<TopFiveEntry[]>(
-      '/api/v1/users/' + encodeURIComponent(userId) + '/top5/' + type,
-    );
   }
 
   addTopFive(type: TopFiveContentType, request: TopFiveCreateRequest): Observable<TopFiveEntry> {
