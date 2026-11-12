@@ -972,6 +972,13 @@
 
 .profile-top-five-rating {
   pointer-events: none;
+  gap: var(--space-1);
+}
+
+.profile-top-five-rating svg {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 1em;
 }
 
 .profile-recent-grid {
