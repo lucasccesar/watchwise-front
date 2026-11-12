@@ -6071,7 +6071,6 @@
 }
 
 .profile-overview-content .profile-trending-rating {
-  min-width: 48px;
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
@@ -6079,9 +6078,9 @@
 }
 
 .profile-trending-rating svg {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 1em;
   fill: var(--color-accent);
   stroke: var(--color-accent);
   stroke-width: 2;
