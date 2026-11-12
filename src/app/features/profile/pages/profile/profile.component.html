@@ -468,7 +468,7 @@
                     <div class="profile-overview-review-body">
                       <header class="profile-overview-review-header">
                         <div class="profile-overview-review-copy">
-                          <div class="profile-overview-review-title"><strong>@if (detailRoute(review); as route) { <a class="profile-content-title-link" [routerLink]="route" [state]="profilePreviewNavigationState(review)">{{ review.card?.title || copy.unavailable }}</a> } @else { {{ review.card?.title || copy.unavailable }} }</strong><span>{{ review.card?.releaseYear ?? '' }}</span></div>
+                          <div class="profile-overview-review-title"><strong>@if (detailRoute(review); as route) { <a class="profile-content-title-link" [routerLink]="route" [state]="profilePreviewNavigationState(review)">{{ recentReviewTitle(review) }}</a> } @else { {{ recentReviewTitle(review) }} }</strong>@if (recentReviewContext(review); as context) { <span>{{ context }}</span> }</div>
                           <div class="profile-overview-review-meta">
                             <span>{{ copy.watchDate.replace('{date}', dateLabel(review.watchedDate)) }}</span>
                             @if ((review.watchNumber ?? 0) > 1) { <span class="profile-overview-review-rewatch">↻ Reassistido #{{ review.watchNumber }}</span> }

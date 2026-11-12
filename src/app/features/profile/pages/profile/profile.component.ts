@@ -271,6 +271,34 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   });
   protected readonly recentReviewComment = (review: ProfileDiaryPreview): string | null =>
     this.reviewComments()[review.id] || review.comment || null;
+  protected recentReviewTitle(review: ProfileDiaryPreview): string {
+    const type = review.content?.type?.toUpperCase();
+    if (type === 'EPISODE' || type === 'SEASON') {
+      return this.recentReviewSeriesTitle(review) || review.card?.title || this.copy.unavailable;
+    }
+    return review.card?.title || this.copy.unavailable;
+  }
+  protected recentReviewContext(review: ProfileDiaryPreview): string {
+    const content = review.content;
+    const type = content?.type?.toUpperCase();
+    const year = review.card?.releaseYear ? String(review.card.releaseYear) : '';
+    if (type === 'EPISODE') {
+      const coordinates = [
+        content?.seasonNumber !== null && content?.seasonNumber !== undefined ? `S${content.seasonNumber}` : null,
+        content?.episodeNumber !== null && content?.episodeNumber !== undefined ? `E${content.episodeNumber}` : null,
+      ].filter(Boolean).join(' · ');
+      return this.recentReviewSeriesTitle(review)
+        ? [coordinates, review.card?.title || ''].filter(Boolean).join(' · ')
+        : coordinates;
+    }
+    if (type === 'SEASON') {
+      const season = content?.seasonNumber !== null && content?.seasonNumber !== undefined
+        ? `${this.copy.season} ${content.seasonNumber}`
+        : this.copy.season;
+      return [season, year].filter(Boolean).join(' · ');
+    }
+    return year;
+  }
   protected readonly canToggleRecentReviewLike = (review: ProfileDiaryPreview): boolean =>
     this.recentReviewLikeSource(review) !== null && typeof review.likedByMe === 'boolean';
   protected isRecentReviewLikeBusy(reviewId: string): boolean {
@@ -1037,6 +1065,24 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     }
 
     return null;
+  }
+
+  private recentReviewSeriesTitle(review: ProfileDiaryPreview): string | null {
+    const content = review.content;
+    if (!content?.seriesTmdbId) return null;
+    const seriesTmdbId = content.seriesTmdbId;
+
+    if (content.type === 'EPISODE') {
+      const episode = this.recentEpisodeEntries().find((entry) =>
+        entry.content.seriesTmdbId === seriesTmdbId
+        && entry.content.seasonNumber === content.seasonNumber
+        && entry.content.episodeNumber === content.episodeNumber,
+      );
+      if (episode?.seriesTitle) return episode.seriesTitle;
+    }
+
+    const series = this.recentSeriesProgress().find((entry) => entry.seriesTmdbId === seriesTmdbId);
+    return series?.seriesTitle || series?.title || null;
   }
 
   protected pageRangeStart(data: ProfilePageMetadata): number {

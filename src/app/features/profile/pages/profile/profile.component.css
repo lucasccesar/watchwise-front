@@ -6156,6 +6156,7 @@
 
 .profile-continue-rating {
   right: var(--space-2);
+  gap: var(--space-1);
   color: var(--color-text);
 }
 
