@@ -1201,4 +1201,12 @@
   @if (sharePreviewOpen()) {
     <app-share-preview [returnFocusTarget]="shareReturnFocus()" [model]="activeShareModel()" [shareUrl]="shareUrl()" (closed)="sharePreviewOpen.set(false)" />
   }
+  @if (shareReviewDialogModel(); as model) {
+    <app-share-review-dialog
+      [model]="model"
+      [copy]="shareReviewCopy"
+      [returnFocusTarget]="shareReviewDialogReturnFocus()"
+      (closed)="closeShareReviewDialog()"
+    />
+  }
 }

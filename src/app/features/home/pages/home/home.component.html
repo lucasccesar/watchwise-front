@@ -813,5 +813,13 @@
         </section>
       </app-dialog-backdrop>
     }
+    @if (shareReviewTarget(); as model) {
+      <app-share-review-dialog
+        [model]="model"
+        [copy]="shareReviewCopy"
+        [returnFocusTarget]="activeDialogOpener"
+        (closed)="closeShareReview()"
+      />
+    }
   }
 </div>

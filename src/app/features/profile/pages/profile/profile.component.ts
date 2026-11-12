@@ -34,9 +34,11 @@ import { PageSkeletonComponent } from '../../../../shared/components/page-skelet
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
+import { ShareReviewDialogComponent, type ShareReviewDialogCopy, type ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
 import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { movieMessages } from '../../../content/i18n/movie.messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
@@ -46,7 +48,7 @@ type ProfileTabKey = keyof typeof messageCatalog['pt-BR']['profilePage']['tabs']
 type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
-type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; contentType: 'MOVIE' | 'SERIES' };
+type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null; backdropPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; viewerRating: number | null; viewerReview: string | null; contentType: 'MOVIE' | 'SERIES' };
 type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
 type TopFiveSearchResult = { request: TopFiveSearchRequest; response: SearchView } | { request: TopFiveSearchRequest; error: unknown } | null;
 type RecentSeriesCard = {
@@ -56,10 +58,19 @@ type RecentSeriesCard = {
   seriesTmdbId: string;
   title: string;
   posterPath: string | null;
+  backdropPath: string | null;
   releaseYear: number | null;
   watchedEpisodeCount: number;
   lastWatchedDate: string | null;
   score: number | null;
+};
+type ProfileShareReviewRecord = {
+  content: DiaryRecord['content'];
+  card: DiaryRecord['card'];
+  comment: string | null;
+  score: number | null;
+  customPosterUrl: string | null;
+  seriesTitle?: string | null;
 };
 
 const SECTION_KEYS: Array<{ key: ProfileTabKey; section: ProfileSection; path: string }> = [
@@ -100,7 +111,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, CdkDrag, CdkDragHandle, CdkDropList, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ResponsiveBannerComponent, PageSkeletonComponent],
+  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, CdkDrag, CdkDragHandle, CdkDropList, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ShareReviewDialogComponent, ResponsiveBannerComponent, PageSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
@@ -118,6 +129,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly watchlistCopy = messageCatalog['pt-BR'].watchlistPage;
   protected readonly picksCopy = messageCatalog['pt-BR'].picksPage;
   protected readonly homeCopy = messageCatalog['pt-BR'].home;
+  protected readonly shareReviewCopy: ShareReviewDialogCopy = movieMessages['pt-BR'];
   protected readonly progressCopy = messageCatalog['pt-BR'].progressPage;
   protected readonly section = signal<ProfileSection>('profile');
   protected readonly status = signal<LoadState>('loading');
@@ -137,6 +149,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly allDiaryEntries = signal<DiaryRecord[]>([]);
   protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
+  protected readonly profileShareReviews = signal<ProfileShareReviewRecord[]>([]);
+  protected readonly shareReviewDialogModel = signal<ShareReviewDialogModel | null>(null);
+  protected readonly shareReviewDialogReturnFocus = signal<HTMLElement | null>(null);
   protected readonly recentReviewLikeBusyIds = signal<ReadonlySet<string>>(new Set());
   private readonly latestMovieReviewBackdropPath = signal<string | null | undefined>(undefined);
   protected readonly episodeStillPaths = signal<Record<string, string>>({});
@@ -275,6 +290,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           seriesTmdbId: String(seriesTmdbId),
           title: card.title || this.copy.unavailable,
           posterPath: card.customPosterUrl || card.posterPath || null,
+          backdropPath: card.backdropPath ?? null,
           releaseYear: card.releaseYear ?? null,
           watchedEpisodeCount: episodesBySeries.get(String(seriesTmdbId))?.size ?? 0,
           lastWatchedDate: activity.activityDate ?? activity.watchedDate ?? activity.lastWatchedDate ?? null,
@@ -650,9 +666,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       score: null,
       title: result.title || this.copy.unavailable,
       posterPath: result.posterUrl ?? null,
+      backdropPath: null,
       releaseYear: result.releaseYear ?? null,
       averageScore: rating.value,
       ratingSource: rating.source,
+      viewerRating: null,
+      viewerReview: null,
       contentType: type,
     };
     this.topFiveEditorItems.update((items) => [...items, { ...entry, position: items.length + 1 }]);
@@ -739,9 +758,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             ...entry,
             title: this.copy.unavailable,
             posterPath: entry.customPosterUrl,
+            backdropPath: null,
             releaseYear: null,
             averageScore: null,
             ratingSource: 'none' as const,
+            viewerRating: null,
+            viewerReview: null,
             contentType: entry.type,
           };
         }
@@ -1207,6 +1229,22 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected handlePosterAction(entry: ResolvedTopFive, selection: ContentImageActionSelection): void {
     this.activePosterMenu.set(null);
+    if (selection.action.id === 'share-review') {
+      const user = this.session.user();
+      this.openShareReviewDialog({
+        title: entry.title || this.copy.unavailable,
+        subtitle: entry.releaseYear ? String(entry.releaseYear) : null,
+        rating: entry.viewerRating,
+        review: entry.viewerReview,
+        backgroundUrl: this.imageUrl(entry.backdropPath || entry.posterPath, 'w1280'),
+        posterUrl: this.imageUrl(entry.posterPath, 'w780'),
+        username: user?.username ?? null,
+        avatarUrl: user?.profilePicture ?? null,
+        selectionType: entry.contentType,
+        tmdbId: entry.content.tmdbId,
+      }, selection.event);
+      return;
+    }
     this.openProfileContentAction(
       ['/content', entry.contentType === 'MOVIE' ? 'movie' : 'series', entry.content.tmdbId],
       entry.content.id,
@@ -1215,11 +1253,103 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected handleRecentDiaryAction(entry: DiaryRecord, selection: ContentImageActionSelection): void {
+    if (selection.action.id === 'share-review') {
+      const isOwnProfile = !!this.profile()?.id && this.profile()?.id === this.session.user()?.id;
+      this.openShareReviewDialog(this.shareReviewModelForDiaryEntry(
+        entry,
+        isOwnProfile,
+      ), selection.event);
+      return;
+    }
     this.openProfileContentAction(this.detailRoute(entry), entry.content.id, selection);
   }
 
   protected handleRecentSeriesAction(entry: RecentSeriesCard, selection: ContentImageActionSelection): void {
+    if (selection.action.id === 'share-review') {
+      const isOwnProfile = !!this.profile()?.id && this.profile()?.id === this.session.user()?.id;
+      const review = isOwnProfile
+        ? this.profileShareReviews().find((item) => item.content.type === 'SERIES'
+          && (item.content.tmdbId === entry.seriesTmdbId || item.content.seriesTmdbId === entry.seriesTmdbId))
+        : undefined;
+      this.openShareReviewDialog(review
+        ? this.shareReviewModelForDiaryEntry(review, true)
+        : this.shareReviewModelForSeriesCard(entry, isOwnProfile), selection.event);
+      return;
+    }
     this.openProfileContentAction(['/content/series', entry.seriesTmdbId], entry.contentId, selection);
+  }
+
+  private openShareReviewDialog(model: ShareReviewDialogModel, event?: MouseEvent): void {
+    const menuTrigger = (event?.currentTarget as HTMLElement | null)
+      ?.closest('.content-menu-anchor')
+      ?.querySelector<HTMLElement>('.content-menu-trigger');
+    this.shareReviewDialogReturnFocus.set(menuTrigger ?? (document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null));
+    this.activePosterMenu.set(null);
+    this.shareReviewDialogModel.set(model);
+  }
+
+  protected closeShareReviewDialog(): void {
+    this.shareReviewDialogModel.set(null);
+    const opener = this.shareReviewDialogReturnFocus();
+    this.shareReviewDialogReturnFocus.set(null);
+    if (opener) {
+      window.setTimeout(() => {
+        if (opener.isConnected) opener.focus();
+      });
+    }
+  }
+
+  private shareReviewModelForDiaryEntry(
+    entry: Pick<DiaryRecord, 'content' | 'card' | 'comment' | 'score' | 'customPosterUrl' | 'seriesTitle'> | ProfileShareReviewRecord,
+    includeReview: boolean,
+  ): ShareReviewDialogModel {
+    const type = entry.content.type.toUpperCase();
+    const isEpisode = type === 'EPISODE';
+    const coordinates = [
+      entry.content.seasonNumber !== null ? `T${entry.content.seasonNumber}` : null,
+      entry.content.episodeNumber !== null ? `E${entry.content.episodeNumber}` : null,
+    ].filter(Boolean).join(' · ');
+    const subtitle = isEpisode
+      ? [entry.seriesTitle, coordinates].filter(Boolean).join(' · ')
+      : type === 'SEASON'
+        ? [coordinates ? `${this.copy.season} ${entry.content.seasonNumber}` : this.copy.season, entry.card?.releaseYear]
+          .filter(Boolean).join(' · ')
+        : entry.card?.releaseYear ? String(entry.card.releaseYear) : null;
+    const posterPath = entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath || null;
+    const user = this.session.user();
+
+    return {
+      title: entry.card?.title || this.copy.unavailable,
+      subtitle,
+      rating: includeReview ? entry.score : null,
+      review: includeReview ? entry.comment : null,
+      backgroundUrl: this.imageUrl(entry.card?.backdropPath || posterPath, 'w1280'),
+      posterUrl: this.imageUrl(posterPath, 'w780'),
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: type === 'MOVIE' ? 'MOVIE' : 'SERIES',
+      tmdbId: type === 'MOVIE'
+        ? entry.content.tmdbId
+        : entry.content.seriesTmdbId || entry.content.tmdbId,
+    };
+  }
+
+  private shareReviewModelForSeriesCard(entry: RecentSeriesCard, includeRating: boolean): ShareReviewDialogModel {
+    const user = this.session.user();
+    return {
+      title: entry.title,
+      subtitle: entry.releaseYear ? String(entry.releaseYear) : null,
+      rating: includeRating ? entry.score : null,
+      review: null,
+      backgroundUrl: this.imageUrl(entry.backdropPath || entry.posterPath, 'w1280'),
+      posterUrl: this.imageUrl(entry.posterPath, 'w780'),
+      username: user?.username ?? null,
+      avatarUrl: user?.profilePicture ?? null,
+      selectionType: 'SERIES',
+      tmdbId: entry.seriesTmdbId,
+    };
   }
 
   private openProfileContentAction(
@@ -1790,6 +1920,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           this.reviewComments.set(Object.fromEntries((reviews?.content ?? [])
             .filter((review) => Boolean(review.comment))
             .map((review) => [review.id, review.comment as string])));
+          this.profileShareReviews.set((reviews?.content ?? []).map((review) => ({
+            content: review.content,
+            card: review.card,
+            comment: review.comment,
+            score: review.score,
+            customPosterUrl: review.customPosterUrl,
+            seriesTitle: review.seriesTitle,
+          })));
           this.loadEpisodeStillPaths(recentEpisodes?.content ?? []);
           this.resolveTopFive(topFive).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (items) => {
@@ -1954,9 +2092,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       ...entry,
       title: '',
       posterPath: entry.customPosterUrl,
+      backdropPath: null,
       releaseYear: null,
       averageScore: null,
       ratingSource: 'none',
+      viewerRating: null,
+      viewerReview: null,
       contentType: entry.type,
     };
 
@@ -1968,9 +2109,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             ...entry,
             title: page.details.title ?? '',
             posterPath: entry.customPosterUrl || page.details.posterPath,
+            backdropPath: page.details.backdropPath,
             releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
             averageScore: rating.value,
             ratingSource: rating.source,
+            viewerRating: page.viewerState.myRating,
+            viewerReview: page.viewerState.myReview,
             contentType: 'SERIES' as const,
           };
         }),
@@ -1985,9 +2129,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           ...entry,
           title: page.details.title ?? '',
           posterPath: entry.customPosterUrl || page.details.posterPath,
+          backdropPath: page.details.backdropPath,
           releaseYear: page.details.releaseDate ? Number(page.details.releaseDate.slice(0, 4)) : null,
           averageScore: rating.value,
           ratingSource: rating.source,
+          viewerRating: page.viewerState.myRating,
+          viewerReview: page.viewerState.myReview,
           contentType: 'MOVIE' as const,
         };
       }),
@@ -2023,6 +2170,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.allDiaryEntries.set([]);
     this.ratedEpisodeEntries.set([]);
     this.reviewComments.set({});
+    this.profileShareReviews.set([]);
     this.recentReviewLikeBusyIds.set(new Set());
     this.episodeStillPaths.set({});
     this.topFive.set([]);

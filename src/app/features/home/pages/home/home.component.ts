@@ -21,6 +21,7 @@ import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
+import { movieMessages } from '../../../content/i18n/movie.messages';
 import { episodeContentNavigationState } from '../../../../shared/utils/episode-content-route';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
@@ -31,6 +32,11 @@ import {
   ContentImageActionSelection,
   ContentImageActionsComponent,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import {
+  ShareReviewDialogComponent,
+  type ShareReviewDialogCopy,
+  type ShareReviewDialogModel,
+} from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import {
   DailyWatchCount,
   DiaryEntryCreationRequest,
@@ -94,7 +100,7 @@ type HomeStatus = 'loading' | 'ready' | 'error';
 const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
 @Component({
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, ShareReviewDialogComponent],
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
@@ -119,6 +125,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly errorMessage = signal<string | null>(null);
   private readonly toasts = inject(ToastNotificationsService);
   protected readonly openContentMenuId = signal<string | null>(null);
+  protected readonly shareReviewTarget = signal<ShareReviewDialogModel | null>(null);
+  protected readonly shareReviewCopy: ShareReviewDialogCopy = movieMessages['pt-BR'];
   protected readonly watchLogTarget = signal<WatchLogDialogTarget | null>(null);
   protected readonly ratingTarget = signal<RatingDialogTarget | null>(null);
   protected readonly isSaving = signal(false);
@@ -163,10 +171,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly upcomingGroups = computed(() =>
     this.groupUpcoming(this.summary()?.upcomingReleases ?? []),
   );
-  private activeDialogOpener: HTMLElement | null = null;
+  protected activeDialogOpener: HTMLElement | null = null;
   private genreLabelObserver: ResizeObserver | null = null;
   private genreLabelChanges?: Subscription;
   private socialDetailsRequestSequence = 0;
+  private shareReviewRequest?: Subscription;
 
   @ViewChildren('genreItemLabel')
   private genreItemLabels!: QueryList<ElementRef<HTMLElement>>;
@@ -198,6 +207,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.genreLabelChanges?.unsubscribe();
     this.genreLabelObserver?.disconnect();
+    this.shareReviewRequest?.unsubscribe();
   }
 
   protected loadSummary(userId = this.session.user()?.id): void {
@@ -368,7 +378,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     } else if (selection.action.id === 'rewatch') {
       this.openRecentRewatch(entry, selection.event);
     } else if (selection.action.id === 'share-review') {
-      this.shareRecentReview(entry);
+      this.shareRecentReview(entry, selection.event);
     }
   }
 
@@ -401,7 +411,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         id: 'share-review',
         label: this.copy.shareReview,
         icon: 'share',
-        disabled: !this.contentRoute(entry.content),
       },
     ];
   }
@@ -440,13 +449,68 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.watchLogRewatch.set(true);
   }
 
-  protected shareRecentReview(entry: HomeRecentlyWatched): void {
-    const route = this.contentRoute(entry.content);
-    if (!route) return;
+  protected shareRecentReview(entry: HomeRecentlyWatched, event?: MouseEvent): void {
+    const card = entry.card;
     this.openContentMenuId.set(null);
-    void this.router.navigate(route, {
-      state: { openShareReview: true, shareReturnUrl: this.router.url },
+    const menuTrigger = (event?.currentTarget as HTMLElement | null)
+      ?.closest('.content-menu-anchor')
+      ?.querySelector<HTMLElement>('.content-menu-trigger');
+    this.activeDialogOpener = menuTrigger ?? (document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null);
+
+    const isEpisode = (entry.content.type || card?.type)?.toUpperCase() === 'EPISODE';
+    const season = entry.content.seasonNumber;
+    const episode = entry.content.episodeNumber;
+    const episodeCoordinates = [
+      season !== null ? `T${season}` : null,
+      episode !== null ? `E${episode}` : null,
+    ].filter(Boolean).join(' · ');
+    const episodeSubtitle = [entry.seriesTitle, episodeCoordinates].filter(Boolean).join(' · ');
+    const posterPath = entry.customPosterUrl || card?.customPosterUrl || card?.posterPath || null;
+
+    this.shareReviewTarget.set({
+      title: card?.title || this.copy.titleUnavailable,
+      subtitle: isEpisode ? episodeSubtitle : card?.releaseYear ? String(card.releaseYear) : null,
+      rating: entry.score,
+      review: null,
+      backgroundUrl: this.imageUrl(card?.backdropPath, 'w1920') || this.imageUrl(posterPath, 'w1920'),
+      posterUrl: this.imageUrl(posterPath, 'w780'),
+      username: this.summary()?.viewer?.username ?? null,
+      avatarUrl: this.summary()?.viewer?.profilePicture ?? null,
+      selectionType: isEpisode ? 'SERIES' : 'MOVIE',
+      tmdbId: isEpisode
+        ? entry.content.seriesTmdbId || card?.seriesTmdbId || null
+        : entry.content.tmdbId || card?.tmdbId || null,
     });
+    this.shareReviewRequest?.unsubscribe();
+    this.shareReviewRequest = this.contentApi.getDiaryEntry(entry.id).subscribe({
+      next: (reviewEntry) => {
+        const current = this.shareReviewTarget();
+        if (!current) return;
+        const reviewPoster = reviewEntry.customPosterUrl || reviewEntry.card?.customPosterUrl;
+        this.shareReviewTarget.set({
+          ...current,
+          rating: reviewEntry.score,
+          review: reviewEntry.comment,
+          posterUrl: this.imageUrl(reviewPoster, 'w780') || current.posterUrl,
+        });
+      },
+      error: () => undefined,
+    });
+  }
+
+  protected closeShareReview(): void {
+    this.shareReviewRequest?.unsubscribe();
+    this.shareReviewRequest = undefined;
+    this.shareReviewTarget.set(null);
+    const opener = this.activeDialogOpener;
+    this.activeDialogOpener = null;
+    if (opener) {
+      window.setTimeout(() => {
+        if (opener.isConnected) opener.focus();
+      });
+    }
   }
 
   protected abandonSeries(seriesTmdbId: string): void {
@@ -611,6 +675,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   protected handleDocumentKeydown(event: KeyboardEvent): void {
+    if (this.shareReviewTarget()) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.closeShareReview();
+      }
+      return;
+    }
     if (this.watchLogTarget() || this.ratingTarget()) {
       if (event.key === 'Escape') {
         event.preventDefault();
