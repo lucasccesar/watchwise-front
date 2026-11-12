@@ -54,7 +54,7 @@ type RecentSeriesCard = {
   title: string;
   posterPath: string | null;
   releaseYear: number | null;
-  timesWatched: number;
+  watchedEpisodeCount: number;
   lastWatchedDate: string | null;
   score: number | null;
 };
@@ -131,6 +131,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   );
   protected readonly recentMovieEntries = signal<DiaryRecord[]>([]);
   protected readonly recentEpisodeEntries = signal<DiaryRecord[]>([]);
+  protected readonly allDiaryEntries = signal<DiaryRecord[]>([]);
   protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
   protected readonly recentReviewLikeBusyIds = signal<ReadonlySet<string>>(new Set());
@@ -244,6 +245,15 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   });
   protected readonly userName = computed(() => this.profile()?.name || this.foundUser()?.name || this.profile()?.username || this.foundUser()?.username || this.username());
   protected readonly recentSeriesItems = computed<RecentSeriesCard[]>(() => {
+    const episodesBySeries = new Map<string, Set<string>>();
+    for (const entry of [...this.allDiaryEntries(), ...this.recentEpisodeEntries()]) {
+      const { type, seriesTmdbId, seasonNumber, episodeNumber } = entry.content;
+      if (type !== 'EPISODE' || !seriesTmdbId || seasonNumber === null || episodeNumber === null) continue;
+      const episodes = episodesBySeries.get(seriesTmdbId) ?? new Set<string>();
+      episodes.add(`${seasonNumber}:${episodeNumber}`);
+      episodesBySeries.set(seriesTmdbId, episodes);
+    }
+
     return (this.summary()?.recentActivity ?? [])
       .filter((activity) => String(activity.type ?? activity.content?.type ?? activity.card?.type ?? '').toUpperCase() === 'SERIES')
       .map((activity) => {
@@ -260,7 +270,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           title: card.title || this.copy.unavailable,
           posterPath: card.customPosterUrl || card.posterPath || null,
           releaseYear: card.releaseYear ?? null,
-          timesWatched: activity.timesWatched ?? 0,
+          watchedEpisodeCount: episodesBySeries.get(String(seriesTmdbId))?.size ?? 0,
           lastWatchedDate: activity.activityDate ?? activity.watchedDate ?? activity.lastWatchedDate ?? null,
           score: activity.score ?? card.viewerState?.myRating ?? null,
         };
@@ -274,9 +284,18 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected recentReviewTitle(review: ProfileDiaryPreview): string {
     const type = review.content?.type?.toUpperCase();
     if (type === 'EPISODE' || type === 'SEASON') {
-      return this.recentReviewSeriesTitle(review) || review.card?.title || this.copy.unavailable;
+      return review.seriesTitle || this.recentReviewSeriesTitle(review) || review.card?.title || this.copy.unavailable;
     }
     return review.card?.title || this.copy.unavailable;
+  }
+  protected recentReviewPoster(review: ProfileDiaryPreview): string | null {
+    return this.imageUrl(review.customPosterUrl || review.card?.posterPath);
+  }
+  protected recentReviewDate(review: ProfileDiaryPreview): string | null {
+    const type = review.content?.type?.toUpperCase();
+    return type === 'SERIES'
+      ? review.activityDate || review.watchedDate || null
+      : review.watchedDate || review.activityDate || null;
   }
   protected recentReviewContext(review: ProfileDiaryPreview): string {
     const content = review.content;
@@ -287,7 +306,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         content?.seasonNumber !== null && content?.seasonNumber !== undefined ? `S${content.seasonNumber}` : null,
         content?.episodeNumber !== null && content?.episodeNumber !== undefined ? `E${content.episodeNumber}` : null,
       ].filter(Boolean).join(' · ');
-      return this.recentReviewSeriesTitle(review)
+      return review.seriesTitle || this.recentReviewSeriesTitle(review)
         ? [coordinates, review.card?.title || ''].filter(Boolean).join(' · ')
         : coordinates;
     }
@@ -1049,7 +1068,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (!content?.seriesTmdbId) return null;
     const seriesTmdbId = content.seriesTmdbId;
 
-    if (content.type === 'EPISODE') {
+    const diarySeriesTitle = this.allDiaryEntries().find((entry) =>
+      entry.content.seriesTmdbId === seriesTmdbId && Boolean(entry.seriesTitle),
+    )?.seriesTitle;
+    if (diarySeriesTitle) return diarySeriesTitle;
+
+    if (content.type?.toUpperCase() === 'EPISODE') {
       const episode = this.recentEpisodeEntries().find((entry) =>
         entry.content.seriesTmdbId === seriesTmdbId
         && entry.content.seasonNumber === content.seasonNumber
@@ -1698,19 +1722,20 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         recentEpisodes: mode === 'EPISODE'
           ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 30, type: 'EPISODE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
           : of(null),
-        ratedEpisodes: mode === 'EPISODE'
+        diaryEntries: mode === 'EPISODE'
           ? this.diaryApi.getAllDiaryEntries(userId).pipe(catchError(() => of([] as DiaryRecord[])))
           : of([] as DiaryRecord[]),
         reviews: this.diaryApi.getUserReviewsPage(userId, 1, 50).pipe(catchError(() => of(null))),
       }).subscribe({
-        next: ({ summary, topFive, recentMovies, recentEpisodes, ratedEpisodes, reviews }) => {
+        next: ({ summary, topFive, recentMovies, recentEpisodes, diaryEntries, reviews }) => {
           if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
           this.summary.set(summary);
           const latestMovieReview = reviews?.content.find((review) => review.content.type === 'MOVIE');
           this.latestMovieReviewBackdropPath.set(latestMovieReview?.card?.backdropPath ?? null);
           this.recentMovieEntries.set(recentMovies?.content ?? []);
           this.recentEpisodeEntries.set(recentEpisodes?.content ?? []);
-          this.ratedEpisodeEntries.set(ratedEpisodes.filter((entry) => entry.content.type === 'EPISODE' && entry.score !== null));
+          this.allDiaryEntries.set(diaryEntries);
+          this.ratedEpisodeEntries.set(diaryEntries.filter((entry) => entry.content.type === 'EPISODE' && entry.score !== null));
           this.reviewComments.set(Object.fromEntries((reviews?.content ?? [])
             .filter((review) => Boolean(review.comment))
             .map((review) => [review.id, review.comment as string])));
@@ -1944,6 +1969,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.latestMovieReviewBackdropPath.set(undefined);
     this.recentMovieEntries.set([]);
     this.recentEpisodeEntries.set([]);
+    this.allDiaryEntries.set([]);
     this.ratedEpisodeEntries.set([]);
     this.reviewComments.set({});
     this.recentReviewLikeBusyIds.set(new Set());

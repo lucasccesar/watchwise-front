@@ -64,6 +64,7 @@ export type ProfileHighlightContentCard = Omit<ProfileContentCard, 'backdropPath
 export interface ProfileDiaryPreview {
   id: string;
   source?: ProfileDiaryPreviewSource | null;
+  seriesTitle?: string | null;
   content: {
     id: string | null;
     type: string;
