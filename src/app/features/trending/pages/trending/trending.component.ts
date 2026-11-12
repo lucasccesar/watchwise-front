@@ -289,21 +289,24 @@ export class TrendingComponent implements OnInit, OnDestroy {
     const busy = this.isCardActionBusy(card);
     const inWatchlist = card.viewerState?.inWatchlist === true;
     const watched = card.viewerState?.watchStatus === 'WATCHED';
-    return [
+    const actions: ContentImageAction[] = [
       {
         id: 'mark-watched',
         label: watched ? this.copy.watchAgain : this.copy.markWatched,
         icon: watched ? 'rewatch' : 'check',
         disabled: busy || this.isUpcoming(card),
       },
-      {
+      { id: 'add-to-list', label: this.copy.addToList, icon: 'list', disabled: busy },
+    ];
+    if (!watched) {
+      actions.splice(1, 0, {
         id: 'watchlist',
         label: inWatchlist ? this.copy.removeFromWatchlist : this.copy.wantToWatch,
         icon: inWatchlist ? 'bookmark-filled' : 'bookmark',
-        disabled: busy || (!inWatchlist && card.viewerState?.watchStatus === 'WATCHED'),
-      },
-      { id: 'add-to-list', label: this.copy.addToList, icon: 'list', disabled: busy },
-    ];
+        disabled: busy,
+      });
+    }
+    return actions;
   }
 
   protected handlePosterAction(card: TrendingCard, selection: ContentImageActionSelection): void {
