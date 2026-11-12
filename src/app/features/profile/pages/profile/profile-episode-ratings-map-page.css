@@ -275,7 +275,7 @@
 }
 
 .profile-map-show-title h2 > a:hover {
-  color: #f59e0b;
+  color: var(--color-primary);
 }
 
 .profile-map-show-title > span {

@@ -438,7 +438,7 @@
 }
 
 .profile-progress-title-row > a:hover {
-  color: #f59e0b;
+  color: var(--color-primary);
 }
 
 .profile-progress-card h2 {
@@ -634,7 +634,7 @@
 }
 
 .profile-progress-next-link:hover .profile-progress-next-title {
-  color: #f59e0b;
+  color: var(--color-primary);
 }
 
 .profile-progress-still {

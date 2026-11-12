@@ -922,7 +922,7 @@
 }
 
 .profile-content-title-link:hover {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 .profile-poster-fallback {
