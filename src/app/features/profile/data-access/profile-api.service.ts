@@ -87,6 +87,8 @@ export interface ProfileDiaryPreview {
 }
 
 export interface ProfileRecentActivity {
+  id: string;
+  source: 'DIARY_ENTRY' | 'SERIES_COMPLETION' | 'DROPPED_ENTRY';
   type?: string | null;
   status?: string | null;
   timesWatched?: number | null;

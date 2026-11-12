@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, Title } from '@angular/platform-browser';
-import { forkJoin, Observable, Subscription, of, switchMap, throwError } from 'rxjs';
+import { combineLatest, forkJoin, Observable, Subscription, of, switchMap, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { DiaryApiService, SeriesInProgressRecord } from '../../../diary/data-access/diary-api.service';
@@ -195,6 +195,9 @@ export class SeriesComponent implements OnInit, OnDestroy {
   private requests = new Subscription();
   protected modalOpener: HTMLElement | null = null;
   private stylesheet: HTMLLinkElement | null = null;
+  private openShareReviewAfterLoad = false;
+  private profileContentActionAfterLoad: 'rate' | 'rewatch' | null = null;
+  private profileActionReturnUrl: string | null = null;
   private readonly toasts = inject(ToastNotificationsService);
   private readonly confirmation = inject(ConfirmationDialogService);
 
@@ -210,8 +213,20 @@ export class SeriesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const navigationState = this.router.getCurrentNavigation()?.extras.state;
+    const profileAction = navigationState?.['profileContentAction'];
+    this.profileContentActionAfterLoad = profileAction === 'rate' || profileAction === 'rewatch' ? profileAction : null;
+    this.profileActionReturnUrl = typeof navigationState?.['profileActionReturnUrl'] === 'string'
+      ? navigationState['profileActionReturnUrl']
+      : typeof navigationState?.['shareReturnUrl'] === 'string'
+        ? navigationState['shareReturnUrl']
+        : null;
+    const openShareReview = navigationState?.['openShareReview'] === true;
+    this.openShareReviewAfterLoad = openShareReview;
     this.loadStylesheet();
-    this.subscriptions.add(this.route.paramMap.subscribe((params) => this.loadSeries(params.get('tmdbId')?.trim() ?? '')));
+    this.subscriptions.add(combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([params, query]) => {
+      this.loadSeries(params.get('tmdbId')?.trim() ?? '', query.get('contentId') ?? '');
+    }));
   }
 
   ngOnDestroy(): void {
@@ -266,6 +281,20 @@ export class SeriesComponent implements OnInit, OnDestroy {
         this.pageStatus.set('ready');
         this.loadReviews(1);
         this.loadComments(1);
+        if (this.openShareReviewAfterLoad) {
+          this.openShareReviewAfterLoad = false;
+          if (page.viewerState.watchStatus === 'WATCHED' || page.viewerState.lastWatchedDate) {
+            this.openShareReview();
+          } else {
+            this.toasts.info(this.copy.shareReviewNeedsWatch);
+            this.closeShareReview();
+          }
+        } else if (this.profileContentActionAfterLoad) {
+          const action = this.profileContentActionAfterLoad;
+          this.profileContentActionAfterLoad = null;
+          if (action === 'rewatch') this.openSeriesWatch();
+          else this.openRating({ type: 'SERIES' });
+        }
       },
       error: (error: unknown) => {
         if (this.handleSessionError(error)) return;
@@ -1131,12 +1160,15 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected closeDialog(): void {
+    const returnUrl = this.profileActionReturnUrl;
+    this.profileActionReturnUrl = null;
     this.dialog.set(null);
     this.videoPlaying.set(false);
     this.ratingTarget.set(null);
     this.ratingReviewLoading.set(false);
     this.modalOpener?.focus();
     this.modalOpener = null;
+    if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
   protected closeMobileActions(): void {
@@ -1165,9 +1197,12 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected closeShareReview(): void {
+    const returnUrl = this.profileActionReturnUrl;
+    this.profileActionReturnUrl = null;
     this.shareReviewOpen.set(false);
     this.modalOpener?.focus();
     this.modalOpener = null;
+    if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
   protected clearSeriesHistory(event?: Event): void {

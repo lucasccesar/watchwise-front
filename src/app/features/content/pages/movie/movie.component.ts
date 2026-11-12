@@ -182,6 +182,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected modalOpener: HTMLElement | null = null;
   private movieStylesheet: HTMLLinkElement | null = null;
   private openShareReviewAfterLoad = false;
+  private profileContentActionAfterLoad: 'rate' | 'rewatch' | null = null;
   private shareReturnUrl: string | null = null;
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
@@ -214,8 +215,12 @@ export class MovieComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const navigationState = this.router.getCurrentNavigation()?.extras.state;
     this.openShareReviewAfterLoad = navigationState?.['openShareReview'] === true;
-    this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
-      ? navigationState['shareReturnUrl']
+    const profileAction = navigationState?.['profileContentAction'];
+    this.profileContentActionAfterLoad = profileAction === 'rate' || profileAction === 'rewatch' ? profileAction : null;
+    this.shareReturnUrl = typeof navigationState?.['profileActionReturnUrl'] === 'string'
+      ? navigationState['profileActionReturnUrl']
+      : typeof navigationState?.['shareReturnUrl'] === 'string'
+        ? navigationState['shareReturnUrl']
       : null;
     this.loadMovieStylesheet();
     this.subscriptions.add(
@@ -291,7 +296,16 @@ export class MovieComponent implements OnInit, OnDestroy {
             this.loadComments(1);
             if (this.openShareReviewAfterLoad) {
               this.openShareReviewAfterLoad = false;
-              this.openShareDialog();
+              if (page.viewerState.latestDiaryEntryId) this.openShareDialog();
+              else {
+                this.toasts.info(this.copy.shareReviewNeedsWatch);
+                this.closeDialog();
+              }
+            } else if (this.profileContentActionAfterLoad) {
+              const action = this.profileContentActionAfterLoad;
+              this.profileContentActionAfterLoad = null;
+              if (action === 'rewatch') this.openWatchDialog('again');
+              else this.openWatchDialog(page.viewerState.latestDiaryEntryId ? 'edit' : 'new');
             }
           },
           error: (error: unknown) => {
@@ -661,7 +675,7 @@ export class MovieComponent implements OnInit, OnDestroy {
   }
 
   protected closeDialog(): void {
-    const returnUrl = this.dialog() === 'share' ? this.shareReturnUrl : null;
+    const returnUrl = this.shareReturnUrl;
     this.shareReturnUrl = null;
     this.watchCalendarOpen.set(false);
     this.videoPlaying.set(false);

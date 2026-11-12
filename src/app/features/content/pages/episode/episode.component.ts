@@ -188,7 +188,9 @@ export class EpisodeComponent implements OnDestroy {
   protected readonly session = inject(AuthSessionService);
   private readonly sanitizer = inject(DomSanitizer);
   private openShareReviewAfterLoad = false;
+  private profileContentActionAfterLoad: 'rate' | 'rewatch' | null = null;
   private shareReturnUrl: string | null = null;
+  private profileActionReturnUrl: string | null = null;
   private request?: Subscription;
   private communityRequests = new Subscription();
   private routeRequest?: Subscription;
@@ -196,6 +198,11 @@ export class EpisodeComponent implements OnDestroy {
   constructor() {
     const navigationState = this.router.getCurrentNavigation()?.extras.state;
     this.openShareReviewAfterLoad = navigationState?.['openShareReview'] === true;
+    const profileAction = navigationState?.['profileContentAction'];
+    this.profileContentActionAfterLoad = profileAction === 'rate' || profileAction === 'rewatch' ? profileAction : null;
+    this.profileActionReturnUrl = typeof navigationState?.['profileActionReturnUrl'] === 'string'
+      ? navigationState['profileActionReturnUrl']
+      : null;
     this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
       ? navigationState['shareReturnUrl']
       : null;
@@ -227,6 +234,7 @@ export class EpisodeComponent implements OnDestroy {
     this.shareReviewOpen.set(false);
     const returnUrl = this.shareReturnUrl;
     this.shareReturnUrl = null;
+    this.profileActionReturnUrl = null;
     if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
@@ -318,8 +326,26 @@ export class EpisodeComponent implements OnDestroy {
     this.dialog.set('watch');
   }
 
+  private openProfileActionAfterLoad(): void {
+    if (this.openShareReviewAfterLoad) {
+      this.openShareReviewAfterLoad = false;
+      if (this.page()?.viewerState.latestDiaryEntryId) this.openShareReview();
+      else {
+        this.toasts.info(this.watchCopy.shareReviewNeedsWatch);
+        this.closeShareReview();
+      }
+      return;
+    }
+    const action = this.profileContentActionAfterLoad;
+    this.profileContentActionAfterLoad = null;
+    if (action === 'rewatch') this.markWatched();
+    else if (action === 'rate') this.openRating();
+  }
+
   protected closeWatchLogDialog(): void {
-    if (!this.busy()) this.watchLogOpen.set(false);
+    if (this.busy()) return;
+    this.watchLogOpen.set(false);
+    this.returnToProfileAction();
   }
 
   protected saveWatchLog(submission: WatchLogSubmission): void {
@@ -340,6 +366,7 @@ export class EpisodeComponent implements OnDestroy {
         this.busy.set(false);
         this.showToast(submission.isRewatch ? 'Episódio registrado novamente.' : 'Episódio marcado como assistido.');
         this.reload();
+        this.returnToProfileAction();
       },
       error: (error: unknown) => { this.toasts.error(this.errorText(error)); this.busy.set(false); },
     });
@@ -349,6 +376,13 @@ export class EpisodeComponent implements OnDestroy {
     this.watchCalendarOpen.set(false);
     this.dialog.set(null);
     this.videoPlaying.set(false);
+    this.returnToProfileAction();
+  }
+
+  private returnToProfileAction(): void {
+    const returnUrl = this.profileActionReturnUrl;
+    this.profileActionReturnUrl = null;
+    if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
   protected toggleWatchCalendar(): void {
@@ -713,8 +747,9 @@ export class EpisodeComponent implements OnDestroy {
         this.commentPage.set(comments);
         this.status.set('ready');
         if (this.openShareReviewAfterLoad) {
-          this.openShareReviewAfterLoad = false;
-          this.openShareReview();
+          this.openProfileActionAfterLoad();
+        } else if (this.profileContentActionAfterLoad) {
+          this.openProfileActionAfterLoad();
         }
       },
       error: (error: unknown) => { this.status.set('error'); this.actionError.set(this.errorText(error)); },

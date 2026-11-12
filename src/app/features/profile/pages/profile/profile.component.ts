@@ -27,7 +27,7 @@ import { PicksApiService, UserPickPreviewPage } from '../../../picks/data-access
 import { SearchApiService, SearchContentView, SearchUserView, SearchView } from '../../../search-content/data-access/search-api.service';
 import { WatchlistApiService, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../../watchlist/data-access/watchlist-api.service';
 import { ContentApiService, type ContentReviewSource } from '../../../content/data-access/content-api.service';
-import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -50,6 +50,9 @@ type ResolvedTopFive = TopFiveEntry & { title: string; posterPath: string | null
 type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
 type TopFiveSearchResult = { request: TopFiveSearchRequest; response: SearchView } | { request: TopFiveSearchRequest; error: unknown } | null;
 type RecentSeriesCard = {
+  activityId: string;
+  contentId: string | null;
+  canShareReview: boolean;
   seriesTmdbId: string;
   title: string;
   posterPath: string | null;
@@ -266,6 +269,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           ?? card?.seriesTmdbId;
         if (!card || !seriesTmdbId) return null;
         return {
+          activityId: activity.id,
+          contentId: activity.content?.id ?? null,
+          canShareReview: activity.source !== 'DROPPED_ENTRY' || (activity.timesWatched ?? 0) > 0,
           seriesTmdbId: String(seriesTmdbId),
           title: card.title || this.copy.unavailable,
           posterPath: card.customPosterUrl || card.posterPath || null,
@@ -447,6 +453,15 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileImageActions: readonly ContentImageAction[] = [
     { id: 'open-content', label: 'Abrir conteúdo', icon: 'eye' },
   ];
+  protected profileContentActionsFor(score: number | null | undefined, canShareReview = true): readonly ContentImageAction[] {
+    const profileId = this.profile()?.id;
+    const isOwnProfile = !!profileId && profileId === this.session.user()?.id;
+    return [
+      { id: 'rate', label: isOwnProfile && score !== null && score !== undefined ? this.homeCopy.editRating : this.homeCopy.rate, icon: 'star' },
+      { id: 'rewatch', label: this.homeCopy.rewatch, icon: 'rewatch' },
+      { id: 'share-review', label: this.homeCopy.shareReview, icon: 'share', disabled: isOwnProfile && !canShareReview },
+    ];
+  }
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -1190,11 +1205,47 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.activePosterMenu.update((active) => active === id ? null : id);
   }
 
-  protected handlePosterAction(entry: ResolvedTopFive, action: string): void {
+  protected handlePosterAction(entry: ResolvedTopFive, selection: ContentImageActionSelection): void {
     this.activePosterMenu.set(null);
-    if (action === 'open-content') {
-      void this.router.navigate(['/content', entry.contentType === 'MOVIE' ? 'movie' : 'series', entry.content.tmdbId]);
+    this.openProfileContentAction(
+      ['/content', entry.contentType === 'MOVIE' ? 'movie' : 'series', entry.content.tmdbId],
+      entry.content.id,
+      selection,
+    );
+  }
+
+  protected handleRecentDiaryAction(entry: DiaryRecord, selection: ContentImageActionSelection): void {
+    this.openProfileContentAction(this.detailRoute(entry), entry.content.id, selection);
+  }
+
+  protected handleRecentSeriesAction(entry: RecentSeriesCard, selection: ContentImageActionSelection): void {
+    this.openProfileContentAction(['/content/series', entry.seriesTmdbId], entry.contentId, selection);
+  }
+
+  private openProfileContentAction(
+    route: string[] | null,
+    contentId: string | null | undefined,
+    selection: ContentImageActionSelection,
+  ): void {
+    if (!route) return;
+    const action = selection.action.id;
+    const state: Record<string, unknown> = {
+      profileActionReturnUrl: this.router.url,
+      ...(contentId ? { contentId } : {}),
+    };
+    if (action === 'share-review') {
+      state['openShareReview'] = true;
+      state['shareReturnUrl'] = this.router.url;
+    } else if (action === 'rate' || action === 'rewatch') {
+      state['profileContentAction'] = action;
+    } else {
+      return;
     }
+    const routeType = route[1];
+    const queryParams = contentId && (routeType === 'movie' || routeType === 'series')
+      ? { contentId }
+      : undefined;
+    void this.router.navigate(route, { queryParams, state });
   }
 
   protected handleProfileImageAction(type: 'MOVIE' | 'SERIES', tmdbId: string | null, action: string): void {
