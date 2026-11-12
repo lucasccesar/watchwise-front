@@ -18,6 +18,12 @@
   flex-direction: column;
 }
 
+.profile-type-switch-bar {
+  position: sticky;
+  z-index: 29;
+  top: 64px;
+}
+
 .profile-tabs {
   display: flex;
   min-height: 60px;
