@@ -42,16 +42,17 @@
 .movie-share-image-picker { overflow: hidden; }
 .movie-share-reset-link { align-self: flex-start; padding: 4px 8px; border: 0; background: transparent; color: var(--color-text); cursor: pointer; font: inherit; font-size: var(--font-size-sm); font-weight: 600; text-decoration: underline; }
 .movie-share-image-options { position: absolute; z-index: 10; top: calc(100% + var(--space-2)); left: 0; display: flex; width: min(360px, calc(100vw - 48px)); max-height: min(300px, 45vh); flex-direction: column; gap: var(--space-3); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-xl); }
-.movie-share-image-options--poster { right: 0; left: auto; }
+.movie-share-image-options.movie-share-image-options--poster { right: 0; left: auto; width: min(480px, calc(100vw - 48px)); max-height: min(560px, 70vh); }
 .movie-share-image-grid { display: grid; gap: var(--space-2); }
 .movie-share-image-grid--backdrops { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.movie-share-image-grid--posters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.movie-share-image-grid--posters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .movie-share-image-option { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: var(--space-1); overflow: hidden; padding: 3px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text-tertiary); cursor: pointer; }
 .movie-share-image-option:hover { border-color: var(--color-text-tertiary); }
 .movie-share-image-option--selected { border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 42%, transparent); }
 .movie-share-image-option img { display: block; width: 100%; aspect-ratio: 2 / 3; border-radius: calc(var(--radius-md) - 2px); object-fit: cover; }
 .movie-share-image-grid--backdrops .movie-share-image-option img { aspect-ratio: 16 / 9; }
 .movie-share-image-grid--loading span { height: 108px; border-radius: var(--radius-md); background: linear-gradient(100deg, var(--color-surface-secondary) 25%, var(--color-secondary) 45%, var(--color-surface-secondary) 65%); background-size: 200% 100%; animation: movie-share-image-shimmer 1.5s ease-in-out infinite; }
+.movie-share-image-grid--loading.movie-share-image-grid--posters span { height: auto; aspect-ratio: 2 / 3; }
 .movie-share-image-grid--loading.movie-share-image-grid--backdrops span { height: 62px; }
 .movie-share-image-empty { margin: 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
 .movie-share-custom-image { position: relative; align-self: flex-start; overflow: hidden; color: var(--color-text-tertiary); cursor: pointer; font-size: var(--font-size-xs); text-decoration: underline; }

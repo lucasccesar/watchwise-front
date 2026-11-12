@@ -567,9 +567,14 @@ export class ContentApiService {
     type: ContentImageSelectionType,
     tmdbId: string,
     kind: ContentImageSelectionKind,
+    includeImageLanguages: string[] = [],
   ): Observable<ContentImageSelection[]> {
+    const params = includeImageLanguages.length
+      ? new HttpParams().set('include_image_language', includeImageLanguages.join(','))
+      : undefined;
     return this.http.get<ContentImageSelection[]>(
       `/api/v1/contents/selection/${type}/${encodeURIComponent(tmdbId)}/${kind}`,
+      { params },
     );
   }
 

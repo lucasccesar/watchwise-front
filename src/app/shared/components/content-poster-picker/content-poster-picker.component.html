@@ -5,6 +5,9 @@
 
 @if (open()) {
   <div #optionsPanel [id]="panelId()" popover="manual" class="movie-share-image-options movie-share-image-options--poster content-poster-options" role="dialog" [attr.aria-label]="selectionLabel" [style.top.px]="position()?.top ?? null" [style.left.px]="position()?.left ?? null">
+    @if (imageLanguageOptions().length) {
+      <app-content-image-language-filter [options]="imageLanguageOptions()" [selectedLanguages]="selectedImageLanguages()" [label]="imageLanguageLabel" [removeLanguageLabel]="removeImageLanguageLabel" (selectedLanguagesChange)="changeImageLanguages($event)" />
+    }
     @if (status() === 'loading') {
       <div class="movie-share-image-grid movie-share-image-grid--loading movie-share-image-grid--posters" role="status" [attr.aria-label]="loadingLabel">
         @for (skeleton of skeletons; track skeleton) { <span></span> }

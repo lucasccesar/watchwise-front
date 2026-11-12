@@ -2,10 +2,12 @@ import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, inject, input, output, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionKind, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
+import { ContentImageLanguageFilterComponent, ContentImageLanguageOption } from '../content-image-language-filter/content-image-language-filter.component';
 import { ModalFocusDirective } from '../../directives/modal-focus.directive';
 import { ModalScrollLockDirective } from '../../directives/modal-scroll-lock.directive';
 import { WATCHWISE_STAR_PATH } from '../../utils/watchwise-star';
 import { tmdbImageUrl } from '../../utils/tmdb-image-url';
+import { buildContentImageLanguageOptions } from '../../utils/content-image-languages';
 import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 
 export interface ShareReviewDialogModel {
@@ -36,6 +38,10 @@ export interface ShareReviewDialogCopy {
   shareImageLoadError: string;
   shareSelectPoster: string;
   shareSelectBackdrop: string;
+  shareImageLanguage: string;
+  shareImageNoLanguage: string;
+  shareImageLanguageLocale: string;
+  shareImageLanguageRemoveLabel: string;
   shareUploadImage: string;
   retry: string;
   shareOriginalImages: string;
@@ -62,7 +68,7 @@ export interface ShareReviewDialogCopy {
 @Component({
   selector: 'app-share-review-dialog',
   standalone: true,
-  imports: [ModalFocusDirective, ModalScrollLockDirective],
+  imports: [ModalFocusDirective, ModalScrollLockDirective, ContentImageLanguageFilterComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './share-review-dialog.component.html',
   styleUrl: './share-review-dialog.component.css',
@@ -82,6 +88,10 @@ export class ShareReviewDialogComponent implements OnDestroy {
   protected readonly activeImagePicker = signal<ContentImageSelectionKind | null>(null);
   protected readonly posterOptions = signal<ContentImageSelection[]>([]);
   protected readonly backdropOptions = signal<ContentImageSelection[]>([]);
+  protected readonly posterLanguageOptions = signal<ContentImageLanguageOption[]>([]);
+  protected readonly backdropLanguageOptions = signal<ContentImageLanguageOption[]>([]);
+  protected readonly posterImageLanguages = signal<string[]>([]);
+  protected readonly backdropImageLanguages = signal<string[]>([]);
   protected readonly posterOptionsStatus = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
   protected readonly backdropOptionsStatus = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
   protected readonly selectedPosterUrl = signal<string | null>(null);
@@ -89,6 +99,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
   protected readonly imageOptionSkeletons = [0, 1, 2, 3, 4, 5];
   private shareDrag: { x: number; y: number; startX: number; startY: number } | null = null;
   private imageRequests = new Subscription();
+  private readonly imageOptionRequests: Partial<Record<ContentImageSelectionKind, Subscription>> = {};
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
   private readonly contentApi = inject(ContentApiService);
@@ -96,6 +107,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.releaseShareImages();
+    for (const request of Object.values(this.imageOptionRequests)) request?.unsubscribe();
     this.imageRequests.unsubscribe();
   }
 
@@ -175,6 +187,20 @@ export class ShareReviewDialogComponent implements OnDestroy {
     return kind === 'posters' ? this.posterOptionsStatus() : this.backdropOptionsStatus();
   }
 
+  protected imageLanguageOptions(kind: ContentImageSelectionKind): ContentImageLanguageOption[] {
+    return kind === 'posters' ? this.posterLanguageOptions() : this.backdropLanguageOptions();
+  }
+
+  protected selectedImageLanguages(kind: ContentImageSelectionKind): string[] {
+    return kind === 'posters' ? this.posterImageLanguages() : this.backdropImageLanguages();
+  }
+
+  protected changeImageLanguages(kind: ContentImageSelectionKind, languages: string[]): void {
+    if (kind === 'posters') this.posterImageLanguages.set(languages);
+    else this.backdropImageLanguages.set(languages);
+    this.loadImageOptions(kind, languages);
+  }
+
   protected selectAvailableImage(kind: ContentImageSelectionKind, image: ContentImageSelection): void {
     if (kind === 'posters') {
       this.revokeUrl(this.sharePosterUrl());
@@ -185,7 +211,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
       this.shareImageUrl.set(null);
       this.selectedBackdropUrl.set(image.url);
     }
-    this.activeImagePicker.set(null);
+    if (kind === 'backdrops') this.activeImagePicker.set(null);
   }
 
   protected isSelectedImage(kind: ContentImageSelectionKind, image: ContentImageSelection): boolean {
@@ -562,7 +588,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
     });
   }
 
-  private loadImageOptions(kind: ContentImageSelectionKind): void {
+  private loadImageOptions(kind: ContentImageSelectionKind, languages = this.selectedImageLanguages(kind)): void {
     const model = this.model();
     const type = model.selectionType;
     const tmdbId = model.tmdbId;
@@ -572,19 +598,28 @@ export class ShareReviewDialogComponent implements OnDestroy {
     }
 
     this.setImageOptionsStatus(kind, 'loading');
-    this.imageRequests.add(this.contentApi.getContentImages(type, tmdbId, kind).subscribe({
+    this.imageOptionRequests[kind]?.unsubscribe();
+    const request = this.contentApi.getContentImages(type, tmdbId, kind, languages).subscribe({
       next: (images) => {
         const size = kind === 'posters' ? 'w500' : 'w1280';
         const resolvedImages = images.map((image) => ({
           ...image,
           url: tmdbImageUrl(image.url, size) ?? image.url,
         }));
+        if (!languages.length) {
+          const copy = this.copy();
+          const options = buildContentImageLanguageOptions(images, copy.shareImageNoLanguage, copy.shareImageLanguageLocale);
+          if (kind === 'posters') this.posterLanguageOptions.set(options);
+          else this.backdropLanguageOptions.set(options);
+        }
         if (kind === 'posters') this.posterOptions.set(resolvedImages);
         else this.backdropOptions.set(resolvedImages);
         this.setImageOptionsStatus(kind, 'ready');
       },
       error: () => this.setImageOptionsStatus(kind, 'error'),
-    }));
+    });
+    this.imageOptionRequests[kind] = request;
+    this.imageRequests.add(request);
   }
 
   private setImageOptionsStatus(kind: ContentImageSelectionKind, status: 'idle' | 'loading' | 'ready' | 'error'): void {

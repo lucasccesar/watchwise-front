@@ -1,14 +1,17 @@
 import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
+import { ContentImageLanguageFilterComponent, ContentImageLanguageOption } from '../content-image-language-filter/content-image-language-filter.component';
 import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../utils/tmdb-image-url';
+import { buildContentImageLanguageOptions } from '../../utils/content-image-languages';
 
 type PickerStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 @Component({
   selector: 'app-content-poster-picker',
   standalone: true,
+  imports: [ContentImageLanguageFilterComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './content-poster-picker.component.html',
   styleUrl: './content-poster-picker.component.css',
@@ -24,6 +27,10 @@ export class ContentPosterPickerComponent implements OnDestroy {
   @Input() loadErrorLabel = 'Não foi possível carregar os pôsteres.';
   @Input() retryLabel = 'Tentar novamente';
   @Input() emptyLabel = 'Nenhum pôster disponível.';
+  @Input() imageLanguageLabel = 'Idioma';
+  @Input() noImageLanguageLabel = 'Sem idioma';
+  @Input() imageLanguageLocale = 'pt-BR';
+  @Input() removeImageLanguageLabel = 'Remover filtro de idioma: {language}';
   @Input() saveSuccessLabel = 'Pôster atualizado.';
   @Input() saveErrorLabel = 'Não foi possível atualizar o pôster. Tente novamente.';
   @Output() readonly posterSaved = new EventEmitter<string>();
@@ -31,10 +38,13 @@ export class ContentPosterPickerComponent implements OnDestroy {
   protected readonly open = signal(false);
   protected readonly status = signal<PickerStatus>('idle');
   protected readonly images = signal<ContentImageSelection[]>([]);
+  protected readonly imageLanguageOptions = signal<ContentImageLanguageOption[]>([]);
+  protected readonly selectedImageLanguages = signal<string[]>([]);
   protected readonly savingUrl = signal<string | null>(null);
   protected readonly position = signal<{ top: number; left: number } | null>(null);
   protected readonly skeletons = [0, 1, 2, 3, 4, 5, 6, 7];
   private readonly requests = new Subscription();
+  private imageRequest: Subscription | null = null;
   private trigger: HTMLElement | null = null;
 
   @ViewChild('optionsPanel')
@@ -50,6 +60,7 @@ export class ContentPosterPickerComponent implements OnDestroy {
   ) {}
 
   ngOnDestroy(): void {
+    this.imageRequest?.unsubscribe();
     this.requests.unsubscribe();
   }
 
@@ -78,6 +89,11 @@ export class ContentPosterPickerComponent implements OnDestroy {
     this.load();
   }
 
+  protected changeImageLanguages(languages: string[]): void {
+    this.selectedImageLanguages.set(languages);
+    this.load();
+  }
+
   protected select(image: ContentImageSelection): void {
     const path = this.posterPath(image.url);
     if (!path || this.savingUrl()) return;
@@ -90,9 +106,6 @@ export class ContentPosterPickerComponent implements OnDestroy {
       next: () => {
         this.selectedPosterPath = path;
         this.savingUrl.set(null);
-        this.closePicker();
-        const details = this.element.nativeElement.closest('details');
-        if (details instanceof HTMLDetailsElement) details.open = false;
         this.posterSaved.emit(path);
         this.toasts.success(this.saveSuccessLabel);
       },
@@ -141,17 +154,21 @@ export class ContentPosterPickerComponent implements OnDestroy {
       return;
     }
     this.status.set('loading');
-    this.requests.add(this.api.getContentImages(this.contentType, tmdbId, 'posters').subscribe({
+    this.imageRequest?.unsubscribe();
+    this.imageRequest = this.api.getContentImages(this.contentType, tmdbId, 'posters', this.selectedImageLanguages()).subscribe({
       next: (images) => {
         const resolvedImages = images.map((image) => ({
           ...image,
           url: tmdbImageUrl(image.url, 'w500') ?? image.url,
         }));
+        if (!this.selectedImageLanguages().length) {
+          this.imageLanguageOptions.set(buildContentImageLanguageOptions(images, this.noImageLanguageLabel, this.imageLanguageLocale));
+        }
         this.images.set(resolvedImages);
         this.status.set('ready');
       },
       error: () => this.status.set('error'),
-    }));
+    });
   }
 
   private posterPath(value: string | null): string {
@@ -169,8 +186,8 @@ export class ContentPosterPickerComponent implements OnDestroy {
     const rect = trigger.getBoundingClientRect();
     const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const width = Math.min(360, viewportWidth - 24);
-    const height = Math.min(320, viewportHeight * 0.45);
+    const width = Math.min(480, viewportWidth - 24);
+    const height = Math.min(560, viewportHeight * 0.7);
     const left = Math.max(12, Math.min(rect.right - width, viewportWidth - width - 12));
     const below = rect.bottom + 8;
     const top = below + height <= viewportHeight - 12 ? below : Math.max(12, rect.top - height - 8);

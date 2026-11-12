@@ -40,6 +40,9 @@
             }
             @if (activeImagePicker(); as imageKind) {
               <div class="movie-share-image-options" [class.movie-share-image-options--poster]="imageKind === 'posters'" id="share-image-options" role="group" [attr.aria-label]="imageKind === 'posters' ? copy().shareSelectPoster : copy().shareSelectBackdrop">
+                @if (imageLanguageOptions(imageKind).length) {
+                  <app-content-image-language-filter [options]="imageLanguageOptions(imageKind)" [selectedLanguages]="selectedImageLanguages(imageKind)" [label]="copy().shareImageLanguage" [removeLanguageLabel]="copy().shareImageLanguageRemoveLabel" (selectedLanguagesChange)="changeImageLanguages(imageKind, $event)" />
+                }
                 @if (imageOptionsStatus(imageKind) === 'loading') {
                   <div class="movie-share-image-grid movie-share-image-grid--loading" [class.movie-share-image-grid--backdrops]="imageKind === 'backdrops'" [class.movie-share-image-grid--posters]="imageKind === 'posters'" role="status" [attr.aria-label]="copy().shareImageLoading">
                     @for (skeleton of imageOptionSkeletons; track skeleton) { <span></span> }
