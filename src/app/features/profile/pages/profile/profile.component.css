@@ -5425,8 +5425,35 @@
   gap: 6px;
 }
 
-.profile-overview-review-body > footer span:first-child svg {
+.profile-overview-review-body > footer .profile-overview-review-like svg {
   color: var(--color-like);
+}
+
+.profile-overview-review-body > footer .profile-overview-review-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-overview-review-body > footer .profile-overview-review-like:hover:not(:disabled) {
+  color: var(--color-like);
+}
+
+.profile-overview-review-body > footer .profile-overview-review-like:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+}
+
+.profile-overview-review-body > footer .profile-overview-review-like.is-liked svg {
+  fill: var(--color-like);
+  stroke: var(--color-like);
 }
 
 .profile-overview-review-body > footer span:last-child svg {

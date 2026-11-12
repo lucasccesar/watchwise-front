@@ -1247,7 +1247,8 @@ atividade de série.
 
 Usar somente `recentEpisodes` da aba Series. A lista tem até quatro episódios,
 independentemente de existir review. O payload é compacto e não contém texto
-de review, likes ou contagem de comentários.
+de review nem contagem de comentários. Cada item informa `source`, `likesCount`
+e `likedByMe` para identificar a origem e o estado da curtida do viewer.
 
 ### Recent reviews
 
@@ -1257,10 +1258,29 @@ Usar `recentReviews` como uma lista única de até cinco itens:
 - Series: conteúdos `SERIES`, `SEASON` e `EPISODE` com comentário não vazio.
 
 O payload contém a referência do conteúdo, score, data, número da visualização,
-poster personalizado e companions. Não contém o texto do comentário, likes ou
-contagem de comentários. Para temporadas e episódios, usar `content.type`,
+poster personalizado, companions, `source`, `likesCount` e `likedByMe`. Não
+contém o texto do comentário nem contagem de comentários. Para temporadas e episódios, usar `content.type`,
   `seasonNumber` e `episodeNumber`; metadata ausente permanece nula e o
   `previewStatus` orienta o placeholder.
+
+`source` identifica a origem do registro: `DIARY_ENTRY` usa `diaryEntryId` em
+`/diary/{diaryEntryId}/like`; `CONTENT_REVIEW` usa `reviewId` em
+`/reviews/{reviewId}/like`. `likesCount` e `likedByMe` vêm no resumo, sem
+requisições adicionais de leitura.
+
+### Curtir uma resenha recente
+
+Usar o `source` do item de `recentReviews` para alternar a curtida:
+
+```http
+POST /diary/{diaryEntryId}/like
+DELETE /diary/{diaryEntryId}/like
+POST /reviews/{reviewId}/like
+DELETE /reviews/{reviewId}/like
+```
+
+Atualizar `likesCount` e `likedByMe` no resumo após sucesso; em caso de erro,
+reverter a atualização otimista e informar a falha.
 
 ## Ações iniciadas pelo User Profile
 

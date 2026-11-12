@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 export type ProfileContentMode = 'MOVIE' | 'EPISODE';
 export type TopFiveContentType = 'MOVIE' | 'SERIES';
+export type ProfileDiaryPreviewSource = 'DIARY_ENTRY' | 'CONTENT_REVIEW';
 
 function apiContentType(type: ProfileContentMode): TopFiveContentType {
   return type === 'EPISODE' ? 'SERIES' : 'MOVIE';
@@ -62,7 +63,7 @@ export type ProfileHighlightContentCard = Omit<ProfileContentCard, 'backdropPath
 
 export interface ProfileDiaryPreview {
   id: string;
-  source?: string | null;
+  source?: ProfileDiaryPreviewSource | null;
   content: {
     id: string | null;
     type: string;
@@ -80,6 +81,7 @@ export interface ProfileDiaryPreview {
   watchedWith?: Array<{ id?: string; name?: string; username?: string; profilePicture?: string | null }>;
   comment?: string | null;
   likesCount?: number | null;
+  likedByMe?: boolean | null;
   commentsCount?: number | null;
 }
 

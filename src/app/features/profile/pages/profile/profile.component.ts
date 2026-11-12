@@ -26,7 +26,7 @@ import { ListItemType, ListsApiService, UserListCard, UserListCardPage } from '.
 import { PicksApiService, UserPickPreviewPage } from '../../../picks/data-access/picks-api.service';
 import { SearchApiService, SearchContentView, SearchUserView, SearchView } from '../../../search-content/data-access/search-api.service';
 import { WatchlistApiService, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../../watchlist/data-access/watchlist-api.service';
-import { ContentApiService } from '../../../content/data-access/content-api.service';
+import { ContentApiService, type ContentReviewSource } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
@@ -135,6 +135,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly recentSeriesPosterPaths = signal<Record<string, string>>({});
   protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
+  protected readonly recentReviewLikeBusyIds = signal<ReadonlySet<string>>(new Set());
   private readonly latestMovieReviewBackdropPath = signal<string | null | undefined>(undefined);
   protected readonly episodeStillPaths = signal<Record<string, string>>({});
   protected readonly summarySlide = signal(0);
@@ -270,6 +271,54 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   });
   protected readonly recentReviewComment = (review: ProfileDiaryPreview): string | null =>
     this.reviewComments()[review.id] || review.comment || null;
+  protected readonly canToggleRecentReviewLike = (review: ProfileDiaryPreview): boolean =>
+    this.recentReviewLikeSource(review) !== null && typeof review.likedByMe === 'boolean';
+  protected isRecentReviewLikeBusy(reviewId: string): boolean {
+    return this.recentReviewLikeBusyIds().has(reviewId);
+  }
+  protected toggleRecentReviewLike(review: ProfileDiaryPreview): void {
+    const source = this.recentReviewLikeSource(review);
+    if (!source || typeof review.likedByMe !== 'boolean' || this.isRecentReviewLikeBusy(review.id)) return;
+
+    const liked = !review.likedByMe;
+    this.updateRecentReviewLikeState(review.id, liked);
+    this.recentReviewLikeBusyIds.update((current) => new Set(current).add(review.id));
+    this.contentApi.setReviewLike(review.id, source, liked)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.finishRecentReviewLikeRequest(review.id),
+        error: () => {
+          this.updateRecentReviewLikeState(review.id, !liked);
+          this.finishRecentReviewLikeRequest(review.id);
+          this.toasts.error(this.copy.likeError);
+        },
+      });
+  }
+  private recentReviewLikeSource(review: ProfileDiaryPreview): ContentReviewSource | null {
+    if (review.source === 'DIARY_ENTRY') return 'DIARY';
+    if (review.source === 'CONTENT_REVIEW') return 'CONTENT_REVIEW';
+    return null;
+  }
+  private updateRecentReviewLikeState(reviewId: string, liked: boolean): void {
+    this.summary.update((summary) => summary ? {
+      ...summary,
+      recentReviews: summary.recentReviews.map((review) => {
+        if (review.id !== reviewId || review.likedByMe === liked) return review;
+        return {
+          ...review,
+          likedByMe: liked,
+          likesCount: Math.max(0, (review.likesCount ?? 0) + (liked ? 1 : -1)),
+        };
+      }),
+    } : summary);
+  }
+  private finishRecentReviewLikeRequest(reviewId: string): void {
+    this.recentReviewLikeBusyIds.update((current) => {
+      const next = new Set(current);
+      next.delete(reviewId);
+      return next;
+    });
+  }
   protected readonly profileHeroBackdrop = computed(() => {
     if (this.status() !== 'ready') return undefined;
     const profile = this.profile();
@@ -1857,6 +1906,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.recentSeriesPosterPaths.set({});
     this.ratedEpisodeEntries.set([]);
     this.reviewComments.set({});
+    this.recentReviewLikeBusyIds.set(new Set());
     this.episodeStillPaths.set({});
     this.topFive.set([]);
     this.diary.set(null);
