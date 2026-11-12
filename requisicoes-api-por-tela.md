@@ -1,6 +1,8 @@
 # Requisições da API por tela
 
-Inventário das chamadas `HttpClient` presentes na implementação atual do frontend. A lista foi montada a partir das rotas, componentes e serviços em `src/app/`; ela descreve o código deste checkout, não substitui o contrato da API nem garante que o backend esteja atualizado.
+Inventário das chamadas `HttpClient` presentes na implementação atual do frontend. A lista foi montada a partir das rotas, componentes e serviços em `src/app/`; ela descreve o código deste checkout, não substitui o contrato da API.
+
+Revisado em 12/11/2026 contra o código do frontend e a cópia independente de `../watchwise-api`. A reconciliação confirmou as rotas abaixo e atualizou os parâmetros de idioma das imagens e a identificação das atividades recentes no perfil.
 
 Todas as rotas abaixo são relativas e usam o prefixo `/api/v1`. `{id}` e nomes semelhantes representam valores dinâmicos da rota. As chamadas de ação só acontecem quando a pessoa aciona o controle correspondente. Métodos que percorrem todas as páginas podem gerar várias requisições HTTP.
 
@@ -22,7 +24,9 @@ O `scope` depende do controle, por exemplo `CONTENT`, `MOVIE`, `SERIES`, `PERSON
 
 Quando um seletor de cartaz/imagem é aberto:
 
-- `GET /api/v1/contents/selection/{type}/{tmdbId}/{kind}` — carrega as imagens disponíveis.
+- `GET /api/v1/contents/selection/{MOVIE|SERIES}/{tmdbId}/posters` — carrega cartazes.
+- `GET /api/v1/contents/selection/{MOVIE|SERIES}/{tmdbId}/backdrops` — carrega imagens de fundo.
+- As duas leituras aceitam o parâmetro opcional `include_image_language={códigos separados por vírgula}`. Sem filtro, o backend retorna as variantes disponíveis; com filtro, solicita ao TMDB os idiomas indicados. O frontend oferece também a opção sem idioma, enviada como o valor literal `null`.
 - `PUT /api/v1/users/me/content-posters/{contentId}` — salva a imagem escolhida, com `customPosterUrl` no corpo.
 
 O seletor aparece nas telas de filme e série; o diálogo de compartilhamento também consulta imagens para compor a prévia.
@@ -114,14 +118,16 @@ Não há rota independente `/search` no roteador. A busca disponível no cabeça
 **Aba principal:**
 
 - `GET /api/v1/users/{userId}/summary?type={MOVIE|SERIES}` — resumo do perfil; o modo de episódios usa `SERIES`.
-- `GET /api/v1/users/{userId}/top5/{MOVIE|SERIES}` — Top 5 da categoria.
+- O mesmo resumo inclui `top5`, com até cinco itens ordenados, `hasWatched` e os cards visuais; o modo de episódios usa o Top 5 de séries. A tela não faz uma chamada GET separada para o Top 5.
 - `GET /api/v1/users/{userId}/diary?page={página}&size={tamanho}&type={MOVIE|EPISODE}&sortBy=NEWEST` — itens recentes da categoria.
 - No modo de episódios, também carrega `GET /api/v1/users/{userId}/series-in-progress?...` e percorre páginas de `GET /api/v1/users/{userId}/diary?...` para preparar os episódios avaliados.
 - `GET /api/v1/users/{userId}/reviews?page=1&size=50` — resenhas recentes usadas no perfil.
 
+O campo `recentActivity` do resumo contém `id` e `source` além da referência e do estado da atividade. `source` pode ser `DIARY_ENTRY`, `SERIES_COMPLETION` ou `DROPPED_ENTRY`; use `id` junto de `source` para identificar a origem do item. O DTO também inclui `content`, `status`, `score`, `timesWatched`, `comment`, `activityDate` e `card`.
+
 **Abas acessíveis no perfil:**
 
-- `progress`: páginas de `GET /api/v1/users/{userId}/series-in-progress?page={página}&size=100&sortBy={ordenação}&direction={ASC|DESC}` e `GET /api/v1/users/{userId}/top5/MOVIE`. Ao abrir o destaque de uma série, `GET /api/v1/contents/{seriesTmdbId}/page` carrega a arte de fundo.
+- `progress`: páginas de `GET /api/v1/users/{userId}/series-in-progress?page={página}&size=100&sortBy={ordenação}&direction={ASC|DESC}`. Ao abrir o destaque de uma série, `GET /api/v1/contents/{seriesTmdbId}/page` carrega a arte de fundo.
 - `history`: `GET /api/v1/users/{userId}/summary/all-time` e `GET /api/v1/users/{userId}/diary` com filtros de tipo, série, nota, período, ordenação e paginação.
 - `reviews`: `GET /api/v1/users/{userId}/diary` com `hasReview=true`, tipo, ordenação e paginação.
 - `lists`: `GET /api/v1/users/{userId}/lists/view?page={página}&size={tamanho}` com filtros e ordenação.
