@@ -76,6 +76,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly page = signal<SeriesPage | null>(null);
   protected readonly crew = computed(() => sortCrewByRole(this.page()?.details.crew ?? [], 'SERIES'));
   protected readonly progressRecord = signal<SeriesInProgressRecord | null>(null);
+  protected readonly seriesPageRefreshPending = signal(false);
   protected readonly watchProgress = computed(() => this.calculateWatchProgress(this.page()));
   protected readonly pageStatus = signal<PageStatus>('loading');
   protected readonly pageError = signal('');
@@ -281,13 +282,18 @@ export class SeriesComponent implements OnInit, OnDestroy {
   private refreshSeriesAfterDiaryChange(): void {
     const contentId = this.contentId();
     const tmdbId = this.tmdbId();
-    if (!contentId || !tmdbId) return;
+    if (!contentId || !tmdbId) {
+      this.seriesPageRefreshPending.set(false);
+      return;
+    }
 
+    this.seriesPageRefreshPending.set(true);
     this.requests.add(forkJoin({
       page: this.api.getSeriesPage(contentId),
       progress: this.getSeriesProgressRecord(tmdbId),
     }).subscribe({
       next: ({ page, progress }) => {
+        this.seriesPageRefreshPending.set(false);
         if (page.details.type !== 'SERIES') return;
         this.page.set(page);
         this.progressRecord.set(progress);
@@ -296,6 +302,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
         this.loadComments(1);
       },
       error: (error: unknown) => {
+        this.seriesPageRefreshPending.set(false);
         if (this.handleSessionError(error)) return;
         this.showToast('As alterações foram salvas, mas não foi possível atualizar os dados da série.', 'warning');
       },
@@ -693,6 +700,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected rateCompletedContent(event?: Event): void {
+    if (this.seriesPageRefreshPending()) return;
     const target = this.ratingTarget();
     this.openRating(target?.type === 'SEASON' ? target : { type: 'SERIES' }, event);
   }
