@@ -32,7 +32,9 @@ export class WatchLogDialogComponent implements OnInit {
   readonly title = input.required<string>();
   readonly subtitle = input.required<string>();
   readonly initialRewatch = input(false);
+  readonly allowRating = input(true);
   readonly saving = input(false);
+  readonly returnFocusTarget = input<HTMLElement | null>(null);
   readonly save = output<WatchLogSubmission>();
   readonly dismiss = output<void>();
 

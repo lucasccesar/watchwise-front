@@ -231,6 +231,20 @@
   <div class="list-detail-modal-layer" (click)="deleteListDialogOpen.set(false)"><section class="list-detail-modal list-detail-confirm" role="alertdialog" appModalFocus [modalReturnFocus]="listMenuTrigger?.nativeElement ?? null" (modalDismiss)="deleteListDialogOpen.set(false)" aria-modal="true" aria-labelledby="delete-list-title" (click)="$event.stopPropagation()"><h2 id="delete-list-title">{{ copy.deleteListTitle }}</h2><p>{{ copy.deleteListDescription }}</p><div class="list-detail-modal-actions"><button type="button" (click)="deleteListDialogOpen.set(false)" data-ww-button="secondary">{{ copy.cancel }}</button><button class="list-detail-danger-action" type="button" [disabled]="deletingList()" (click)="confirmDeleteList()" data-ww-button="danger">{{ deletingList() ? copy.deleting : copy.confirmDelete }}</button></div></section></div>
 }
 
+@if (watchDialogItem(); as item) {
+  <app-watch-log-dialog
+    [dialogTitle]="watchDialogTitle(item)"
+    [title]="item.card?.title || homeCopy.titleUnavailable"
+    [subtitle]="watchDialogSubtitle(item)"
+    [initialRewatch]="itemWatchStatus(item) === 'WATCHED'"
+    [allowRating]="watchDialogAllowsRating(item)"
+    [saving]="watchDialogSaving()"
+    [returnFocusTarget]="watchDialogOpener()"
+    (save)="saveWatchDialog($event)"
+    (dismiss)="closeWatchDialog()"
+  />
+}
+
 @if (deleteItem()) {
   <div class="list-detail-modal-layer" (click)="deleteItem.set(null)"><section class="list-detail-modal list-detail-confirm" role="alertdialog" appModalFocus [modalReturnFocus]="listMenuTrigger?.nativeElement ?? null" (modalDismiss)="deleteItem.set(null)" aria-modal="true" aria-labelledby="delete-item-title" (click)="$event.stopPropagation()"><h2 id="delete-item-title">{{ copy.removeItem }}</h2><p>{{ deleteItem()?.card?.title ?? deleteItem()?.nestedList?.name }}</p><div class="list-detail-modal-actions"><button type="button" (click)="deleteItem.set(null)" data-ww-button="secondary">{{ copy.cancel }}</button><button class="list-detail-danger-action" type="button" [disabled]="deletingItemId() !== null" (click)="confirmDeleteItem()" data-ww-button="danger">{{ deletingItemId() ? copy.deleting : copy.confirmDelete }}</button></div></section></div>
 }

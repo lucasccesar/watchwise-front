@@ -435,3 +435,28 @@
 @if (shareReviewModel(); as model) {
   <app-share-review-dialog [model]="model" [copy]="shareCopy" [returnFocusTarget]="shareReviewOpener()" (closed)="closeShareReviewPreview()" />
 }
+@if (watchAgainTarget(); as entry) {
+  <app-watch-log-dialog
+    [dialogTitle]="homeCopy.rewatch"
+    [title]="watchAgainTitle(entry)"
+    [subtitle]="watchAgainSubtitle(entry)"
+    [initialRewatch]="true"
+    [allowRating]="watchAgainAllowsRating(entry)"
+    [saving]="watchAgainSaving()"
+    [returnFocusTarget]="watchAgainOpener()"
+    (save)="saveWatchAgain($event)"
+    (dismiss)="closeWatchAgainDialog()"
+  />
+}
+@if (ratingDialogEntry(); as entry) {
+  <app-rating-dialog
+    [title]="ratingDialogTitle(entry)"
+    [subtitle]="ratingDialogSubtitle(entry)"
+    [initialScore]="entry.score"
+    [initialComment]="entry.comment ?? ''"
+    [saving]="ratingDialogSaving()"
+    [returnFocusTarget]="ratingDialogOpener()"
+    (save)="saveRatingDialog($event)"
+    (dismiss)="closeRatingDialog()"
+  />
+}

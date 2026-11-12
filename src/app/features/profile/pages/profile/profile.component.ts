@@ -62,6 +62,7 @@ type ProfileActionContent = {
   title: string;
   subtitle: string;
   diaryEntryId?: string | null;
+  reviewId?: string | null;
 };
 type ProfileRatingDialogTarget = ProfileActionContent & { viewerState: ProfileActionViewerState; allowComment?: boolean };
 type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
@@ -1323,11 +1324,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       this.openProfileRatingDialog({
         ...target,
         diaryEntryId: entry.reviewSource === 'DIARY' ? entry.id : null,
+        reviewId: entry.reviewSource === 'CONTENT_REVIEW' ? entry.id : null,
         viewerState: {
           myRating: entry.score,
           myReview: entry.comment,
           latestDiaryEntryId: entry.reviewSource === 'CONTENT_REVIEW' ? null : entry.id,
           currentRatingVersion: null,
+          reviewIds: entry.reviewSource === 'CONTENT_REVIEW' ? [entry.id] : [],
         },
       }, selection.event);
     }
@@ -1558,6 +1561,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const state = target.viewerState;
     const score = submission.score;
     const comment = submission.comment || null;
+    if (target.reviewId) {
+      const calls: Observable<unknown>[] = [
+        comment
+          ? this.contentApi.updateContentReview(target.reviewId, comment)
+          : this.contentApi.deleteContentReview(target.reviewId),
+      ];
+      if (score !== null && score > 0 && score !== state.myRating) {
+        calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+      }
+      return forkJoin(calls);
+    }
     if (target.type === 'MOVIE') {
       const request = { score, comment };
       return target.diaryEntryId || state.latestDiaryEntryId

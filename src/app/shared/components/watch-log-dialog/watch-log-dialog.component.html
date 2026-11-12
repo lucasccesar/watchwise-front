@@ -2,6 +2,7 @@
   <section
     class="watch-log-dialog ww-dialog-panel"
     appModalFocus
+    [modalReturnFocus]="returnFocusTarget()"
     (modalDismiss)="dismiss.emit()"
     role="dialog"
     aria-modal="true"
@@ -48,6 +49,7 @@
       <div><span class="watch-log-just-you">{{ copy.justYou }}</span><button type="button" disabled [title]="copy.actionUnavailableShort"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.addPerson }}</button></div>
     </div>
 
+    @if (allowRating()) {
     <div class="watch-rating" role="group" [attr.aria-label]="copy.yourRating">
       <span>{{ copy.yourRating }}</span>
       <div>
@@ -61,6 +63,7 @@
     </div>
 
     <label class="watch-review"><span>{{ copy.yourReview }} <span>{{ copy.optional }}</span></span><textarea rows="5" [placeholder]="copy.reviewPlaceholder" [value]="watchLogReview()" (input)="updateWatchLogReview($event)"></textarea></label>
+    }
 
     <footer class="watch-log-actions">
       <button class="watch-log-cancel" type="button" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">{{ copy.cancel }}</button>

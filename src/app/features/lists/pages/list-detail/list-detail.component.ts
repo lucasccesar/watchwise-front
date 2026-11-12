@@ -6,6 +6,7 @@ import { buildCommentTree } from '../../../../shared/components/comment-item/com
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -31,7 +32,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent],
+    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
@@ -62,6 +63,9 @@ export class ListDetailComponent {
   protected readonly userListsStatus = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
   protected readonly userListsLoadingMore = signal(false);
   protected readonly busyItemActionId = signal<string | null>(null);
+  protected readonly watchDialogItem = signal<ListDetailItem | null>(null);
+  protected readonly watchDialogOpener = signal<HTMLElement | null>(null);
+  protected readonly watchDialogSaving = signal(false);
   protected readonly busyListId = signal<string | null>(null);
   protected readonly reorderMode = signal(false);
   protected readonly reorderDraft = signal<ListDetailItem[]>([]);
@@ -350,7 +354,7 @@ export class ListDetailComponent {
     this.activeImageMenu.set(null);
     switch (selection.action.id) {
       case 'mark-watched':
-        this.markItemAsWatched(item);
+        this.openWatchDialog(item, selection.event);
         break;
       case 'watchlist':
         this.toggleItemWatchlist(item);
@@ -466,22 +470,63 @@ export class ListDetailComponent {
     return this.busyListId() === listId;
   }
 
-  private markItemAsWatched(item: ListDetailItem): void {
-    if (!item.card) return;
+  private openWatchDialog(item: ListDetailItem, event: MouseEvent): void {
+    if (!item.card || this.busyItemActionId()) return;
     if (!this.session.user()?.id) {
       void this.router.navigateByUrl('/login');
       return;
     }
-    const request = this.createWatchRequest(item);
+    this.watchDialogItem.set(item);
+    this.watchDialogOpener.set((event.currentTarget as HTMLElement | null)?.closest('app-content-image-actions')
+      ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
+  }
+
+  protected closeWatchDialog(): void {
+    if (this.watchDialogSaving()) return;
+    this.watchDialogItem.set(null);
+    const opener = this.watchDialogOpener();
+    this.watchDialogOpener.set(null);
+    if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
+  }
+
+  protected watchDialogTitle(item: ListDetailItem): string {
+    return item.card?.viewerState?.watchStatus === 'WATCHED' || this.itemWatchStatus(item) === 'WATCHED'
+      ? this.trendingCopy.watchAgain
+      : this.trendingCopy.markWatched;
+  }
+
+  protected watchDialogAllowsRating(item: ListDetailItem): boolean {
+    return item.card?.type === 'MOVIE' || item.card?.type === 'EPISODE';
+  }
+
+  protected watchDialogSubtitle(item: ListDetailItem): string {
+    const card = item.card;
+    if (!card) return '';
+    if (card.type === 'SEASON') return `${this.homeCopy.seasonShort}${card.seasonNumber ?? ''}`;
+    if (card.type === 'EPISODE') return `${this.homeCopy.seasonShort}${card.seasonNumber ?? ''} · ${this.homeCopy.episodeShort}${card.episodeNumber ?? ''}`;
+    return card.type === 'SERIES' ? this.copy.series : this.copy.movies;
+  }
+
+  protected saveWatchDialog(submission: WatchLogSubmission): void {
+    const item = this.watchDialogItem();
+    if (!item || this.watchDialogSaving()) return;
+    const request = this.createWatchRequest(item, submission);
     if (!request) {
       this.toasts.error(this.trendingCopy.actionError);
       return;
     }
-    const watchedDate = this.todayDate();
-    const wasWatched = this.itemWatchStatus(item) === 'WATCHED';
-    this.runItemAction(item, request, wasWatched ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess, () => {
+    const wasWatched = submission.isRewatch || this.itemWatchStatus(item) === 'WATCHED';
+    const successMessage = wasWatched ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess;
+    const watchedDate = submission.watchedDate;
+    this.watchDialogSaving.set(true);
+    this.runItemAction(item, request, successMessage, () => {
+      this.watchDialogSaving.set(false);
+      this.watchDialogItem.set(null);
       this.updateItemViewerState(item.id, { watchStatus: 'WATCHED', lastWatchedDate: watchedDate });
       this.load();
+      const opener = this.watchDialogOpener();
+      this.watchDialogOpener.set(null);
+      if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
     });
   }
 
@@ -517,21 +562,22 @@ export class ListDetailComponent {
       },
       error: (error: unknown) => {
         this.busyItemActionId.set(null);
+        this.watchDialogSaving.set(false);
         if (this.handleSessionError(error)) return;
         this.toasts.error(this.trendingCopy.actionError);
       },
     });
   }
 
-  private createWatchRequest(item: ListDetailItem): Observable<unknown> | null {
+  private createWatchRequest(item: ListDetailItem, submission: WatchLogSubmission): Observable<unknown> | null {
     const card = item.card;
     if (!card) return null;
-    const watchedDate = this.todayDate();
-    const isRewatch = this.itemWatchStatus(item) === 'WATCHED';
+    const watchedDate = submission.watchedDate;
+    const isRewatch = submission.isRewatch || this.itemWatchStatus(item) === 'WATCHED';
     switch (card.type) {
       case 'MOVIE':
         return card.tmdbId
-          ? this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: card.tmdbId }, watchedDate, isRewatch, watchedInTheater: false, score: null, comment: null })
+          ? this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: card.tmdbId }, watchedDate, isRewatch, watchedInTheater: false, score: submission.score, comment: submission.comment || null })
           : null;
       case 'SERIES':
         return card.tmdbId
@@ -543,7 +589,7 @@ export class ListDetailComponent {
           : null;
       case 'EPISODE':
         return card.seriesTmdbId && card.seasonNumber !== null && card.episodeNumber !== null
-          ? this.contentApi.createSeriesDiaryEntry({ content: { type: 'EPISODE', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, episodeNumber: card.episodeNumber, runtimeMinutes: card.runtimeMinutes ?? undefined }, watchedDate, isRewatch, watchedInTheater: false, score: null, comment: null })
+          ? this.contentApi.createSeriesDiaryEntry({ content: { type: 'EPISODE', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, episodeNumber: card.episodeNumber, runtimeMinutes: card.runtimeMinutes ?? undefined }, watchedDate, isRewatch, watchedInTheater: false, score: submission.score, comment: submission.comment || null })
           : null;
       default:
         return null;
@@ -666,11 +712,6 @@ export class ListDetailComponent {
     };
     this.detail.update((detail) => detail ? { ...detail, items: { ...detail.items, content: detail.items.content.map(update) } } : detail);
     this.reorderDraft.update((items) => items.map(update));
-  }
-
-  private todayDate(): string {
-    const date = new Date();
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
 
   private handleSessionError(error: unknown): boolean {
