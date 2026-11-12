@@ -50,10 +50,11 @@ export interface ContentImageLanguageOption {
     .content-image-language-trigger:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
     .content-image-language-trigger svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .content-image-language-tags { display: flex; min-width: 0; flex-wrap: wrap; gap: 4px; }
-    .content-image-language-tag { display: inline-flex; max-width: 180px; min-height: 24px; align-items: center; gap: 4px; padding: 0 4px 0 8px; border: 1px solid var(--color-border); border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-text); font-size: var(--font-size-xs); }
+    .content-image-language-tag { display: inline-flex; max-width: 180px; min-height: 24px; align-items: center; gap: 4px; padding: 0 4px 0 8px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-size: var(--font-size-xs); }
     .content-image-language-tag > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .content-image-language-tag button { display: inline-grid; width: 14px; height: 14px; flex: 0 0 14px; place-items: center; padding: 0; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-text-tertiary); cursor: pointer; font: inherit; font-size: 12px; line-height: 1; }
-    .content-image-language-tag button:hover, .content-image-language-tag button:focus-visible { background: var(--color-secondary); color: var(--color-text); }
+    .content-image-language-tag button { all: unset; display: grid; box-sizing: border-box; width: 12px; min-width: 12px; max-width: 12px; height: 12px; min-height: 12px; max-height: 12px; flex: 0 0 12px; align-self: center; place-items: center; border-radius: var(--radius-sm); color: var(--color-text-tertiary); cursor: pointer; font-family: inherit; font-size: 10px; line-height: 12px; text-align: center; }
+    .content-image-language-tag button:hover { color: var(--color-text); }
+    .content-image-language-tag button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
     .content-image-language-menu { position: fixed; z-index: 1210; display: flex; width: min(240px, calc(100vw - 24px)); max-height: min(220px, calc(100vh - 24px)); flex-direction: column; overflow-y: auto; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-xl); }
     .content-image-language-option { display: flex; min-height: 40px; align-items: center; gap: 9px; padding: 0 8px; border-radius: var(--radius-sm); color: var(--color-text); cursor: pointer; font-size: var(--font-size-sm); }
     .content-image-language-option:hover { background: var(--color-secondary); }
