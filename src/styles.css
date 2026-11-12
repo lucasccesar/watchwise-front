@@ -586,6 +586,6 @@ input:focus-visible {
 }
 
 /* Keep navigation links blue on hover across feature-level styles. */
-a[href]:hover:not([aria-disabled='true']):not(:is([data-ww-button], [role='button'], [role='menuitem'], [class*='button'], [class*='action'], .picks-create, .profile-picks-create, .game-continue)) {
+a[href]:hover:not([aria-disabled='true']):not(:is([data-ww-button], [role='button'], [role='menuitem'], [class*='button'], [class*='action'], .picks-create, .profile-picks-create, .game-continue, .not-found-primary, .not-found-secondary)):not(:has(svg, img)) {
   color: var(--color-primary) !important;
 }
