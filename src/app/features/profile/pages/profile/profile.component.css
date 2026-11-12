@@ -6124,7 +6124,7 @@
 
 .profile-continue-rating {
   right: var(--space-2);
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 
 .profile-overview-content .profile-continue-info {
