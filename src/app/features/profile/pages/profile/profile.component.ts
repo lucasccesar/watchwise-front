@@ -260,7 +260,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             || latestEpisode?.seriesPosterPath
             || latestEpisode?.card?.posterPath
             || null,
-          releaseYear: entry.releaseYear,
+          releaseYear: entry.releaseYear ?? this.summarySeriesReleaseYear(entry.seriesTmdbId),
           watchedEpisodeCount: entry.watchedEpisodeCount,
           lastWatchedDate: entry.lastWatchedDate,
           score: latestEpisode?.score ?? null,
@@ -1022,6 +1022,21 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       && totalEpisodes !== undefined
       && totalEpisodes > 0
       && item.watchedEpisodeCount >= totalEpisodes;
+  }
+
+  private summarySeriesReleaseYear(seriesTmdbId: string): number | null {
+    for (const activity of this.summary()?.recentActivity ?? []) {
+      const cardValue = activity['card'];
+      if (!cardValue || typeof cardValue !== 'object' || Array.isArray(cardValue)) continue;
+
+      const card = cardValue as Record<string, unknown>;
+      if (card['type'] !== 'SERIES' || String(card['tmdbId'] ?? '') !== seriesTmdbId) continue;
+
+      const releaseYear = card['releaseYear'];
+      if (typeof releaseYear === 'number' && Number.isFinite(releaseYear)) return releaseYear;
+    }
+
+    return null;
   }
 
   protected pageRangeStart(data: ProfilePageMetadata): number {
