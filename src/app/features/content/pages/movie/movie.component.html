@@ -358,15 +358,7 @@
                 } @else {
                   <p class="movie-empty-inline ww-empty-message">{{ copy.listEmpty }}</p>
                 }
-                @if (listCreateOpen()) {
-                  <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createMovieList()">
-                    <label class="visually-hidden" for="movie-new-list-name">{{ copy.newListName }}</label>
-                    <input id="movie-new-list-name" type="text" maxlength="255" [value]="newListName()" [placeholder]="copy.newListName" (input)="newListName.set($any($event.target).value)" />
-                    <button type="submit" [disabled]="!newListName().trim() || actionPending()">{{ copy.createNewList }}</button>
-                  </form>
-                } @else {
-                  <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)" data-ww-select-trigger><span aria-hidden="true">+</span>{{ copy.createNewList }}</button>
-                }
+                <button class="movie-lists-create-trigger" type="button" (click)="goToListCreate()" data-ww-select-trigger><span aria-hidden="true">+</span>{{ copy.createNewList }}</button>
               </div>
             }
           </div>
@@ -887,15 +879,7 @@
           } @else {
             <p class="movie-empty-inline ww-empty-message">{{ copy.listEmpty }}</p>
           }
-          @if (listCreateOpen()) {
-            <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createMovieList()">
-              <label for="movie-new-list-name-dialog">{{ copy.newListName }}</label>
-              <input id="movie-new-list-name-dialog" type="text" maxlength="255" [value]="newListName()" (input)="newListName.set($any($event.target).value)" />
-              <button type="submit" [disabled]="!newListName().trim() || actionPending()">{{ copy.createNewList }}</button>
-            </form>
-          } @else {
-            <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)" data-ww-select-trigger><span aria-hidden="true">+</span>{{ copy.createNewList }}</button>
-          }
+          <button class="movie-lists-create-trigger" type="button" (click)="goToListCreate()" data-ww-select-trigger><span aria-hidden="true">+</span>{{ copy.createNewList }}</button>
         }
       </section>
     </div>

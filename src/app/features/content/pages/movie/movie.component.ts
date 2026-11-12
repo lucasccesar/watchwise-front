@@ -129,8 +129,6 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected readonly replyTo = signal<ContentComment | null>(null);
   protected readonly userLists = signal<UserListSummary[]>([]);
   protected readonly listsExpanded = signal(false);
-  protected readonly listCreateOpen = signal(false);
-  protected readonly newListName = signal('');
   protected readonly userListsPage = signal<ContentPageResult<UserListSummary> | null>(null);
   protected readonly userListsStatus = signal<PageStatus>('loading');
   protected readonly userListsError = signal('');
@@ -252,8 +250,6 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.contentId.set('');
     this.tmdbId.set(tmdbId);
     this.listsExpanded.set(false);
-    this.listCreateOpen.set(false);
-    this.newListName.set('');
     this.userListsPage.set(null);
     this.userLists.set([]);
     this.reviews.set([]);
@@ -554,20 +550,19 @@ export class MovieComponent implements OnInit, OnDestroy {
     this.dialog.set('share');
   }
 
-  protected openLists(event?: Event): void {
-    this.modalOpener = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-    this.listCreateOpen.set(false);
+  protected openLists(event?: Event, keepMenuOpen = false): void {
+    this.captureDialogOpener(event, !keepMenuOpen);
     this.dialog.set('lists');
     this.loadUserLists(1);
     queueMicrotask(() => this.movieDialog?.nativeElement.focus());
   }
 
   protected openListsFromMobileMenu(event: Event): void {
-    const item = event.currentTarget as HTMLElement;
-    const menu = item.closest<HTMLDetailsElement>('.movie-mobile-more-actions');
-    this.openLists(event);
-    this.modalOpener = menu?.querySelector<HTMLElement>('summary') ?? item;
-    if (menu) menu.open = false;
+    this.openLists(event, true);
+  }
+
+  protected goToListCreate(): void {
+    void this.router.navigateByUrl('/lists/create');
   }
 
   protected toggleListsPanel(event: Event): void {
@@ -578,21 +573,6 @@ export class MovieComponent implements OnInit, OnDestroy {
     const expanded = !this.listsExpanded();
     this.listsExpanded.set(expanded);
     if (expanded && !this.userListsPage()) this.loadUserLists(1);
-  }
-
-  protected createMovieList(): void {
-    const name = this.newListName().trim();
-    if (!name || name.length > 255 || this.actionPending()) return;
-    this.runAction(
-      this.api.createMovieList(name, this.tmdbId()),
-      () => {
-        this.listCreateOpen.set(false);
-        this.newListName.set('');
-        this.showToast(this.copy.listAdded);
-        this.loadUserLists(1);
-        this.refreshPageStats();
-      },
-    );
   }
 
   protected loadUserLists(pageNumber: number): void {
@@ -697,7 +677,7 @@ export class MovieComponent implements OnInit, OnDestroy {
     if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
-  private captureDialogOpener(event?: Event): void {
+  private captureDialogOpener(event?: Event, closeMenu = true): void {
     const target = event?.currentTarget;
     if (!(target instanceof HTMLElement)) {
       this.modalOpener = null;
@@ -705,7 +685,7 @@ export class MovieComponent implements OnInit, OnDestroy {
     }
     const menu = target.closest<HTMLDetailsElement>('.movie-mobile-more-actions');
     this.modalOpener = menu?.querySelector<HTMLElement>('summary') ?? target;
-    if (menu) menu.open = false;
+    if (menu && closeMenu) menu.open = false;
   }
 
   protected saveWatch(): void {
@@ -1034,6 +1014,11 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   protected onDocumentKeydown(event: KeyboardEvent): void {
+    if (this.dialog() && event.key === 'Escape') {
+      event.preventDefault();
+      this.closeDialog();
+      return;
+    }
     if (event.key === 'Escape') {
       const menu = this.document.querySelector<HTMLDetailsElement>('.movie-mobile-more-actions[open]');
       if (menu) {
@@ -1044,11 +1029,6 @@ export class MovieComponent implements OnInit, OnDestroy {
       }
     }
     if (!this.dialog()) return;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.closeDialog();
-      return;
-    }
     if (event.key !== 'Tab') return;
     const root = this.movieDialog?.nativeElement;
     if (!root) return;
@@ -1069,6 +1049,7 @@ export class MovieComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   protected onDocumentClick(event: MouseEvent): void {
+    if (event.target instanceof Element && event.target.closest('.movie-modal-backdrop')) return;
     const menu = this.document.querySelector<HTMLDetailsElement>('.movie-mobile-more-actions[open]');
     const isWatchedMenuTrigger = event.target instanceof Element
       && event.target.closest('[data-ww-watched-menu-trigger]') !== null;

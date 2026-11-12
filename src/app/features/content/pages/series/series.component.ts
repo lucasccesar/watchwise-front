@@ -143,8 +143,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly peoplePane = signal<'watched' | 'watching'>('watched');
   protected readonly providersExpanded = signal(false);
   protected readonly listsExpanded = signal(false);
-  protected readonly listCreateOpen = signal(false);
-  protected readonly newListName = signal('');
   protected readonly userLists = signal<UserListSummary[]>([]);
   protected readonly userListsPage = signal<ContentPageResult<UserListSummary> | null>(null);
   protected readonly userListsStatus = signal<PageStatus>('loading');
@@ -912,12 +910,15 @@ export class SeriesComponent implements OnInit, OnDestroy {
     if (expanded && !this.userListsPage()) this.loadUserLists(1);
   }
 
-  protected openLists(event?: Event): void {
-    this.captureDialogOpener(event);
+  protected openLists(event?: Event, keepMenuOpen = false): void {
+    this.captureDialogOpener(event, !keepMenuOpen);
     this.dialog.set('lists');
-    this.listCreateOpen.set(false);
     this.loadUserLists(1);
     queueMicrotask(() => this.seriesDialog?.nativeElement.focus());
+  }
+
+  protected goToListCreate(): void {
+    void this.router.navigateByUrl('/lists/create');
   }
 
   protected loadUserLists(pageNumber: number): void {
@@ -999,18 +1000,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected canAddContentToList(list: UserListSummary): boolean {
     return list.itemScope === null || list.itemScope === 'MOVIE_OR_SERIES';
-  }
-
-  protected createSeriesList(): void {
-    const name = this.newListName().trim();
-    if (!name || name.length > 255 || this.actionPending()) return;
-    this.runAction(this.api.createSeriesList(name, this.tmdbId()), () => {
-      this.newListName.set('');
-      this.listCreateOpen.set(false);
-      this.showToast('Lista criada.');
-      this.loadUserLists(1);
-      this.refreshSeriesViewerState();
-    });
   }
 
   protected loadMoreLists(): void {
@@ -1557,6 +1546,11 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   protected onDocumentKeydown(event: KeyboardEvent): void {
+    if (this.dialog() && event.key === 'Escape') {
+      event.preventDefault();
+      this.closeDialog();
+      return;
+    }
     if (event.key === 'Escape') {
       const openImageMenu = this.activeSeriesImageMenu();
       if (openImageMenu) {
@@ -1577,11 +1571,6 @@ export class SeriesComponent implements OnInit, OnDestroy {
       }
     }
     if (!this.dialog()) return;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.closeDialog();
-      return;
-    }
     if (event.key !== 'Tab') return;
     const root = this.seriesDialog?.nativeElement;
     if (!root) return;
@@ -1598,6 +1587,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   protected onDocumentClick(event: MouseEvent): void {
+    if (event.target instanceof Element && event.target.closest('.series-modal-backdrop')) return;
     const target = event.target;
     if (!(target instanceof Node)) return;
     const menus = this.document.querySelectorAll<HTMLDetailsElement>(
@@ -1614,12 +1604,12 @@ export class SeriesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private captureDialogOpener(event?: Event): void {
+  private captureDialogOpener(event?: Event, closeMenu = true): void {
     const target = event?.currentTarget;
     if (!(target instanceof HTMLElement)) return;
     const menu = target.closest<HTMLDetailsElement>('.movie-mobile-more-actions');
     this.modalOpener = menu?.querySelector<HTMLElement>('summary') ?? target;
-    if (menu) menu.open = false;
+    if (menu && closeMenu) menu.open = false;
   }
 
   private runAction<T>(request: Observable<T>, success: () => void, failure?: (error: unknown) => void): void {

@@ -92,8 +92,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly userListsLoadingMore = signal(false);
   protected readonly userListsError = signal('');
   protected readonly busyListId = signal<string | null>(null);
-  protected readonly listCreateOpen = signal(false);
-  protected readonly listDraftName = signal('');
   protected readonly watchDialogCard = signal<TrendingCard | null>(null);
   protected readonly watchDialogDate = signal(this.todayDate());
   protected readonly watchDialogScore = signal<number | null>(null);
@@ -382,8 +380,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     if (this.busyListId()) return;
     this.listDialogCard.set(null);
     this.listPickerPosition.set(null);
-    this.listCreateOpen.set(false);
-    this.listDraftName.set('');
     this.listDialogOpener.set(null);
     this.listRequests.unsubscribe();
     this.listRequests = new Subscription();
@@ -418,8 +414,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.userListsStatus.set('loading');
     this.userListsLoadingMore.set(false);
     this.userListsError.set('');
-    this.listCreateOpen.set(false);
-    this.listDraftName.set('');
     this.listRequests.unsubscribe();
     this.listRequests = new Subscription();
 
@@ -577,37 +571,8 @@ export class TrendingComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected updateListDraft(event: Event): void {
-    this.listDraftName.set((event.currentTarget as HTMLInputElement).value);
-  }
-
-  protected createListWithCard(): void {
-    const card = this.listDialogCard();
-    const name = this.listDraftName().trim();
-    if (!card || !name || this.busyListId()) return;
-    this.busyListId.set('new-list');
-    const request = card.type === 'MOVIE'
-      ? this.contentApi.createMovieList(name, card.tmdbId)
-      : this.contentApi.createSeriesList(name, card.tmdbId);
-    this.listRequests.add(request.subscribe({
-      next: () => {
-        this.busyListId.set(null);
-        this.listCreateOpen.set(false);
-        this.listDraftName.set('');
-        this.toasts.success(this.copy.listAdded);
-        this.loadUserLists(1);
-      },
-      error: (error: unknown) => {
-        this.busyListId.set(null);
-        if (this.handleSessionError(error)) return;
-        this.toasts.error(this.copy.actionError);
-      },
-    }));
-  }
-
-  protected openListCreate(): void {
-    this.listCreateOpen.set(true);
-    this.listDraftName.set('');
+  protected goToListCreate(): void {
+    void this.router.navigateByUrl('/lists/create');
   }
 
   protected canToggleList(list: UserListSummary): boolean {

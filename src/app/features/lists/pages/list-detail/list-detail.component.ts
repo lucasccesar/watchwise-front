@@ -351,7 +351,7 @@ export class ListDetailComponent {
   }
 
   protected openImageAction(item: ListDetailItem, selection: ContentImageActionSelection): void {
-    this.activeImageMenu.set(null);
+    if (selection.action.id !== 'add-to-list') this.activeImageMenu.set(null);
     switch (selection.action.id) {
       case 'mark-watched':
         this.openWatchDialog(item, selection.event);

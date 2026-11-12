@@ -319,6 +319,7 @@
                 } @else {
                   <p class="movie-empty-inline ww-empty-message">Você ainda não criou nenhuma lista.</p>
                 }
+                <button class="movie-lists-create-trigger" type="button" (click)="goToListCreate()" data-ww-select-trigger><span aria-hidden="true">+</span>{{ watchCopy.createNewList }}</button>
               </div>
             }
           </div>

@@ -91,8 +91,6 @@ export class SeasonComponent implements OnDestroy {
   protected readonly userListsStatus = signal<PageStatus>('loading');
   protected readonly userListsError = signal('');
   protected readonly listsOpen = signal(false);
-  protected readonly listCreateOpen = signal(false);
-  protected readonly newListName = signal('');
   protected readonly watchDialogOpen = signal(false);
   protected readonly bulkWatchSeason = signal<SeasonListItem | null>(null);
   protected readonly seasonHistoryConfirmOpen = signal(false);
@@ -550,10 +548,10 @@ export class SeasonComponent implements OnDestroy {
   protected closeOpenMenus(event: MouseEvent): void {
     const target = event.target;
     const targetElement = target instanceof Element ? target : null;
+    if (targetElement?.closest('.season-lists-control, .season-card-menu, .season-navigation-menu')) return;
     const watchedMenu = this.document.querySelector<HTMLDetailsElement>('.season-watched-actions[open]');
     const isWatchedMenuTrigger = !!targetElement?.closest('[data-ww-watched-menu-trigger]');
     if (watchedMenu && (!targetElement || (!watchedMenu.contains(targetElement) && !isWatchedMenuTrigger))) watchedMenu.open = false;
-    if (targetElement?.closest('.season-lists-control, .season-card-menu, .season-navigation-menu')) return;
     this.activeSeasonMenu.set(null);
     this.activeEpisodeMenu.set(null);
     this.listsOpen.set(false);
@@ -911,23 +909,14 @@ export class SeasonComponent implements OnDestroy {
   }
 
   protected openListsFromWatchedMenu(event: Event): void {
-    const menu = (event.currentTarget as HTMLElement | null)?.closest<HTMLDetailsElement>('.season-watched-actions');
-    if (menu) menu.open = false;
+    event.stopPropagation();
     if (!this.listsOpen()) this.listsOpen.set(true);
     if (this.userListsStatus() !== 'ready') this.loadUserLists(1);
     queueMicrotask(() => this.document.querySelector<HTMLElement>('.season-lists-control')?.scrollIntoView({ block: 'nearest' }));
   }
 
-  protected createList(): void {
-    const name = this.newListName().trim();
-    if (!name || this.actionPending()) return;
-    this.runAction(this.api.createSeasonList(name, this.tmdbId(), this.seasonNumber()), () => {
-      this.newListName.set('');
-      this.listCreateOpen.set(false);
-      this.showToast('Lista criada e temporada adicionada.');
-      this.loadUserLists(1);
-      this.refreshSeasonViewerState();
-    });
+  protected goToListCreate(): void {
+    void this.router.navigateByUrl('/lists/create');
   }
 
   protected loadUserLists(pageNumber: number): void {
@@ -960,8 +949,6 @@ export class SeasonComponent implements OnDestroy {
   protected toggleSeasonInList(list: UserListSummary): void {
     if (this.actionPending() || (list.containsContent !== true && !this.canAddToList(list))) return;
     this.listsOpen.set(false);
-    this.listCreateOpen.set(false);
-    this.newListName.set('');
     if (list.containsContent) {
       this.runAction(this.findSeasonItemInList(list.id, this.contentId(), 1).pipe(
         switchMap((itemId) => itemId ? this.api.removeListItem(list.id, itemId) : throwError(() => new Error('List item not found'))),
@@ -1177,8 +1164,6 @@ export class SeasonComponent implements OnDestroy {
     this.userListsPage.set(null);
     this.userListsStatus.set('loading');
     this.listsOpen.set(false);
-    this.listCreateOpen.set(false);
-    this.newListName.set('');
     this.activeEpisodeMenu.set(null);
     this.detailsExpanded.set(false);
     if (!tmdbId || !Number.isInteger(seasonNumber) || seasonNumber < 1) {

@@ -68,7 +68,6 @@ export class ContentImageActionsComponent implements OnDestroy {
   protected readonly listError = signal('');
   protected readonly listLoadingMore = signal(false);
   protected readonly busyListId = signal<string | null>(null);
-  protected readonly listDraft = signal('');
   protected readonly listCopy = messageCatalog['pt-BR'].trendingPage;
   protected readonly listSkeletonRows = [0, 1, 2];
 
@@ -198,34 +197,9 @@ export class ContentImageActionsComponent implements OnDestroy {
     this.loadLists(1);
   }
 
-  protected updateListDraft(event: Event): void {
-    this.listDraft.set((event.target as HTMLInputElement).value);
-  }
-
-  protected createList(): void {
-    const target = this.listTarget;
-    const name = this.listDraft().trim();
-    if (!target || !name || this.busyListId()) return;
-    this.busyListId.set('new-list');
-    const request = target.type === 'MOVIE'
-      ? this.contentApi.createMovieList(name, target.tmdbId)
-      : target.type === 'SERIES'
-        ? this.contentApi.createSeriesList(name, target.tmdbId)
-        : target.type === 'SEASON'
-          ? this.contentApi.createSeasonList(name, target.seriesTmdbId, target.seasonNumber)
-          : this.contentApi.createEpisodeList(name, target.seriesTmdbId, target.seasonNumber, target.episodeNumber);
-    this.listRequests.add(request.subscribe({
-      next: () => {
-        this.busyListId.set(null);
-        this.closeListPicker();
-        this.toasts.success(this.listCopy.listAdded);
-      },
-      error: (error: unknown) => {
-        this.busyListId.set(null);
-        if (this.handleSessionError(error)) return;
-        this.listError.set(this.listCopy.actionError);
-      },
-    }));
+  protected goToListCreate(): void {
+    this.closeListPicker(false);
+    void this.router.navigateByUrl('/lists/create');
   }
 
   protected closeListPicker(restoreFocus = true): void {
@@ -233,7 +207,6 @@ export class ContentImageActionsComponent implements OnDestroy {
     this.listPickerOpen.set(false);
     this.listPickerPosition.set(null);
     this.listError.set('');
-    this.listDraft.set('');
     this.listRequests.unsubscribe();
     this.listRequests = new Subscription();
     if (restoreFocus) this.trigger?.nativeElement.focus();
@@ -267,9 +240,6 @@ export class ContentImageActionsComponent implements OnDestroy {
     const height = Math.min(420, window.innerHeight - 32);
     const top = rect.bottom + 8 + height > window.innerHeight ? Math.max(16, rect.top - height - 8) : rect.bottom + 8;
     this.listPickerPosition.set({ top, left: Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12)) });
-    if (this.expanded === undefined) this.internalExpanded = false;
-    this.menuPosition = null;
-    this.toggle.emit(event);
     this.listPickerOpen.set(true);
     this.listStatus.set('loading');
     this.listError.set('');

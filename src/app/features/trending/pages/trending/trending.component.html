@@ -147,15 +147,7 @@
                           }
 
                           <div class="tr-list-picker-create">
-                            @if (listCreateOpen()) {
-                              <form (submit)="$event.preventDefault(); createListWithCard()">
-                                <label class="visually-hidden" for="tr-new-list-name">{{ copy.newListName }}</label>
-                                <input id="tr-new-list-name" type="text" maxlength="120" [value]="listDraftName()" [placeholder]="copy.newListName" [disabled]="busyListId() !== null" (input)="updateListDraft($event)" />
-                                <button type="submit" [disabled]="!listDraftName().trim() || busyListId() !== null">{{ busyListId() === 'new-list' ? copy.loading : copy.createList }}</button>
-                              </form>
-                            } @else {
-                              <button type="button" [disabled]="busyListId() !== null" (click)="openListCreate()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</button>
-                            }
+                            <button type="button" [disabled]="busyListId() !== null" (click)="goToListCreate()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</button>
                           </div>
                         </section>
                       }

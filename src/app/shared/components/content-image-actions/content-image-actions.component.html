@@ -130,11 +130,7 @@
       @if (userListsPage()?.hasNext) { <button class="content-lists-load-more" type="button" [disabled]="listLoadingMore()" (click)="loadMoreLists()">{{ listLoadingMore() ? listCopy.loadingMore : listCopy.loadMoreLists }}</button> }
     }
     <div class="content-list-picker-create">
-      <form (submit)="$event.preventDefault(); createList()">
-        <label class="visually-hidden" for="content-action-new-list-name">{{ listCopy.newListName }}</label>
-        <input id="content-action-new-list-name" type="text" maxlength="120" [value]="listDraft()" [placeholder]="listCopy.newListName" [disabled]="busyListId() !== null" (input)="updateListDraft($event)" />
-        <button type="submit" [disabled]="!listDraft().trim() || busyListId() !== null">{{ busyListId() === 'new-list' ? listCopy.loading : listCopy.createList }}</button>
-      </form>
+      <button type="button" (click)="goToListCreate()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ listCopy.createList }}</button>
     </div>
   </section>
 }

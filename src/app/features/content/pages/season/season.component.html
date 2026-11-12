@@ -153,8 +153,7 @@
                   @for (list of userLists(); track list.id) { <button class="movie-lists-panel-item" type="button" [disabled]="actionPending() || (list.containsContent !== true && !canAddToList(list))" [attr.aria-pressed]="list.containsContent === true" (click)="toggleSeasonInList(list)" data-ww-menu-item><span class="movie-lists-panel-check">@if (list.containsContent) { <app-check-icon [color]="'#FFFFFF'" /> }</span><span class="movie-lists-panel-copy"><span class="movie-lists-panel-name">{{ list.name }}</span></span>@if (list.itemsCount !== undefined) { <span class="movie-lists-panel-count">{{ formatNumber(list.itemsCount, 0) }}</span> }</button> }
                   @if (userListsPage()?.hasNext) { <button class="movie-text-button movie-lists-panel-more" type="button" (click)="loadMoreLists()">Ver mais listas</button> }
                 } @else { <p class="movie-empty-inline ww-empty-message">Você ainda não criou nenhuma lista.</p> }
-                @if (listCreateOpen()) { <form class="movie-lists-create-form" (submit)="$event.preventDefault(); createList()"><label class="visually-hidden" for="season-new-list-name">Nome da lista</label><input id="season-new-list-name" [value]="newListName()" placeholder="Nome da lista" maxlength="255" (input)="newListName.set($any($event.target).value)" /><button type="submit" [disabled]="!newListName().trim() || actionPending()">Criar</button></form> }
-                @else { <button class="movie-lists-create-trigger" type="button" (click)="listCreateOpen.set(true)" data-ww-select-trigger><span>+</span>Criar nova lista</button> }
+                <button class="movie-lists-create-trigger" type="button" (click)="goToListCreate()" data-ww-select-trigger><span>+</span>{{ copy.createNewList }}</button>
               </div>
             }
           </div>

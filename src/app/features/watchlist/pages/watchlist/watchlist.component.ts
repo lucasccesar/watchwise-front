@@ -94,8 +94,6 @@ export class WatchlistComponent implements OnDestroy {
   protected readonly userListsLoadingMore = signal(false);
   protected readonly userListsError = signal('');
   protected readonly busyListId = signal<string | null>(null);
-  protected readonly listCreateOpen = signal(false);
-  protected readonly listDraftName = signal('');
   protected readonly totalPages = computed(() => Math.max(1, this.view()?.totalPages ?? 1));
   protected readonly pageNumbers = computed(() => Array.from({ length: this.totalPages() }, (_, index) => index + 1));
   protected readonly visibleItems = computed(() => {
@@ -457,8 +455,6 @@ export class WatchlistComponent implements OnDestroy {
     this.userListsStatus.set('loading');
     this.userListsLoadingMore.set(false);
     this.userListsError.set('');
-    this.listCreateOpen.set(false);
-    this.listDraftName.set('');
     this.listRequests.unsubscribe();
     this.listRequests = new Subscription();
     const referenceRequest = item.card.type === 'MOVIE'
@@ -534,46 +530,14 @@ export class WatchlistComponent implements OnDestroy {
     if (this.busyListId()) return;
     this.listDialogCard.set(null);
     this.listPickerPosition.set(null);
-    this.listCreateOpen.set(false);
-    this.listDraftName.set('');
     this.listDialogOpener()?.focus();
     this.listDialogOpener.set(null);
     this.listRequests.unsubscribe();
     this.listRequests = new Subscription();
   }
 
-  protected updateListDraft(event: Event): void {
-    this.listDraftName.set((event.currentTarget as HTMLInputElement).value);
-  }
-
-  protected openListCreate(): void {
-    this.listCreateOpen.set(true);
-    this.listDraftName.set('');
-  }
-
-  protected createListWithCard(): void {
-    const item = this.listDialogCard();
-    const name = this.listDraftName().trim();
-    const tmdbId = item ? this.tmdbId(item) : null;
-    if (!item || !tmdbId || !name || this.busyListId()) return;
-    this.busyListId.set('new-list');
-    const request = item.card.type === 'MOVIE'
-      ? this.contentApi.createMovieList(name, tmdbId)
-      : this.contentApi.createSeriesList(name, tmdbId);
-    this.listRequests.add(request.subscribe({
-      next: () => {
-        this.busyListId.set(null);
-        this.listCreateOpen.set(false);
-        this.listDraftName.set('');
-        this.toasts.success(this.trendingCopy.listAdded);
-        this.loadUserLists(1);
-      },
-      error: (error: unknown) => {
-        this.busyListId.set(null);
-        if (this.handleSessionError(error)) return;
-        this.toasts.error(this.trendingCopy.actionError);
-      },
-    }));
+  protected goToListCreate(): void {
+    void this.router.navigateByUrl('/lists/create');
   }
 
   @HostListener('document:click', ['$event'])
