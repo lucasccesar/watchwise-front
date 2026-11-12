@@ -35,7 +35,7 @@
       [style.left.px]="menuPosition?.left ?? null"
       [style.right]="menuPosition ? 'auto' : null"
     >
-      @for (action of actions; track action.id) {
+      @for (action of menuActions(); track action.id) {
         <button
           class="content-dropdown-item"
           type="button"
@@ -89,3 +89,52 @@
     </div>
   }
 </div>
+
+@if (listPickerOpen()) {
+  <section
+    class="content-list-picker"
+    role="dialog"
+    aria-labelledby="content-list-picker-title"
+    [style.top.px]="listPickerPosition()?.top"
+    [style.left.px]="listPickerPosition()?.left"
+    (click)="$event.stopPropagation()"
+  >
+    <header>
+      <h3 id="content-list-picker-title">{{ listCopy.yourLists }}</h3>
+      <button type="button" [attr.aria-label]="listCopy.closeListDialog" [disabled]="busyListId() !== null" (click)="closeListPicker()">×</button>
+    </header>
+    @if (listError() && listStatus() !== 'error') { <p class="content-list-picker-error" role="alert">{{ listError() }}</p> }
+    @if (listStatus() === 'loading') {
+      <div class="content-list-skeleton" role="status" [attr.aria-label]="listCopy.loadingLists">
+        <ul class="content-user-lists content-user-lists--loading" aria-hidden="true">
+          @for (row of listSkeletonRows; track row) { <li><span class="content-list-skeleton-check"></span><span class="content-list-skeleton-name"></span><span class="content-list-skeleton-count"></span></li> }
+        </ul>
+      </div>
+    } @else if (listStatus() === 'error') {
+      <div class="content-list-picker-state" role="alert"><p>{{ listError() }}</p><button type="button" (click)="retryLists()">{{ listCopy.retry }}</button></div>
+    } @else if (userLists().length === 0) {
+      <p class="content-list-picker-state ww-empty-message">{{ listCopy.emptyLists }}</p>
+    } @else {
+      <ul class="content-user-lists">
+        @for (list of userLists(); track list.id) {
+          <li>
+            <label [class.content-user-list-disabled]="busyListId() !== null || !canToggleList(list)">
+              <input type="checkbox" [checked]="list.containsContent === true" [disabled]="busyListId() !== null || !canToggleList(list)" [attr.aria-label]="list.name" (change)="toggleList(list)" />
+              <span class="content-user-list-name">{{ list.name }}</span>
+              <small>{{ list.itemsCount ?? 0 }}</small>
+            </label>
+            @if (busyListId() === list.id) { <span class="content-user-list-busy" role="status">{{ listCopy.loading }}</span> }
+          </li>
+        }
+      </ul>
+      @if (userListsPage()?.hasNext) { <button class="content-lists-load-more" type="button" [disabled]="listLoadingMore()" (click)="loadMoreLists()">{{ listLoadingMore() ? listCopy.loadingMore : listCopy.loadMoreLists }}</button> }
+    }
+    <div class="content-list-picker-create">
+      <form (submit)="$event.preventDefault(); createList()">
+        <label class="visually-hidden" for="content-action-new-list-name">{{ listCopy.newListName }}</label>
+        <input id="content-action-new-list-name" type="text" maxlength="120" [value]="listDraft()" [placeholder]="listCopy.newListName" [disabled]="busyListId() !== null" (input)="updateListDraft($event)" />
+        <button type="submit" [disabled]="!listDraft().trim() || busyListId() !== null">{{ busyListId() === 'new-list' ? listCopy.loading : listCopy.createList }}</button>
+      </form>
+    </div>
+  </section>
+}

@@ -53,7 +53,7 @@
           <a class="progress-poster content-image-card" [routerLink]="seriesRoute(episode)" [attr.aria-label]="title(episode)">
             @if (image) { <img [src]="image" alt="" loading="lazy" /> }
             @else { <span class="progress-poster-empty">{{ title(episode) }}</span> }
-            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [actions]="posterActions" (actionSelected)="imageAction(episode, $event)" />
+            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForSeries(episode)" [actions]="posterActions" (actionSelected)="imageAction(episode, $event)" />
           </a>
 
           <div class="progress-item-info">

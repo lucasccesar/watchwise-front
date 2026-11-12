@@ -15,6 +15,7 @@ import {
   ContentImageAction,
   ContentImageActionSelection,
   ContentImageActionsComponent,
+  ContentListTarget,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -51,6 +52,10 @@ export class ProgressComponent {
   protected readonly posterActions: readonly ContentImageAction[] = [
     { id: 'open-series', label: this.copy.openSeries, icon: 'eye' },
   ];
+
+  protected listTargetForSeries(episode: SeriesInProgressRecord): ContentListTarget {
+    return { type: 'SERIES', tmdbId: episode.seriesTmdbId };
+  }
   protected readonly expandedIds = signal<ReadonlySet<string>>(new Set());
   protected readonly savingSeriesId = signal<string | null>(null);
 

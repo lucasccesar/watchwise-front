@@ -4,10 +4,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
-import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksPickView } from '../../data-access/picks-api.service';
+import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksPickView, PicksTargetPreview } from '../../data-access/picks-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
@@ -132,6 +132,15 @@ export class PickDetailComponent {
   protected answerRating(answer: PicksAnswer): string | null { const card = answer.preview?.contentCard; const rating = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).value; return rating === null ? null : new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating); }
   protected answerRatingLabel(answer: PicksAnswer): string { const rating = this.answerRating(answer); if (!rating) return ''; const card = answer.preview?.contentCard; const source = resolveRating(card?.stats?.averageScore, card?.tmdbVoteAverage).source; return `${source === 'tmdb' ? this.homeCopy.tmdbRating : this.homeCopy.communityAverage}: ${rating}`; }
   protected answerMenuKey(answer: PicksAnswer): string { return `${this.pickId}:${answer.categoryId}`; }
+  protected listTargetForAnswer(answer: PicksAnswer): ContentListTarget | null { return this.listTargetForContent(answer.preview?.contentCard); }
+  protected listTargetForContent(content: PicksTargetPreview['contentCard'] | undefined): ContentListTarget | null {
+    if (!content) return null;
+    if (content.type === 'MOVIE' && content.tmdbId) return { type: 'MOVIE', tmdbId: content.tmdbId, contentId: content.contentId };
+    if (content.type === 'SERIES' && (content.tmdbId || content.seriesTmdbId)) return { type: 'SERIES', tmdbId: content.tmdbId || content.seriesTmdbId!, contentId: content.contentId };
+    if (content.type === 'SEASON' && content.seriesTmdbId && content.seasonNumber != null) return { type: 'SEASON', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, contentId: content.contentId };
+    if (content.type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber != null && content.episodeNumber != null) return { type: 'EPISODE', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, episodeNumber: content.episodeNumber, contentId: content.contentId };
+    return null;
+  }
   protected menuExpanded(answer: PicksAnswer): boolean { return this.openMenu() === this.answerMenuKey(answer); }
   protected toggleAnswerMenu(answer: PicksAnswer, event: MouseEvent): void { event.stopPropagation(); const key = this.answerMenuKey(answer); this.openMenu.update((current) => current === key ? '' : key); }
   protected answerAction(answer: PicksAnswer, event: ContentImageActionSelection): void {

@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksOptionView, PicksTemplateDetail, PicksTemplatePickView } from '../../data-access/picks-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -125,6 +125,15 @@ export class PickTemplateComponent {
   }
   protected optionMenuKey(option: PicksOptionView): string { return `${this.templateId}:${option.id}`; }
   protected optionMenuKeyFor(option: PicksOptionView): string { return this.activeOptionMenu() === this.optionMenuKey(option) ? this.optionMenuKey(option) : ''; }
+  protected listTargetForOption(option: PicksOptionView): ContentListTarget | null {
+    const content = option.preview.contentCard;
+    if (!content) return null;
+    if (content.type === 'MOVIE' && content.tmdbId) return { type: 'MOVIE', tmdbId: content.tmdbId, contentId: content.contentId };
+    if (content.type === 'SERIES' && (content.tmdbId || content.seriesTmdbId)) return { type: 'SERIES', tmdbId: content.tmdbId || content.seriesTmdbId!, contentId: content.contentId };
+    if (content.type === 'SEASON' && content.seriesTmdbId && content.seasonNumber != null) return { type: 'SEASON', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, contentId: content.contentId };
+    if (content.type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber != null && content.episodeNumber != null) return { type: 'EPISODE', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, episodeNumber: content.episodeNumber, contentId: content.contentId };
+    return null;
+  }
   protected readonly activeOptionMenu = signal('');
   protected toggleOptionMenu(option: PicksOptionView, event: MouseEvent): void { event.stopPropagation(); const key = this.optionMenuKey(option); this.activeOptionMenu.update((current) => current === key ? '' : key); }
   protected optionAction(option: PicksOptionView, selection: ContentImageActionSelection): void {

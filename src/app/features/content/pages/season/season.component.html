@@ -15,6 +15,7 @@
       <details class="movie-mobile-more-actions season-watched-actions" [class.season-watched-actions--complete]="watched()">
         <summary [attr.aria-label]="copy.watchedOptions" [attr.title]="copy.watchedOptions" data-ww-ellipsis-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></summary>
         <div class="movie-mobile-more-menu" role="group" [attr.aria-label]="copy.watchedOptions" data-ww-menu>
+          <button type="button" (click)="openListsFromWatchedMenu($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12H9M21 6H9M21 18H9M5 12C5.552 12 6 12.448 6 13C6 13.552 5.552 14 5 14C4.448 14 4 13.552 4 13C4 12.448 4.448 12 5 12ZM5 6C5.552 6 6 6.448 6 7C6 7.552 5.552 8 5 8C4.448 8 4 7.552 4 7C4 6.448 4.448 6 5 6ZM5 18C5.552 18 6 18.448 6 19C6 19.552 5.552 20 5 20C4.448 20 4 19.552 4 19C4 18.448 4.448 18 5 18Z" /></svg><span>{{ copy.addToList }}</span></button>
           @if (watched()) { <button type="button" [disabled]="actionPending()" (click)="openSeasonRewatch($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.rewatch }}</span><small>{{ formatNumber(seasonPage.viewerState.playsCount, 0) }}</small></button> }
           <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
           @if (watched()) { <button type="button" [disabled]="actionPending()" (click)="openShareLatestSeasonReview($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button> }
@@ -216,6 +217,7 @@
                 [ratingValue]="seasonMenuRatingValue(season)"
                 [ratingLabel]="seasonMenuRatingLabel(season)"
                 [optionsLabel]="'Opções da temporada'"
+                [listTarget]="seasonListTarget(season)"
                 [expanded]="activeSeasonMenu() === seasonMenuKey(season)"
                 [actions]="seasonActions(season)"
                 (toggle)="toggleSeasonMenu(seasonMenuKey(season), $event)"
@@ -245,7 +247,7 @@
                     <ng-container [ngTemplateOutlet]="ratingStar" />{{ formatRating(episodeMyRating(episode)) }}
                   </button>
                 }
-                <app-content-image-actions class="season-card-menu" [attr.data-menu-key]="episodeKey(episode)" [optionsLabel]="'Opções do episódio'" [expanded]="activeEpisodeMenu() === episodeKey(episode)" [actions]="episodeActions(episode)" (toggle)="toggleEpisodeMenu(episodeKey(episode), $event)" (actionSelected)="episodeAction(episode, $event)" />
+                <app-content-image-actions class="season-card-menu" [attr.data-menu-key]="episodeKey(episode)" [optionsLabel]="'Opções do episódio'" [listTarget]="episodeListTarget(episode)" [expanded]="activeEpisodeMenu() === episodeKey(episode)" [actions]="episodeActions(episode)" (toggle)="toggleEpisodeMenu(episodeKey(episode), $event)" (actionSelected)="episodeAction(episode, $event)" />
               </div>
               <div class="series-episode-copy">
                 <div class="series-episode-heading"><strong><a [routerLink]="episodeRoute(episode)" [state]="episodeNavigationState(episode)">{{ episode.title || ('Episódio ' + (episode.episodeNumber ?? '')) }}</a></strong><span>S{{ episode.seasonNumber ?? seasonNumber() }} · E{{ episode.episodeNumber }}</span></div>

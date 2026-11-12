@@ -6,7 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, Subscription } from 'rxjs';
 import { ContentApiService, ContentEpisodeSelection, ContentSeasonSelection } from '../../../content/data-access/content-api.service';
 import { SearchApiService, SearchContentView, SearchPersonView, SearchView } from '../../../search-content/data-access/search-api.service';
-import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PickCreationSelection, PicksApiService, PicksOptionView, PicksTargetSearch, PicksTemplateCategory, PicksTemplateDetail } from '../../data-access/picks-api.service';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -51,6 +51,16 @@ export class PickFillComponent implements OnDestroy {
   protected readonly publishing = signal(false);
   protected readonly publishError = signal('');
   protected readonly imageActions: readonly ContentImageAction[] = [{ id: 'open', label: this.copy.selected, icon: 'eye' }];
+
+  protected listTargetForOption(option: PicksOptionView): ContentListTarget | null {
+    const content = option.preview.contentCard;
+    if (!content) return null;
+    if (content.type === 'MOVIE' && content.tmdbId) return { type: 'MOVIE', tmdbId: content.tmdbId, contentId: content.contentId };
+    if (content.type === 'SERIES' && (content.tmdbId || content.seriesTmdbId)) return { type: 'SERIES', tmdbId: content.tmdbId || content.seriesTmdbId!, contentId: content.contentId };
+    if (content.type === 'SEASON' && content.seriesTmdbId && content.seasonNumber != null) return { type: 'SEASON', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, contentId: content.contentId };
+    if (content.type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber != null && content.episodeNumber != null) return { type: 'EPISODE', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, episodeNumber: content.episodeNumber, contentId: content.contentId };
+    return null;
+  }
   protected readonly groups = computed(() => ({
     primary: (this.template()?.categories ?? []).filter((item) => item.group === 'PRIMARY').sort((a, b) => a.displayOrder - b.displayOrder),
     secondary: (this.template()?.categories ?? []).filter((item) => item.group === 'SECONDARY').sort((a, b) => a.displayOrder - b.displayOrder),

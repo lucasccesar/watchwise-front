@@ -31,6 +31,7 @@ import {
   ContentImageAction,
   ContentImageActionSelection,
   ContentImageActionsComponent,
+  ContentListTarget,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import {
   ShareReviewDialogComponent,
@@ -392,6 +393,46 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       { id: 'drop-series', label: this.copy.dropSeries, icon: 'ban' },
     ];
+  }
+
+  protected listTargetForContent(content: {
+    id?: string | null;
+    type?: string | null;
+    tmdbId?: string | null;
+    seriesTmdbId?: string | null;
+    seasonNumber?: number | null;
+    episodeNumber?: number | null;
+  } | null): ContentListTarget | null {
+    if (!content) return null;
+    const type = content.type?.toUpperCase();
+    if (type === 'MOVIE' && content.tmdbId) return { type, tmdbId: content.tmdbId, contentId: content.id };
+    if (type === 'SERIES' && (content.tmdbId || content.seriesTmdbId)) return { type, tmdbId: content.tmdbId || content.seriesTmdbId!, contentId: content.id };
+    if (type === 'SEASON' && content.seriesTmdbId && content.seasonNumber !== null && content.seasonNumber !== undefined) {
+      return { type, seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, contentId: content.id };
+    }
+    if (type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber !== null && content.seasonNumber !== undefined && content.episodeNumber !== null && content.episodeNumber !== undefined) {
+      return { type, seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, episodeNumber: content.episodeNumber, contentId: content.id };
+    }
+    return null;
+  }
+
+  protected listTargetForNextEpisode(episode: NextEpisode): ContentListTarget | null {
+    if (episode.maxSeasonNumber === null || episode.maxEpisodeNumber === null) return null;
+    return { type: 'EPISODE', seriesTmdbId: episode.seriesTmdbId, seasonNumber: episode.maxSeasonNumber, episodeNumber: episode.maxEpisodeNumber, contentId: episode.contentId };
+  }
+
+  protected listTargetForUpcoming(release: UpcomingRelease): ContentListTarget | null {
+    if (release.eventType === 'MOVIE') return release.content.tmdbId ? { type: 'MOVIE', tmdbId: release.content.tmdbId } : null;
+    if (release.eventType === 'SERIES') {
+      const tmdbId = release.content.tmdbId ?? release.content.seriesTmdbId;
+      return tmdbId ? { type: 'SERIES', tmdbId } : null;
+    }
+    if (!release.content.seriesTmdbId || release.content.seasonNumber === undefined || release.content.seasonNumber === null) return null;
+    return release.eventType === 'SEASON'
+      ? { type: 'SEASON', seriesTmdbId: release.content.seriesTmdbId, seasonNumber: release.content.seasonNumber }
+      : release.content.episodeNumber === undefined || release.content.episodeNumber === null
+        ? null
+        : { type: 'EPISODE', seriesTmdbId: release.content.seriesTmdbId, seasonNumber: release.content.seasonNumber, episodeNumber: release.content.episodeNumber };
   }
 
   protected recentContentActions(entry: HomeRecentlyWatched): readonly ContentImageAction[] {

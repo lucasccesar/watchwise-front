@@ -224,6 +224,7 @@
                           [ratingValue]="entry.averageScore === null ? null : entry.averageScore.toFixed(1)"
                           [ratingLabel]="topFiveRatingLabel(entry)"
                           [optionsLabel]="'Opções para ' + entry.title"
+                          [listTarget]="{ type: entry.type, tmdbId: entry.content.tmdbId }"
                           [expanded]="activePosterMenu() === entry.id"
                           [actions]="profileContentActionsFor(entry.score)"
                           (toggle)="togglePosterMenu(entry.id, $event)"
@@ -335,7 +336,7 @@
                               @if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || ''" /> }
                               @else { <span class="profile-trending-poster-empty">{{ entry.card?.title || copy.unavailable }}</span> }
                             </a>
-                            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [expanded]="activePosterMenu() === 'recent-movie:' + entry.id" [actions]="profileContentActionsFor(entry.score)" (toggle)="togglePosterMenu('recent-movie:' + entry.id, $event)" (actionSelected)="handleRecentDiaryAction(entry, $event)" />
+                            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForContent(entry.content)" [expanded]="activePosterMenu() === 'recent-movie:' + entry.id" [actions]="profileContentActionsFor(entry.score)" (toggle)="togglePosterMenu('recent-movie:' + entry.id, $event)" (actionSelected)="handleRecentDiaryAction(entry, $event)" />
                             @if ((entry.watchNumber ?? 0) > 1) { <span class="profile-trending-rewatch" [attr.aria-label]="'Reassistido ' + entry.watchNumber + ' vezes'">↻ {{ entry.watchNumber }}</span> }
                             <span class="profile-trending-date">{{ dateLabel(entry.watchedDate) }}</span>
                             @if (entry.score !== null) { <span class="profile-trending-rating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" /></svg>{{ entry.score }}</span> }
@@ -363,7 +364,7 @@
                               @if (episodeStill(entry); as still) { <img [src]="still" [alt]="entry.seriesTitle || entry.card?.title || ''" /> }
                               @else { <span class="profile-continue-image-empty">{{ entry.seriesTitle || entry.card?.title || copy.unavailable }}</span> }
                             </a>
-                            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [expanded]="activePosterMenu() === 'recent-episode:' + entry.id" [actions]="profileContentActionsFor(entry.score)" (toggle)="togglePosterMenu('recent-episode:' + entry.id, $event)" (actionSelected)="handleRecentDiaryAction(entry, $event)" />
+                            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForContent(entry.content)" [expanded]="activePosterMenu() === 'recent-episode:' + entry.id" [actions]="profileContentActionsFor(entry.score)" (toggle)="togglePosterMenu('recent-episode:' + entry.id, $event)" (actionSelected)="handleRecentDiaryAction(entry, $event)" />
                             <span class="profile-continue-date">{{ dateLabel(entry.watchedDate) }}</span>
                             @if (entry.score !== null) { <span class="profile-continue-rating"><svg data-dc-tpl="170" width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-.12em" aria-hidden="true"><path data-dc-tpl="171" d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z"></path></svg> {{ entry.score }}</span> }
                           </div>
@@ -389,7 +390,7 @@
                             @if (imageUrl(entry.posterPath); as poster) { <img [src]="poster" [alt]="entry.title" /> }
                             @else { <span class="profile-trending-poster-empty">{{ entry.title }}</span> }
                           </a>
-                          <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [expanded]="activePosterMenu() === 'recent-series:' + entry.activityId" [actions]="profileContentActionsFor(entry.score, entry.canShareReview)" (toggle)="togglePosterMenu('recent-series:' + entry.activityId, $event)" (actionSelected)="handleRecentSeriesAction(entry, $event)" />
+                          <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="{ type: 'SERIES', tmdbId: entry.seriesTmdbId, contentId: entry.contentId }" [expanded]="activePosterMenu() === 'recent-series:' + entry.activityId" [actions]="profileContentActionsFor(entry.score, entry.canShareReview)" (toggle)="togglePosterMenu('recent-series:' + entry.activityId, $event)" (actionSelected)="handleRecentSeriesAction(entry, $event)" />
                           <span class="profile-trending-date">{{ dateLabel(entry.lastWatchedDate) }}</span>
                           @if (entry.score !== null) { <span class="profile-trending-rating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" /></svg>{{ entry.score }}</span> }
                         </div>
@@ -719,7 +720,7 @@
                   </button>
                   @if (!historyDayCollapsed(group.date)) { @for (entry of group.entries; track entry.id) {
                 <article class="profile-history-card">
-                  @if (detailRoute(entry); as route) { <a class="profile-history-poster content-image-card" [routerLink]="route" [state]="profileEntryNavigationState(entry)">@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || ''" /> }<app-content-image-actions [ratingValue]="profileCardRating(entry.card)" [ratingLabel]="profileCardRatingLabel(entry.card)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [actions]="profileImageActions" (actionSelected)="handleProfileEntryImageAction(entry, $event.action.id)" /></a> }
+                  @if (detailRoute(entry); as route) { <a class="profile-history-poster content-image-card" [routerLink]="route" [state]="profileEntryNavigationState(entry)">@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || ''" /> }<app-content-image-actions [ratingValue]="profileCardRating(entry.card)" [ratingLabel]="profileCardRatingLabel(entry.card)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [listTarget]="listTargetForContent(entry.content)" [actions]="profileImageActions" (actionSelected)="handleProfileEntryImageAction(entry, $event.action.id)" /></a> }
                   <div class="profile-history-body"><h3>@if (detailRoute(entry); as route) { <a class="profile-content-title-link" [routerLink]="route" [state]="profileEntryNavigationState(entry)">{{ entry.card?.title || copy.unavailable }}</a> } @else { {{ entry.card?.title || copy.unavailable }} }</h3><p>{{ entry.content.type === 'MOVIE' ? copy.movies : copy.series }} @if (entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) { · T{{ entry.content.seasonNumber }} · E{{ entry.content.episodeNumber }} } @if (entry.watchNumber > 1) { · Reassistido {{ entry.watchNumber }}× }</p>@if (entry.comment) { <p class="profile-history-review">{{ entry.comment }}</p> }<small>{{ entry.likesCount }} curtidas · {{ entry.commentsCount }} comentários</small></div>
                   @if (entry.score !== null) { <span class="profile-score">{{ entry.score }}/10</span> }
                 </article>
@@ -751,7 +752,7 @@
           <div class="profile-review-grid profile-review-grid--page">
             @for (entry of diary()?.content ?? []; track entry.id) {
               <article class="profile-review-card">
-                <div class="profile-review-title"><div class="profile-review-poster content-image-card">@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <a class="profile-review-poster-link" [routerLink]="detailRoute(entry)" [state]="profileEntryNavigationState(entry)" [attr.aria-label]="'Abrir conteúdo: ' + (entry.card?.title || copy.unavailable)"><img [src]="poster" alt="" /></a> }<app-content-image-actions [ratingValue]="profileCardRating(entry.card)" [ratingLabel]="profileCardRatingLabel(entry.card)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [actions]="profileImageActions" [expanded]="activePosterMenu() === entry.id" (toggle)="togglePosterMenu(entry.id, $event)" (actionSelected)="handleProfileEntryImageAction(entry, $event.action.id)" /></div><div class="profile-review-copy"><strong>@if (detailRoute(entry); as route) { <a class="profile-content-title-link" [routerLink]="route" [state]="profileEntryNavigationState(entry)">{{ entry.card?.title || copy.unavailable }}</a> } @else { {{ entry.card?.title || copy.unavailable }} }</strong><span>{{ copy.watchDate.replace('{date}', dateLabel(entry.watchedDate)) }}</span></div>@if (entry.score !== null) { <b>{{ entry.score }}/10</b> }</div>
+                <div class="profile-review-title"><div class="profile-review-poster content-image-card">@if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <a class="profile-review-poster-link" [routerLink]="detailRoute(entry)" [state]="profileEntryNavigationState(entry)" [attr.aria-label]="'Abrir conteúdo: ' + (entry.card?.title || copy.unavailable)"><img [src]="poster" alt="" /></a> }<app-content-image-actions [ratingValue]="profileCardRating(entry.card)" [ratingLabel]="profileCardRatingLabel(entry.card)" [optionsLabel]="'Opções para ' + (entry.card?.title || '')" [listTarget]="listTargetForContent(entry.content)" [actions]="profileImageActions" [expanded]="activePosterMenu() === entry.id" (toggle)="togglePosterMenu(entry.id, $event)" (actionSelected)="handleProfileEntryImageAction(entry, $event.action.id)" /></div><div class="profile-review-copy"><strong>@if (detailRoute(entry); as route) { <a class="profile-content-title-link" [routerLink]="route" [state]="profileEntryNavigationState(entry)">{{ entry.card?.title || copy.unavailable }}</a> } @else { {{ entry.card?.title || copy.unavailable }} }</strong><span>{{ copy.watchDate.replace('{date}', dateLabel(entry.watchedDate)) }}</span></div>@if (entry.score !== null) { <b>{{ entry.score }}/10</b> }</div>
                 @if (entry.comment) { <p>{{ entry.comment }}</p> }
                 <small>{{ entry.likesCount }} curtidas · {{ entry.commentsCount }} comentários</small>
               </article>
@@ -876,7 +877,7 @@
           <div class="profile-poster-grid">
             @for (item of watchlist()?.content ?? []; track item.id) {
               <a class="profile-poster-card content-image-card" [routerLink]="contentRoute(item.card.type, item.card.tmdbId, item.card.seriesTmdbId)">
-                <div class="profile-poster content-image-card">@if (imageUrl(item.card.customPosterUrl || item.card.posterPath); as poster) { <img [src]="poster" [alt]="item.card.title || ''" /> } @else { <span>{{ item.card.title || copy.unavailable }}</span> }<app-content-image-actions [ratingValue]="profileCardRating(item.card)" [ratingLabel]="profileCardRatingLabel(item.card)" [optionsLabel]="'Opções para ' + (item.card.title || '')" [actions]="profileImageActions" (actionSelected)="handleProfileImageAction(item.card.type === 'MOVIE' ? 'MOVIE' : 'SERIES', item.card.type === 'MOVIE' ? item.card.tmdbId : item.card.seriesTmdbId || item.card.tmdbId, $event.action.id)" /></div>
+                <div class="profile-poster content-image-card">@if (imageUrl(item.card.customPosterUrl || item.card.posterPath); as poster) { <img [src]="poster" [alt]="item.card.title || ''" /> } @else { <span>{{ item.card.title || copy.unavailable }}</span> }<app-content-image-actions [ratingValue]="profileCardRating(item.card)" [ratingLabel]="profileCardRatingLabel(item.card)" [optionsLabel]="'Opções para ' + (item.card.title || '')" [listTarget]="listTargetForProfileCard(item.card.type, item.card.tmdbId, item.card.seriesTmdbId)" [actions]="profileImageActions" (actionSelected)="handleProfileImageAction(item.card.type === 'MOVIE' ? 'MOVIE' : 'SERIES', item.card.type === 'MOVIE' ? item.card.tmdbId : item.card.seriesTmdbId || item.card.tmdbId, $event.action.id)" /></div>
                 <strong>{{ item.card.title || copy.unavailable }}</strong><small>{{ item.card.releaseYear ?? '—' }}</small>
               </a>
             } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
@@ -1207,6 +1208,32 @@
       [copy]="shareReviewCopy"
       [returnFocusTarget]="shareReviewDialogReturnFocus()"
       (closed)="closeShareReviewDialog()"
+    />
+  }
+  @if (profileWatchTarget(); as target) {
+    <app-watch-log-dialog
+      [dialogTitle]="homeCopy.rewatch"
+      [title]="target.title"
+      [subtitle]="target.subtitle"
+      [initialRewatch]="true"
+      [allowRating]="target.type === 'MOVIE' || target.type === 'EPISODE'"
+      [saving]="profileWatchSaving()"
+      [returnFocusTarget]="profileWatchOpener()"
+      (save)="saveProfileWatch($event)"
+      (dismiss)="closeProfileWatchDialog()"
+    />
+  }
+  @if (profileRatingTarget(); as target) {
+    <app-rating-dialog
+      [title]="profileRatingDialogTitle(target)"
+      [subtitle]="target.title + (target.subtitle ? ' · ' + target.subtitle : '')"
+      [initialScore]="target.viewerState.myRating"
+      [initialComment]="target.viewerState.myReview ?? ''"
+      [allowComment]="target.allowComment ?? target.type !== 'SEASON'"
+      [saving]="profileRatingSaving()"
+      [returnFocusTarget]="profileRatingOpener()"
+      (save)="saveProfileRating($event)"
+      (dismiss)="closeProfileRatingDialog()"
     />
   }
 }

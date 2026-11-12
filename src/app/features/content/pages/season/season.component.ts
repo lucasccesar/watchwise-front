@@ -21,7 +21,7 @@ import { DialogBackdropComponent } from '../../../../shared/components/dialog-ba
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { buildCommentTree } from '../../../../shared/components/comment-item/comment-tree';
-import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -525,6 +525,16 @@ export class SeasonComponent implements OnDestroy {
     return actions;
   }
 
+  protected seasonListTarget(season: SeasonListItem): ContentListTarget {
+    return { type: 'SEASON', seriesTmdbId: this.tmdbId(), seasonNumber: season.seasonNumber, contentId: season.contentId };
+  }
+
+  protected episodeListTarget(episode: SeasonEpisodeCard): ContentListTarget | null {
+    const seasonNumber = episode.seasonNumber ?? this.seasonNumber();
+    if (episode.episodeNumber == null) return null;
+    return { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber, episodeNumber: episode.episodeNumber, contentId: episode.contentId };
+  }
+
   protected bulkEpisodeCount(): number {
     const released = this.releasedEpisodeCount();
     return this.watched() ? released : Math.max(0, released - this.watchedEpisodeCount());
@@ -898,6 +908,14 @@ export class SeasonComponent implements OnDestroy {
     const isOpen = !this.listsOpen();
     this.listsOpen.set(isOpen);
     if (isOpen && this.userListsStatus() !== 'ready') this.loadUserLists(1);
+  }
+
+  protected openListsFromWatchedMenu(event: Event): void {
+    const menu = (event.currentTarget as HTMLElement | null)?.closest<HTMLDetailsElement>('.season-watched-actions');
+    if (menu) menu.open = false;
+    if (!this.listsOpen()) this.listsOpen.set(true);
+    if (this.userListsStatus() !== 'ready') this.loadUserLists(1);
+    queueMicrotask(() => this.document.querySelector<HTMLElement>('.season-lists-control')?.scrollIntoView({ block: 'nearest' }));
   }
 
   protected createList(): void {

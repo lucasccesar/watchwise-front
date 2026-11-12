@@ -345,7 +345,7 @@
                         </div>
                       </div>
                     </article>
-                    <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [actions]="posterActionsFor(entry)" (actionSelected)="handlePosterAction(entry, $event)" />
+                    <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForEntry(entry)" [actions]="posterActionsFor(entry)" (actionSelected)="handlePosterAction(entry, $event)" />
                     <div class="diary-entry-title-row diary-grouped-footer">
                       <a class="diary-grouped-title" [routerLink]="route" [class.diary-entry-link-disabled]="!route">{{ groupedTitle(entry) }}</a>
                       @if (runtime) { <span class="diary-entry-title-meta diary-grouped-runtime">{{ runtime }}</span> }
@@ -365,7 +365,7 @@
                       [class.diary-entry-type--movie]="entry.content.type === 'MOVIE'">
                       <span aria-hidden="true"></span>{{ typeLabel(entry) }}
                     </span>
-                    <app-content-image-actions [ratingValue]="imageRating(entry)" [ratingLabel]="imageRatingLabel(entry)" [optionsLabel]="homeCopy.contentOptions" [actions]="posterActionsFor(entry)" (actionSelected)="handlePosterAction(entry, $event)" />
+                    <app-content-image-actions [ratingValue]="imageRating(entry)" [ratingLabel]="imageRatingLabel(entry)" [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForEntry(entry)" [actions]="posterActionsFor(entry)" (actionSelected)="handlePosterAction(entry, $event)" />
                     @if (entry.companions.length > 0) {
                       <span class="diary-companion-avatar">
                         @if (entry.companions[0].profilePicture; as picture) { <img [src]="picture" alt="" loading="lazy" /> }

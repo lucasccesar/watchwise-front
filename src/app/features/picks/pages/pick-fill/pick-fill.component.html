@@ -53,7 +53,7 @@
               @for (option of fixedOptions(category.id); track option.id) {
                 <div class="pick-fill-fixed-option" role="option" tabindex="0" [attr.aria-selected]="isAnswered(category.id) && answerName(category.id) === optionLabel(option)" (click)="chooseFixed(option)" (keydown.enter)="chooseFixed(option)" (keydown.space)="pickOption($event, option)">
                   <span class="pick-fill-fixed-image content-image-card">@if (optionImage(option)) { <img [src]="optionImage(option)" alt="" /> } @else { <span class="pick-fill-person-fallback">{{ optionLabel(option).slice(0, 1).toLocaleUpperCase('pt-BR') }}</span> }
-                    <app-content-image-actions [ratingValue]="optionRating(option)" [ratingLabel]="optionRatingLabel(option)" [optionsLabel]="templateCopy.optionActions.replace('{name}', optionLabel(option))" [expanded]="menuExpanded(option)" [actions]="imageActions" (toggle)="toggleOptionMenu(option, $event)" (actionSelected)="optionAction(option, $event)" />
+                    <app-content-image-actions [ratingValue]="optionRating(option)" [ratingLabel]="optionRatingLabel(option)" [optionsLabel]="templateCopy.optionActions.replace('{name}', optionLabel(option))" [listTarget]="listTargetForOption(option)" [expanded]="menuExpanded(option)" [actions]="imageActions" (toggle)="toggleOptionMenu(option, $event)" (actionSelected)="optionAction(option, $event)" />
                   </span><span><strong>{{ optionLabel(option) }}</strong><small>{{ optionSubtitle(option) }}</small></span><span class="pick-fill-option-check" aria-hidden="true"><app-check-icon /></span>
                 </div>
               }

@@ -448,6 +448,15 @@ export class EpisodeComponent implements OnDestroy {
     if (menu) menu.open = !menu.open;
   }
 
+  protected openListsFromMobileMenu(event: Event): void {
+    const item = event.currentTarget as HTMLElement;
+    const menu = item.closest<HTMLDetailsElement>('.episode-more-actions');
+    if (menu) menu.open = false;
+    this.listsExpanded.set(true);
+    if (!this.userListsPage()) this.loadUserLists(1);
+    queueMicrotask(() => this.document.querySelector<HTMLElement>('.episode-lists-control')?.scrollIntoView({ block: 'nearest' }));
+  }
+
   protected removeFromDiary(): void {
     const entryId = this.page()?.viewerState.latestDiaryEntryId;
     if (!entryId || this.busy()) return;

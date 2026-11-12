@@ -18,7 +18,7 @@ import { combineLatest, forkJoin, Observable, Subscription, of, switchMap, throw
 import { catchError, map } from 'rxjs/operators';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { DiaryApiService, SeriesInProgressRecord } from '../../../diary/data-access/diary-api.service';
-import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import {
   ContentApiService,
   ContentComment,
@@ -576,6 +576,15 @@ export class SeriesComponent implements OnInit, OnDestroy {
       actions.push({ id: 'remove-history', label: this.copy.removeEpisodeHistory, icon: 'trash' });
     }
     return actions;
+  }
+
+  protected episodeListTarget(episode: SeriesEpisodeSummary): ContentListTarget | null {
+    if (episode.seasonNumber == null || episode.episodeNumber == null) return null;
+    return { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber };
+  }
+
+  protected seasonListTarget(season: SeriesSeasonSummary): ContentListTarget | null {
+    return season.seasonNumber == null ? null : { type: 'SEASON', seriesTmdbId: this.tmdbId(), seasonNumber: season.seasonNumber };
   }
 
   protected toggleSeriesImageMenu(key: string, event: MouseEvent): void {

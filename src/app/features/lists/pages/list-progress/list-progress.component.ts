@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
-import { ContentImageAction, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
+import { ContentImageAction, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
@@ -109,6 +109,10 @@ export class ListProgressComponent {
   }
   protected seriesRoute(item: ListProgressItem): string[] {
     return ['/content/series', item.seriesProgress?.seriesTmdbId ?? item.content.seriesTmdbId ?? item.content.tmdbId ?? ''];
+  }
+  protected listTarget(item: ListProgressItem): ContentListTarget | null {
+    const tmdbId = item.seriesProgress?.seriesTmdbId ?? item.content.seriesTmdbId ?? item.content.tmdbId;
+    return tmdbId ? { type: 'SERIES', tmdbId } : null;
   }
   protected openSeries(item: ListProgressItem): void { void this.router.navigate(this.seriesRoute(item)); }
   protected progressPercent(progress: ListSeriesProgress): number { return Math.max(0, Math.min(100, progress.watchedPercentage ?? 0)); }

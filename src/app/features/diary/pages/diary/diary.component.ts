@@ -21,6 +21,7 @@ import {
   ContentImageAction,
   ContentImageActionSelection,
   ContentImageActionsComponent,
+  ContentListTarget,
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
@@ -735,6 +736,21 @@ export class DiaryComponent implements OnDestroy {
       return action;
     });
   }
+  protected listTargetForEntry(entry: DiaryTimelineEntry): ContentListTarget | null {
+    const record = this.representativeEntry(entry);
+    const content = record?.content;
+    if (!content) return null;
+    if (content.type === 'MOVIE' && content.tmdbId) return { type: 'MOVIE', tmdbId: content.tmdbId, contentId: content.id };
+    if (content.type === 'SERIES' && (content.tmdbId || content.seriesTmdbId)) return { type: 'SERIES', tmdbId: content.tmdbId || content.seriesTmdbId!, contentId: content.id };
+    if (content.type === 'SEASON' && content.seriesTmdbId && content.seasonNumber != null) {
+      return { type: 'SEASON', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, contentId: content.id };
+    }
+    if (content.type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber != null && content.episodeNumber != null) {
+      return { type: 'EPISODE', seriesTmdbId: content.seriesTmdbId, seasonNumber: content.seasonNumber, episodeNumber: content.episodeNumber, contentId: content.id };
+    }
+    return null;
+  }
+
 
   protected handlePosterAction(entry: DiaryTimelineEntry, selection: ContentImageActionSelection): void {
     const target = this.representativeEntry(entry);

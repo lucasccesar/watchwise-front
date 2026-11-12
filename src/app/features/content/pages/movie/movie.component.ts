@@ -562,6 +562,14 @@ export class MovieComponent implements OnInit, OnDestroy {
     queueMicrotask(() => this.movieDialog?.nativeElement.focus());
   }
 
+  protected openListsFromMobileMenu(event: Event): void {
+    const item = event.currentTarget as HTMLElement;
+    const menu = item.closest<HTMLDetailsElement>('.movie-mobile-more-actions');
+    this.openLists(event);
+    this.modalOpener = menu?.querySelector<HTMLElement>('summary') ?? item;
+    if (menu) menu.open = false;
+  }
+
   protected toggleListsPanel(event: Event): void {
     if (window.matchMedia('(max-width: 800px)').matches) {
       this.openLists(event);

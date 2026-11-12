@@ -768,6 +768,13 @@ export class ContentApiService {
     });
   }
 
+  createEpisodeList(name: string, seriesTmdbId: string, seasonNumber: number, episodeNumber: number): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>('/api/v1/users/me/lists/bulk', {
+      name,
+      items: [{ type: 'EPISODE', seriesTmdbId, seasonNumber, episodeNumber }],
+    });
+  }
+
   removeListItem(listId: string, itemId: string): Observable<void> {
     return this.http.delete<void>(
       `/api/v1/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}`,
