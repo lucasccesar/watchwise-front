@@ -54,7 +54,7 @@ type RecentSeriesCard = {
   title: string;
   posterPath: string | null;
   releaseYear: number | null;
-  watchedEpisodeCount: number;
+  timesWatched: number;
   lastWatchedDate: string | null;
   score: number | null;
 };
@@ -131,8 +131,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   );
   protected readonly recentMovieEntries = signal<DiaryRecord[]>([]);
   protected readonly recentEpisodeEntries = signal<DiaryRecord[]>([]);
-  protected readonly recentSeriesProgress = signal<SeriesInProgressRecord[]>([]);
-  protected readonly recentSeriesPosterPaths = signal<Record<string, string>>({});
   protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
   protected readonly recentReviewLikeBusyIds = signal<ReadonlySet<string>>(new Set());
@@ -246,26 +244,28 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   });
   protected readonly userName = computed(() => this.profile()?.name || this.foundUser()?.name || this.profile()?.username || this.foundUser()?.username || this.username());
   protected readonly recentSeriesItems = computed<RecentSeriesCard[]>(() => {
-    return this.recentSeriesProgress()
-      .filter((entry) => this.isCompletedProgress(entry))
-      .map((entry) => {
-        const latestEpisode = this.recentEpisodeEntries().find((episode) => episode.content.seriesTmdbId === entry.seriesTmdbId);
+    return (this.summary()?.recentActivity ?? [])
+      .filter((activity) => String(activity.type ?? activity.content?.type ?? activity.card?.type ?? '').toUpperCase() === 'SERIES')
+      .map((activity) => {
+        const card = activity.card;
+        const seriesTmdbId = activity.content?.tmdbId
+          ?? activity.content?.seriesTmdbId
+          ?? activity.tmdbId
+          ?? activity.seriesTmdbId
+          ?? card?.tmdbId
+          ?? card?.seriesTmdbId;
+        if (!card || !seriesTmdbId) return null;
         return {
-          seriesTmdbId: entry.seriesTmdbId,
-          title: entry.title || entry.seriesTitle || this.copy.unavailable,
-          posterPath: this.recentSeriesPosterPaths()[entry.seriesTmdbId]
-            || entry.customPosterUrl
-            || entry.posterPath
-            || entry.seriesPosterPath
-            || latestEpisode?.seriesPosterPath
-            || latestEpisode?.card?.posterPath
-            || null,
-          releaseYear: entry.releaseYear ?? this.summarySeriesReleaseYear(entry.seriesTmdbId),
-          watchedEpisodeCount: entry.watchedEpisodeCount,
-          lastWatchedDate: entry.lastWatchedDate,
-          score: latestEpisode?.score ?? null,
+          seriesTmdbId: String(seriesTmdbId),
+          title: card.title || this.copy.unavailable,
+          posterPath: card.customPosterUrl || card.posterPath || null,
+          releaseYear: card.releaseYear ?? null,
+          timesWatched: activity.timesWatched ?? 0,
+          lastWatchedDate: activity.activityDate ?? activity.watchedDate ?? activity.lastWatchedDate ?? null,
+          score: activity.score ?? card.viewerState?.myRating ?? null,
         };
       })
+      .filter((item): item is RecentSeriesCard => item !== null)
       .sort((a, b) => (b.lastWatchedDate || '').localeCompare(a.lastWatchedDate || ''))
       .slice(0, 6);
   });
@@ -1044,29 +1044,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     return `S${item.lastWatchedSeasonNumber} · E${item.lastWatchedEpisodeNumber}`;
   }
 
-  private isCompletedProgress(item: SeriesInProgressRecord): boolean {
-    const totalEpisodes = item.totalEpisodeCount ?? item.totalReleasedEpisodeCount;
-    return totalEpisodes !== null
-      && totalEpisodes !== undefined
-      && totalEpisodes > 0
-      && item.watchedEpisodeCount >= totalEpisodes;
-  }
-
-  private summarySeriesReleaseYear(seriesTmdbId: string): number | null {
-    for (const activity of this.summary()?.recentActivity ?? []) {
-      const cardValue = activity['card'];
-      if (!cardValue || typeof cardValue !== 'object' || Array.isArray(cardValue)) continue;
-
-      const card = cardValue as Record<string, unknown>;
-      if (card['type'] !== 'SERIES' || String(card['tmdbId'] ?? '') !== seriesTmdbId) continue;
-
-      const releaseYear = card['releaseYear'];
-      if (typeof releaseYear === 'number' && Number.isFinite(releaseYear)) return releaseYear;
-    }
-
-    return null;
-  }
-
   private recentReviewSeriesTitle(review: ProfileDiaryPreview): string | null {
     const content = review.content;
     if (!content?.seriesTmdbId) return null;
@@ -1081,8 +1058,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       if (episode?.seriesTitle) return episode.seriesTitle;
     }
 
-    const series = this.recentSeriesProgress().find((entry) => entry.seriesTmdbId === seriesTmdbId);
-    return series?.seriesTitle || series?.title || null;
+    const series = (this.summary()?.recentActivity ?? []).find((activity) => {
+      const type = String(activity.type ?? activity.content?.type ?? activity.card?.type ?? '').toUpperCase();
+      const tmdbId = activity.content?.tmdbId
+        ?? activity.content?.seriesTmdbId
+        ?? activity.tmdbId
+        ?? activity.seriesTmdbId
+        ?? activity.card?.tmdbId
+        ?? activity.card?.seriesTmdbId;
+      return type === 'SERIES' && String(tmdbId ?? '') === seriesTmdbId;
+    });
+    return series?.card?.title || null;
   }
 
   protected pageRangeStart(data: ProfilePageMetadata): number {
@@ -1712,23 +1698,18 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         recentEpisodes: mode === 'EPISODE'
           ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 30, type: 'EPISODE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
           : of(null),
-        recentSeries: mode === 'EPISODE'
-          ? this.diaryApi.getAllSeriesInProgress(userId, { sortBy: 'LAST_WATCHED', direction: 'DESC' }).pipe(catchError(() => of([] as SeriesInProgressRecord[])))
-          : of([] as SeriesInProgressRecord[]),
         ratedEpisodes: mode === 'EPISODE'
           ? this.diaryApi.getAllDiaryEntries(userId).pipe(catchError(() => of([] as DiaryRecord[])))
           : of([] as DiaryRecord[]),
         reviews: this.diaryApi.getUserReviewsPage(userId, 1, 50).pipe(catchError(() => of(null))),
       }).subscribe({
-        next: ({ summary, topFive, recentMovies, recentEpisodes, recentSeries, ratedEpisodes, reviews }) => {
+        next: ({ summary, topFive, recentMovies, recentEpisodes, ratedEpisodes, reviews }) => {
           if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
           this.summary.set(summary);
           const latestMovieReview = reviews?.content.find((review) => review.content.type === 'MOVIE');
           this.latestMovieReviewBackdropPath.set(latestMovieReview?.card?.backdropPath ?? null);
           this.recentMovieEntries.set(recentMovies?.content ?? []);
           this.recentEpisodeEntries.set(recentEpisodes?.content ?? []);
-          this.recentSeriesProgress.set(recentSeries);
-          this.loadRecentSeriesPosterPaths(recentSeries);
           this.ratedEpisodeEntries.set(ratedEpisodes.filter((entry) => entry.content.type === 'EPISODE' && entry.score !== null));
           this.reviewComments.set(Object.fromEntries((reviews?.content ?? [])
             .filter((review) => Boolean(review.comment))
@@ -1963,8 +1944,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.latestMovieReviewBackdropPath.set(undefined);
     this.recentMovieEntries.set([]);
     this.recentEpisodeEntries.set([]);
-    this.recentSeriesProgress.set([]);
-    this.recentSeriesPosterPaths.set({});
     this.ratedEpisodeEntries.set([]);
     this.reviewComments.set({});
     this.recentReviewLikeBusyIds.set(new Set());
@@ -2011,29 +1990,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           if (stillPath) paths[episodeKey] = stillPath;
         }
         this.episodeStillPaths.set(paths);
-      });
-  }
-
-  private loadRecentSeriesPosterPaths(entries: readonly SeriesInProgressRecord[]): void {
-    const missingPosters = entries
-      .filter((entry) => this.isCompletedProgress(entry))
-      .filter((entry) => !(entry.customPosterUrl || entry.posterPath || entry.seriesPosterPath))
-      .slice(0, 6);
-    if (!missingPosters.length) return;
-
-    const requests = missingPosters.map((entry) => this.contentApi
-      .getSeriesPage(entry.seriesTmdbId)
-      .pipe(
-        map((page) => [entry.seriesTmdbId, page.metadata.presentationPosterPath || page.details.customPosterUrl || page.details.posterPath] as const),
-        catchError(() => of([entry.seriesTmdbId, null] as const)),
-      ));
-
-    forkJoin(requests)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((posters) => {
-        this.recentSeriesPosterPaths.set(Object.fromEntries(
-          posters.filter(([, path]) => Boolean(path)),
-        ) as Record<string, string>);
       });
   }
 

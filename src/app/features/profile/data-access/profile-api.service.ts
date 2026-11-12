@@ -85,6 +85,25 @@ export interface ProfileDiaryPreview {
   commentsCount?: number | null;
 }
 
+export interface ProfileRecentActivity {
+  type?: string | null;
+  status?: string | null;
+  timesWatched?: number | null;
+  activityDate?: string | null;
+  watchedDate?: string | null;
+  lastWatchedDate?: string | null;
+  tmdbId?: string | null;
+  seriesTmdbId?: string | null;
+  content?: {
+    id?: string | null;
+    type?: string | null;
+    tmdbId?: string | null;
+    seriesTmdbId?: string | null;
+  } | null;
+  card: ProfileContentCard | null;
+  score?: number | null;
+}
+
 export interface RatingCount {
   score: number;
   count: number;
@@ -114,7 +133,7 @@ export interface ProfileSummary {
   ratingsDistribution: RatingCount[];
   recentEpisodes: ProfileDiaryPreview[];
   recentReviews: ProfileDiaryPreview[];
-  recentActivity: Array<Record<string, unknown>>;
+  recentActivity: ProfileRecentActivity[];
 }
 
 export interface ProfileMonthReview {
