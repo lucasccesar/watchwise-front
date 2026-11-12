@@ -584,3 +584,8 @@ input:focus-visible {
 :where([role='dialog'], [role='alertdialog']) > footer:has(> button) > :first-child:not(button):not(a) {
   margin-right: auto;
 }
+
+/* Keep navigation links blue on hover across feature-level styles. */
+a[href]:hover:not([data-ww-button]):not([aria-disabled='true']) {
+  color: var(--color-primary) !important;
+}
