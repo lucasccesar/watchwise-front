@@ -970,9 +970,8 @@
   font-size: var(--font-size-xs);
 }
 
-.profile-own-rating {
-  color: var(--color-warning) !important;
-  font-weight: 700;
+.profile-top-five-rating {
+  pointer-events: none;
 }
 
 .profile-recent-grid {
