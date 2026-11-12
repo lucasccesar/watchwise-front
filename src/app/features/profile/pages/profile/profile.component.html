@@ -330,7 +330,7 @@
                     @for (entry of recentMovieEntries(); track entry.id) {
                       <article class="profile-recent-card">
                         @if (detailRoute(entry); as route) {
-                          <div class="profile-recent-poster profile-trending-poster">
+                          <div class="profile-recent-poster profile-trending-poster content-image-card">
                             <a class="profile-trending-poster-link" [routerLink]="route">
                               @if (imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath); as poster) { <img [src]="poster" [alt]="entry.card?.title || ''" /> }
                               @else { <span class="profile-trending-poster-empty">{{ entry.card?.title || copy.unavailable }}</span> }
@@ -358,7 +358,7 @@
                     @for (entry of recentEpisodeEntries().slice(0, 4); track entry.id) {
                       <article class="profile-recent-card profile-last-episode-card">
                         @if (episodeDetailRoute(entry); as route) {
-                          <div class="profile-last-episode-still profile-continue-visual">
+                          <div class="profile-last-episode-still profile-continue-visual content-image-card">
                             <a class="profile-continue-image-link" [routerLink]="route" [state]="episodeNavigationState(entry.content.id)">
                               @if (episodeStill(entry); as still) { <img [src]="still" [alt]="entry.seriesTitle || entry.card?.title || ''" /> }
                               @else { <span class="profile-continue-image-empty">{{ entry.seriesTitle || entry.card?.title || copy.unavailable }}</span> }
@@ -384,7 +384,7 @@
                   <div class="profile-recent-grid">
                     @for (entry of recentSeriesItems(); track entry.seriesTmdbId) {
                       <article class="profile-recent-card">
-                        <div class="profile-recent-poster profile-trending-poster">
+                        <div class="profile-recent-poster profile-trending-poster content-image-card">
                           <a class="profile-trending-poster-link" [routerLink]="['/content', 'series', entry.seriesTmdbId]" [queryParams]="entry.contentId ? { contentId: entry.contentId } : null">
                             @if (imageUrl(entry.posterPath); as poster) { <img [src]="poster" [alt]="entry.title" /> }
                             @else { <span class="profile-trending-poster-empty">{{ entry.title }}</span> }

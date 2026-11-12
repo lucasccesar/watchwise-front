@@ -109,6 +109,10 @@
     pointer-events: auto;
   }
 
+  :host-context(.profile-overview-content) .content-menu-trigger {
+    opacity: 1;
+  }
+
   :host-context(.season-episode-card) .content-menu-trigger {
     opacity: 1;
   }
