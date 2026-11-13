@@ -104,63 +104,19 @@
     </section>
   </main>
   @if (editReviewOpen()) {
-    <app-dialog-backdrop placement="top" (dismiss)="editReviewOpen.set(false)">
-      <section class="review-edit-dialog ww-dialog-panel" role="dialog" appModalFocus aria-modal="true" aria-labelledby="review-edit-title" (click)="$event.stopPropagation()">
-        <header class="review-edit-header"><div><h2 id="review-edit-title">Editar resenha</h2><span>{{ editReviewSubtitle() }}</span></div></header>
-        <div class="review-edit-controls">
-          <div class="review-edit-date-picker">
-            <button class="review-edit-date" type="button" [attr.aria-label]="calendarCopy.chooseWatchDate" aria-haspopup="dialog" [attr.aria-expanded]="editReviewCalendarOpen()" [disabled]="editReviewBusy()" (click)="toggleEditReviewCalendar()" data-ww-select-trigger>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></svg>
-              <span><span>{{ calendarCopy.watchedOn }}</span> {{ formatDate(editReviewDate()) }}</span>
-              <svg class="review-edit-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-            </button>
-            @if (editReviewCalendarOpen()) {
-              <div class="review-edit-calendar" role="dialog" [attr.aria-label]="calendarCopy.chooseWatchDate">
-                <div class="review-edit-calendar-header">
-                  <button type="button" [attr.aria-label]="calendarCopy.previousMonth" [disabled]="editReviewBusy()" (click)="changeEditReviewCalendarMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-                  <span>{{ editReviewMonthLabel() }}</span>
-                  <button type="button" [attr.aria-label]="calendarCopy.nextMonth" [disabled]="!canAdvanceEditReviewCalendar() || editReviewBusy()" (click)="changeEditReviewCalendarMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
-                </div>
-                <div class="review-edit-calendar-grid review-edit-calendar-weekdays" aria-hidden="true">@for (weekday of calendarWeekdays; track $index) { <span>{{ weekday }}</span> }</div>
-                <div class="review-edit-calendar-grid">
-                  @for (day of editReviewCalendarDays(); track day.date) {
-                    @if (day.inMonth) {
-                      <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled || editReviewBusy()" [class.review-edit-calendar-day--selected]="day.selected" (click)="selectEditReviewDate(day.date)">{{ day.day }}</button>
-                    } @else { <span aria-hidden="true"></span> }
-                  }
-                </div>
-              </div>
-            }
-          </div>
-          <label class="review-edit-rewatch"><input type="checkbox" [checked]="editReviewRewatch()" (change)="setEditReviewRewatch($event)" /> Já assisti antes</label>
-        </div>
-        @if (entry()?.content?.type === 'MOVIE') {
-          <label class="ww-theater-toggle review-edit-theater">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7C3 5.9 3.9 5 5 5h14c1.1 0 2 .9 2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v2c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-2c1.66 0 3-1.34 3-3S4.66 9 3 9Z"/><path d="M14 5v2m0 4v2m0 4v2"/></svg>
-            <span>Assisti no cinema</span>
-            <input type="checkbox" role="switch" [checked]="editReviewWatchedInTheater()" (change)="setEditReviewWatchedInTheater($event)" />
-          </label>
-        }
-        <div class="review-edit-companions" role="group" aria-label="Assistiu com">
-          <span>Assistiu com</span>
-          <div>
-            @if (editReviewWatchedWith().length) {
-              @for (person of editReviewWatchedWith(); track person.id) {
-                <span class="review-edit-companion-chip">
-                  <span class="review-edit-companion-avatar">@if (person.profilePicture) { <img [src]="person.profilePicture" alt="" /> } @else { {{ (person.name || person.username).slice(0, 1) }} }</span>
-                  {{ person.name || person.username }}
-                  <button type="button" [attr.aria-label]="'Remover ' + (person.name || person.username)" (click)="removeEditReviewCompanion(person.id)">×</button>
-                </span>
-              }
-            } @else { <span class="review-edit-just-you">Só você</span> }
-            <button class="review-edit-add-person" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Adicionar pessoa</button>
-          </div>
-        </div>
-        <fieldset class="review-edit-score"><legend>Sua nota</legend><div role="radiogroup" aria-label="Nota de 1 a 10">@for (score of ratingOptions; track score) { <button type="button" role="radio" [attr.aria-label]="'Nota ' + score + ' de 10'" [attr.aria-checked]="editReviewScore() === score" (click)="setEditReviewScore(score)"><svg viewBox="0 0 24 24" aria-hidden="true" [class.review-edit-star--selected]="editReviewScore() !== 0 && score <= editReviewScore()"><path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" /></svg><span>{{ score }}</span></button> }</div></fieldset>
-        <label class="review-edit-review" for="review-edit-text"><span>Sua resenha</span><textarea id="review-edit-text" [value]="editReviewText()" (input)="setEditReviewText($event)" maxlength="20000"></textarea></label>
-        <footer><button type="button" [disabled]="editReviewBusy()" (click)="editReviewOpen.set(false)" data-ww-button="secondary">Cancelar</button><button class="review-edit-save" type="button" [disabled]="editReviewBusy()" (click)="saveReviewEdit()" data-ww-button="primary">{{ editReviewBusy() ? 'Salvando…' : 'Salvar resenha' }}</button></footer>
-      </section>
-    </app-dialog-backdrop>
+    <app-rating-dialog
+      [type]="ratingDialogType()"
+      [title]="'Editar registro'"
+      [subtitle]="editReviewSubtitle()"
+      [initialValue]="ratingDialogInitialValue()"
+      [friends]="ratingDialogFriends()"
+      [canRemove]="canEditReview()"
+      [saving]="editReviewBusy()"
+      [labels]="{ save: shareCopy.saveWatch, saving: 'Salvando…' }"
+      (save)="saveReviewEdit($event)"
+      (remove)="removeReviewHistory()"
+      (dismiss)="editReviewOpen.set(false)"
+    />
   }
   @if (sharePreviewOpen()) {
     @if (shareReviewModel(); as model) {

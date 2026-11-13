@@ -23,6 +23,7 @@ import { ToastNotificationsService } from '../../../../shared/components/toast-n
 import { canAddContentToWatchlist, isContentFullyWatched, shouldShowContentWatchlistAction } from '../../../../shared/utils/content-watch-status';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { tmdbImageUrl as buildTmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { ContentApiService, ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import {
@@ -66,7 +67,7 @@ function emptySection(loading = false): SectionState {
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent],
+  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent, RatingDialogComponent],
   templateUrl: './trending.component.html',
   styleUrl: './trending.component.css',
 })
@@ -132,6 +133,10 @@ export class TrendingComponent implements OnInit, OnDestroy {
 
   protected posterImage(path: string | null | undefined): string | null {
     return buildTmdbImageUrl(path, 'w500');
+  }
+
+  protected isMovieTrendingCard(card: TrendingCard): boolean {
+    return card.type === 'MOVIE';
   }
 
   private tmdbImageUrl(path: string): string {
@@ -462,6 +467,17 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.listDialogOpener()?.focus();
   }
 
+  protected watchDialogInitialValue(): Partial<RatingDialogValue> {
+    return {
+      watchedDate: this.watchDialogDate(),
+      isRewatch: this.watchDialogRewatch(),
+      watchedInTheater: this.watchDialogWatchedInTheater(),
+      score: this.watchDialogScore(),
+      comment: this.watchDialogReview(),
+      watchedWith: [],
+    };
+  }
+
   protected toggleWatchDialogCalendar(): void {
     this.watchDialogCalendarOpen.update((open) => !open);
   }
@@ -505,18 +521,20 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.watchDialogWatchedInTheater.set((event.currentTarget as HTMLInputElement).checked);
   }
 
-  protected saveWatchedCard(): void {
+  protected saveWatchedCard(submission?: RatingDialogSubmission): void {
     const card = this.watchDialogCard();
     if (!card || this.watchDialogSaving()) return;
-    const watchedDate = this.watchDialogDate();
+    const watchedDate = submission?.watchedDate ?? this.watchDialogDate();
+    const isRewatch = submission?.isRewatch ?? this.watchDialogRewatch();
     const request = card.type === 'MOVIE'
       ? this.contentApi.createDiaryEntry({
           content: { type: 'MOVIE', tmdbId: card.tmdbId },
           watchedDate,
-          watchedInTheater: this.watchDialogWatchedInTheater(),
-          isRewatch: this.watchDialogRewatch(),
-          score: this.watchDialogScore(),
-          comment: this.watchDialogReview().trim() || null,
+          watchedInTheater: submission?.watchedInTheater ?? this.watchDialogWatchedInTheater(),
+          isRewatch,
+          score: submission?.score ?? this.watchDialogScore(),
+          comment: submission?.comment.trim() || this.watchDialogReview().trim() || null,
+          watchedWith: submission?.watchedWith ?? [],
         })
       : this.contentApi.createBulkSeriesDiaryEntry({
           content: { type: 'SERIES', tmdbId: card.tmdbId },
@@ -527,7 +545,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
       next: () => {
         this.watchDialogSaving.set(false);
         this.updateCardViewerState(card, { watchStatus: 'WATCHED', lastWatchedDate: watchedDate });
-        this.toasts.success(this.watchDialogRewatch() ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
+        this.toasts.success(isRewatch ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
         this.closeWatchedDialog();
       },
       error: (error: unknown) => {

@@ -4,24 +4,22 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { messageCatalog } from '../../../../shared/i18n/messages';
 import {
   ContentApiService,
   ContentComment,
   DiaryEntryRecord,
   SeriesPage,
-  UserPreview,
 } from '../../../content/data-access/content-api.service';
 import { ProfileApiService, PublicUserProfile } from '../../../profile/data-access/profile-api.service';
-import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
-import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { RatingDialogComponent, type RatingDialogContentType, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { SocialActionsMenuComponent, SocialActionMenuEvent, SocialActionMenuUser } from '../../../../shared/components/social-actions-menu/social-actions-menu.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 
@@ -36,19 +34,10 @@ interface ReviewCommentThread {
   root: ReviewCommentNode;
 }
 
-interface ReviewCalendarDay {
-  date: string;
-  day: number;
-  inMonth: boolean;
-  selected: boolean;
-  disabled: boolean;
-  ariaLabel: string;
-}
-
 @Component({
   selector: 'app-diary-review-detail',
   standalone: true,
-  imports: [RouterLink, NgTemplateOutlet, PageSkeletonComponent, ResponsiveBannerComponent, DialogBackdropComponent, ModalFocusDirective, ShareReviewDialogComponent, SocialActionsMenuComponent, CommentItemComponent],
+  imports: [RouterLink, NgTemplateOutlet, PageSkeletonComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, RatingDialogComponent, SocialActionsMenuComponent, CommentItemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './review-detail.component.html',
   styleUrl: './review-detail.component.css',
@@ -102,29 +91,28 @@ export class DiaryReviewDetailComponent {
   protected readonly shareCopy = movieMessages['pt-BR'];
   protected readonly pendingComments = signal(false);
   protected readonly editReviewOpen = signal(false);
-  protected readonly editReviewScore = signal(0);
-  protected readonly editReviewText = signal('');
-  protected readonly editReviewDate = signal('');
-  protected readonly editReviewRewatch = signal(false);
-  protected readonly editReviewWatchedInTheater = signal(false);
-  protected readonly editReviewCalendarOpen = signal(false);
-  protected readonly editReviewCalendarMonth = signal(this.firstOfMonth(new Date()));
-  protected readonly editReviewWatchedWith = signal<UserPreview[]>([]);
   protected readonly editReviewBusy = signal(false);
-  protected readonly ratingOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  protected readonly calendarCopy = messageCatalog['pt-BR'].home;
-  protected readonly calendarWeekdays = this.calendarCopy.calendarWeekdays.split(' ');
-  protected readonly editReviewCalendarDays = computed(() =>
-    this.createReviewCalendarDays(this.editReviewCalendarMonth(), this.editReviewDate()),
-  );
-  protected readonly editReviewMonthLabel = computed(() =>
-    new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(this.editReviewCalendarMonth()),
-  );
-  protected readonly canAdvanceEditReviewCalendar = computed(() => {
-    const month = this.editReviewCalendarMonth();
-    const today = new Date();
-    return month.getFullYear() * 12 + month.getMonth() < today.getFullYear() * 12 + today.getMonth();
+  protected readonly ratingDialogType = computed<RatingDialogContentType>(() => {
+    const type = this.entry()?.content?.type;
+    return type === 'SERIES' || type === 'SEASON' || type === 'EPISODE' ? type : 'MOVIE';
   });
+  protected readonly ratingDialogInitialValue = computed<Partial<RatingDialogValue>>(() => {
+    const entry = this.entry();
+    return {
+      score: entry?.score ?? null,
+      comment: entry?.comment ?? '',
+      watchedDate: entry?.watchedDate ?? entry?.watchedAt ?? this.localDate(new Date()),
+      isRewatch: (entry?.watchNumber ?? 1) > 1,
+      watchedInTheater: entry?.watchedInTheater ?? false,
+      watchedWith: entry?.watchedWith?.map((person) => person.id) ?? [],
+    };
+  });
+  protected readonly ratingDialogFriends = computed(() => (this.entry()?.watchedWith ?? []).map((person) => ({
+    id: person.id,
+    name: person.name,
+    username: person.username,
+    profilePicture: person.profilePicture,
+  })));
   protected readonly backdrop = signal<string | null>(null);
   protected readonly parentTitle = signal('');
   protected readonly reviewerProfile = signal<PublicUserProfile | null>(null);
@@ -227,6 +215,7 @@ export class DiaryReviewDetailComponent {
   private readonly router = inject(Router);
   private readonly api = inject(ContentApiService);
   private readonly profileApi = inject(ProfileApiService);
+  private readonly confirmation = inject(ConfirmationDialogService);
   private openReviewEditorAfterLoad = false;
 
   constructor() {
@@ -328,56 +317,8 @@ export class DiaryReviewDetailComponent {
   protected openReviewEditor(): void {
     const entry = this.entry();
     if (!entry || !this.canEditReview()) return;
-    this.editReviewScore.set(entry.score ?? 0);
-    this.editReviewText.set(entry.comment ?? '');
-    const watchedDate = (entry.watchedDate ?? entry.watchedAt ?? this.localDate(new Date())).slice(0, 10);
-    this.editReviewDate.set(watchedDate);
-    this.editReviewCalendarMonth.set(this.firstOfMonth(this.dateFromLocalString(watchedDate)));
-    this.editReviewCalendarOpen.set(false);
-    this.editReviewRewatch.set((entry.watchNumber ?? 1) > 1);
-    this.editReviewWatchedInTheater.set(entry.watchedInTheater ?? false);
-    this.editReviewWatchedWith.set([...(entry.watchedWith ?? [])]);
     this.editReviewOpen.set(true);
     this.shareMenuOpen.set(false);
-  }
-
-  protected setEditReviewText(event: Event): void {
-    this.editReviewText.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  protected toggleEditReviewCalendar(): void {
-    const opening = !this.editReviewCalendarOpen();
-    if (opening) this.editReviewCalendarMonth.set(this.firstOfMonth(this.dateFromLocalString(this.editReviewDate())));
-    this.editReviewCalendarOpen.set(opening);
-  }
-
-  protected changeEditReviewCalendarMonth(offset: number): void {
-    const month = this.editReviewCalendarMonth();
-    const candidate = new Date(month.getFullYear(), month.getMonth() + offset, 1);
-    const today = new Date();
-    if (candidate.getFullYear() * 12 + candidate.getMonth() > today.getFullYear() * 12 + today.getMonth()) return;
-    this.editReviewCalendarMonth.set(candidate);
-  }
-
-  protected selectEditReviewDate(date: string): void {
-    this.editReviewDate.set(date);
-    this.editReviewCalendarOpen.set(false);
-  }
-
-  protected setEditReviewRewatch(event: Event): void {
-    this.editReviewRewatch.set((event.currentTarget as HTMLInputElement).checked);
-  }
-
-  protected setEditReviewWatchedInTheater(event: Event): void {
-    this.editReviewWatchedInTheater.set((event.currentTarget as HTMLInputElement).checked);
-  }
-
-  protected setEditReviewScore(score: number): void {
-    this.editReviewScore.set(this.editReviewScore() === score ? 0 : score);
-  }
-
-  protected removeEditReviewCompanion(id: string): void {
-    this.editReviewWatchedWith.update((users) => users.filter((user) => user.id !== id));
   }
 
   protected editReviewSubtitle(): string {
@@ -396,24 +337,44 @@ export class DiaryReviewDetailComponent {
     return this.contentTitle();
   }
 
-  protected saveReviewEdit(): void {
+  protected saveReviewEdit(submission: RatingDialogSubmission): void {
     const entry = this.entry();
     if (!entry || !this.canEditReview() || this.editReviewBusy()) return;
     this.editReviewBusy.set(true);
-    const score = this.editReviewScore() || null;
-    const comment = this.editReviewText().trim() || null;
     this.api.updateDiaryEntry(entry.id, {
-      score,
-      comment,
-      watchedDate: this.editReviewDate() || null,
-      watchedInTheater: entry.content?.type === 'MOVIE' ? this.editReviewWatchedInTheater() : undefined,
-      isRewatch: this.editReviewRewatch(),
-      watchedWith: this.editReviewWatchedWith().map((user) => user.id),
+      score: submission.score,
+      comment: submission.comment || null,
+      watchedDate: submission.watchedDate || null,
+      watchedInTheater: submission.watchedInTheater,
+      isRewatch: submission.isRewatch,
+      watchedWith: submission.watchedWith,
     }).subscribe({
       next: (updatedEntry) => {
         this.entry.update((current) => current ? { ...current, ...updatedEntry } : current);
         this.editReviewBusy.set(false);
         this.editReviewOpen.set(false);
+      },
+      error: (error: unknown) => {
+        this.toasts.error(this.requestError(error));
+        this.editReviewBusy.set(false);
+      },
+    });
+  }
+
+  protected async removeReviewHistory(): Promise<void> {
+    const entry = this.entry();
+    if (!entry || !this.canEditReview() || this.editReviewBusy()) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: this.shareCopy.removeWatchConfirm,
+      confirmLabel: this.shareCopy.removeWatch,
+    });
+    if (!confirmed || this.editReviewBusy()) return;
+    this.editReviewBusy.set(true);
+    this.api.deleteDiaryEntry(entry.id).subscribe({
+      next: () => {
+        this.editReviewBusy.set(false);
+        this.toasts.success(this.shareCopy.removed);
+        void this.router.navigateByUrl('/diary/reviews');
       },
       error: (error: unknown) => {
         this.toasts.error(this.requestError(error));
@@ -588,34 +549,6 @@ export class DiaryReviewDetailComponent {
   private setBackdrop(path: string | null): void {
     if (!path) return;
     this.backdrop.set(tmdbImageUrl(path, 'w1280'));
-  }
-
-  private createReviewCalendarDays(month: Date, selectedDate: string): ReviewCalendarDay[] {
-    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-    const gridStart = new Date(month.getFullYear(), month.getMonth(), 1 - firstDay.getDay());
-    const today = this.localDate(new Date());
-    return Array.from({ length: 42 }, (_, index) => {
-      const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
-      const dateString = this.localDate(date);
-      return {
-        date: dateString,
-        day: date.getDate(),
-        inMonth: date.getMonth() === month.getMonth(),
-        selected: dateString === selectedDate,
-        disabled: dateString > today,
-        ariaLabel: new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date),
-      };
-    });
-  }
-
-  private firstOfMonth(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
-  }
-
-  private dateFromLocalString(value: string): Date {
-    const [year, month, day] = value.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return Number.isNaN(date.getTime()) ? new Date() : date;
   }
 
   private localDate(date: Date): string {

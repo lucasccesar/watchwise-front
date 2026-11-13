@@ -308,6 +308,7 @@
   }
 @if (episodeWatchTarget(); as target) {
   <app-watch-log-dialog
+    type="EPISODE"
     [dialogTitle]="target.isRewatch ? copy.rewatch : copy.markWatched"
     [title]="seriesName()"
     [subtitle]="episodeWatchSubtitle(target.episode)"

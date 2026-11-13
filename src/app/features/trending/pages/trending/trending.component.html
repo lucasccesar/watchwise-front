@@ -266,6 +266,20 @@
   }
 
   @if (watchDialogCard(); as card) {
+    @if (isMovieTrendingCard(card)) {
+      <app-rating-dialog
+        type="MOVIE"
+        [title]="card.viewerState?.watchStatus === 'WATCHED' ? copy.watchAgain : footerCopy.markWatched"
+        [subtitle]="cardTitle(card) + ' · ' + footerCopy.movie"
+        [initialValue]="watchDialogInitialValue()"
+        [saving]="watchDialogSaving()"
+        [allowEmpty]="true"
+        [labels]="{ save: footerCopy.save, saving: footerCopy.saving }"
+        [returnFocusTarget]="listDialogOpener()"
+        (save)="saveWatchedCard($event)"
+        (dismiss)="closeWatchedDialog()"
+      />
+    } @else {
     <app-dialog-backdrop placement="top" (dismiss)="closeWatchedDialog()">
       <section
         class="watch-log-dialog ww-dialog-panel"
@@ -361,5 +375,6 @@
         </footer>
       </section>
     </app-dialog-backdrop>
+    }
   }
 </div>

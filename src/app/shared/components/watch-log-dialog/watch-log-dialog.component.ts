@@ -2,12 +2,21 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, input, output, si
 import { messageCatalog } from '../../i18n/messages';
 import { DialogBackdropComponent } from '../dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../directives/modal-focus.directive';
+import {
+  RatingDialogComponent,
+  type RatingDialogCompanion,
+  type RatingDialogContentType,
+  type RatingDialogSubmission,
+  type RatingDialogValue,
+} from '../rating-dialog/rating-dialog.component';
 
 export interface WatchLogSubmission {
   watchedDate: string;
   isRewatch: boolean;
   score?: number;
   comment?: string;
+  watchedInTheater?: boolean;
+  watchedWith?: string[];
 }
 
 interface WatchCalendarDay {
@@ -22,7 +31,7 @@ interface WatchCalendarDay {
 @Component({
   selector: 'app-watch-log-dialog',
   standalone: true,
-  imports: [DialogBackdropComponent, ModalFocusDirective],
+  imports: [DialogBackdropComponent, ModalFocusDirective, RatingDialogComponent],
   templateUrl: './watch-log-dialog.component.html',
   styleUrl: './watch-log-dialog.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +40,8 @@ export class WatchLogDialogComponent implements OnInit {
   readonly dialogTitle = input.required<string>();
   readonly title = input.required<string>();
   readonly subtitle = input.required<string>();
+  readonly type = input<RatingDialogContentType>('MOVIE');
+  readonly friends = input<RatingDialogCompanion[]>([]);
   readonly initialRewatch = input(false);
   readonly allowRating = input(true);
   readonly saving = input(false);
@@ -41,11 +52,12 @@ export class WatchLogDialogComponent implements OnInit {
   protected readonly copy = messageCatalog['pt-BR'].home;
   protected readonly watchLogDate = signal(this.toDateKey(new Date()));
   protected readonly watchLogRewatch = signal(false);
-  protected readonly watchLogRating = signal<number | null>(null);
-  protected readonly watchLogReview = signal('');
+  protected readonly ratingInitialValue = computed<Partial<RatingDialogValue>>(() => ({
+    watchedDate: this.watchLogDate(),
+    isRewatch: this.watchLogRewatch(),
+  }));
   protected readonly watchCalendarOpen = signal(false);
   protected readonly watchCalendarMonth = signal(this.firstOfMonth(new Date()));
-  protected readonly ratingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
   protected readonly calendarWeekdays = this.copy.calendarWeekdays.split(' ');
   protected readonly watchCalendarDays = computed(() => this.createWatchCalendarDays(this.watchCalendarMonth(), this.watchLogDate()));
   protected readonly watchCalendarMonthLabel = computed(() =>
@@ -89,25 +101,25 @@ export class WatchLogDialogComponent implements OnInit {
     this.watchLogRewatch.set((event.currentTarget as HTMLInputElement).checked);
   }
 
-  protected setWatchLogRating(rating: number): void {
-    this.watchLogRating.set(this.watchLogRating() === rating ? null : rating);
-  }
-
-  protected updateWatchLogReview(event: Event): void {
-    this.watchLogReview.set((event.currentTarget as HTMLTextAreaElement).value);
-  }
-
   protected submit(): void {
     if (this.saving()) return;
     const submission: WatchLogSubmission = {
       watchedDate: this.watchLogDate(),
       isRewatch: this.watchLogRewatch(),
     };
-    const score = this.watchLogRating();
-    const comment = this.watchLogReview().trim();
-    if (score !== null) submission.score = score;
-    if (comment) submission.comment = comment;
     this.save.emit(submission);
+  }
+
+  protected submitRating(submission: RatingDialogSubmission): void {
+    const value: WatchLogSubmission = {
+      watchedDate: submission.watchedDate ?? this.watchLogDate(),
+      isRewatch: submission.isRewatch ?? this.initialRewatch(),
+    };
+    if (submission.score !== null) value.score = submission.score;
+    if (submission.comment.trim()) value.comment = submission.comment.trim();
+    if (submission.watchedInTheater !== undefined) value.watchedInTheater = submission.watchedInTheater;
+    if (submission.watchedWith !== undefined) value.watchedWith = submission.watchedWith;
+    this.save.emit(value);
   }
 
   private createWatchCalendarDays(month: Date, selectedDate: string): WatchCalendarDay[] {

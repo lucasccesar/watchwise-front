@@ -184,6 +184,20 @@
   }
 
   @if (watchDialogCard(); as item) {
+    @if (isMovieWatchlistItem(item)) {
+      <app-rating-dialog
+        type="MOVIE"
+        [title]="item.card.viewerState?.watchStatus === 'WATCHED' ? trendingCopy.watchAgain : homeCopy.markWatched"
+        [subtitle]="title(item) + ' · ' + homeCopy.movie"
+        [initialValue]="watchDialogInitialValue()"
+        [saving]="watchDialogSaving()"
+        [allowEmpty]="true"
+        [labels]="{ save: homeCopy.save, saving: homeCopy.saving }"
+        [returnFocusTarget]="posterMenuOpener()"
+        (save)="saveWatchedCard($event)"
+        (dismiss)="closeWatchedDialog()"
+      />
+    } @else {
     <app-dialog-backdrop placement="top" (dismiss)="closeWatchedDialog()">
       <section class="watchlist-watch-log-dialog ww-dialog-panel" role="dialog" appModalFocus [modalReturnFocus]="posterMenuOpener()" (modalDismiss)="closeWatchedDialog()" aria-modal="true" aria-labelledby="watchlist-watch-dialog-title" (click)="$event.stopPropagation()">
         <header class="watchlist-watch-log-header">
@@ -258,5 +272,6 @@
         </footer>
       </section>
     </app-dialog-backdrop>
+    }
   }
 </main>

@@ -13,10 +13,9 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
-import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
@@ -38,6 +37,7 @@ import {
   type ShareReviewDialogCopy,
   type ShareReviewDialogModel,
 } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
+import { RatingDialogComponent, type RatingDialogCompanion, type RatingDialogContentType, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import {
   DailyWatchCount,
   DiaryEntryCreationRequest,
@@ -85,23 +85,19 @@ interface RatingDialogTarget {
   title: string;
   subtitle: string;
   diaryEntryId: string;
+  type: RatingDialogContentType;
+  initialValue: Partial<RatingDialogValue>;
+  companions: RatingDialogCompanion[];
   editing: boolean;
-}
-
-interface WatchCalendarDay {
-  date: string;
-  day: number;
-  inMonth: boolean;
-  selected: boolean;
-  disabled: boolean;
-  ariaLabel: string;
+  loading: boolean;
+  loadError: string;
 }
 
 type HomeStatus = 'loading' | 'ready' | 'error';
 const GENRE_CHART_COLOR_ORDER = [1, 3, 4, 5, 2, 6] as const;
 
 @Component({
-  imports: [DialogBackdropComponent, ModalFocusDirective, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, ShareReviewDialogComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, RatingDialogComponent],
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
@@ -125,6 +121,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly status = signal<HomeStatus>('loading');
   protected readonly errorMessage = signal<string | null>(null);
   private readonly toasts = inject(ToastNotificationsService);
+  private readonly confirmation = inject(ConfirmationDialogService);
   protected readonly openContentMenuId = signal<string | null>(null);
   protected readonly shareReviewTarget = signal<ShareReviewDialogModel | null>(null);
   protected readonly shareReviewCopy: ShareReviewDialogCopy = movieMessages['pt-BR'];
@@ -133,27 +130,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly isSaving = signal(false);
   protected readonly watchLogDate = signal(this.toDateKey(new Date()));
   protected readonly watchLogRewatch = signal(false);
-  protected readonly watchLogRating = signal<number | null>(null);
-  protected readonly watchLogReview = signal('');
-  protected readonly ratingModalScore = signal<number | null>(null);
-  protected readonly ratingModalReview = signal('');
-  protected readonly watchCalendarOpen = signal(false);
-  protected readonly watchCalendarMonth = signal(this.firstOfMonth(new Date()));
-  protected readonly ratingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
-  protected readonly calendarWeekdays = this.copy.calendarWeekdays.split(' ');
-  protected readonly watchCalendarDays = computed(() =>
-    this.createWatchCalendarDays(this.watchCalendarMonth(), this.watchLogDate()),
-  );
-  protected readonly watchCalendarMonthLabel = computed(() =>
-    new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(
-      this.watchCalendarMonth(),
-    ),
-  );
-  protected readonly canAdvanceWatchCalendar = computed(() => {
-    const month = this.watchCalendarMonth();
-    const today = new Date();
-    return month.getFullYear() * 12 + month.getMonth() < today.getFullYear() * 12 + today.getMonth();
-  });
   protected readonly upcomingView = signal<'calendar' | 'next'>('calendar');
   protected readonly chartDays = computed(() =>
     this.createChartDays(this.summary()?.watchCountByDayLast30Days ?? []),
@@ -177,6 +153,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private genreLabelChanges?: Subscription;
   private socialDetailsRequestSequence = 0;
   private shareReviewRequest?: Subscription;
+  private ratingDetailsRequest?: Subscription;
 
   @ViewChildren('genreItemLabel')
   private genreItemLabels!: QueryList<ElementRef<HTMLElement>>;
@@ -209,6 +186,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.genreLabelChanges?.unsubscribe();
     this.genreLabelObserver?.disconnect();
     this.shareReviewRequest?.unsubscribe();
+    this.ratingDetailsRequest?.unsubscribe();
   }
 
   protected loadSummary(userId = this.session.user()?.id): void {
@@ -587,108 +565,100 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       : null);
     this.activeDialogOpener = opener;
     this.watchLogTarget.set(null);
-    this.ratingTarget.set({ title, subtitle, diaryEntryId: entry.id, editing: entry.score !== null });
+    const target: RatingDialogTarget = {
+      title,
+      subtitle,
+      diaryEntryId: entry.id,
+      type: entry.content.type?.toUpperCase() === 'EPISODE' ? 'EPISODE' : 'MOVIE',
+      initialValue: { score: entry.score, comment: '', watchedDate: entry.watchedDate },
+      companions: [],
+      editing: entry.score !== null,
+      loading: true,
+      loadError: '',
+    };
+    this.ratingTarget.set(target);
     this.isSaving.set(false);
-    this.ratingModalScore.set(entry.score);
-    this.ratingModalReview.set('');
-    this.watchCalendarOpen.set(false);
+    this.loadRatingDetails(target);
   }
 
-  protected toggleWatchCalendar(): void {
-    this.watchCalendarOpen.update((open) => !open);
+  protected retryRatingDetails(): void {
+    const target = this.ratingTarget();
+    if (!target) return;
+    const loadingTarget = { ...target, loading: true, loadError: '' };
+    this.ratingTarget.set(loadingTarget);
+    this.loadRatingDetails(loadingTarget);
   }
 
-  protected changeWatchCalendarMonth(offset: number): void {
-    const current = this.watchCalendarMonth();
-    const candidate = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-    const today = new Date();
-    if (candidate.getFullYear() * 12 + candidate.getMonth() > today.getFullYear() * 12 + today.getMonth()) {
-      return;
-    }
-    this.watchCalendarMonth.set(candidate);
+  protected watchLogInitialValue(): Partial<RatingDialogValue> {
+    return {
+      watchedDate: this.watchLogDate(),
+      isRewatch: this.watchLogRewatch(),
+      score: null,
+      comment: '',
+      watchedInTheater: false,
+      watchedWith: [],
+    };
   }
 
-  protected selectWatchLogDate(date: string): void {
-    this.watchLogDate.set(date);
-    this.watchCalendarOpen.set(false);
-  }
-
-  protected watchLogDateLabel(): string {
-    const date = this.parseDate(this.watchLogDate());
-    return date
-      ? new Intl.DateTimeFormat('pt-BR', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-          timeZone: 'UTC',
-        }).format(date)
-      : this.copy.dateUnavailable;
-  }
-
-  protected setWatchLogRewatch(event: Event): void {
-    this.watchLogRewatch.set((event.currentTarget as HTMLInputElement).checked);
-  }
-
-  protected setWatchLogRating(rating: number): void {
-    this.watchLogRating.set(this.watchLogRating() === rating ? null : rating);
-  }
-
-  protected setRatingModalScore(rating: number): void {
-    this.ratingModalScore.set(this.ratingModalScore() === rating ? null : rating);
-  }
-
-  protected updateWatchLogReview(event: Event): void {
-    this.watchLogReview.set((event.currentTarget as HTMLTextAreaElement).value);
-  }
-
-  protected updateRatingModalReview(event: Event): void {
-    this.ratingModalReview.set((event.currentTarget as HTMLTextAreaElement).value);
-  }
-
-  protected canSaveWatchLog(): boolean {
-    return Boolean(this.watchLogTarget()?.content);
-  }
-
-  protected canSaveRating(): boolean {
-    return this.ratingModalScore() !== null || this.ratingModalReview().trim().length > 0;
-  }
-
-  protected saveWatchLog(): void {
+  protected saveWatchLog(submission: RatingDialogSubmission): void {
     const target = this.watchLogTarget();
     if (!target) return;
 
     const request: DiaryEntryCreationRequest = {
       content: target.content,
-      watchedDate: this.watchLogDate(),
-      isRewatch: this.watchLogRewatch(),
+      watchedDate: submission.watchedDate ?? this.watchLogDate(),
+      isRewatch: submission.isRewatch ?? this.watchLogRewatch(),
     };
-    const score = this.watchLogRating();
+    const score = submission.score;
     if (score !== null) {
       request.score = score;
     }
-    const comment = this.watchLogReview().trim();
+    const comment = submission.comment.trim();
     if (comment) {
       request.comment = comment;
+    }
+    if (submission.watchedInTheater !== undefined) {
+      request.watchedInTheater = submission.watchedInTheater;
     }
     this.submitDiaryAction(this.api.createDiaryEntry(request));
   }
 
-  protected saveRating(): void {
+  protected saveRating(submission: RatingDialogSubmission): void {
     const target = this.ratingTarget();
-    if (!target || !this.canSaveRating()) {
-      return;
-    }
+    if (!target) return;
 
-    const request: DiaryEntryUpdateRequest = {};
-    const score = this.ratingModalScore();
-    const comment = this.ratingModalReview().trim();
-    if (score !== null) {
-      request.score = score;
-    }
-    if (comment) {
-      request.comment = comment;
-    }
+    const request: DiaryEntryUpdateRequest = {
+      score: submission.score,
+      watchedDate: submission.watchedDate,
+      isRewatch: submission.isRewatch,
+      watchedInTheater: submission.watchedInTheater,
+      watchedWith: submission.watchedWith,
+      comment: submission.comment.trim() || null,
+    };
     this.submitDiaryAction(this.api.updateDiaryEntry(target.diaryEntryId, request));
+  }
+
+  protected async removeRatingEntry(): Promise<void> {
+    const target = this.ratingTarget();
+    if (!target || this.isSaving()) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: movieMessages['pt-BR'].removeWatchConfirm,
+      confirmLabel: movieMessages['pt-BR'].removeWatch,
+    });
+    if (!confirmed || this.isSaving()) return;
+    this.isSaving.set(true);
+    this.contentApi.deleteDiaryEntry(target.diaryEntryId).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.closeDialog();
+        this.loadSummary();
+        this.toasts.success(movieMessages['pt-BR'].removed);
+      },
+      error: (error: unknown) => {
+        this.isSaving.set(false);
+        this.toasts.error(this.actionErrorMessage(error));
+      },
+    });
   }
 
   protected closeDialog(): void {
@@ -697,9 +667,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     const opener = this.activeDialogOpener;
     this.activeDialogOpener = null;
+    this.ratingDetailsRequest?.unsubscribe();
+    this.ratingDetailsRequest = undefined;
     this.watchLogTarget.set(null);
     this.ratingTarget.set(null);
-    this.watchCalendarOpen.set(false);
     if (opener) {
       window.setTimeout(() => {
         if (opener.isConnected) {
@@ -733,7 +704,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
 
-      const dialog = document.querySelector<HTMLElement>('.watch-log-dialog, .rating-dialog');
+      const dialog = document.querySelector<HTMLElement>('.content-rating-dialog');
       if (!dialog) {
         return;
       }
@@ -778,10 +749,41 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSaving.set(false);
     this.watchLogDate.set(this.toDateKey(new Date()));
     this.watchLogRewatch.set(false);
-    this.watchLogRating.set(null);
-    this.watchLogReview.set('');
-    this.watchCalendarMonth.set(this.firstOfMonth(new Date()));
-    this.watchCalendarOpen.set(false);
+  }
+
+  private loadRatingDetails(target: RatingDialogTarget): void {
+    this.ratingDetailsRequest?.unsubscribe();
+    this.ratingDetailsRequest = this.contentApi.getDiaryEntry(target.diaryEntryId).subscribe({
+      next: (entry) => {
+        const current = this.ratingTarget();
+        if (!current || current.diaryEntryId !== target.diaryEntryId) return;
+        const companions = (entry.watchedWith ?? []).map((person) => ({
+          id: person.id,
+          name: person.name ?? null,
+          username: person.username ?? '',
+          profilePicture: person.profilePicture ?? null,
+        }));
+        this.ratingTarget.set({
+          ...current,
+          initialValue: {
+            score: entry.score,
+            comment: entry.comment ?? '',
+            watchedDate: entry.watchedDate ?? entry.watchedAt ?? current.initialValue.watchedDate,
+            isRewatch: entry.watchNumber === null || entry.watchNumber === undefined ? undefined : entry.watchNumber > 1,
+            watchedInTheater: entry.watchedInTheater ?? false,
+            watchedWith: companions.map((person) => person.id),
+          },
+          companions,
+          loading: false,
+          loadError: '',
+        });
+      },
+      error: (error: unknown) => {
+        const current = this.ratingTarget();
+        if (!current || current.diaryEntryId !== target.diaryEntryId) return;
+        this.ratingTarget.set({ ...current, loading: false, loadError: this.actionErrorMessage(error) });
+      },
+    });
   }
 
   private diaryContentForEpisode(episode: NextEpisode): DiaryEntryCreationRequest['content'] | null {
@@ -865,27 +867,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       default:
         return this.copy.actionSaveError;
     }
-  }
-
-  private createWatchCalendarDays(month: Date, selectedDate: string): WatchCalendarDay[] {
-    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-    const gridStart = new Date(month.getFullYear(), month.getMonth(), 1 - firstDay.getDay());
-    const todayKey = this.toDateKey(new Date());
-    return Array.from({ length: 42 }, (_, index) => {
-      const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
-      const dateKey = this.toDateKey(date);
-      return {
-        date: dateKey,
-        day: date.getDate(),
-        inMonth: date.getMonth() === month.getMonth(),
-        selected: dateKey === selectedDate,
-        disabled: dateKey > todayKey,
-        ariaLabel: new Intl.DateTimeFormat('pt-BR', {
-          dateStyle: 'full',
-          timeZone: 'UTC',
-        }).format(new Date(`${dateKey}T00:00:00Z`)),
-      };
-    });
   }
 
   private firstOfMonth(date: Date): Date {

@@ -1212,11 +1212,13 @@
   }
   @if (profileWatchTarget(); as target) {
     <app-watch-log-dialog
+      [type]="target.type"
       [dialogTitle]="profileWatchIsRewatch() ? homeCopy.rewatch : homeCopy.markWatched"
       [title]="target.title"
       [subtitle]="target.subtitle"
       [initialRewatch]="profileWatchIsRewatch()"
       [allowRating]="target.type === 'MOVIE' || target.type === 'EPISODE'"
+      [friends]="target.companions ?? []"
       [saving]="profileWatchSaving()"
       [returnFocusTarget]="profileWatchOpener()"
       (save)="saveProfileWatch($event)"
@@ -1225,14 +1227,17 @@
   }
   @if (profileRatingTarget(); as target) {
     <app-rating-dialog
+      [type]="target.type"
       [title]="profileRatingDialogTitle(target)"
       [subtitle]="target.title + (target.subtitle ? ' · ' + target.subtitle : '')"
-      [initialScore]="target.viewerState.myRating"
-      [initialComment]="target.viewerState.myReview ?? ''"
-      [allowComment]="target.allowComment ?? target.type !== 'SEASON'"
+      [initialValue]="profileRatingInitialValue()"
+      [friends]="profileRatingFriends()"
+      [canRemove]="isOwnProfile() && !!(target.diaryEntryId || target.viewerState.latestDiaryEntryId)"
       [saving]="profileRatingSaving()"
+      [loading]="profileRatingLoading()"
       [returnFocusTarget]="profileRatingOpener()"
       (save)="saveProfileRating($event)"
+      (remove)="removeProfileRatingEntry()"
       (dismiss)="closeProfileRatingDialog()"
     />
   }

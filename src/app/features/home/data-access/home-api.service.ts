@@ -181,11 +181,16 @@ export interface DiaryEntryCreationRequest {
   isRewatch: boolean;
   score?: number;
   comment?: string;
+  watchedInTheater?: boolean;
 }
 
 export interface DiaryEntryUpdateRequest {
-  score?: number;
-  comment?: string;
+  score?: number | null;
+  comment?: string | null;
+  watchedDate?: string;
+  isRewatch?: boolean;
+  watchedInTheater?: boolean;
+  watchedWith?: string[];
 }
 
 @Injectable({ providedIn: 'root' })

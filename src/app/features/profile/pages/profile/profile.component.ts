@@ -33,6 +33,7 @@ import { ResponsiveBannerComponent } from '../../../../shared/components/respons
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ShareReviewDialogComponent, type ShareReviewDialogCopy, type ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
@@ -43,14 +44,14 @@ import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
-import { RatingDialogComponent, RatingDialogSubmission } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { RatingDialogComponent, type RatingDialogCompanion, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 
 type ProfileSection = 'profile' | 'progress' | 'history' | 'reviews' | 'lists' | 'watchlist' | 'picks' | 'episode-ratings-map' | 'episode-ratings-map-show' | 'month-in-review' | 'year-in-review' | 'all-time-stats';
 type ProfileTabKey = keyof typeof messageCatalog['pt-BR']['profilePage']['tabs'];
 type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
-type ProfileActionViewerState = Pick<ContentViewerState, 'myRating' | 'myReview' | 'latestDiaryEntryId' | 'currentRatingVersion'> & { reviewIds?: string[] };
+type ProfileActionViewerState = Pick<ContentViewerState, 'myRating' | 'myReview' | 'latestDiaryEntryId' | 'currentRatingVersion' | 'lastWatchedDate' | 'lastWatchNumber' | 'watchedInTheater' | 'playsCount'> & { reviewIds?: string[] };
 type ResolvedTopFive = TopFiveEntry & { hasWatched: boolean; viewerHasWatched: boolean | null; card: ProfileContentCard | null; title: string; posterPath: string | null; backdropPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; viewerRating: number | null | undefined; viewerReview: string | null; contentType: 'MOVIE' | 'SERIES' };
 type ProfileActionContent = {
   type: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE';
@@ -63,8 +64,10 @@ type ProfileActionContent = {
   subtitle: string;
   diaryEntryId?: string | null;
   reviewId?: string | null;
+  initialValue?: Partial<RatingDialogValue>;
+  companions?: RatingDialogCompanion[];
 };
-type ProfileRatingDialogTarget = ProfileActionContent & { viewerState: ProfileActionViewerState; allowComment?: boolean };
+type ProfileRatingDialogTarget = ProfileActionContent & { viewerState: ProfileActionViewerState };
 type TopFiveActionPage = {
   details: { title: string | null; releaseDate: string | null; backdropPath: string | null };
   viewerState: ContentViewerState;
@@ -140,6 +143,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 })
 export class ProfileComponent implements AfterViewInit, OnDestroy {
   private readonly toasts = inject(ToastNotificationsService);
+  private readonly confirmation = inject(ConfirmationDialogService);
   @ViewChild('profileMenuButton') protected profileMenuTrigger?: ElementRef<HTMLElement>;
   protected readonly shareReturnFocus = signal<HTMLElement | null>(null);
   protected openSharePreview(event?: Event): void {
@@ -178,6 +182,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileWatchOpener = signal<HTMLElement | null>(null);
   protected readonly profileWatchSaving = signal(false);
   protected readonly profileRatingTarget = signal<ProfileRatingDialogTarget | null>(null);
+  protected readonly profileRatingInitialValue = computed<Partial<RatingDialogValue>>(() => {
+    const target = this.profileRatingTarget();
+    return target?.initialValue ?? (target ? {
+      score: target.viewerState.myRating,
+      comment: target.viewerState.myReview ?? '',
+      watchedDate: target.viewerState.lastWatchedDate,
+      isRewatch: target.viewerState.lastWatchNumber === null ? undefined : target.viewerState.lastWatchNumber > 1,
+      watchedInTheater: undefined,
+    } : {});
+  });
+  protected readonly profileRatingFriends = computed<RatingDialogCompanion[]>(() => this.profileRatingTarget()?.companions ?? []);
   protected readonly profileRatingOpener = signal<HTMLElement | null>(null);
   protected readonly profileRatingLoading = signal(false);
   protected readonly profileRatingSaving = signal(false);
@@ -1386,7 +1401,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     page: TopFiveActionPage,
   ): void {
     if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
-      this.openProfileRatingDialog({ ...target, viewerState: page.viewerState }, selection.event);
+      this.openProfileRatingDialog({
+        ...target,
+        viewerState: page.viewerState,
+        initialValue: {
+          score: page.viewerState.myRating,
+          comment: page.viewerState.myReview ?? '',
+          watchedDate: page.viewerState.lastWatchedDate,
+          isRewatch: page.viewerState.lastWatchNumber === null ? undefined : page.viewerState.lastWatchNumber > 1,
+          watchedInTheater: page.viewerState.watchedInTheater ?? undefined,
+        },
+      }, selection.event);
       return;
     }
     const user = this.session.user();
@@ -1422,12 +1447,30 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         ...target,
         diaryEntryId: entry.reviewSource === 'DIARY' ? entry.id : null,
         reviewId: entry.reviewSource === 'CONTENT_REVIEW' ? entry.id : null,
+        initialValue: {
+          score: entry.score,
+          comment: entry.comment ?? '',
+          watchedDate: entry.watchedDate,
+          isRewatch: entry.watchNumber === null ? undefined : (entry.watchNumber ?? 0) > 1,
+          watchedInTheater: undefined,
+          watchedWith: entry.watchedWith?.flatMap((person) => person.id ? [person.id] : []),
+        },
+        companions: entry.watchedWith?.flatMap((person) => person.id ? [{
+          id: person.id,
+          name: person.name ?? null,
+          username: person.username ?? '',
+          profilePicture: person.profilePicture ?? null,
+        }] : []),
         viewerState: {
           myRating: entry.score,
           myReview: entry.comment,
           latestDiaryEntryId: entry.reviewSource === 'CONTENT_REVIEW' ? null : entry.id,
           currentRatingVersion: null,
           reviewIds: entry.reviewSource === 'CONTENT_REVIEW' ? [entry.id] : [],
+          lastWatchedDate: entry.watchedDate,
+          lastWatchNumber: entry.watchNumber,
+          watchedInTheater: null,
+          playsCount: entry.watchNumber,
         },
       }, selection.event);
     }
@@ -1461,8 +1504,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     } else if ((selection.action.id === 'rate' || selection.action.id === 'edit-rating') && target.contentId) {
       this.openProfileRatingDialog({
         ...target,
-        allowComment: false,
-        viewerState: { myRating: entry.viewerRating ?? null, myReview: null, latestDiaryEntryId: null, currentRatingVersion: null },
+        viewerState: { myRating: entry.viewerRating ?? null, myReview: null, latestDiaryEntryId: null, currentRatingVersion: null, lastWatchedDate: entry.lastWatchedDate, lastWatchNumber: null, watchedInTheater: null, playsCount: null },
+        initialValue: { score: entry.viewerRating ?? null, comment: '' },
       }, selection.event);
     }
   }
@@ -1560,6 +1603,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       episodeNumber: content.episodeNumber,
       title: type === 'EPISODE' ? entry.seriesTitle || title : title,
       subtitle: type === 'EPISODE' ? [coordinates, title].filter(Boolean).join(' · ') : entry.card?.releaseYear ? String(entry.card.releaseYear) : '',
+      companions: entry.watchedWith?.flatMap((person) => person.id ? [{
+        id: person.id,
+        name: person.name ?? null,
+        username: person.username ?? '',
+        profilePicture: person.profilePicture ?? null,
+      }] : []),
     };
   }
 
@@ -1605,7 +1654,15 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const watchedDate = submission.watchedDate;
     let request: Observable<unknown> | null = null;
     if (target.type === 'MOVIE' && target.tmdbId) {
-      request = this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: target.tmdbId }, watchedDate, isRewatch: submission.isRewatch, score: submission.score, comment: submission.comment || null });
+      request = this.contentApi.createDiaryEntry({
+        content: { type: 'MOVIE', tmdbId: target.tmdbId },
+        watchedDate,
+        isRewatch: submission.isRewatch,
+        watchedInTheater: submission.watchedInTheater,
+        watchedWith: submission.watchedWith,
+        score: submission.score,
+        comment: submission.comment || null,
+      });
     } else if (target.type === 'EPISODE' && target.seriesTmdbId && target.seasonNumber !== null && target.episodeNumber !== null) {
       request = this.contentApi.createSeriesDiaryEntry({ content: { type: 'EPISODE', seriesTmdbId: target.seriesTmdbId, seasonNumber: target.seasonNumber, episodeNumber: target.episodeNumber }, watchedDate, isRewatch: submission.isRewatch, score: submission.score, comment: submission.comment || null });
     } else if (target.type === 'SERIES' && target.tmdbId) {
@@ -1654,6 +1711,30 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  protected async removeProfileRatingEntry(): Promise<void> {
+    const target = this.profileRatingTarget();
+    const diaryEntryId = target?.diaryEntryId || target?.viewerState.latestDiaryEntryId;
+    if (!target || !this.isOwnProfile() || !diaryEntryId || this.profileRatingSaving()) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: movieMessages['pt-BR'].removeWatchConfirm,
+      confirmLabel: movieMessages['pt-BR'].removeWatch,
+    });
+    if (!confirmed || this.profileRatingSaving()) return;
+    this.profileRatingSaving.set(true);
+    this.contentApi.deleteDiaryEntry(diaryEntryId).subscribe({
+      next: () => {
+        this.profileRatingSaving.set(false);
+        this.closeProfileRatingDialog();
+        this.toasts.success(movieMessages['pt-BR'].removed);
+        this.loadSectionData();
+      },
+      error: (error: unknown) => {
+        this.profileRatingSaving.set(false);
+        this.handleProfileActionError(error);
+      },
+    });
+  }
+
   private createProfileRatingRequest(target: ProfileRatingDialogTarget, submission: RatingDialogSubmission): Observable<unknown> | null {
     const contentId = target.contentId;
     if (!contentId) return null;
@@ -1672,19 +1753,26 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       return forkJoin(calls);
     }
     if (target.type === 'MOVIE') {
-      const request = { score, comment };
+      const request = {
+        score,
+        comment,
+        watchedDate: submission.watchedDate,
+        isRewatch: submission.isRewatch,
+        watchedInTheater: submission.watchedInTheater,
+        watchedWith: submission.watchedWith,
+      };
       return target.diaryEntryId || state.latestDiaryEntryId
         ? this.contentApi.updateDiaryEntry(target.diaryEntryId || state.latestDiaryEntryId!, request)
-        : target.tmdbId && score !== null
-          ? this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: target.tmdbId }, watchedDate: this.localToday(), score, comment })
+        : target.tmdbId
+          ? this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: target.tmdbId }, ...request, watchedDate: submission.watchedDate || this.localToday(), isRewatch: submission.isRewatch ?? false })
           : null;
     }
     if (target.type === 'EPISODE') {
-      const request = { score, comment };
+      const request = { score, comment, watchedDate: submission.watchedDate, watchedWith: submission.watchedWith };
       return target.diaryEntryId || state.latestDiaryEntryId
         ? this.contentApi.updateDiaryEntry(target.diaryEntryId || state.latestDiaryEntryId!, request)
         : target.seriesTmdbId && target.seasonNumber !== null && target.episodeNumber !== null && score !== null
-          ? this.contentApi.createSeriesDiaryEntry({ content: { type: 'EPISODE', seriesTmdbId: target.seriesTmdbId, seasonNumber: target.seasonNumber, episodeNumber: target.episodeNumber }, watchedDate: this.localToday(), score, comment })
+          ? this.contentApi.createSeriesDiaryEntry({ content: { type: 'EPISODE', seriesTmdbId: target.seriesTmdbId, seasonNumber: target.seasonNumber, episodeNumber: target.episodeNumber }, ...request, watchedDate: submission.watchedDate || this.localToday() })
           : null;
     }
     const calls: Observable<unknown>[] = [];
@@ -1701,8 +1789,26 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         if (reviewId) calls.push(this.contentApi.deleteContentReview(reviewId));
         if (score !== null && score > 0 && score !== state.myRating) calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
       }
-    } else if (target.type === 'SEASON' && score !== null && score > 0 && score !== state.myRating) {
-      calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+    } else if (target.type === 'SEASON') {
+      const reviewId = state.reviewIds?.[0] ?? null;
+      if (comment) {
+        if (reviewId) {
+          calls.push(this.contentApi.updateContentReview(reviewId, comment));
+          if (score !== null && score > 0 && score !== state.myRating) {
+            calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+          }
+        } else {
+          calls.push(this.contentApi.createContentReview(contentId, {
+            comment,
+            ...(score !== null && score > 0 ? { score, expectedRatingVersion: state.currentRatingVersion ?? null } : {}),
+          }, crypto.randomUUID()));
+        }
+      } else {
+        if (reviewId) calls.push(this.contentApi.deleteContentReview(reviewId));
+        if (score !== null && score > 0 && score !== state.myRating) {
+          calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+        }
+      }
     }
     return calls.length ? forkJoin(calls) : of(null);
   }

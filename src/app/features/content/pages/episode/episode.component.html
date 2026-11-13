@@ -536,6 +536,7 @@
 
 @if (watchLogOpen()) {
   <app-watch-log-dialog
+    type="EPISODE"
     [dialogTitle]="alreadyWatched() ? 'Assistir novamente' : 'Marcar como assistido'"
     [title]="seriesTitle()"
     [subtitle]="'T' + seasonNumber() + ' · E' + episodeNumber() + ' · ' + episodeTitle()"

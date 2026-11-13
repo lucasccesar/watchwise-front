@@ -34,7 +34,7 @@ import { ConfirmationDialogService } from '../../../../shared/components/confirm
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
-import { RatingDialogComponent, RatingDialogSubmission } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { RatingDialogComponent, RatingDialogSubmission, type RatingDialogCompanion, type RatingDialogContentType, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
@@ -50,6 +50,7 @@ interface DiaryPaginationItem {
 }
 
 interface DiaryReviewCompanion {
+  id: string | null;
   name: string | null;
   username: string | null;
   profilePicture: string | null;
@@ -66,6 +67,7 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
   watchedInTheater: boolean | null;
   watchNumber: number | null;
   companions: DiaryReviewCompanion[];
+  watchedWithIds: string[];
   derivedCompletion?: boolean;
   sourceEntries?: DiaryGridEntry[];
 }
@@ -196,6 +198,32 @@ export class DiaryComponent implements OnDestroy {
   protected readonly watchAgainOpener = signal<HTMLElement | null>(null);
   protected readonly watchAgainSaving = signal(false);
   protected readonly ratingDialogEntry = signal<DiaryGridEntry | null>(null);
+  protected readonly ratingDialogInitialValue = computed<Partial<RatingDialogValue>>(() => {
+    const entry = this.ratingDialogEntry();
+    if (!entry) return {};
+    return {
+      score: entry.score,
+      comment: entry.comment ?? '',
+      watchedDate: entry.watchedDate,
+      watchedInTheater: entry.watchedInTheater ?? undefined,
+      isRewatch: entry.watchNumber === null ? undefined : entry.watchNumber > 1,
+      watchedWith: entry.watchedWithIds,
+    };
+  });
+  protected readonly ratingDialogFriends = computed<RatingDialogCompanion[]>(() => {
+    const entry = this.ratingDialogEntry();
+    return entry?.companions.filter((person): person is DiaryReviewCompanion & { id: string } => Boolean(person.id)).map((person) => ({
+      id: person.id,
+      name: person.name,
+      username: person.username ?? '',
+      profilePicture: person.profilePicture,
+    })) ?? [];
+  });
+
+  protected ratingDialogType(entry: DiaryGridEntry): RatingDialogContentType {
+    const type = entry.content.type;
+    return type === 'SERIES' || type === 'SEASON' || type === 'EPISODE' ? type : 'MOVIE';
+  }
   protected readonly ratingDialogOpener = signal<HTMLElement | null>(null);
   protected readonly ratingDialogSaving = signal(false);
   protected readonly shareReviewModel = computed<ShareReviewDialogModel | null>(() => {
@@ -839,7 +867,14 @@ export class DiaryComponent implements OnDestroy {
     if (!entry || this.ratingDialogSaving()) return;
     this.ratingDialogSaving.set(true);
     const request = entry.reviewSource !== 'CONTENT_REVIEW'
-      ? this.contentApi.updateDiaryEntry(entry.id, { score: submission.score, comment: submission.comment || null })
+      ? this.contentApi.updateDiaryEntry(entry.id, {
+          score: submission.score,
+          comment: submission.comment || null,
+          watchedDate: submission.watchedDate,
+          isRewatch: submission.isRewatch,
+          watchedInTheater: submission.watchedInTheater,
+          watchedWith: submission.watchedWith,
+        })
       : submission.comment
         ? this.contentApi.updateContentReview(entry.id, submission.comment)
         : this.contentApi.deleteContentReview(entry.id);
@@ -864,6 +899,29 @@ export class DiaryComponent implements OnDestroy {
     }));
   }
 
+  protected async removeRatingEntry(): Promise<void> {
+    const entry = this.ratingDialogEntry();
+    if (!entry || entry.reviewSource !== 'DIARY' || this.ratingDialogSaving()) return;
+    const confirmed = await this.confirmation.requestConfirmation({
+      message: movieMessages['pt-BR'].removeWatchConfirm,
+      confirmLabel: movieMessages['pt-BR'].removeWatch,
+    });
+    if (!confirmed || this.ratingDialogSaving()) return;
+    this.ratingDialogSaving.set(true);
+    this.actionRequests.add(this.contentApi.deleteDiaryEntry(entry.id).subscribe({
+      next: () => {
+        this.ratingDialogSaving.set(false);
+        this.closeRatingDialog();
+        this.toasts.success(this.copy.removeHistorySuccess);
+        this.load();
+      },
+      error: () => {
+        this.ratingDialogSaving.set(false);
+        this.toasts.error(this.homeCopy.genericError);
+      },
+    }));
+  }
+
   protected closeRatingDialog(): void {
     if (this.ratingDialogSaving()) return;
     this.ratingDialogEntry.set(null);
@@ -871,7 +929,7 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected ratingDialogTitle(entry: DiaryGridEntry): string {
-    return `${this.copy.editRatingAction}: ${this.title(entry)}`;
+    return this.homeCopy.editRating;
   }
 
   protected ratingDialogSubtitle(entry: DiaryGridEntry): string {
@@ -895,6 +953,26 @@ export class DiaryComponent implements OnDestroy {
       const type = (record.content.type ?? '').toUpperCase();
       return type === 'MOVIE' || type === 'EPISODE';
     });
+  }
+
+  protected watchAgainRatingType(entry: DiaryTimelineEntry): 'MOVIE' | 'EPISODE' {
+    return this.actionRecords(entry)[0]?.content.type === 'EPISODE' ? 'EPISODE' : 'MOVIE';
+  }
+
+  protected watchAgainFriends(entry: DiaryTimelineEntry): RatingDialogCompanion[] {
+    const friends = new Map<string, RatingDialogCompanion>();
+    for (const record of this.actionRecords(entry)) {
+      for (const person of record.companions) {
+        if (!person.id || friends.has(person.id)) continue;
+        friends.set(person.id, {
+          id: person.id,
+          name: person.name,
+          username: person.username ?? '',
+          profilePicture: person.profilePicture,
+        });
+      }
+    }
+    return [...friends.values()];
   }
 
   private menuTriggerFor(event: MouseEvent): HTMLElement | null {
@@ -942,6 +1020,7 @@ export class DiaryComponent implements OnDestroy {
         customPosterUrl: null,
         seriesTitle: entry.seriesTitle,
         companions: [],
+        watchedWithIds: [],
         companionProfilePictures: [],
         card: null,
         score: entry.score,
@@ -966,7 +1045,15 @@ export class DiaryComponent implements OnDestroy {
     const type = (entry.content.type ?? '').toUpperCase();
     const watchedDate = submission.watchedDate;
     if (type === 'MOVIE' && entry.content.tmdbId) {
-      return this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: entry.content.tmdbId }, watchedDate, isRewatch: submission.isRewatch, score: submission.score, comment: submission.comment || null });
+      return this.contentApi.createDiaryEntry({
+        content: { type: 'MOVIE', tmdbId: entry.content.tmdbId },
+        watchedDate,
+        isRewatch: submission.isRewatch,
+        watchedInTheater: submission.watchedInTheater,
+        watchedWith: submission.watchedWith,
+        score: submission.score,
+        comment: submission.comment || null,
+      });
     }
     if (type === 'EPISODE' && entry.content.seriesTmdbId && entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) {
       return this.contentApi.createSeriesDiaryEntry({
@@ -1243,6 +1330,7 @@ export class DiaryComponent implements OnDestroy {
         ?? this.diarySeries().find(option => option.seriesTmdbId === seriesTmdbId)?.title
         ?? null,
       companions: [],
+      watchedWithIds: [],
       companionProfilePictures: [],
       card: null,
       score: item.currentScore,
@@ -1299,10 +1387,12 @@ export class DiaryComponent implements OnDestroy {
       customPosterUrl: record.customPosterUrl,
       seriesTitle: record.seriesTitle ?? null,
       companions: companions.map(user => ({
+        id: user.id ?? null,
         name: user.name ?? null,
         username: user.username ?? null,
         profilePicture: user.profilePicture ?? null,
       })),
+      watchedWithIds: companions.flatMap((user) => user.id ? [user.id] : []),
       companionProfilePictures: companions
         .map((user) => user.profilePicture)
         .filter((picture): picture is string => Boolean(picture)),

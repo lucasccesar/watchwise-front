@@ -502,6 +502,10 @@ export class ListDetailComponent {
     return item.card?.type === 'MOVIE' || item.card?.type === 'EPISODE';
   }
 
+  protected watchDialogRatingType(item: ListDetailItem): 'MOVIE' | 'EPISODE' {
+    return item.card?.type === 'EPISODE' ? 'EPISODE' : 'MOVIE';
+  }
+
   protected watchDialogSubtitle(item: ListDetailItem): string {
     const card = item.card;
     if (!card) return '';
@@ -581,7 +585,15 @@ export class ListDetailComponent {
     switch (card.type) {
       case 'MOVIE':
         return card.tmdbId
-          ? this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: card.tmdbId }, watchedDate, isRewatch, watchedInTheater: false, score: submission.score, comment: submission.comment || null })
+          ? this.contentApi.createDiaryEntry({
+              content: { type: 'MOVIE', tmdbId: card.tmdbId },
+              watchedDate,
+              isRewatch,
+              watchedInTheater: submission.watchedInTheater ?? false,
+              watchedWith: submission.watchedWith,
+              score: submission.score,
+              comment: submission.comment || null,
+            })
           : null;
       case 'SERIES':
         return card.tmdbId

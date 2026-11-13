@@ -1,31 +1,169 @@
-<app-dialog-backdrop placement="top" (dismiss)="dismiss.emit()">
-  <section class="rating-dialog ww-dialog-panel" appModalFocus [modalReturnFocus]="returnFocusTarget()" (modalDismiss)="dismiss.emit()" role="dialog" aria-modal="true" aria-labelledby="rating-dialog-title" (click)="$event.stopPropagation()">
-    <header class="rating-dialog-header">
-      <div>
-        <h2 id="rating-dialog-title">{{ title() }}</h2>
-        <span>{{ subtitle() }}</span>
-      </div>
-    </header>
-    <div class="rating-dialog-stars" role="group" [attr.aria-label]="copy.yourRating">
-      <span>{{ copy.yourRating }}</span>
-      <div>
-        @for (rating of ratingOptions; track rating) {
-          <button type="button" [attr.aria-label]="copy.rateWith + ' ' + rating + ' ' + copy.outOfTen" [attr.aria-pressed]="score() === rating" (click)="setScore(rating)">
-            <svg viewBox="0 0 24 24" aria-hidden="true" [class.rating-dialog-star--selected]="score() !== null && rating <= score()!">
-              <path d="M11.283 3.453C11.513 2.986 11.628 2.753 11.785 2.678C11.921 2.613 12.079 2.613 12.216 2.678C12.372 2.753 12.487 2.986 12.717 3.453L14.904 7.883C14.972 8.021 15.006 8.09 15.056 8.143C15.1 8.191 15.153 8.229 15.211 8.256C15.278 8.287 15.354 8.298 15.506 8.321L20.397 9.035C20.912 9.111 21.169 9.148 21.288 9.274C21.391 9.383 21.44 9.533 21.42 9.682C21.398 9.853 21.211 10.035 20.839 10.398L17.3 13.844C17.19 13.951 17.135 14.005 17.1 14.069C17.068 14.125 17.048 14.187 17.04 14.251C17.031 14.323 17.044 14.399 17.07 14.551L17.905 19.417C17.993 19.93 18.037 20.187 17.954 20.339C17.882 20.472 17.754 20.564 17.606 20.592C17.436 20.623 17.206 20.502 16.745 20.26L12.372 17.96C12.236 17.888 12.168 17.853 12.097 17.839C12.034 17.826 11.968 17.826 11.905 17.839C11.833 17.853 11.765 17.888 11.629 17.96L7.256 20.26C6.795 20.502 6.565 20.623 6.395 20.592C6.247 20.564 6.119 20.472 6.047 20.339C5.964 20.187 6.008 19.93 6.096 19.417L6.931 14.551C6.957 14.399 6.97 14.323 6.961 14.251C6.953 14.187 6.933 14.125 6.901 14.069C6.866 14.005 6.811 13.951 6.701 13.844L3.162 10.398C2.79 10.035 2.603 9.853 2.581 9.682C2.561 9.533 2.61 9.383 2.713 9.274C2.832 9.148 3.089 9.111 3.604 9.035L8.495 8.321C8.647 8.298 8.723 8.287 8.79 8.256C8.848 8.229 8.901 8.191 8.945 8.143C8.995 8.09 9.029 8.021 9.097 7.883L11.283 3.453Z" />
-            </svg>
-            <span>{{ rating }}</span>
-          </button>
-        }
-      </div>
-    </div>
-    @if (allowComment()) { <label class="rating-dialog-review">
-      <span>{{ copy.yourReview }} <span>{{ copy.optional }}</span></span>
-      <textarea rows="5" [placeholder]="copy.reviewPlaceholder" [value]="comment()" (input)="updateComment($event)"></textarea>
-    </label> }
-    <footer class="rating-dialog-actions">
-      <button type="button" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">{{ copy.cancel }}</button>
-      <button type="button" [disabled]="saving() || !canSave()" (click)="submit()" data-ww-button="primary">{{ saving() ? copy.saving : copy.save }}</button>
-    </footer>
+@if (type() === 'MOVIE') {
+  <div class="movie-modal-backdrop movie-rating-backdrop" [class.movie-modal-backdrop--watch-edit]="canRemove()" appModalScrollLock (click)="dismiss.emit()">
+    <ng-container [ngTemplateOutlet]="ratingDialog" />
+  </div>
+} @else if (type() === 'EPISODE') {
+  <app-dialog-backdrop placement="top" (dismiss)="dismiss.emit()">
+    <ng-container [ngTemplateOutlet]="ratingDialog" />
+  </app-dialog-backdrop>
+} @else {
+  <div class="movie-modal-backdrop series-modal-backdrop" [class.season-modal-backdrop]="type() === 'SEASON'" appModalScrollLock (click)="dismiss.emit()">
+    <ng-container [ngTemplateOutlet]="ratingDialog" />
+  </div>
+}
+
+<ng-template #ratingDialog>
+  <section
+    class="content-rating-dialog"
+    [class.movie-dialog]="type() === 'MOVIE'"
+    [class.movie-dialog--watch-edit]="type() === 'MOVIE' && canRemove()"
+    [class.ww-dialog-panel]="type() !== 'MOVIE' || canRemove()"
+    [class.watch-log-dialog]="type() === 'EPISODE'"
+    [class.episode-edit-dialog]="type() === 'EPISODE'"
+    [class.rating-dialog]="type() === 'SERIES' || type() === 'SEASON'"
+    [class.series-rating-dialog]="type() === 'SERIES' || type() === 'SEASON'"
+    [attr.aria-labelledby]="type() === 'MOVIE' ? 'movie-watch-title' : 'rating-dialog-title'"
+    [attr.aria-busy]="saving() || loading()"
+    appModalFocus
+    [modalReturnFocus]="returnFocusTarget()"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    (modalDismiss)="dismiss.emit()"
+    (click)="$event.stopPropagation()"
+  >
+      @if (type() === 'MOVIE') {
+        <header class="movie-dialog-header" [class.watch-log-header]="canRemove()">
+          <div class="movie-dialog-heading">
+            <h2 id="movie-watch-title">{{ title() }}</h2>
+            <span class="movie-watch-subtitle" [class.watch-log-subtitle]="canRemove()">{{ subtitle() }}</span>
+          </div>
+        </header>
+
+        <form class="movie-watch-form" [class.movie-watch-form--watch-edit]="canRemove()" [attr.aria-busy]="loading()" (ngSubmit)="submit()">
+          @if (loading()) {
+            <p class="movie-field-hint" role="status">{{ text().loading }}</p>
+          } @else if (loadError()) {
+            <div class="movie-field-error" role="alert"><p>{{ loadError() }}</p><button class="movie-text-button" type="button" (click)="retryLoad.emit()">{{ text().retry }}</button></div>
+          }
+
+          <fieldset class="movie-watch-fields" [class.movie-watch-fields--watch-edit]="canRemove()" [disabled]="saving() || loading() || !!loadError()">
+            <div class="movie-watch-top-row" [class.watch-log-controls]="canRemove()">
+              <div class="movie-watch-date-field" [class.watch-date-picker]="canRemove()">
+                <button class="movie-watch-date-trigger" [class.watch-date-trigger]="canRemove()" type="button" aria-haspopup="dialog" [attr.aria-expanded]="calendarOpen()" (click)="toggleCalendar()" data-ww-select-trigger>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+                  <span><span>{{ text().watchedOn }}</span> {{ dateLabel() }}</span>
+                  <svg [class.watch-date-chevron]="canRemove()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                @if (calendarOpen()) {
+                  <div class="movie-watch-calendar" [class.watch-calendar]="canRemove()" role="dialog" [attr.aria-label]="text().chooseDate">
+                    <div class="movie-watch-calendar-header" [class.watch-calendar-header]="canRemove()">
+                      <button type="button" [attr.aria-label]="text().previousMonth" (click)="changeCalendarMonth(-1)">@if (canRemove()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg> } @else { ‹ }</button>
+                      <span>{{ calendarMonthLabel() }}</span>
+                      <button type="button" [attr.aria-label]="text().nextMonth" [disabled]="!canAdvanceCalendar()" (click)="changeCalendarMonth(1)">@if (canRemove()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> } @else { › }</button>
+                    </div>
+                    <div class="movie-watch-calendar-grid movie-watch-calendar-weekdays" [class.watch-calendar-grid]="canRemove()" [class.watch-calendar-weekdays]="canRemove()" aria-hidden="true">@for (weekday of text().weekdays; track $index) { <span>{{ weekday }}</span> }</div>
+                    <div class="movie-watch-calendar-grid" [class.watch-calendar-grid]="canRemove()">
+                      @for (day of calendarDays(); track day.date) {
+                        @if (day.inMonth) { <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="day.disabled" [class.movie-watch-calendar-day--selected]="day.selected" [class.watch-calendar-day--selected]="canRemove() && day.selected" (click)="selectDate(day.date)">{{ day.day }}</button> }
+                        @else { <span aria-hidden="true"></span> }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <fieldset class="movie-watched-with" [disabled]="saving() || loading() || !!loadError()">
+              <legend>{{ text().watchedWith }}</legend>
+              <div class="movie-watch-companion-row">
+                @if (selectedCompanions().length) {
+                  <div class="movie-watch-selected-people">
+                    @for (friend of selectedCompanions(); track friend.id) { <span class="movie-watch-selected-person">{{ friend.name || '@' + friend.username }}</span> }
+                  </div>
+                }
+                @if (friends().length) {
+                  <details class="movie-watch-people-picker">
+                    <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ text().addPerson }}</summary>
+                    <div class="movie-following-options">
+                      @for (friend of friends(); track friend.id) {
+                        <label class="movie-following-option">
+                          <input type="checkbox" [checked]="isCompanionSelected(friend.id)" [disabled]="!isCompanionSelected(friend.id) && watchedWith().length >= 20" (change)="toggleCompanion(friend.id, $event)" />
+                          @if (friend.profilePicture) { <img [src]="friend.profilePicture" alt="" /> }
+                          @else { <span class="movie-following-avatar" aria-hidden="true">{{ (friend.name || friend.username).slice(0, 1) }}</span> }
+                          <span>{{ friend.name || '@' + friend.username }}</span>
+                        </label>
+                      }
+                    </div>
+                    @if (watchedWith().length >= 20) { <p class="movie-field-hint">{{ text().watchedWithLimit }}</p> }
+                  </details>
+                } @else {
+                  <button class="movie-watch-add-person" type="button" disabled [title]="friendsLoading() ? text().followingLoading : friendsLoaded() ? text().followingEmpty : text().followingUnavailable"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ text().addPerson }}</button>
+                }
+              </div>
+              @if (friendsLoading()) { <p class="movie-field-hint" role="status">{{ text().followingLoading }}</p> }
+              @else if (friendsError()) { <p class="movie-field-error" role="alert">{{ friendsError() }}</p><button class="movie-text-button" type="button" (click)="retryFriends.emit()">{{ text().retry }}</button> }
+              @if (friendsHasNext()) { <button class="movie-text-button" type="button" [disabled]="friendsLoading() || saving()" (click)="loadMoreFriends.emit()">{{ text().moreFollowing }}</button> }
+              @if (!friendsLoaded() && friends().length) { <p class="movie-field-hint">{{ text().followingUnavailable }}</p> }
+            </fieldset>
+
+            <div class="movie-watch-rating" [class.watch-rating]="canRemove()" role="group" [attr.aria-label]="text().yourRating">
+              <span class="movie-watch-section-label">{{ text().yourRating }}</span>
+              <div class="movie-watch-stars" [class.watch-rating-options]="canRemove()">
+                @for (rating of ratingOptions; track rating) {
+                  <button type="button" class="movie-watch-star" [class.movie-watch-star--selected]="score() !== null && rating <= score()!" [attr.aria-label]="rating + '/10'" [attr.aria-pressed]="score() === rating" [disabled]="saving() || loading() || !!loadError()" (click)="setScore(rating)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="ratingStarPath" /></svg>
+                    <small>{{ rating }}</small>
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (canRemove()) {
+              <label class="watch-review" for="movie-watch-review"><span>{{ text().yourReview }} <span>{{ text().optional }}</span></span><textarea id="movie-watch-review" rows="5" [attr.maxlength]="null" [placeholder]="text().reviewPlaceholder" [value]="comment()" (input)="updateComment($event)"></textarea></label>
+            } @else {
+              <label for="movie-watch-review">{{ text().yourReview }} <span>{{ text().optional }}</span></label><textarea id="movie-watch-review" rows="5" [placeholder]="text().reviewPlaceholder" [value]="comment()" (input)="updateComment($event)"></textarea>
+            }
+
+            <div class="movie-watch-option-buttons" role="group" aria-label="Opções de registro">
+              <button class="movie-watch-option-button" [class.movie-watch-option-button--selected]="isRewatch()" type="button" [attr.aria-pressed]="isRewatch()" [disabled]="saving() || loading() || !!loadError()" (click)="toggleRewatch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8" /><path d="M3 3v5h5" /></svg><span>{{ text().rewatch }}</span></button>
+              <button class="movie-watch-option-button" [class.movie-watch-option-button--selected]="watchedInTheater()" type="button" [attr.aria-pressed]="watchedInTheater()" [disabled]="saving() || loading() || !!loadError()" (click)="toggleTheater()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7C3 5.9 3.9 5 5 5h14c1.1 0 2 .9 2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v2c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-2c1.66 0 3-1.34 3-3S4.66 9 3 9Z" /><path d="M14 5v2m0 4v2m0 4v2" /></svg><span>{{ text().theater }}</span></button>
+            </div>
+          </fieldset>
+
+          <div class="movie-dialog-actions" [class.watch-log-actions]="canRemove()">
+            @if (displayRemoveAction()) { <button class="movie-text-button movie-remove-watch" [class.watch-log-remove]="canRemove()" type="button" [disabled]="saving() || loading()" (click)="remove.emit()">{{ text().remove }}</button> }
+            <button class="movie-button movie-button--secondary" [class.watch-log-cancel]="canRemove()" type="button" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">{{ text().cancel }}</button>
+            <button class="movie-button movie-button--primary" [class.watch-log-save]="canRemove()" type="submit" [disabled]="saving() || loading() || !!loadError() || !canSave()" data-ww-button="primary">{{ saving() ? text().saving : text().save }}</button>
+          </div>
+        </form>
+      } @else if (type() === 'EPISODE') {
+        <header class="watch-log-header"><div><h2 id="rating-dialog-title">{{ title() }}</h2><span>{{ subtitle() }}</span></div></header>
+        <div class="watch-log-controls">
+          <div class="watch-date-picker">
+            <button class="watch-date-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="calendarOpen()" [disabled]="saving() || loading()" (click)="toggleCalendar()" data-ww-select-trigger>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10H3M16 2v4M8 2v4M7.8 22h8.4c1.68 0 2.52 0 3.16-.327a3 3 0 0 0 1.31-1.311C21 19.72 21 18.88 21 17.2V8.8c0-1.68 0-2.52-.327-3.162a3 3 0 0 0-1.311-1.311C18.72 4 17.88 4 16.2 4H7.8c-1.68 0-2.52 0-3.162.327a3 3 0 0 0-1.311 1.311C3 6.28 3 7.12 3 8.8v8.4c0 1.68 0 2.52.327 3.162a3 3 0 0 0 1.311 1.311C5.28 22 6.12 22 7.8 22Z" /></svg>
+              <span><span>{{ text().watchedOn }}</span> {{ dateLabel() }}</span><svg class="watch-date-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            @if (calendarOpen()) {
+              <div class="watch-calendar" role="dialog" [attr.aria-label]="text().chooseDate">
+                <div class="watch-calendar-header"><button type="button" [attr.aria-label]="text().previousMonth" (click)="changeCalendarMonth(-1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button><span>{{ calendarMonthLabel() }}</span><button type="button" [attr.aria-label]="text().nextMonth" [disabled]="!canAdvanceCalendar()" (click)="changeCalendarMonth(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button></div>
+                <div class="watch-calendar-grid watch-calendar-weekdays" aria-hidden="true">@for (weekday of text().weekdays; track $index) { <span>{{ weekday }}</span> }</div>
+                <div class="watch-calendar-grid">@for (day of calendarDays(); track day.date) { @if (day.inMonth) { <button type="button" [attr.aria-label]="day.ariaLabel" [attr.aria-pressed]="day.selected" [disabled]="saving() || day.disabled" [class.watch-calendar-day--selected]="day.selected" (click)="selectDate(day.date)">{{ day.day }}</button> } @else { <span aria-hidden="true"></span> } }</div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="watch-log-companions" role="group" [attr.aria-label]="text().watchedWith"><span>{{ text().watchedWith }}</span><div><button type="button" disabled [title]="text().actionUnavailable"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ text().addPerson }}</button></div></div>
+        <div class="watch-rating" role="group" [attr.aria-label]="text().yourRating"><span>{{ text().yourRating }}</span><div>@for (rating of ratingOptions; track rating) { <button type="button" [class.episode-rating-option-selected]="score() !== null && score()! >= rating" [attr.aria-label]="'Nota ' + rating + ' de 10'" [attr.aria-pressed]="score() === rating" [disabled]="saving() || loading()" (click)="setScore(rating)"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="ratingStarPath" /></svg><span [class.watch-rating-score-selected]="score() !== null && rating <= score()!">{{ rating }}</span></button> }</div></div>
+        <label class="watch-review"><span>{{ text().yourReview }} <span>{{ text().optional }}</span></span><textarea rows="5" maxlength="20000" [placeholder]="text().reviewPlaceholder" [value]="comment()" [disabled]="saving() || loading()" (input)="updateComment($event)"></textarea></label>
+        <footer class="watch-log-actions"><button class="episode-edit-remove" type="button" [hidden]="!displayRemoveAction()" [disabled]="saving() || loading()" (click)="remove.emit()">{{ text().remove }}</button><button class="watch-log-cancel" type="button" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">{{ text().cancel }}</button><button class="watch-log-save" type="button" [disabled]="saving() || loading() || !canSave()" (click)="submit()" data-ww-button="primary">{{ saving() ? text().saving : text().save }}</button></footer>
+      } @else {
+        <header class="watch-log-header"><div><h2 id="rating-dialog-title">{{ title() }}</h2><span>{{ subtitle() }}</span></div></header>
+        <div class="watch-log-companions" role="group" [attr.aria-label]="text().watchedWith"><span>{{ text().watchedWith }}</span><div><button type="button" disabled [title]="text().actionUnavailable"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ text().addPerson }}</button></div></div>
+        <div class="watch-rating" role="group" [attr.aria-label]="text().yourRating"><span>{{ text().yourRating }}</span><div>@for (rating of ratingOptions; track rating) { <button type="button" [attr.aria-label]="copy.rateWith + ' ' + rating + ' ' + copy.outOfTen" [attr.aria-pressed]="score() === rating" [disabled]="saving() || loading()" (click)="setScore(rating)"><svg viewBox="0 0 24 24" aria-hidden="true" [class.watch-rating-star--selected]="score() !== null && rating <= score()!"><path [attr.d]="ratingStarPath" /></svg><span [class.watch-rating-score-selected]="score() !== null && rating <= score()!">{{ rating }}</span></button> }</div></div>
+        @if (type() === 'SERIES' || type() === 'SEASON') { <label class="watch-review"><span>{{ text().yourReview }} <span>{{ text().optional }}</span></span><textarea rows="5" [placeholder]="text().reviewPlaceholder" [value]="comment()" [disabled]="saving() || loading()" (input)="updateComment($event)"></textarea></label> }
+        <footer class="watch-log-actions"><button class="movie-button movie-button--secondary" type="button" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">{{ text().cancel }}</button><button class="movie-button movie-button--primary" type="button" [disabled]="saving() || loading() || !canSave()" (click)="submit()" data-ww-button="primary">{{ saving() ? text().saving : text().save }}</button></footer>
+      }
   </section>
-</app-dialog-backdrop>
+</ng-template>

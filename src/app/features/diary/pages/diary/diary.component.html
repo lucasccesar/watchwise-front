@@ -437,11 +437,13 @@
 }
 @if (watchAgainTarget(); as entry) {
   <app-watch-log-dialog
+    [type]="watchAgainRatingType(entry)"
     [dialogTitle]="homeCopy.rewatch"
     [title]="watchAgainTitle(entry)"
     [subtitle]="watchAgainSubtitle(entry)"
     [initialRewatch]="true"
     [allowRating]="watchAgainAllowsRating(entry)"
+    [friends]="watchAgainFriends(entry)"
     [saving]="watchAgainSaving()"
     [returnFocusTarget]="watchAgainOpener()"
     (save)="saveWatchAgain($event)"
@@ -450,13 +452,16 @@
 }
 @if (ratingDialogEntry(); as entry) {
   <app-rating-dialog
+    [type]="ratingDialogType(entry)"
     [title]="ratingDialogTitle(entry)"
     [subtitle]="ratingDialogSubtitle(entry)"
-    [initialScore]="entry.score"
-    [initialComment]="entry.comment ?? ''"
+    [initialValue]="ratingDialogInitialValue()"
+    [friends]="ratingDialogFriends()"
+    [canRemove]="entry.reviewSource === 'DIARY'"
     [saving]="ratingDialogSaving()"
     [returnFocusTarget]="ratingDialogOpener()"
     (save)="saveRatingDialog($event)"
+    (remove)="removeRatingEntry()"
     (dismiss)="closeRatingDialog()"
   />
 }

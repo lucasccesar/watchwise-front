@@ -233,6 +233,7 @@
 
 @if (watchDialogItem(); as item) {
   <app-watch-log-dialog
+    [type]="watchDialogRatingType(item)"
     [dialogTitle]="watchDialogTitle(item)"
     [title]="item.card?.title || homeCopy.titleUnavailable"
     [subtitle]="watchDialogSubtitle(item)"

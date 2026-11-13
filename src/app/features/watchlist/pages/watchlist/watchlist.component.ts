@@ -15,6 +15,7 @@ import { ModalScrollLockDirective } from '../../../../shared/directives/modal-sc
 import { ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import { WatchlistApiService, WatchlistCard, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../data-access/watchlist-api.service';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
+import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 
 type WatchlistMenu = 'genre' | 'sort' | 'visibility' | null;
@@ -32,7 +33,7 @@ interface WatchlistCalendarDay {
 @Component({
   selector: 'app-watchlist',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, RatingDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './watchlist.component.html',
   styleUrl: './watchlist.component.css',
@@ -128,6 +129,10 @@ export class WatchlistComponent implements OnDestroy {
   protected updatedAt(): string {
     const date = this.view()?.content[0]?.createdAt;
     return date ? this.dateLabel(date) : '';
+  }
+
+  protected isMovieWatchlistItem(item: WatchlistCard): boolean {
+    return item.card.type === 'MOVIE';
   }
 
   protected selectMobileType(event: Event): void {
@@ -345,6 +350,17 @@ export class WatchlistComponent implements OnDestroy {
     this.posterMenuOpener()?.focus();
   }
 
+  protected watchDialogInitialValue(): Partial<RatingDialogValue> {
+    return {
+      watchedDate: this.watchDialogDate(),
+      isRewatch: this.watchDialogRewatch(),
+      watchedInTheater: this.watchDialogWatchedInTheater(),
+      score: this.watchDialogScore(),
+      comment: this.watchDialogReview(),
+      watchedWith: [],
+    };
+  }
+
   protected toggleWatchDialogCalendar(): void {
     this.watchDialogCalendarOpen.update((open) => !open);
   }
@@ -385,19 +401,21 @@ export class WatchlistComponent implements OnDestroy {
     this.watchDialogWatchedInTheater.set((event.currentTarget as HTMLInputElement).checked);
   }
 
-  protected saveWatchedCard(): void {
+  protected saveWatchedCard(submission?: RatingDialogSubmission): void {
     const item = this.watchDialogCard();
     const tmdbId = item ? this.tmdbId(item) : null;
     if (!item || !tmdbId || this.watchDialogSaving()) return;
-    const watchedDate = this.watchDialogDate();
+    const watchedDate = submission?.watchedDate ?? this.watchDialogDate();
+    const isRewatch = submission?.isRewatch ?? this.watchDialogRewatch();
     const request = item.card.type === 'MOVIE'
       ? this.contentApi.createDiaryEntry({
           content: { type: 'MOVIE', tmdbId },
           watchedDate,
-          watchedInTheater: this.watchDialogWatchedInTheater(),
-          isRewatch: this.watchDialogRewatch(),
-          score: this.watchDialogScore(),
-          comment: this.watchDialogReview().trim() || null,
+          watchedInTheater: submission?.watchedInTheater ?? this.watchDialogWatchedInTheater(),
+          isRewatch,
+          score: submission?.score ?? this.watchDialogScore(),
+          comment: submission?.comment.trim() || this.watchDialogReview().trim() || null,
+          watchedWith: submission?.watchedWith ?? [],
         })
       : this.contentApi.createBulkSeriesDiaryEntry({
           content: { type: 'SERIES', tmdbId },
@@ -413,7 +431,7 @@ export class WatchlistComponent implements OnDestroy {
             ? item.card.numberOfEpisodes ?? item.card.viewerState?.watchedEpisodeCount ?? 0
             : item.card.viewerState?.watchedEpisodeCount ?? 0,
         });
-        this.toasts.success(this.watchDialogRewatch() ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess);
+        this.toasts.success(isRewatch ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess);
         this.closeWatchedDialog();
       },
       error: (error: unknown) => {
