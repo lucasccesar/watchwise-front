@@ -5016,7 +5016,7 @@
 }
 
 .profile-overview-content .profile-top-five-card:nth-child(n + 4) .profile-rank {
-  background: transparent;
+  background: var(--color-surface);
   box-shadow: none;
 }
 
