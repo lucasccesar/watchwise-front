@@ -1,5 +1,22 @@
 :host { display: contents; }
 
+.movie-modal-backdrop.series-modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  padding: var(--space-4);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+}
+
+@media (max-width: 560px) {
+  .movie-modal-backdrop.series-modal-backdrop {
+    place-items: start center;
+    overflow-y: auto;
+  }
+}
+
 /* Matches the original Series and Season rating dialog styles. */
 .rating-dialog {
   display: flex;
