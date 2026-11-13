@@ -2424,10 +2424,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         releaseYear: entry.card?.releaseYear ?? null,
         averageScore: rating.value,
         ratingSource: rating.source,
-        viewerHasWatched: this.profileViewerWatched(
-          entry.card?.viewerState?.watchStatus,
-          this.isOwnProfile() ? entry.hasWatched : null,
-        ),
+        viewerHasWatched: this.isOwnProfile()
+          ? entry.hasWatched
+          : this.profileViewerWatched(entry.card?.viewerState?.watchStatus, null),
         viewerRating: this.profileViewerRating(entry.card?.viewerState?.myRating, entry.score),
         viewerReview: null,
         contentType: entry.type,
