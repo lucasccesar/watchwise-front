@@ -10,7 +10,7 @@
   </header>
 
   <div class="settings-page-width settings-layout">
-    <nav class="settings-section-nav" aria-label="Seções de configurações">
+    <nav class="settings-section-nav" data-modal-lock-preserve-sticky aria-label="Seções de configurações">
       @for (section of sections; track section.id) {
         <button type="button" [class.active]="activeSection() === section.id" (click)="openSection(section.id)">
           <span class="settings-section-icon" aria-hidden="true">
