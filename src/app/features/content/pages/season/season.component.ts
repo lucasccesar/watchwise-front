@@ -187,6 +187,8 @@ export class SeasonComponent implements OnDestroy {
   private requests = new Subscription();
   private stylesheet: HTMLLinkElement | null = null;
   private openShareReviewAfterLoad = false;
+  private openRewatchAfterLoad = false;
+  private profileActionReturnUrl: string | null = null;
   private ratingPromptSeasonAfterLoad: { seriesTmdbId: string; seasonNumber: number } | null = null;
   private shareReturnUrl: string | null = null;
 
@@ -202,6 +204,16 @@ export class SeasonComponent implements OnDestroy {
   constructor() {
     const navigationState = this.router.getCurrentNavigation()?.extras.state;
     this.openShareReviewAfterLoad = navigationState?.['openShareReview'] === true;
+    this.openRewatchAfterLoad = navigationState?.['profileContentAction'] === 'rewatch';
+    this.profileActionReturnUrl = typeof navigationState?.['profileActionReturnUrl'] === 'string'
+      ? navigationState['profileActionReturnUrl']
+      : null;
+    const actionFragment = this.route.snapshot.fragment?.match(/^profile-action:rewatch:(.+)$/);
+    if (actionFragment) {
+      this.openRewatchAfterLoad = true;
+      this.profileActionReturnUrl ??= decodeURIComponent(actionFragment[1]);
+      void this.router.navigate([], { relativeTo: this.route, queryParamsHandling: 'preserve', preserveFragment: false, replaceUrl: true });
+    }
     this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
       ? navigationState['shareReturnUrl']
       : null;
@@ -717,6 +729,7 @@ export class SeasonComponent implements OnDestroy {
         this.showToast(wasWatched ? 'Temporada registrada novamente no diário.' : 'Temporada adicionada ao diário.');
       }
       this.reload();
+      this.returnFromProfileAction();
     });
   }
 
@@ -1118,6 +1131,7 @@ export class SeasonComponent implements OnDestroy {
   }
 
   protected closeDialog(): void {
+    this.returnFromProfileAction();
     this.watchDialogOpen.set(false);
     this.bulkWatchSeason.set(null);
     this.seasonHistoryConfirmOpen.set(false);
@@ -1125,6 +1139,12 @@ export class SeasonComponent implements OnDestroy {
     this.ratingDialogOpen.set(false);
     this.ratingTarget.set(null);
     this.ratingReviewLoading.set(false);
+  }
+
+  private returnFromProfileAction(): void {
+    const returnUrl = this.profileActionReturnUrl;
+    this.profileActionReturnUrl = null;
+    if (returnUrl) void this.router.navigateByUrl(returnUrl, { replaceUrl: true });
   }
 
   protected providerLabel(type: 'flatrate' | 'rent' | 'buy'): string {
@@ -1216,6 +1236,10 @@ export class SeasonComponent implements OnDestroy {
         if (this.openShareReviewAfterLoad) {
           this.openShareReviewAfterLoad = false;
           this.openShareLatestSeasonReview();
+        }
+        if (this.openRewatchAfterLoad) {
+          this.openRewatchAfterLoad = false;
+          this.openBulkWatch();
         }
       },
       error: (error: unknown) => {

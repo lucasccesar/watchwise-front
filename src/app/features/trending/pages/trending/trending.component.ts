@@ -25,6 +25,7 @@ import { ResponsiveBannerComponent } from '../../../../shared/components/respons
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { tmdbImageUrl as buildTmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 import { ContentApiService, ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import {
   TrendingApiService,
@@ -446,6 +447,10 @@ export class TrendingComponent implements OnInit, OnDestroy {
       void this.router.navigateByUrl('/login');
       return;
     }
+    if (card.viewerState?.watchStatus === 'WATCHED') {
+      void navigateToContentAction(this.router, { type: card.type, tmdbId: card.tmdbId }, 'rewatch');
+      return;
+    }
     const action = event?.currentTarget as HTMLElement | null;
     this.listDialogOpener.set(action?.closest('.content-menu-anchor')
       ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
@@ -453,7 +458,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.watchDialogDate.set(this.todayDate());
     this.watchDialogScore.set(null);
     this.watchDialogReview.set('');
-    this.watchDialogRewatch.set(card.viewerState?.watchStatus === 'WATCHED');
+    this.watchDialogRewatch.set(false);
     this.watchDialogWatchedInTheater.set(false);
     this.watchDialogCalendarOpen.set(false);
     this.watchDialogCalendarMonth.set(this.firstOfMonth(new Date()));

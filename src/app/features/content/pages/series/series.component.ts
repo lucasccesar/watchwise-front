@@ -222,6 +222,14 @@ export class SeriesComponent implements OnInit, OnDestroy {
         : null;
     const openShareReview = navigationState?.['openShareReview'] === true;
     this.openShareReviewAfterLoad = openShareReview;
+    const profileActionFragment = this.route.snapshot.fragment?.match(/^profile-action:(rate|rewatch|share-review):(.+)$/);
+    if (profileActionFragment) {
+      const [, action, encodedReturnUrl] = profileActionFragment;
+      if (action === 'share-review') this.openShareReviewAfterLoad = true;
+      else this.profileContentActionAfterLoad = action === 'rewatch' ? 'rewatch' : 'rate';
+      this.profileActionReturnUrl ??= decodeURIComponent(encodedReturnUrl);
+      void this.router.navigate([], { relativeTo: this.route, queryParamsHandling: 'preserve', preserveFragment: false, replaceUrl: true });
+    }
     this.loadStylesheet();
     this.subscriptions.add(combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([params, query]) => {
       this.loadSeries(params.get('tmdbId')?.trim() ?? '', query.get('contentId') ?? '');

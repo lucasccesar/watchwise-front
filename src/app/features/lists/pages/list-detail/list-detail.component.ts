@@ -20,6 +20,7 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { navigateToContentAction, type ContentActionTarget } from '../../../../shared/utils/content-action-navigation';
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
@@ -478,6 +479,23 @@ export class ListDetailComponent {
     if (!this.session.user()?.id) {
       void this.router.navigateByUrl('/login');
       return;
+    }
+    if (this.itemWatchStatus(item) === 'WATCHED' || item.card.viewerState?.watchStatus === 'WATCHED') {
+      const card = item.card;
+      let target: ContentActionTarget | null = null;
+      if (card.type === 'MOVIE' && card.tmdbId) {
+        target = { type: 'MOVIE', tmdbId: card.tmdbId, contentId: card.contentId };
+      } else if (card.type === 'SERIES' && (card.tmdbId || card.seriesTmdbId)) {
+        target = { type: 'SERIES', tmdbId: card.tmdbId || card.seriesTmdbId!, contentId: card.contentId };
+      } else if (card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) {
+        target = { type: 'SEASON', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, contentId: card.contentId };
+      } else if (card.type === 'EPISODE' && card.seriesTmdbId && card.seasonNumber !== null && card.episodeNumber !== null) {
+        target = { type: 'EPISODE', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, episodeNumber: card.episodeNumber, contentId: card.contentId };
+      }
+      if (target) {
+        void navigateToContentAction(this.router, target, 'rewatch');
+        return;
+      }
     }
     this.watchDialogItem.set(item);
     this.watchDialogOpener.set((event.currentTarget as HTMLElement | null)?.closest('app-content-image-actions')

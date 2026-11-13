@@ -220,6 +220,14 @@ export class MovieComponent implements OnInit, OnDestroy {
       : typeof navigationState?.['shareReturnUrl'] === 'string'
         ? navigationState['shareReturnUrl']
       : null;
+    const profileActionFragment = this.route.snapshot.fragment?.match(/^profile-action:(rate|rewatch|share-review):(.+)$/);
+    if (profileActionFragment) {
+      const [, action, encodedReturnUrl] = profileActionFragment;
+      if (action === 'share-review') this.openShareReviewAfterLoad = true;
+      else this.profileContentActionAfterLoad = action === 'rewatch' ? 'rewatch' : 'rate';
+      this.shareReturnUrl ??= decodeURIComponent(encodedReturnUrl);
+      void this.router.navigate([], { relativeTo: this.route, queryParamsHandling: 'preserve', preserveFragment: false, replaceUrl: true });
+    }
     this.loadMovieStylesheet();
     this.subscriptions.add(
       combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(

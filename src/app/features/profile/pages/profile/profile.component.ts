@@ -43,6 +43,7 @@ import { movieMessages } from '../../../content/i18n/movie.messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
+import { navigateToContentAction, type ContentActionTarget } from '../../../../shared/utils/content-action-navigation';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { RatingDialogComponent, type RatingDialogCompanion, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 
@@ -68,10 +69,6 @@ type ProfileActionContent = {
   companions?: RatingDialogCompanion[];
 };
 type ProfileRatingDialogTarget = ProfileActionContent & { viewerState: ProfileActionViewerState };
-type TopFiveActionPage = {
-  details: { title: string | null; releaseDate: string | null; backdropPath: string | null };
-  viewerState: ContentViewerState;
-};
 type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
 type TopFiveSearchResult = { request: TopFiveSearchRequest; response: SearchView } | { request: TopFiveSearchRequest; error: unknown } | null;
 type RecentSeriesCard = {
@@ -1377,56 +1374,23 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title || this.copy.unavailable,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
     };
-    if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
-      if (this.isOwnProfile()) this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
+    if (selection.action.id === 'mark-watched') {
+      if (this.isOwnProfile()) this.openProfileWatchDialog(target, selection.event, false);
       return;
     }
-    if (!['rate', 'edit-rating', 'share-review'].includes(selection.action.id)) return;
-
-    const onPage = (page: TopFiveActionPage) => this.handleTopFivePageAction(entry, selection, target, page);
-    const onError = (error: unknown) => this.handleError(error);
-    if (entry.contentType === 'SERIES') {
-      this.contentApi.getSeriesPage(entry.content.id).pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: onPage, error: onError });
-    } else {
-      this.contentApi.getPage(entry.content.id).pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: onPage, error: onError });
-    }
-  }
-
-  private handleTopFivePageAction(
-    entry: ResolvedTopFive,
-    selection: ContentImageActionSelection,
-    target: ProfileActionContent,
-    page: TopFiveActionPage,
-  ): void {
-    if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
-      this.openProfileRatingDialog({
-        ...target,
-        viewerState: page.viewerState,
-        initialValue: {
-          score: page.viewerState.myRating,
-          comment: page.viewerState.myReview ?? '',
-          watchedDate: page.viewerState.lastWatchedDate,
-          isRewatch: page.viewerState.lastWatchNumber === null ? undefined : page.viewerState.lastWatchNumber > 1,
-          watchedInTheater: page.viewerState.watchedInTheater ?? undefined,
-        },
-      }, selection.event);
-      return;
-    }
-    const user = this.session.user();
-    this.openShareReviewDialog({
-      title: page.details.title || target.title,
-      subtitle: page.details.releaseDate?.slice(0, 4) ?? target.subtitle,
-      rating: page.viewerState.myRating,
-      review: page.viewerState.myReview,
-      backgroundUrl: this.imageUrl(page.details.backdropPath || entry.backdropPath || entry.posterPath, 'w1280'),
-      posterUrl: this.imageUrl(entry.posterPath, 'w780'),
-      username: user?.username ?? null,
-      avatarUrl: user?.profilePicture ?? null,
-      selectionType: entry.contentType,
+    const action = selection.action.id === 'share-review'
+      ? 'share-review'
+      : selection.action.id === 'rewatch'
+        ? 'rewatch'
+        : selection.action.id === 'rate' || selection.action.id === 'edit-rating'
+          ? 'rate'
+          : null;
+    if (!action || !entry.content.tmdbId) return;
+    void navigateToContentAction(this.router, {
+      type: entry.contentType,
       tmdbId: entry.content.tmdbId,
-    }, selection.event);
+      contentId: entry.content.id,
+    }, action);
   }
   protected handleRecentDiaryAction(entry: DiaryRecord, selection: ContentImageActionSelection): void {
     if (selection.action.id === 'share-review') {
@@ -1440,6 +1404,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (!this.isOwnProfile()) return;
     const target = this.profileActionContentForDiary(entry);
     if (!target) return;
+    if (selection.action.id === 'rewatch') {
+      const contentTarget = this.contentActionTarget(target);
+      if (contentTarget) {
+        void navigateToContentAction(this.router, contentTarget, 'rewatch');
+        return;
+      }
+    }
     if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
       this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
     } else if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
@@ -1499,6 +1470,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
     };
+    if (selection.action.id === 'rewatch' || selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
+      void navigateToContentAction(this.router, {
+        type: 'SERIES',
+        tmdbId: entry.seriesTmdbId,
+        contentId: entry.contentId,
+      }, selection.action.id === 'rewatch' ? 'rewatch' : 'rate');
+      return;
+    }
     if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
       this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
     } else if ((selection.action.id === 'rate' || selection.action.id === 'edit-rating') && target.contentId) {
@@ -1610,6 +1589,19 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         profilePicture: person.profilePicture ?? null,
       }] : []),
     };
+  }
+
+  private contentActionTarget(target: ProfileActionContent): ContentActionTarget | null {
+    if (target.type === 'MOVIE' || target.type === 'SERIES') {
+      return target.tmdbId ? { type: target.type, tmdbId: target.tmdbId, contentId: target.contentId } : null;
+    }
+    if (!target.seriesTmdbId || target.seasonNumber === null) return null;
+    if (target.type === 'SEASON') {
+      return { type: 'SEASON', seriesTmdbId: target.seriesTmdbId, seasonNumber: target.seasonNumber, contentId: target.contentId };
+    }
+    return target.episodeNumber === null
+      ? null
+      : { type: 'EPISODE', seriesTmdbId: target.seriesTmdbId, seasonNumber: target.seasonNumber, episodeNumber: target.episodeNumber, contentId: target.contentId };
   }
 
   private profileActionOpener(event: MouseEvent): HTMLElement | null {

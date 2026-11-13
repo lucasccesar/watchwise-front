@@ -25,6 +25,7 @@ import {
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
+import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { filterDiaryEntries, localDiaryDay, type DiaryFilters, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
@@ -825,6 +826,23 @@ export class DiaryComponent implements OnDestroy {
     if (this.diaryActionPending()) return;
     const records = this.actionRecords(entry);
     if (!records.some((record) => this.canRewatchRecord(record))) return;
+    if (records.length === 1) {
+      const content = records[0].content;
+      if (content.type === 'MOVIE' && content.tmdbId) {
+        void navigateToContentAction(this.router, { type: 'MOVIE', tmdbId: content.tmdbId, contentId: content.id }, 'rewatch');
+        return;
+      }
+      if (content.type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber !== null && content.episodeNumber !== null) {
+        void navigateToContentAction(this.router, {
+          type: 'EPISODE',
+          seriesTmdbId: content.seriesTmdbId,
+          seasonNumber: content.seasonNumber,
+          episodeNumber: content.episodeNumber,
+          contentId: content.id,
+        }, 'rewatch');
+        return;
+      }
+    }
     this.watchAgainTarget.set(entry);
     this.watchAgainOpener.set(this.menuTriggerFor(event));
   }

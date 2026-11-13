@@ -17,6 +17,7 @@ import { WatchlistApiService, WatchlistCard, WatchlistContentType, WatchlistSort
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 
 type WatchlistMenu = 'genre' | 'sort' | 'visibility' | null;
 type WatchlistUpcomingMode = 'ALL' | 'FADE' | 'HIDE';
@@ -329,6 +330,13 @@ export class WatchlistComponent implements OnDestroy {
       void this.router.navigateByUrl('/login');
       return;
     }
+    if (item.card.viewerState?.watchStatus === 'WATCHED') {
+      const tmdbId = item.card.tmdbId || item.card.seriesTmdbId;
+      if (tmdbId) {
+        void navigateToContentAction(this.router, { type: item.card.type, tmdbId, contentId: item.card.contentId }, 'rewatch');
+        return;
+      }
+    }
     const action = event?.currentTarget as HTMLElement | null;
     this.posterMenuOpener.set(action?.closest('.content-menu-anchor')
       ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
@@ -336,7 +344,7 @@ export class WatchlistComponent implements OnDestroy {
     this.watchDialogDate.set(this.todayDate());
     this.watchDialogScore.set(null);
     this.watchDialogReview.set('');
-    this.watchDialogRewatch.set(item.card.viewerState?.watchStatus === 'WATCHED');
+    this.watchDialogRewatch.set(false);
     this.watchDialogWatchedInTheater.set(false);
     this.watchDialogCalendarOpen.set(false);
     this.watchDialogCalendarMonth.set(this.firstOfMonth(new Date()));
