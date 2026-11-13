@@ -1212,10 +1212,10 @@
   }
   @if (profileWatchTarget(); as target) {
     <app-watch-log-dialog
-      [dialogTitle]="homeCopy.rewatch"
+      [dialogTitle]="profileWatchIsRewatch() ? homeCopy.rewatch : homeCopy.markWatched"
       [title]="target.title"
       [subtitle]="target.subtitle"
-      [initialRewatch]="true"
+      [initialRewatch]="profileWatchIsRewatch()"
       [allowRating]="target.type === 'MOVIE' || target.type === 'EPISODE'"
       [saving]="profileWatchSaving()"
       [returnFocusTarget]="profileWatchOpener()"

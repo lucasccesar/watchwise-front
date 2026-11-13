@@ -172,6 +172,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileShareReviews = signal<ProfileShareReviewRecord[]>([]);
   protected readonly shareReviewDialogModel = signal<ShareReviewDialogModel | null>(null);
   protected readonly profileWatchTarget = signal<ProfileActionContent | null>(null);
+  protected readonly profileWatchIsRewatch = signal(true);
   protected readonly profileWatchOpener = signal<HTMLElement | null>(null);
   protected readonly profileWatchSaving = signal(false);
   protected readonly profileRatingTarget = signal<ProfileRatingDialogTarget | null>(null);
@@ -528,10 +529,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const isOwnProfile = !!profileId && profileId === this.session.user()?.id;
     const actions: ContentImageAction[] = [
       { id: 'rate', label: isOwnProfile && score !== null && score !== undefined ? this.homeCopy.editRating : this.homeCopy.rate, icon: 'star' },
-      { id: 'rewatch', label: this.homeCopy.rewatch, icon: 'rewatch' },
-      { id: 'share-review', label: this.homeCopy.shareReview, icon: 'share', disabled: isOwnProfile && !canShareReview },
+      hasWatched
+        ? { id: 'rewatch', label: this.homeCopy.rewatch, icon: 'rewatch' }
+        : { id: 'mark-watched', label: this.homeCopy.markWatched, icon: 'check' },
     ];
-    return actions.filter((action) => action.id !== 'rewatch' || hasWatched);
+    if (hasWatched) {
+      actions.push({ id: 'share-review', label: this.homeCopy.shareReview, icon: 'share', disabled: isOwnProfile && !canShareReview });
+    }
+    return actions;
   }
 
   private readonly route = inject(ActivatedRoute);
@@ -1311,8 +1316,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title || this.copy.unavailable,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
     };
-    if (selection.action.id === 'rewatch') {
-      if (this.isOwnProfile() && entry.hasWatched) this.openProfileWatchDialog(target, selection.event);
+    if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
+      if (this.isOwnProfile()) this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
       return;
     }
     if (selection.action.id === 'rate' && !this.isOwnProfile()) return;
@@ -1516,8 +1521,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null;
   }
 
-  private openProfileWatchDialog(target: ProfileActionContent, event: MouseEvent): void {
+  private openProfileWatchDialog(target: ProfileActionContent, event: MouseEvent, isRewatch = true): void {
     this.profileWatchTarget.set(target);
+    this.profileWatchIsRewatch.set(isRewatch);
     this.profileWatchOpener.set(this.profileActionOpener(event));
     this.activePosterMenu.set(null);
   }
