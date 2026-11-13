@@ -17,7 +17,6 @@ import { ResponsiveBannerComponent } from '../../../../shared/components/respons
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
-import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 import { Observable, Subscription } from 'rxjs';
 import { formatHomeHeroDate, homeContentRoute } from './home-display.utils';
 import { messageCatalog } from '../../../../shared/i18n/messages';
@@ -456,25 +455,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected openRecentRewatch(entry: HomeRecentlyWatched, event?: MouseEvent): void {
     const content = this.diaryContentForEntry(entry);
     if (!content) return;
-    if (entry.content.type === 'MOVIE' && entry.content.tmdbId) {
-      void navigateToContentAction(this.router, {
-        type: 'MOVIE',
-        tmdbId: entry.content.tmdbId,
-        contentId: entry.content.id,
-      }, 'rewatch');
-      return;
-    }
-    if (entry.content.type === 'EPISODE' && entry.content.seriesTmdbId
-      && entry.content.seasonNumber !== null && entry.content.episodeNumber !== null) {
-      void navigateToContentAction(this.router, {
-        type: 'EPISODE',
-        seriesTmdbId: entry.content.seriesTmdbId,
-        seasonNumber: entry.content.seasonNumber,
-        episodeNumber: entry.content.episodeNumber,
-        contentId: entry.content.id,
-      }, 'rewatch');
-      return;
-    }
     this.showWatchLog({
       dialogTitle: this.copy.rewatch,
       title: entry.content.type === 'EPISODE'

@@ -24,8 +24,8 @@ import { canAddContentToWatchlist, isContentFullyWatched, shouldShowContentWatch
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 import { tmdbImageUrl as buildTmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
-import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 import { ContentApiService, ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import {
   TrendingApiService,
@@ -68,7 +68,7 @@ function emptySection(loading = false): SectionState {
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent, RatingDialogComponent],
+  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
   templateUrl: './trending.component.html',
   styleUrl: './trending.component.css',
 })
@@ -447,10 +447,6 @@ export class TrendingComponent implements OnInit, OnDestroy {
       void this.router.navigateByUrl('/login');
       return;
     }
-    if (card.viewerState?.watchStatus === 'WATCHED') {
-      void navigateToContentAction(this.router, { type: card.type, tmdbId: card.tmdbId }, 'rewatch');
-      return;
-    }
     const action = event?.currentTarget as HTMLElement | null;
     this.listDialogOpener.set(action?.closest('.content-menu-anchor')
       ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
@@ -458,7 +454,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
     this.watchDialogDate.set(this.todayDate());
     this.watchDialogScore.set(null);
     this.watchDialogReview.set('');
-    this.watchDialogRewatch.set(false);
+    this.watchDialogRewatch.set(card.viewerState?.watchStatus === 'WATCHED');
     this.watchDialogWatchedInTheater.set(false);
     this.watchDialogCalendarOpen.set(false);
     this.watchDialogCalendarMonth.set(this.firstOfMonth(new Date()));
@@ -550,6 +546,30 @@ export class TrendingComponent implements OnInit, OnDestroy {
       next: () => {
         this.watchDialogSaving.set(false);
         this.updateCardViewerState(card, { watchStatus: 'WATCHED', lastWatchedDate: watchedDate });
+        this.toasts.success(isRewatch ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
+        this.closeWatchedDialog();
+      },
+      error: (error: unknown) => {
+        this.watchDialogSaving.set(false);
+        if (this.handleSessionError(error)) return;
+        this.toasts.error(this.copy.actionError);
+      },
+    }));
+  }
+
+  protected saveSeriesWatchedCard(submission: SeriesBulkWatchSubmission): void {
+    const card = this.watchDialogCard();
+    const tmdbId = card?.tmdbId ?? null;
+    if (!card || card.type !== 'SERIES' || !tmdbId || this.watchDialogSaving()) return;
+    const isRewatch = this.watchDialogRewatch();
+    this.watchDialogSaving.set(true);
+    this.cardActionRequests.add(this.contentApi.createBulkSeriesDiaryEntry({
+      content: { type: 'SERIES', tmdbId },
+      watchedDate: submission.watchedDate,
+    }, crypto.randomUUID()).subscribe({
+      next: () => {
+        this.watchDialogSaving.set(false);
+        this.updateCardViewerState(card, { watchStatus: 'WATCHED', lastWatchedDate: submission.watchedDate });
         this.toasts.success(isRewatch ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
         this.closeWatchedDialog();
       },

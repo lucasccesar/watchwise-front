@@ -1,0 +1,30 @@
+<div class="movie-modal-backdrop series-modal-backdrop" appModalScrollLock (click)="dismiss.emit()">
+  <section
+    class="series-bulk-dialog"
+    role="dialog"
+    appModalFocus
+    [modalReturnFocus]="returnFocusTarget()"
+    (modalDismiss)="dismiss.emit()"
+    aria-modal="true"
+    aria-labelledby="series-bulk-title"
+    tabindex="-1"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="movie-dialog-header">
+      <div class="movie-dialog-heading">
+        <h2 id="series-bulk-title">{{ title() }}</h2>
+        <p class="movie-watch-subtitle">{{ subtitle() }}</p>
+      </div>
+    </header>
+    <div class="series-bulk-content">
+      <div class="series-bulk-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg><span>{{ note() }}</span></div>
+      <fieldset><legend>Quando você assistiu?</legend>
+        <label class="series-date-option" [class.series-date-option--selected]="dateMode() === 'today'"><input type="radio" name="series-watch-date" value="today" [checked]="dateMode() === 'today'" [disabled]="saving()" (change)="dateMode.set('today')" /><span><strong>Hoje</strong><small>{{ todayLabel() }}</small></span></label>
+        <label class="series-date-option" [class.series-date-option--selected]="dateMode() === 'specific'"><input type="radio" name="series-watch-date" value="specific" [checked]="dateMode() === 'specific'" [disabled]="saving()" (change)="dateMode.set('specific')" /><span><strong>Em uma data específica</strong><small>Cada episódio será registrado no mesmo dia</small></span></label>
+        @if (dateMode() === 'specific') { <label class="series-specific-date">Data <input type="date" [value]="watchedDate()" [max]="localDateForInput()" [disabled]="saving()" (input)="watchedDate.set($any($event.target).value)" /></label> }
+        <label class="series-date-option" [class.series-date-option--selected]="dateMode() === 'release'"><input type="radio" name="series-watch-date" value="release" [checked]="dateMode() === 'release'" [disabled]="saving()" (change)="dateMode.set('release')" /><span><strong>Na data de lançamento</strong><small>Cada episódio será registrado no dia em que foi ao ar</small></span></label>
+      </fieldset>
+    </div>
+    <footer><button type="button" class="movie-button movie-button--secondary" [disabled]="saving()" (click)="dismiss.emit()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="saving() || episodeCount() === 0" (click)="saveWatch()" data-ww-button="primary"><app-check-icon [color]="'#FFFFFF'" /><span>{{ saving() ? 'Salvando…' : buttonLabel() }}</span></button></footer>
+  </section>
+</div>

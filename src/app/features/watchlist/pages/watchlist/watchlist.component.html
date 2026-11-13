@@ -197,6 +197,18 @@
         (save)="saveWatchedCard($event)"
         (dismiss)="closeWatchedDialog()"
       />
+    } @else if (item.card.type === 'SERIES') {
+      <app-series-bulk-watch-dialog
+        [title]="(watchDialogRewatch() ? 'Registrar ' : 'Marcar ') + title(item) + (watchDialogRewatch() ? ' novamente' : ' como assistida')"
+        [subtitle]="title(item) + ' · ' + homeCopy.series"
+        [scope]="'SERIES'"
+        [episodeCount]="seriesWatchEpisodeCount(item)"
+        [isRewatch]="watchDialogRewatch()"
+        [saving]="watchDialogSaving()"
+        [returnFocusTarget]="posterMenuOpener()"
+        (save)="saveSeriesWatchedCard($event)"
+        (dismiss)="closeWatchedDialog()"
+      />
     } @else {
     <app-dialog-backdrop placement="top" (dismiss)="closeWatchedDialog()">
       <section class="watchlist-watch-log-dialog ww-dialog-panel" role="dialog" appModalFocus [modalReturnFocus]="posterMenuOpener()" (modalDismiss)="closeWatchedDialog()" aria-modal="true" aria-labelledby="watchlist-watch-dialog-title" (click)="$event.stopPropagation()">

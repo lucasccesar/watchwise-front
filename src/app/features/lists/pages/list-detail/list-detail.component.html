@@ -232,6 +232,19 @@
 }
 
 @if (watchDialogItem(); as item) {
+  @if (item.card?.type === 'SERIES' || item.card?.type === 'SEASON') {
+    <app-series-bulk-watch-dialog
+      [title]="watchDialogBulkTitle(item)"
+      [subtitle]="watchDialogBulkSubtitle(item)"
+      [scope]="watchDialogBulkScope(item)"
+      [episodeCount]="watchDialogBulkEpisodeCount(item)"
+      [isRewatch]="itemWatchStatus(item) === 'WATCHED'"
+      [saving]="watchDialogSaving()"
+      [returnFocusTarget]="watchDialogOpener()"
+      (save)="saveBulkWatchDialog($event)"
+      (dismiss)="closeWatchDialog()"
+    />
+  } @else {
   <app-watch-log-dialog
     [type]="watchDialogRatingType(item)"
     [dialogTitle]="watchDialogTitle(item)"
@@ -244,6 +257,7 @@
     (save)="saveWatchDialog($event)"
     (dismiss)="closeWatchDialog()"
   />
+  }
 }
 
 @if (deleteItem()) {

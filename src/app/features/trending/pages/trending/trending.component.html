@@ -279,6 +279,17 @@
         (save)="saveWatchedCard($event)"
         (dismiss)="closeWatchedDialog()"
       />
+    } @else if (card.type === 'SERIES') {
+      <app-series-bulk-watch-dialog
+        [title]="(watchDialogRewatch() ? 'Registrar ' : 'Marcar ') + cardTitle(card) + (watchDialogRewatch() ? ' novamente' : ' como assistida')"
+        [subtitle]="cardTitle(card) + ' · ' + footerCopy.series"
+        [scope]="'SERIES'"
+        [isRewatch]="watchDialogRewatch()"
+        [saving]="watchDialogSaving()"
+        [returnFocusTarget]="listDialogOpener()"
+        (save)="saveSeriesWatchedCard($event)"
+        (dismiss)="closeWatchedDialog()"
+      />
     } @else {
     <app-dialog-backdrop placement="top" (dismiss)="closeWatchedDialog()">
       <section

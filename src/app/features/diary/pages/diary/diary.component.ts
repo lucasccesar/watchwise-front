@@ -25,7 +25,6 @@ import {
 } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
-import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { filterDiaryEntries, localDiaryDay, type DiaryFilters, type DiarySort, type DiaryTypeFilter } from './diary-filtering';
@@ -36,6 +35,7 @@ import { movieMessages } from '../../../content/i18n/movie.messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { RatingDialogComponent, RatingDialogSubmission, type RatingDialogCompanion, type RatingDialogContentType, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
@@ -106,7 +106,7 @@ type DiaryTimelineEntry = DiaryGridEntry | DiaryGroupedGridEntry;
 @Component({
   selector: 'app-diary',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent, ShareReviewDialogComponent, WatchLogDialogComponent, RatingDialogComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent, ShareReviewDialogComponent, WatchLogDialogComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diary.component.html',
   styleUrl: './diary.component.css',
@@ -826,23 +826,6 @@ export class DiaryComponent implements OnDestroy {
     if (this.diaryActionPending()) return;
     const records = this.actionRecords(entry);
     if (!records.some((record) => this.canRewatchRecord(record))) return;
-    if (records.length === 1) {
-      const content = records[0].content;
-      if (content.type === 'MOVIE' && content.tmdbId) {
-        void navigateToContentAction(this.router, { type: 'MOVIE', tmdbId: content.tmdbId, contentId: content.id }, 'rewatch');
-        return;
-      }
-      if (content.type === 'EPISODE' && content.seriesTmdbId && content.seasonNumber !== null && content.episodeNumber !== null) {
-        void navigateToContentAction(this.router, {
-          type: 'EPISODE',
-          seriesTmdbId: content.seriesTmdbId,
-          seasonNumber: content.seasonNumber,
-          episodeNumber: content.episodeNumber,
-          contentId: content.id,
-        }, 'rewatch');
-        return;
-      }
-    }
     this.watchAgainTarget.set(entry);
     this.watchAgainOpener.set(this.menuTriggerFor(event));
   }
@@ -867,6 +850,70 @@ export class DiaryComponent implements OnDestroy {
         this.toasts.error(this.homeCopy.genericError);
       },
     }));
+  }
+
+  protected watchAgainUsesSeriesBulkDialog(entry: DiaryTimelineEntry): boolean {
+    return this.isGroupedEntry(entry)
+      || ['SERIES', 'SEASON'].includes((entry.content.type ?? '').toUpperCase());
+  }
+
+  protected watchAgainBulkScope(entry: DiaryTimelineEntry): 'SERIES' | 'SEASON' {
+    if (this.isGroupedEntry(entry)) return entry.groupType === 'SERIES' ? 'SERIES' : 'SEASON';
+    return entry.content.type?.toUpperCase() === 'SEASON' ? 'SEASON' : 'SERIES';
+  }
+
+  protected watchAgainBulkEpisodeCount(entry: DiaryTimelineEntry): number | null {
+    if (this.isGroupedEntry(entry)) return entry.episodeCount;
+    const records = this.actionRecords(entry);
+    return records.length || null;
+  }
+
+  protected watchAgainBulkNote(entry: DiaryTimelineEntry): string | null {
+    if (!this.isGroupedEntry(entry)) return null;
+    return `Os ${new Intl.NumberFormat('pt-BR').format(entry.episodeCount)} episódios selecionados serão adicionados novamente ao seu Diário.`;
+  }
+
+  protected saveWatchAgainBulk(submission: SeriesBulkWatchSubmission): void {
+    const target = this.watchAgainTarget();
+    if (!target || this.watchAgainSaving()) return;
+    const requests = this.actionRecords(target)
+      .map((record) => {
+        const releaseDate = record.card?.releaseDate?.slice(0, 10) ?? null;
+        const watchedDate = submission.dateMode === 'release'
+          ? releaseDate ?? this.localToday()
+          : submission.watchedDate ?? this.localToday();
+        return this.createRewatchRequest(record, { watchedDate, isRewatch: true });
+      })
+      .filter((request): request is Observable<unknown> => request !== null);
+    if (!requests.length) return;
+    this.watchAgainSaving.set(true);
+    this.actionRequests.add(forkJoin(requests).subscribe({
+      next: () => {
+        this.watchAgainSaving.set(false);
+        this.closeWatchAgainDialog();
+        this.toasts.success(this.copy.watchAgainSaved);
+        this.load();
+      },
+      error: () => {
+        this.watchAgainSaving.set(false);
+        this.toasts.error(this.homeCopy.genericError);
+      },
+    }));
+  }
+
+  protected watchAgainBulkTitle(entry: DiaryTimelineEntry): string {
+    return `Registrar ${this.watchAgainTitle(entry)} novamente`;
+  }
+
+  protected watchAgainBulkSubtitle(entry: DiaryTimelineEntry): string {
+    const count = this.watchAgainBulkEpisodeCount(entry);
+    return [this.watchAgainSubtitle(entry), count ? `${new Intl.NumberFormat('pt-BR').format(count)} episódios` : null]
+      .filter(Boolean).join(' · ');
+  }
+
+  private localToday(): string {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   }
 
   protected closeWatchAgainDialog(): void {
@@ -967,6 +1014,7 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected watchAgainAllowsRating(entry: DiaryTimelineEntry): boolean {
+    if (this.watchAgainUsesSeriesBulkDialog(entry)) return false;
     return this.actionRecords(entry).every((record) => {
       const type = (record.content.type ?? '').toUpperCase();
       return type === 'MOVIE' || type === 'EPISODE';

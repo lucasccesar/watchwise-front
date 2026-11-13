@@ -1,0 +1,31 @@
+:host{display:contents}
+.movie-modal-backdrop{position:fixed;z-index:100;inset:0;padding:var(--space-4);display:grid;place-items:center;background:color-mix(in srgb,var(--color-surface) 78%,transparent)}
+.series-modal-backdrop{z-index:100}
+.series-bulk-dialog{position:relative;inset:auto;box-sizing:border-box;width:min(100%,560px);max-height:min(90dvh,760px);padding:var(--space-6);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface-secondary);box-shadow:var(--shadow-xl);color:var(--color-text);outline:none}
+.movie-dialog-header{min-height:40px;margin:0;display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}
+.movie-dialog-heading{min-width:0;flex:1;display:flex;flex-direction:column}
+.series-bulk-dialog h2{margin:0;color:var(--color-text);font-size:var(--font-size-lg);font-weight:600;line-height:var(--line-height-lg)}
+.movie-watch-subtitle{margin:var(--space-1) 0 0;overflow:hidden;color:var(--color-tertiary);font-size:var(--font-size-sm);text-overflow:ellipsis;white-space:nowrap}
+.series-bulk-content{width:auto;min-height:0;margin:var(--space-4) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--space-4);overflow-y:auto}
+.series-bulk-note{min-height:48px;padding:var(--space-3);display:flex;align-items:center;gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);color:var(--color-text);font-size:var(--font-size-sm);line-height:var(--line-height-sm)}
+.series-bulk-note svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:var(--color-primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.series-bulk-note span{min-width:0}
+.series-bulk-content fieldset{margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-2);border:0}
+.series-bulk-content legend{margin-bottom:var(--space-2);font-size:var(--font-size-sm);font-weight:600}
+.series-date-option{min-height:68px;padding:var(--space-3);display:flex;align-items:center;gap:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer}
+.series-date-option--selected{border-color:var(--color-primary);box-shadow:0 0 0 1px var(--color-primary)}
+.series-date-option input{width:18px;height:18px;accent-color:var(--color-primary)}
+.series-date-option span{display:flex;flex-direction:column;gap:var(--space-1)}
+.series-date-option strong{font-size:var(--font-size-sm)}
+.series-date-option small{color:var(--color-tertiary);font-size:var(--font-size-xs)}
+.series-specific-date{padding:0 var(--space-3) var(--space-2) 44px;display:flex;align-items:center;gap:var(--space-3);font-size:var(--font-size-xs)}
+.series-specific-date input{height:40px;padding:0 var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-secondary);color:var(--color-text);font:inherit}
+.series-bulk-dialog>footer{flex:0 0 auto;margin:var(--space-4) calc(-1 * var(--space-6)) calc(-1 * var(--space-6));padding:var(--space-4) var(--space-6);display:flex;justify-content:flex-end;gap:var(--space-2);border-top:1px solid var(--color-border)}
+.movie-button{min-width:0;max-width:100%;min-height:48px;padding:0 var(--space-4);display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);overflow:hidden;border:1px solid transparent;border-radius:var(--radius-md);color:var(--color-text);cursor:pointer;font-size:var(--font-size-sm);font-weight:600;line-height:var(--line-height-sm);text-decoration:none;text-overflow:ellipsis;transition:background-color 120ms ease,border-color 120ms ease;white-space:nowrap}
+.movie-button:disabled{cursor:wait;opacity:.65}
+.movie-button--primary{border-color:var(--color-primary);background:var(--color-primary)}
+.movie-button--secondary{border-color:var(--color-border);background:var(--color-surface-secondary)}
+.movie-button--secondary:hover:not(:disabled){border-color:var(--color-tertiary);background:var(--color-secondary)}
+.movie-button>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.series-bulk-dialog .movie-button--primary{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:800px){.movie-modal-backdrop{place-items:start center;overflow-y:auto}.series-bulk-dialog{width:min(100%,560px);max-height:calc(100dvh - 32px)}.series-bulk-content{width:auto;margin:var(--space-4) 0 0;overflow-y:auto}.series-bulk-dialog>footer{padding-bottom:max(var(--space-4),env(safe-area-inset-bottom,0px))}.series-bulk-dialog>footer .movie-button{flex:1}}

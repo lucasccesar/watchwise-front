@@ -16,8 +16,8 @@ import { ContentPageResult, UserListDetailItem, UserListSummary } from '../../..
 import { WatchlistApiService, WatchlistCard, WatchlistContentType, WatchlistSort, WatchlistStatus, WatchlistView } from '../../data-access/watchlist-api.service';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
-import { navigateToContentAction } from '../../../../shared/utils/content-action-navigation';
 
 type WatchlistMenu = 'genre' | 'sort' | 'visibility' | null;
 type WatchlistUpcomingMode = 'ALL' | 'FADE' | 'HIDE';
@@ -34,7 +34,7 @@ interface WatchlistCalendarDay {
 @Component({
   selector: 'app-watchlist',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, RatingDialogComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './watchlist.component.html',
   styleUrl: './watchlist.component.css',
@@ -330,13 +330,6 @@ export class WatchlistComponent implements OnDestroy {
       void this.router.navigateByUrl('/login');
       return;
     }
-    if (item.card.viewerState?.watchStatus === 'WATCHED') {
-      const tmdbId = item.card.tmdbId || item.card.seriesTmdbId;
-      if (tmdbId) {
-        void navigateToContentAction(this.router, { type: item.card.type, tmdbId, contentId: item.card.contentId }, 'rewatch');
-        return;
-      }
-    }
     const action = event?.currentTarget as HTMLElement | null;
     this.posterMenuOpener.set(action?.closest('.content-menu-anchor')
       ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
@@ -344,7 +337,7 @@ export class WatchlistComponent implements OnDestroy {
     this.watchDialogDate.set(this.todayDate());
     this.watchDialogScore.set(null);
     this.watchDialogReview.set('');
-    this.watchDialogRewatch.set(false);
+    this.watchDialogRewatch.set(item.card.viewerState?.watchStatus === 'WATCHED');
     this.watchDialogWatchedInTheater.set(false);
     this.watchDialogCalendarOpen.set(false);
     this.watchDialogCalendarMonth.set(this.firstOfMonth(new Date()));
@@ -438,6 +431,42 @@ export class WatchlistComponent implements OnDestroy {
           watchedEpisodeCount: item.card.type === 'SERIES'
             ? item.card.numberOfEpisodes ?? item.card.viewerState?.watchedEpisodeCount ?? 0
             : item.card.viewerState?.watchedEpisodeCount ?? 0,
+        });
+        this.toasts.success(isRewatch ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess);
+        this.closeWatchedDialog();
+      },
+      error: (error: unknown) => {
+        this.watchDialogSaving.set(false);
+        if (this.handleSessionError(error)) return;
+        this.toasts.error(this.trendingCopy.actionError);
+      },
+    }));
+  }
+
+  protected seriesWatchEpisodeCount(item: WatchlistCard): number | null {
+    const total = item.card.numberOfEpisodes;
+    if (item.card.viewerState?.watchStatus === 'WATCHED') {
+      return item.card.viewerState.watchedEpisodeCount ?? total;
+    }
+    const released = item.card.viewerState?.releasedEpisodeCount ?? total;
+    return released === null ? null : Math.max(0, released - (item.card.viewerState?.watchedEpisodeCount ?? 0));
+  }
+
+  protected saveSeriesWatchedCard(submission: SeriesBulkWatchSubmission): void {
+    const item = this.watchDialogCard();
+    const tmdbId = item ? this.tmdbId(item) : null;
+    if (!item || item.card.type !== 'SERIES' || !tmdbId || this.watchDialogSaving()) return;
+    const isRewatch = this.watchDialogRewatch();
+    this.watchDialogSaving.set(true);
+    this.cardActionRequests.add(this.contentApi.createBulkSeriesDiaryEntry({
+      content: { type: 'SERIES', tmdbId },
+      watchedDate: submission.watchedDate,
+    }, crypto.randomUUID()).subscribe({
+      next: () => {
+        this.watchDialogSaving.set(false);
+        this.updateWatchlistCard(item.id, {
+          watchStatus: 'WATCHED',
+          watchedEpisodeCount: item.card.numberOfEpisodes ?? item.card.viewerState?.watchedEpisodeCount ?? 0,
         });
         this.toasts.success(isRewatch ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess);
         this.closeWatchedDialog();

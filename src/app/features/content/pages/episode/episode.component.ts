@@ -203,13 +203,6 @@ export class EpisodeComponent implements OnDestroy {
     this.profileActionReturnUrl = typeof navigationState?.['profileActionReturnUrl'] === 'string'
       ? navigationState['profileActionReturnUrl']
       : null;
-    const profileActionFragment = this.route.snapshot.fragment?.match(/^profile-action:(rate|rewatch):(.+)$/);
-    if (profileActionFragment) {
-      const [, action, encodedReturnUrl] = profileActionFragment;
-      this.profileContentActionAfterLoad = action === 'rewatch' ? 'rewatch' : 'rate';
-      this.profileActionReturnUrl ??= decodeURIComponent(encodedReturnUrl);
-      void this.router.navigate([], { relativeTo: this.route, queryParamsHandling: 'preserve', preserveFragment: false, replaceUrl: true });
-    }
     this.shareReturnUrl = typeof navigationState?.['shareReturnUrl'] === 'string'
       ? navigationState['shareReturnUrl']
       : null;

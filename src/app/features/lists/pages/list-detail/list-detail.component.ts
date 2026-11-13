@@ -8,6 +8,7 @@ import { ResponsiveBannerComponent } from '../../../../shared/components/respons
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { canAddContentToWatchlist, isContentFullyWatched, shouldShowContentWatchlistAction } from '../../../../shared/utils/content-watch-status';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
+import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,7 +21,6 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
-import { navigateToContentAction, type ContentActionTarget } from '../../../../shared/utils/content-action-navigation';
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
@@ -34,7 +34,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent],
+    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent, SeriesBulkWatchDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
@@ -480,23 +480,6 @@ export class ListDetailComponent {
       void this.router.navigateByUrl('/login');
       return;
     }
-    if (this.itemWatchStatus(item) === 'WATCHED' || item.card.viewerState?.watchStatus === 'WATCHED') {
-      const card = item.card;
-      let target: ContentActionTarget | null = null;
-      if (card.type === 'MOVIE' && card.tmdbId) {
-        target = { type: 'MOVIE', tmdbId: card.tmdbId, contentId: card.contentId };
-      } else if (card.type === 'SERIES' && (card.tmdbId || card.seriesTmdbId)) {
-        target = { type: 'SERIES', tmdbId: card.tmdbId || card.seriesTmdbId!, contentId: card.contentId };
-      } else if (card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) {
-        target = { type: 'SEASON', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, contentId: card.contentId };
-      } else if (card.type === 'EPISODE' && card.seriesTmdbId && card.seasonNumber !== null && card.episodeNumber !== null) {
-        target = { type: 'EPISODE', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber, episodeNumber: card.episodeNumber, contentId: card.contentId };
-      }
-      if (target) {
-        void navigateToContentAction(this.router, target, 'rewatch');
-        return;
-      }
-    }
     this.watchDialogItem.set(item);
     this.watchDialogOpener.set((event.currentTarget as HTMLElement | null)?.closest('app-content-image-actions')
       ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
@@ -530,6 +513,60 @@ export class ListDetailComponent {
     if (card.type === 'SEASON') return `${this.homeCopy.seasonShort}${card.seasonNumber ?? ''}`;
     if (card.type === 'EPISODE') return `${this.homeCopy.seasonShort}${card.seasonNumber ?? ''} · ${this.homeCopy.episodeShort}${card.episodeNumber ?? ''}`;
     return card.type === 'SERIES' ? this.copy.series : this.copy.movies;
+  }
+
+  protected watchDialogBulkScope(item: ListDetailItem): 'SERIES' | 'SEASON' {
+    return item.card?.type === 'SEASON' ? 'SEASON' : 'SERIES';
+  }
+
+  protected watchDialogBulkTitle(item: ListDetailItem): string {
+    const title = item.card?.title || this.homeCopy.titleUnavailable;
+    return this.itemWatchStatus(item) === 'WATCHED'
+      ? `Registrar ${title} novamente`
+      : `Marcar ${title} como assistida`;
+  }
+
+  protected watchDialogBulkSubtitle(item: ListDetailItem): string {
+    const card = item.card;
+    if (!card) return '';
+    const year = card.releaseYear ? String(card.releaseYear) : null;
+    const count = card.numberOfEpisodes;
+    return [card.type === 'SEASON' ? this.watchDialogSubtitle(item) : year,
+      count !== null ? `${this.formatNumber(count)} episódios` : null].filter(Boolean).join(' · ');
+  }
+
+  protected watchDialogBulkEpisodeCount(item: ListDetailItem): number | null {
+    return item.card?.numberOfEpisodes ?? null;
+  }
+
+  protected saveBulkWatchDialog(submission: SeriesBulkWatchSubmission): void {
+    const item = this.watchDialogItem();
+    const card = item?.card;
+    if (!item || !card || this.watchDialogSaving()) return;
+    const isRewatch = this.itemWatchStatus(item) === 'WATCHED';
+    const request = card.type === 'SERIES' && card.tmdbId
+      ? this.contentApi.createBulkSeriesDiaryEntry({ content: { type: 'SERIES', tmdbId: card.tmdbId }, watchedDate: submission.watchedDate }, crypto.randomUUID())
+      : card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null
+        ? this.contentApi.createBulkSeriesDiaryEntry({ content: { type: 'SEASON', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber }, watchedDate: submission.watchedDate }, crypto.randomUUID())
+        : null;
+    if (!request) {
+      this.toasts.error(this.trendingCopy.actionError);
+      return;
+    }
+    this.watchDialogSaving.set(true);
+    this.runItemAction(item, request, isRewatch ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess, () => {
+      this.watchDialogSaving.set(false);
+      this.watchDialogItem.set(null);
+      this.updateItemViewerState(item.id, { watchStatus: 'WATCHED', lastWatchedDate: submission.watchedDate });
+      this.load();
+      const opener = this.watchDialogOpener();
+      this.watchDialogOpener.set(null);
+      if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
+    });
+  }
+
+  private formatNumber(value: number): string {
+    return new Intl.NumberFormat('pt-BR').format(value);
   }
 
   protected saveWatchDialog(submission: WatchLogSubmission): void {

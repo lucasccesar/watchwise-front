@@ -1211,6 +1211,19 @@
     />
   }
   @if (profileWatchTarget(); as target) {
+    @if (target.type === 'SERIES' || target.type === 'SEASON') {
+      <app-series-bulk-watch-dialog
+        [title]="profileSeriesWatchTitle(target)"
+        [subtitle]="profileSeriesWatchSubtitle(target)"
+        [scope]="target.type"
+        [episodeCount]="target.episodeCount ?? null"
+        [isRewatch]="profileWatchIsRewatch()"
+        [saving]="profileWatchSaving()"
+        [returnFocusTarget]="profileWatchOpener()"
+        (save)="saveProfileSeriesWatch($event)"
+        (dismiss)="closeProfileWatchDialog()"
+      />
+    } @else {
     <app-watch-log-dialog
       [type]="target.type"
       [dialogTitle]="profileWatchIsRewatch() ? homeCopy.rewatch : homeCopy.markWatched"
@@ -1224,6 +1237,7 @@
       (save)="saveProfileWatch($event)"
       (dismiss)="closeProfileWatchDialog()"
     />
+    }
   }
   @if (profileRatingTarget(); as target) {
     <app-rating-dialog

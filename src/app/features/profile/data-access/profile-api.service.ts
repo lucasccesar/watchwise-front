@@ -52,6 +52,7 @@ export interface ProfileContentCard {
   tmdbVoteAverage?: number | null;
   releaseYear: number | null;
   runtimeMinutes?: number | null;
+  numberOfEpisodes?: number | null;
   genres?: string[] | null;
   stats?: { averageScore: number | null } | null;
   viewerState?: { watchStatus?: string | null; myRating?: number | null } | null;
