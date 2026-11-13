@@ -39,6 +39,7 @@ import { sortCrewByRole } from '../../utils/crew-order';
 import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
 import { canAddContentToWatchlist } from '../../../../shared/utils/content-watch-status';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { PostWatchRatingPromptComponent } from '../../../../shared/components/post-watch-rating-prompt/post-watch-rating-prompt.component';
 import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
@@ -68,7 +69,7 @@ type EpisodeWatchTarget = { episode: SeriesEpisodeSummary; isRewatch: boolean };
 @Component({
   selector: 'app-series-content',
   standalone: true,
-  imports: [NgTemplateOutlet, RouterLink, ContentImageActionsComponent, PageSkeletonComponent, ContentListSkeletonComponent, ResponsiveBannerComponent, CommentItemComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, ShareReviewDialogComponent, ContentPosterPickerComponent, WatchLogDialogComponent],
+  imports: [NgTemplateOutlet, RouterLink, ContentImageActionsComponent, PageSkeletonComponent, ContentListSkeletonComponent, PostWatchRatingPromptComponent, ResponsiveBannerComponent, CommentItemComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, ShareReviewDialogComponent, ContentPosterPickerComponent, WatchLogDialogComponent],
   templateUrl: './series.component.html',
 })
 export class SeriesComponent implements OnInit, OnDestroy {

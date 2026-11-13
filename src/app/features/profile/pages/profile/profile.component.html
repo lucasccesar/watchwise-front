@@ -1239,6 +1239,17 @@
     />
     }
   }
+  @if (profilePostWatchRatingTarget(); as target) {
+    <app-post-watch-rating-prompt
+      [title]="'Você concluiu ' + target.title"
+      [message]="target.type === 'SEASON' ? 'Todos os episódios da temporada foram adicionados ao seu Diário. Quer avaliar esta temporada?' : 'Todos os episódios foram adicionados ao seu Diário. Quer avaliar a série ou escrever uma resenha?'"
+      [ratingLabel]="target.type === 'SEASON' ? 'Avaliar temporada' : 'Avaliar série'"
+      [disabled]="profileWatchSaving()"
+      [returnFocusTarget]="profilePostWatchOpener()"
+      (evaluate)="rateProfileWatchedContent()"
+      (dismiss)="closeProfilePostWatchRatingPrompt()"
+    />
+  }
   @if (profileRatingTarget(); as target) {
     <app-rating-dialog
       [type]="target.type"

@@ -25,6 +25,7 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
 import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { PostWatchRatingPromptComponent } from '../../../../shared/components/post-watch-rating-prompt/post-watch-rating-prompt.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ShareReviewDialogComponent, ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ToastNotificationType, ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
@@ -54,7 +55,7 @@ type EpisodeWatchTarget = { episode: SeasonEpisodeCard; isRewatch: boolean };
 @Component({
   selector: 'app-season-content',
   standalone: true,
-  imports: [NgTemplateOutlet, RouterLink, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, CommentItemComponent, ContentImageActionsComponent, ContentListSkeletonComponent, PageSkeletonComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, WatchLogDialogComponent],
+  imports: [NgTemplateOutlet, RouterLink, DialogBackdropComponent, ModalFocusDirective, ModalScrollLockDirective, CheckIconComponent, CommentItemComponent, ContentImageActionsComponent, ContentListSkeletonComponent, PageSkeletonComponent, PostWatchRatingPromptComponent, ResponsiveBannerComponent, ShareReviewDialogComponent, WatchLogDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './season.component.html',
   styleUrl: './season.component.css',
@@ -94,7 +95,7 @@ export class SeasonComponent implements OnDestroy {
   protected readonly watchDialogOpen = signal(false);
   protected readonly bulkWatchSeason = signal<SeasonListItem | null>(null);
   protected readonly seasonHistoryConfirmOpen = signal(false);
-  protected readonly ratingPromptSeason = signal<SeasonListItem | null>(null);
+  protected readonly ratingPromptSeason = signal<{ title: string; seriesTmdbId: string; target: SeasonListItem | null } | null>(null);
   protected readonly ratingDialogOpen = signal(false);
   protected readonly shareReviewOpen = signal(false);
   protected readonly ratingTarget = signal<RatingTarget | null>(null);
@@ -187,14 +188,10 @@ export class SeasonComponent implements OnDestroy {
   private requests = new Subscription();
   private stylesheet: HTMLLinkElement | null = null;
   private openShareReviewAfterLoad = false;
-  private ratingPromptSeasonAfterLoad: { seriesTmdbId: string; seasonNumber: number } | null = null;
   private shareReturnUrl: string | null = null;
 
   @ViewChild('seasonDialog')
   private seasonDialog?: ElementRef<HTMLElement>;
-
-  @ViewChild('seasonRatingPromptDialog')
-  private seasonRatingPromptDialog?: ElementRef<HTMLElement>;
 
   @ViewChild('seasonHistoryDialog')
   private seasonHistoryDialog?: ElementRef<HTMLElement>;
@@ -386,16 +383,11 @@ export class SeasonComponent implements OnDestroy {
     else if (selection.action.id === 'share-review') this.openSeasonShareReview(season);
   }
 
-  protected promptSeasonRating(season: SeasonListItem): void {
-    this.ratingPromptSeason.set(season);
-    queueMicrotask(() => this.seasonRatingPromptDialog?.nativeElement.focus());
-  }
-
   protected confirmSeasonRating(): void {
-    const season = this.ratingPromptSeason();
-    if (!season) return;
+    const prompt = this.ratingPromptSeason();
+    if (!prompt) return;
     this.ratingPromptSeason.set(null);
-    this.openRating({ type: 'SEASON', season });
+    this.openRating(prompt.target ? { type: 'SEASON', season: prompt.target } : { type: 'SEASON' });
   }
 
   protected openSeasonShareReview(season: SeasonListItem): void {
@@ -700,7 +692,6 @@ export class SeasonComponent implements OnDestroy {
     const page = this.page();
     const targetSeason = this.bulkWatchSeason();
     if (!page || this.actionPending() || !this.bulkWatchEpisodeCount()) return;
-    const wasWatched = this.bulkWatchIsRepeat();
     const watchedDate = this.watchDateMode() === 'release' ? null : this.watchDate();
     this.runAction(this.api.createBulkSeriesDiaryEntry({
       content: { type: 'SEASON', seriesTmdbId: this.tmdbId(), seasonNumber: targetSeason?.seasonNumber ?? this.seasonNumber() },
@@ -708,14 +699,11 @@ export class SeasonComponent implements OnDestroy {
     }, crypto.randomUUID()), () => {
       this.watchDialogOpen.set(false);
       this.bulkWatchSeason.set(null);
-      if (targetSeason && !wasWatched) {
-        this.ratingPromptSeasonAfterLoad = {
-          seriesTmdbId: targetSeason.seriesTmdbId,
-          seasonNumber: targetSeason.seasonNumber,
-        };
-      } else {
-        this.showToast(wasWatched ? 'Temporada registrada novamente no diário.' : 'Temporada adicionada ao diário.');
-      }
+      this.ratingPromptSeason.set({
+        title: targetSeason?.name?.trim() || (targetSeason ? `Temporada ${targetSeason.seasonNumber}` : this.seasonName()),
+        seriesTmdbId: this.tmdbId(),
+        target: targetSeason,
+      });
       this.reload();
     });
   }
@@ -1136,8 +1124,8 @@ export class SeasonComponent implements OnDestroy {
   }
 
   private loadSeason(tmdbId: string, seasonNumber: number, preserveExisting = false): void {
-    if (this.ratingPromptSeasonAfterLoad?.seriesTmdbId !== tmdbId) {
-      this.ratingPromptSeasonAfterLoad = null;
+    if (this.ratingPromptSeason()?.seriesTmdbId !== tmdbId) {
+      this.ratingPromptSeason.set(null);
     }
     this.request?.unsubscribe();
     this.requests.unsubscribe();
@@ -1213,13 +1201,6 @@ export class SeasonComponent implements OnDestroy {
           })));
         this.title.setTitle(`${this.seriesName()} • S${seasonNumber} | Watchwise`);
         this.status.set('ready');
-        if (this.ratingPromptSeasonAfterLoad?.seriesTmdbId === tmdbId) {
-          const targetSeasonNumber = this.ratingPromptSeasonAfterLoad.seasonNumber;
-          this.ratingPromptSeasonAfterLoad = null;
-          const targetSeason = this.seasons().find((season) => season.seasonNumber === targetSeasonNumber);
-          if (targetSeason) this.promptSeasonRating(targetSeason);
-          else this.showToast('A temporada foi marcada como assistida, mas não foi possível carregar seus dados para avaliação.', 'warning');
-        }
         this.loadReviews(1);
         this.loadComments(1);
         if (this.listsOpen()) this.loadUserLists(1);

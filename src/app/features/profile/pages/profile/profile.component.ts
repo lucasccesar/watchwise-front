@@ -31,6 +31,7 @@ import { ContentImageAction, ContentImageActionSelection, ContentImageActionsCom
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
+import { PostWatchRatingPromptComponent } from '../../../../shared/components/post-watch-rating-prompt/post-watch-rating-prompt.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
@@ -68,6 +69,7 @@ type ProfileActionContent = {
   reviewId?: string | null;
   initialValue?: Partial<RatingDialogValue>;
   companions?: RatingDialogCompanion[];
+  viewerState?: ProfileActionViewerState;
 };
 type ProfileRatingDialogTarget = ProfileActionContent & { viewerState: ProfileActionViewerState };
 type TopFiveSearchRequest = { query: string; scope: 'MOVIE' | 'SERIES' };
@@ -139,7 +141,7 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, CdkDrag, CdkDragHandle, CdkDropList, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ShareReviewDialogComponent, ResponsiveBannerComponent, PageSkeletonComponent, WatchLogDialogComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
+  imports: [DecimalPipe, NgTemplateOutlet, RouterLink, CdkDrag, CdkDragHandle, CdkDropList, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ProfileCountryMapComponent, SharePreviewComponent, ShareReviewDialogComponent, ResponsiveBannerComponent, PageSkeletonComponent, PostWatchRatingPromptComponent, WatchLogDialogComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
@@ -184,6 +186,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileWatchIsRewatch = signal(true);
   protected readonly profileWatchOpener = signal<HTMLElement | null>(null);
   protected readonly profileWatchSaving = signal(false);
+  protected readonly profilePostWatchRatingTarget = signal<ProfileRatingDialogTarget | null>(null);
+  protected readonly profilePostWatchOpener = signal<HTMLElement | null>(null);
   protected readonly profileRatingTarget = signal<ProfileRatingDialogTarget | null>(null);
   protected readonly profileRatingInitialValue = computed<Partial<RatingDialogValue>>(() => {
     const target = this.profileRatingTarget();
@@ -1383,6 +1387,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title || this.copy.unavailable,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
       episodeCount: entry.card?.numberOfEpisodes ?? null,
+      viewerState: {
+        myRating: entry.viewerRating ?? null,
+        myReview: entry.viewerReview ?? null,
+        latestDiaryEntryId: null,
+        currentRatingVersion: entry.card?.viewerState?.currentRatingVersion ?? null,
+        reviewIds: [],
+        lastWatchedDate: null,
+        lastWatchNumber: null,
+        watchedInTheater: null,
+        playsCount: null,
+      },
     };
     if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
       if (this.isOwnProfile()) this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
@@ -1546,6 +1561,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
       episodeCount: entry.episodeCount,
+      viewerState: {
+        myRating: entry.viewerRating ?? null,
+        myReview: null,
+        latestDiaryEntryId: null,
+        currentRatingVersion: entry.currentRatingVersion,
+        reviewIds: entry.reviewIds,
+        lastWatchedDate: entry.lastWatchedDate,
+        lastWatchNumber: null,
+        watchedInTheater: null,
+        playsCount: null,
+      },
     };
     if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
       this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
@@ -1723,7 +1749,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     request.subscribe({
       next: () => {
         this.profileWatchSaving.set(false);
-        this.closeProfileWatchDialog();
+        this.profileWatchTarget.set(null);
+        this.profilePostWatchOpener.set(this.profileWatchOpener());
+        this.profilePostWatchRatingTarget.set(this.profileRatingTargetForWatchedContent(target));
         this.toasts.success(this.profileWatchIsRewatch() ? messageCatalog['pt-BR'].trendingPage.watchAgainSuccess : messageCatalog['pt-BR'].trendingPage.markWatchedSuccess);
         this.loadSectionData(true);
       },
@@ -1732,6 +1760,43 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         this.handleProfileActionError(error);
       },
     });
+  }
+
+  private profileRatingTargetForWatchedContent(target: ProfileActionContent): ProfileRatingDialogTarget {
+    const viewerState = target.viewerState ?? {
+      myRating: null,
+      myReview: null,
+      latestDiaryEntryId: null,
+      currentRatingVersion: null,
+      reviewIds: [],
+      lastWatchedDate: null,
+      lastWatchNumber: null,
+      watchedInTheater: null,
+      playsCount: null,
+    };
+    return {
+      ...target,
+      viewerState,
+      initialValue: {
+        score: viewerState.myRating,
+        comment: viewerState.myReview ?? '',
+      },
+    };
+  }
+
+  protected rateProfileWatchedContent(): void {
+    const target = this.profilePostWatchRatingTarget();
+    if (!target) return;
+    this.profilePostWatchRatingTarget.set(null);
+    this.profileRatingOpener.set(this.profilePostWatchOpener());
+    this.profilePostWatchOpener.set(null);
+    this.profileRatingTarget.set(target);
+  }
+
+  protected closeProfilePostWatchRatingPrompt(): void {
+    if (!this.profilePostWatchRatingTarget()) return;
+    this.profilePostWatchRatingTarget.set(null);
+    this.restoreProfileActionFocus(this.profilePostWatchOpener);
   }
 
   protected closeProfileRatingDialog(): void {

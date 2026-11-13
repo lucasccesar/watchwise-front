@@ -390,11 +390,15 @@
             <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" class="movie-button movie-button--primary" [disabled]="actionPending() || bulkEpisodeCount() === 0" (click)="saveBulkWatch()" data-ww-button="primary"><app-check-icon [color]="'#FFFFFF'" /><span>{{ bulkIsRepeatWatch() ? 'Registrar novamente' : 'Marcar ' + formatNumber(bulkEpisodeCount(), 0) + ' episódios' }}</span></button></footer>
           </section>
         } @else if (currentDialog === 'completed') {
-          <section #seriesDialog class="movie-dialog series-completion-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-completion-title" tabindex="-1" (click)="$event.stopPropagation()">
-            <header><span class="series-completion-icon" aria-hidden="true"><app-check-icon [color]="'var(--color-success)'" /></span></header>
-            <div class="series-completion-copy"><h2 id="series-completion-title">{{ completionTitle() }}</h2><p>{{ ratingTarget()?.type === 'SEASON' ? 'Todos os episódios da temporada foram adicionados ao seu Diário. Quer avaliar esta temporada?' : 'Todos os episódios foram adicionados ao seu Diário. Quer avaliar a série ou escrever uma resenha?' }}</p></div>
-            <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Agora não</button><button type="button" class="movie-button movie-button--primary" [disabled]="actionPending() || seriesPageRefreshPending()" [attr.aria-busy]="seriesPageRefreshPending()" (click)="rateCompletedContent($event)" data-ww-button="primary"><ng-container [ngTemplateOutlet]="emptyRatingStar" /><span>{{ completionRatingLabel() }}</span></button></footer>
-          </section>
+          <app-post-watch-rating-prompt
+            [embedded]="true"
+            [title]="completionTitle()"
+            [message]="ratingTarget()?.type === 'SEASON' ? 'Todos os episódios da temporada foram adicionados ao seu Diário. Quer avaliar esta temporada?' : 'Todos os episódios foram adicionados ao seu Diário. Quer avaliar a série ou escrever uma resenha?'"
+            [ratingLabel]="completionRatingLabel()"
+            [disabled]="actionPending() || seriesPageRefreshPending()"
+            (evaluate)="rateCompletedContent()"
+            (dismiss)="closeDialog()"
+          />
         } @else if (currentDialog === 'rating') {
           <section #seriesDialog class="movie-dialog rating-dialog ww-dialog-panel series-rating-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="series-rating-title" tabindex="-1" (click)="$event.stopPropagation()">
             <header class="watch-log-header">

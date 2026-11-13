@@ -356,17 +356,14 @@
   </div>
 }
 
-@if (ratingPromptSeason(); as season) {
-  <div class="movie-modal-backdrop series-modal-backdrop season-modal-backdrop" appModalScrollLock (click)="closeDialog()">
-    <section #seasonRatingPromptDialog class="movie-dialog series-completion-dialog season-rating-prompt-dialog" role="dialog" appModalFocus (modalDismiss)="closeDialog()" aria-modal="true" aria-labelledby="season-rating-prompt-title" tabindex="-1" (click)="$event.stopPropagation()">
-      <header><span class="series-completion-icon" aria-hidden="true"><app-check-icon [color]="'var(--color-success)'" /></span></header>
-      <div class="series-completion-copy">
-        <h2 id="season-rating-prompt-title">Você concluiu {{ season.name || ('Temporada ' + season.seasonNumber) }}</h2>
-        <p>Quer avaliar esta temporada?</p>
-      </div>
-      <footer><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Agora não</button><button type="button" class="movie-button movie-button--primary" (click)="confirmSeasonRating()" data-ww-button="primary"><ng-container [ngTemplateOutlet]="emptyRatingStar" /><span>Avaliar temporada</span></button></footer>
-    </section>
-  </div>
+@if (ratingPromptSeason(); as prompt) {
+  <app-post-watch-rating-prompt
+    [title]="'Você concluiu ' + prompt.title"
+    [message]="'Todos os episódios da temporada foram adicionados ao seu Diário. Quer avaliar esta temporada?'"
+    [ratingLabel]="'Avaliar temporada'"
+    (evaluate)="confirmSeasonRating()"
+    (dismiss)="closeDialog()"
+  />
 }
 
 @if (ratingDialogOpen()) {
