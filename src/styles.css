@@ -114,6 +114,16 @@ html.ww-modal-scroll-locked .product-header {
   left: 0;
 }
 
+html.ww-modal-scroll-locked .product-shell {
+  padding-top: 64px;
+}
+
+@media (max-width: 1100px) {
+  html.ww-modal-scroll-locked .product-shell {
+    padding-top: 56px;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
