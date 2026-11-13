@@ -20,6 +20,7 @@ import {
 import { DialogBackdropComponent } from '../../../../shared/components/dialog-backdrop/dialog-backdrop.component';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { canAddContentToWatchlist, isContentFullyWatched, shouldShowContentWatchlistAction } from '../../../../shared/utils/content-watch-status';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { tmdbImageUrl as buildTmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
@@ -286,7 +287,8 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected posterActionsFor(card: TrendingCard): readonly ContentImageAction[] {
     const busy = this.isCardActionBusy(card);
     const inWatchlist = card.viewerState?.inWatchlist === true;
-    const watched = card.viewerState?.watchStatus === 'WATCHED';
+    const watchStatus = card.viewerState?.watchStatus;
+    const watched = isContentFullyWatched(watchStatus);
     const actions: ContentImageAction[] = [
       {
         id: 'mark-watched',
@@ -296,7 +298,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
       },
       { id: 'add-to-list', label: this.copy.addToList, icon: 'list', disabled: busy },
     ];
-    if (!watched) {
+    if (shouldShowContentWatchlistAction(watchStatus, inWatchlist)) {
       actions.splice(1, 0, {
         id: 'watchlist',
         label: inWatchlist ? this.copy.removeFromWatchlist : this.copy.wantToWatch,
@@ -539,7 +541,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected toggleCardWatchlist(card: TrendingCard): void {
     if (this.isCardActionBusy(card)) return;
     const removing = card.viewerState?.inWatchlist === true;
-    if (!removing && card.viewerState?.watchStatus === 'WATCHED') return;
+    if (!removing && !canAddContentToWatchlist(card.viewerState?.watchStatus)) return;
     if (!removing) {
       const request = card.type === 'MOVIE'
         ? this.contentApi.addToWatchlist(card.tmdbId)

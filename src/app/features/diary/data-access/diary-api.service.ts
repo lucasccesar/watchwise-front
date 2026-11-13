@@ -42,7 +42,7 @@ export interface DiaryRecord {
   createdAt: string;
   watchedInTheater: boolean | null;
   customPosterUrl: string | null;
-  watchNumber: number;
+  watchNumber: number | null;
   likesCount: number;
   commentsCount: number;
   likedByMe: boolean;
@@ -250,7 +250,7 @@ export class DiaryApiService {
         ...record,
         reviewSource: record.source,
         watchedDate: record.watchedDate ?? record.createdAt.slice(0, 10),
-        watchNumber: record.watchNumber ?? 1,
+        watchNumber: record.watchNumber,
       }))),
     );
   }

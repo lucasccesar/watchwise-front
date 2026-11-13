@@ -6,6 +6,7 @@ import { buildCommentTree } from '../../../../shared/components/comment-item/com
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { canAddContentToWatchlist, isContentFullyWatched, shouldShowContentWatchlistAction } from '../../../../shared/utils/content-watch-status';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
@@ -321,23 +322,24 @@ export class ListDetailComponent {
     const card = item.card;
     if (!card) return [];
     const busy = this.busyItemActionId() === item.id || this.busyListId() !== null;
-    const watched = this.itemWatchStatus(item) === 'WATCHED';
+    const watchStatus = this.itemWatchStatus(item);
+    const watched = isContentFullyWatched(watchStatus);
     const inWatchlist = this.itemInWatchlist(item);
     const supportsWatchlist = card.type === 'MOVIE' || card.type === 'SERIES';
 
-    return [
+    const actions: ContentImageAction[] = [
       {
         id: 'mark-watched',
         label: watched ? this.trendingCopy.watchAgain : this.trendingCopy.markWatched,
         icon: watched ? 'rewatch' : 'check',
         disabled: busy,
       },
-      {
+      ...(supportsWatchlist && shouldShowContentWatchlistAction(watchStatus, inWatchlist) ? [{
         id: 'watchlist',
         label: inWatchlist ? this.trendingCopy.removeFromWatchlist : this.trendingCopy.wantToWatch,
         icon: inWatchlist ? 'bookmark-filled' : 'bookmark',
-        disabled: busy || !supportsWatchlist || (!inWatchlist && watched),
-      },
+        disabled: busy,
+      } as const] : []),
       {
         id: 'add-to-list',
         label: this.trendingCopy.addToList,
@@ -348,6 +350,7 @@ export class ListDetailComponent {
         ? [{ id: 'remove-item', label: this.copy.removeItem, icon: 'trash' as const, disabled: busy }]
         : []),
     ];
+    return actions;
   }
 
   protected openImageAction(item: ListDetailItem, selection: ContentImageActionSelection): void {
@@ -538,6 +541,7 @@ export class ListDetailComponent {
       return;
     }
     const removing = this.itemInWatchlist(item);
+    if (!removing && !canAddContentToWatchlist(this.itemWatchStatus(item))) return;
     const request = this.createWatchlistRequest(item, removing);
     if (!request) {
       this.toasts.error(this.trendingCopy.actionError);

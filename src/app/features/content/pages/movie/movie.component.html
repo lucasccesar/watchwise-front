@@ -362,7 +362,7 @@
               </div>
             }
           </div>
-          @if (moviePage.viewerState.watchStatus !== 'WATCHED') {
+          @if (moviePage.viewerState.watchStatus === 'UNWATCHED' || moviePage.viewerState.inWatchlist) {
             <button
               class="movie-action-secondary movie-action-secondary--watchlist"
               type="button"

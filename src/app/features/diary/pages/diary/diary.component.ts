@@ -64,7 +64,7 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
   commentsCount: number;
   comment: string | null;
   watchedInTheater: boolean | null;
-  watchNumber: number;
+  watchNumber: number | null;
   companions: DiaryReviewCompanion[];
   derivedCompletion?: boolean;
   sourceEntries?: DiaryGridEntry[];
@@ -189,12 +189,6 @@ export class DiaryComponent implements OnDestroy {
 
     return pages.map((page, index) => ({ key: page === null ? `ellipsis-${index}` : `page-${page}`, page }));
   });
-  protected readonly posterActions: readonly ContentImageAction[] = [
-    { id: 'watch-again', label: this.copy.watchAgainAction, icon: 'rewatch' },
-    { id: 'edit-rating', label: this.copy.editRatingAction, icon: 'star' },
-    { id: 'share-review', label: this.copy.shareReviewAction, icon: 'share' },
-    { id: 'remove-history', label: this.copy.removeHistoryAction, icon: 'trash' },
-  ];
   protected readonly shareCopy = movieMessages['pt-BR'];
   protected readonly shareReviewTarget = signal<DiaryGridEntry | null>(null);
   protected readonly shareReviewOpener = signal<HTMLElement | null>(null);
@@ -738,11 +732,29 @@ export class DiaryComponent implements OnDestroy {
 
   protected posterActionsFor(entry: DiaryTimelineEntry): readonly ContentImageAction[] {
     const records = this.actionRecords(entry);
-    return this.posterActions.map((action) => {
-      if (action.id === 'remove-history') return { ...action, disabled: this.isReviewsPage || records.length === 0 || records.some(record => record.reviewSource !== 'DIARY') };
-      if (action.id === 'edit-rating' || action.id === 'share-review') return { ...action, disabled: records.length === 0 };
-      return action;
-    });
+    const hasRating = records.some((record) => record.score !== null);
+    const hasWatched = records.some((record) => record.reviewSource === 'DIARY' || (record.watchNumber ?? 0) > 0);
+    const actions: ContentImageAction[] = [];
+    if (hasRating) {
+      actions.push({ id: 'edit-rating', label: this.copy.editRatingAction, icon: 'star' });
+    } else if (hasWatched) {
+      actions.push({ id: 'rate', label: this.homeCopy.rate, icon: 'star' });
+    }
+    if (hasWatched) {
+      actions.push(
+        { id: 'watch-again', label: this.copy.watchAgainAction, icon: 'rewatch' },
+        { id: 'share-review', label: this.copy.shareReviewAction, icon: 'share' },
+      );
+    }
+    actions.push(
+      {
+        id: 'remove-history',
+        label: this.copy.removeHistoryAction,
+        icon: 'trash',
+        disabled: this.isReviewsPage || records.length === 0 || records.some((record) => record.reviewSource !== 'DIARY'),
+      },
+    );
+    return actions;
   }
 
   protected listTargetForEntry(entry: DiaryTimelineEntry): ContentListTarget | null {
@@ -766,8 +778,9 @@ export class DiaryComponent implements OnDestroy {
       this.openWatchAgainDialog(entry, selection.event);
       return;
     }
-    if (selection.action.id === 'edit-rating') {
-      if (target) this.openRatingDialog(target, selection.event);
+    if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
+      const ratingTarget = this.actionRecords(entry).find((record) => record.score !== null) ?? target;
+      if (ratingTarget) this.openRatingDialog(ratingTarget, selection.event);
       return;
     }
     if (selection.action.id === 'share-review') {

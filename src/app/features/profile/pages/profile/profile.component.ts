@@ -51,7 +51,7 @@ type LoadState = 'loading' | 'ready' | 'private' | 'error';
 type ProfilePageMetadata = { page: number; size: number; totalElements: number; totalPages: number; hasNext: boolean };
 type ProfileListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'commentsCount';
 type ProfileActionViewerState = Pick<ContentViewerState, 'myRating' | 'myReview' | 'latestDiaryEntryId' | 'currentRatingVersion'> & { reviewIds?: string[] };
-type ResolvedTopFive = TopFiveEntry & { hasWatched: boolean; card: ProfileContentCard | null; title: string; posterPath: string | null; backdropPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; viewerRating: number | null; viewerReview: string | null; contentType: 'MOVIE' | 'SERIES' };
+type ResolvedTopFive = TopFiveEntry & { hasWatched: boolean; viewerHasWatched: boolean | null; card: ProfileContentCard | null; title: string; posterPath: string | null; backdropPath: string | null; releaseYear: number | null; averageScore: number | null; ratingSource: RatingSource; viewerRating: number | null | undefined; viewerReview: string | null; contentType: 'MOVIE' | 'SERIES' };
 type ProfileActionContent = {
   type: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE';
   contentId: string | null;
@@ -75,6 +75,8 @@ type RecentSeriesCard = {
   activityId: string;
   contentId: string | null;
   canShareReview: boolean;
+  hasWatched: boolean | null;
+  viewerRating: number | null | undefined;
   seriesTmdbId: string;
   title: string;
   posterPath: string | null;
@@ -311,10 +313,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           ?? card?.tmdbId
           ?? card?.seriesTmdbId;
         if (!card || !seriesTmdbId) return null;
+        const hasOwnerWatched = activity.source !== 'DROPPED_ENTRY' || (activity.timesWatched ?? 0) > 0;
+        const hasWatched = this.profileViewerWatched(
+          card.viewerState?.watchStatus,
+          this.isOwnProfile() ? hasOwnerWatched : null,
+        );
         return {
           activityId: activity.id,
           contentId: activity.content?.id ?? null,
-          canShareReview: activity.source !== 'DROPPED_ENTRY' || (activity.timesWatched ?? 0) > 0,
+          canShareReview: hasWatched === true,
+          hasWatched,
+          viewerRating: this.profileViewerRating(card.viewerState?.myRating, activity.score ?? null),
           seriesTmdbId: String(seriesTmdbId),
           title: card.title || this.copy.unavailable,
           posterPath: card.customPosterUrl || card.posterPath || null,
@@ -523,20 +532,55 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected profileContentActionsFor(
     score: number | null | undefined,
     canShareReview = true,
-    hasWatched = true,
+    hasWatched: boolean | null = null,
   ): readonly ContentImageAction[] {
-    const profileId = this.profile()?.id;
-    const isOwnProfile = !!profileId && profileId === this.session.user()?.id;
-    const actions: ContentImageAction[] = [
-      { id: 'rate', label: isOwnProfile && score !== null && score !== undefined ? this.homeCopy.editRating : this.homeCopy.rate, icon: 'star' },
-      hasWatched
-        ? { id: 'rewatch', label: this.homeCopy.rewatch, icon: 'rewatch' }
-        : { id: 'mark-watched', label: this.homeCopy.markWatched, icon: 'check' },
-    ];
-    if (hasWatched) {
-      actions.push({ id: 'share-review', label: this.homeCopy.shareReview, icon: 'share', disabled: isOwnProfile && !canShareReview });
+    const hasRating = score !== null && score !== undefined;
+    const actions: ContentImageAction[] = [];
+    if (hasRating) {
+      actions.push({ id: 'edit-rating', label: this.homeCopy.editRating, icon: 'star' });
+    } else if (hasWatched === true) {
+      actions.push({ id: 'rate', label: this.homeCopy.rate, icon: 'star' });
+    }
+    if (hasWatched === false) actions.push({ id: 'mark-watched', label: this.homeCopy.markWatched, icon: 'check' });
+    if (hasWatched === true) {
+      actions.push({ id: 'rewatch', label: this.homeCopy.rewatch, icon: 'rewatch' });
+      if (canShareReview) actions.push({ id: 'share-review', label: this.homeCopy.shareReview, icon: 'share' });
     }
     return actions;
+  }
+
+  protected profileDiaryActionsFor(entry: DiaryRecord): readonly ContentImageAction[] {
+    const viewerState = this.profileViewerStateForDiaryEntry(entry);
+    const fallbackWatched = this.isOwnProfile() ? true : null;
+    const hasWatched = this.profileViewerWatched(viewerState?.watchStatus, fallbackWatched);
+    const viewerRating = this.profileViewerRating(viewerState?.myRating, entry.score);
+    return this.profileContentActionsFor(viewerRating, hasWatched === true, hasWatched);
+  }
+
+  protected profileRecentSeriesActionsFor(entry: RecentSeriesCard): readonly ContentImageAction[] {
+    return this.profileContentActionsFor(entry.viewerRating, entry.canShareReview, entry.hasWatched);
+  }
+
+  private profileViewerStateForDiaryEntry(entry: DiaryRecord): ProfileContentCard['viewerState'] | null {
+    const summary = this.summary();
+    const activityCard = summary?.recentActivity.find((activity) =>
+      activity.source === 'DIARY_ENTRY' && activity.id === entry.id,
+    )?.card;
+    if (activityCard?.viewerState) return activityCard.viewerState;
+    const preview = [...(summary?.recentEpisodes ?? []), ...(summary?.recentReviews ?? [])]
+      .find((item) => item.id === entry.id);
+    return preview?.card?.viewerState ?? null;
+  }
+
+  private profileViewerWatched(status: string | null | undefined, fallback: boolean | null): boolean | null {
+    if (status === 'WATCHED') return true;
+    if (status === 'UNWATCHED' || status === 'PARTIALLY_WATCHED') return false;
+    return fallback;
+  }
+
+  private profileViewerRating(viewerRating: number | null | undefined, fallback: number | null): number | null | undefined {
+    if (viewerRating !== undefined) return viewerRating;
+    return this.isOwnProfile() ? fallback : undefined;
   }
 
   private readonly route = inject(ActivatedRoute);
@@ -730,6 +774,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       customPosterUrl: null,
       score: null,
       hasWatched: false,
+      viewerHasWatched: null,
       card: null,
       title: result.title || this.copy.unavailable,
       posterPath: result.posterUrl ?? null,
@@ -832,6 +877,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           return {
             ...entry,
             hasWatched: false,
+            viewerHasWatched: null,
             card: null,
             title: this.copy.unavailable,
             posterPath: entry.customPosterUrl,
@@ -839,7 +885,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             releaseYear: null,
             averageScore: null,
             ratingSource: 'none' as const,
-            viewerRating: null,
+            viewerRating: this.profileViewerRating(undefined, entry.score),
             viewerReview: null,
             contentType: entry.type,
           };
@@ -1320,8 +1366,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       if (this.isOwnProfile()) this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
       return;
     }
-    if (selection.action.id === 'rate' && !this.isOwnProfile()) return;
-    if (selection.action.id !== 'rate' && selection.action.id !== 'share-review') return;
+    if (!['rate', 'edit-rating', 'share-review'].includes(selection.action.id)) return;
 
     const onPage = (page: TopFiveActionPage) => this.handleTopFivePageAction(entry, selection, target, page);
     const onError = (error: unknown) => this.handleError(error);
@@ -1340,7 +1385,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     target: ProfileActionContent,
     page: TopFiveActionPage,
   ): void {
-    if (selection.action.id === 'rate') {
+    if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
       this.openProfileRatingDialog({ ...target, viewerState: page.viewerState }, selection.event);
       return;
     }
@@ -1370,8 +1415,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (!this.isOwnProfile()) return;
     const target = this.profileActionContentForDiary(entry);
     if (!target) return;
-    if (selection.action.id === 'rewatch') this.openProfileWatchDialog(target, selection.event);
-    else if (selection.action.id === 'rate') {
+    if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
+      this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
+    } else if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
       this.openProfileRatingDialog({
         ...target,
         diaryEntryId: entry.reviewSource === 'DIARY' ? entry.id : null,
@@ -1410,12 +1456,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       title: entry.title,
       subtitle: entry.releaseYear ? String(entry.releaseYear) : '',
     };
-    if (selection.action.id === 'rewatch') this.openProfileWatchDialog(target, selection.event);
-    else if (selection.action.id === 'rate' && target.contentId) {
+    if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
+      this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
+    } else if ((selection.action.id === 'rate' || selection.action.id === 'edit-rating') && target.contentId) {
       this.openProfileRatingDialog({
         ...target,
         allowComment: false,
-        viewerState: { myRating: entry.score, myReview: null, latestDiaryEntryId: null, currentRatingVersion: null },
+        viewerState: { myRating: entry.viewerRating ?? null, myReview: null, latestDiaryEntryId: null, currentRatingVersion: null },
       }, selection.event);
     }
   }
@@ -2377,7 +2424,11 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         releaseYear: entry.card?.releaseYear ?? null,
         averageScore: rating.value,
         ratingSource: rating.source,
-        viewerRating: entry.score,
+        viewerHasWatched: this.profileViewerWatched(
+          entry.card?.viewerState?.watchStatus,
+          this.isOwnProfile() ? entry.hasWatched : null,
+        ),
+        viewerRating: this.profileViewerRating(entry.card?.viewerState?.myRating, entry.score),
         viewerReview: null,
         contentType: entry.type,
       };

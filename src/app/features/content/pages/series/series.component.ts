@@ -37,6 +37,7 @@ import { movieMessages } from '../../i18n/movie.messages';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
 import { sortCrewByRole } from '../../utils/crew-order';
 import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
+import { canAddContentToWatchlist } from '../../../../shared/utils/content-watch-status';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ContentListSkeletonComponent } from '../../../../shared/components/content-list-skeleton/content-list-skeleton.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
@@ -1020,6 +1021,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
       this.runAction(this.api.removeSeriesFromWatchlist(viewer.watchlistEntryId), () => this.reload());
       return;
     }
+    if (!this.canShowSeriesWatchlistAction(series)) return;
     this.runAction(this.api.addSeriesToWatchlist(this.tmdbId()), () => {
       this.showToast(this.copy.contentUpdated);
       this.reload();
@@ -1032,6 +1034,13 @@ export class SeriesComponent implements OnInit, OnDestroy {
       }
       this.showToast(this.errorMessage(error), 'error');
     });
+  }
+
+  protected canShowSeriesWatchlistAction(series: SeriesPage): boolean {
+    if (series.viewerState.inWatchlist) return true;
+    return canAddContentToWatchlist(series.viewerState.watchStatus)
+      && this.watchedEpisodeCount() === 0
+      && !this.seriesIsWatched(series);
   }
 
   protected toggleDropped(event?: Event): void {
