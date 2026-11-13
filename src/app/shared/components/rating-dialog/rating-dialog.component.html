@@ -40,7 +40,7 @@
           </div>
         </header>
 
-        <form class="movie-watch-form" [class.movie-watch-form--watch-edit]="canRemove()" [attr.aria-busy]="loading()" (ngSubmit)="submit()">
+        <form class="movie-watch-form" [class.movie-watch-form--watch-edit]="canRemove()" [attr.aria-busy]="loading()" (submit)="submitFromForm($event)">
           @if (loading()) {
             <p class="movie-field-hint" role="status">{{ text().loading }}</p>
           } @else if (loadError()) {

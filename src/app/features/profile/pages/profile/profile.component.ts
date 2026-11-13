@@ -341,7 +341,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           contentId: activity.content?.id ?? null,
           canShareReview: hasWatched === true,
           hasWatched,
-          viewerRating: this.profileViewerRating(card.viewerState?.myRating, activity.score ?? null),
+          viewerRating: activity.score ?? this.profileViewerRating(card.viewerState?.myRating, null),
           seriesTmdbId: String(seriesTmdbId),
           title: card.title || this.copy.unavailable,
           posterPath: card.customPosterUrl || card.posterPath || null,
@@ -1392,18 +1392,34 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const movieDiaryEntry = this.recentMovieEntries().find((item) => item.content.tmdbId === entry.content.tmdbId) ?? null;
     const summaryDiaryEntry = this.summary()?.recentReviews.find((item) => item.content?.type?.toUpperCase() === entry.contentType
       && item.content.tmdbId === entry.content.tmdbId && item.source === 'DIARY_ENTRY') ?? null;
-    const activity = this.summary()?.recentActivity.find((item) =>
-      String(item.content?.tmdbId ?? item.tmdbId ?? item.card?.tmdbId ?? '') === entry.content.tmdbId
-      && (item.source === 'DIARY_ENTRY' || item.source === 'SERIES_COMPLETION')) ?? null;
+    const matchingActivities = (this.summary()?.recentActivity ?? []).filter((item) => {
+      const activityType = String(item.type ?? item.content?.type ?? item.card?.type ?? '').toUpperCase();
+      const activityTmdbId = String(item.content?.tmdbId
+        ?? item.content?.seriesTmdbId
+        ?? item.tmdbId
+        ?? item.seriesTmdbId
+        ?? item.card?.tmdbId
+        ?? item.card?.seriesTmdbId
+        ?? '');
+      return activityType === entry.contentType
+        && activityTmdbId === entry.content.tmdbId
+        && (item.source === 'DIARY_ENTRY' || item.source === 'SERIES_COMPLETION');
+    });
+    const activity = matchingActivities.find((item) => item.card?.viewerState?.currentRatingVersion != null)
+      ?? matchingActivities.find((item) => item.source === 'SERIES_COMPLETION')
+      ?? matchingActivities[0]
+      ?? null;
     const review = this.profileShareReviews().find((item) => item.content.type.toUpperCase() === entry.contentType
       && (item.content.tmdbId === entry.content.tmdbId || item.content.seriesTmdbId === entry.content.tmdbId)) ?? null;
     const cardViewerState = entry.card?.viewerState;
     const activityViewerState = activity?.card?.viewerState;
+    const summaryReviewViewerState = summaryDiaryEntry?.card?.viewerState;
     const reviewViewerState = review?.card?.viewerState;
     const reviewId = entry.contentType === 'SERIES'
       ? (review?.source === 'CONTENT_REVIEW' ? review.id : null)
         ?? cardViewerState?.reviewIds?.[0]
         ?? activityViewerState?.reviewIds?.[0]
+        ?? summaryReviewViewerState?.reviewIds?.[0]
         ?? null
       : null;
     const diaryEntryId = entry.contentType === 'MOVIE'
@@ -1415,10 +1431,10 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         ?? null
       : null;
     const viewerState: ProfileActionViewerState = {
-      myRating: entry.viewerRating ?? cardViewerState?.myRating ?? activityViewerState?.myRating ?? reviewViewerState?.myRating ?? null,
+      myRating: entry.viewerRating ?? cardViewerState?.myRating ?? activityViewerState?.myRating ?? summaryReviewViewerState?.myRating ?? reviewViewerState?.myRating ?? null,
       myReview: movieDiaryEntry?.comment ?? summaryDiaryEntry?.comment ?? review?.comment ?? null,
       latestDiaryEntryId: diaryEntryId,
-      currentRatingVersion: cardViewerState?.currentRatingVersion ?? activityViewerState?.currentRatingVersion ?? reviewViewerState?.currentRatingVersion ?? null,
+      currentRatingVersion: cardViewerState?.currentRatingVersion ?? activityViewerState?.currentRatingVersion ?? summaryReviewViewerState?.currentRatingVersion ?? reviewViewerState?.currentRatingVersion ?? null,
       reviewIds: reviewId ? [reviewId] : [],
       lastWatchedDate: movieDiaryEntry?.watchedDate ?? summaryDiaryEntry?.watchedDate ?? activity?.watchedDate ?? activity?.lastWatchedDate ?? cardViewerState?.lastWatchedDate ?? null,
       lastWatchNumber: movieDiaryEntry?.watchNumber ?? summaryDiaryEntry?.watchNumber ?? activity?.timesWatched ?? cardViewerState?.lastWatchNumber ?? null,
@@ -1476,8 +1492,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     } else if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
       this.openProfileRatingDialog({
         ...target,
-        diaryEntryId: entry.reviewSource === 'DIARY' ? entry.id : null,
-        reviewId: entry.reviewSource === 'CONTENT_REVIEW' ? entry.id : null,
+        diaryEntryId: entry.id,
+        reviewId: null,
         initialValue: {
           score: entry.score,
           comment: entry.comment ?? '',
@@ -1495,9 +1511,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         viewerState: {
           myRating: entry.score,
           myReview: entry.comment,
-          latestDiaryEntryId: entry.reviewSource === 'CONTENT_REVIEW' ? null : entry.id,
+          latestDiaryEntryId: entry.id,
           currentRatingVersion: null,
-          reviewIds: entry.reviewSource === 'CONTENT_REVIEW' ? [entry.id] : [],
+          reviewIds: [],
           lastWatchedDate: entry.watchedDate,
           lastWatchNumber: entry.watchNumber,
           watchedInTheater: null,
@@ -1776,13 +1792,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected saveProfileRating(submission: RatingDialogSubmission): void {
     const target = this.profileRatingTarget();
     const contentId = target?.contentId;
-    if (!target || this.profileRatingSaving() || !contentId) return;
+    if (!target || this.profileRatingSaving()) return;
     const isUpdatingSeriesRating = (target.type === 'SERIES' || target.type === 'SEASON')
       && target.viewerState.myRating !== null
       && target.viewerState.myRating !== undefined
       && submission.score !== target.viewerState.myRating;
     if (isUpdatingSeriesRating && target.viewerState.currentRatingVersion == null) {
-      this.toasts.error(this.homeCopy.genericError);
+      this.toasts.error(this.copy.ratingVersionUnavailable);
       return;
     }
     const request = this.createProfileRatingRequest(target, submission);
@@ -1793,11 +1809,16 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         this.profileRatingSaving.set(false);
         this.closeProfileRatingDialog();
         this.toasts.success(this.homeCopy.ratingSaved);
-        this.applyProfileRatingToTopFive(contentId, submission.score, this.profileRatingVersionFromResult(result));
+        if (contentId) this.applyProfileRatingToTopFive(contentId, submission.score, this.profileRatingVersionFromResult(result));
         this.loadSectionData(true);
       },
       error: (error: unknown) => {
         this.profileRatingSaving.set(false);
+        if (error instanceof HttpErrorResponse && error.status === 409
+          && (target.type === 'SERIES' || target.type === 'SEASON')) {
+          this.toasts.error(this.copy.ratingConflict);
+          return;
+        }
         this.handleProfileActionError(error);
       },
     });
@@ -1877,21 +1898,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   private createProfileRatingRequest(target: ProfileRatingDialogTarget, submission: RatingDialogSubmission): Observable<unknown> | null {
     const contentId = target.contentId;
-    if (!contentId) return null;
     const state = target.viewerState;
     const score = submission.score;
     const comment = submission.comment || null;
-    if (target.reviewId) {
-      const calls: Observable<unknown>[] = [
-        comment
-          ? this.contentApi.updateContentReview(target.reviewId, comment)
-          : this.contentApi.deleteContentReview(target.reviewId),
-      ];
-      if (score !== null && score > 0 && score !== state.myRating) {
-        calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
-      }
-      return forkJoin(calls);
-    }
     if (target.type === 'MOVIE') {
       const request = {
         score,
@@ -1901,11 +1910,25 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         watchedInTheater: submission.watchedInTheater,
         watchedWith: submission.watchedWith,
       };
-      return target.diaryEntryId || state.latestDiaryEntryId
-        ? this.contentApi.updateDiaryEntry(target.diaryEntryId || state.latestDiaryEntryId!, request)
+      const diaryEntryId = target.diaryEntryId || state.latestDiaryEntryId;
+      return diaryEntryId
+        ? this.contentApi.updateDiaryEntry(diaryEntryId, request)
         : target.tmdbId
           ? this.contentApi.createDiaryEntry({ content: { type: 'MOVIE', tmdbId: target.tmdbId }, ...request, watchedDate: submission.watchedDate || this.localToday(), isRewatch: submission.isRewatch ?? false })
           : null;
+    }
+    if (target.reviewId) {
+      if (!contentId && score !== null && score > 0 && score !== state.myRating) return null;
+      const calls: Observable<unknown>[] = [
+        comment
+          ? this.contentApi.updateContentReview(target.reviewId, comment)
+          : this.contentApi.deleteContentReview(target.reviewId),
+      ];
+      if (score !== null && score > 0 && score !== state.myRating) {
+        if (!contentId) return null;
+        calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+      }
+      return forkJoin(calls);
     }
     if (target.type === 'EPISODE') {
       const request = { score, comment, watchedDate: submission.watchedDate, watchedWith: submission.watchedWith };
@@ -1915,6 +1938,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           ? this.contentApi.createSeriesDiaryEntry({ content: { type: 'EPISODE', seriesTmdbId: target.seriesTmdbId, seasonNumber: target.seasonNumber, episodeNumber: target.episodeNumber }, ...request, watchedDate: submission.watchedDate || this.localToday() })
           : null;
     }
+    if (!contentId) return null;
     const calls: Observable<unknown>[] = [];
     if (target.type === 'SERIES') {
       const reviewId = state.reviewIds?.[0];
@@ -2681,7 +2705,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         viewerHasWatched: this.isOwnProfile()
           ? entry.hasWatched
           : this.profileViewerWatched(entry.card?.viewerState?.watchStatus, null),
-        viewerRating: this.profileViewerRating(entry.card?.viewerState?.myRating, entry.score),
+        viewerRating: entry.score ?? this.profileViewerRating(entry.card?.viewerState?.myRating, null),
         viewerReview: null,
         contentType: entry.type,
       };

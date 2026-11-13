@@ -245,6 +245,11 @@ export class RatingDialogComponent {
       || this.comment().trim().length > 0;
   }
 
+  protected submitFromForm(event: SubmitEvent): void {
+    event.preventDefault();
+    this.submit();
+  }
+
   protected submit(): void {
     if (this.saving() || this.loading() || this.loadError() || !this.canSave()) return;
     const submission: RatingDialogSubmission = {
