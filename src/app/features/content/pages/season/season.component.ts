@@ -221,7 +221,7 @@ export class SeasonComponent implements OnDestroy {
   }
 
   protected reload(): void {
-    this.loadSeason(this.tmdbId(), this.seasonNumber());
+    this.loadSeason(this.tmdbId(), this.seasonNumber(), true);
   }
 
   protected imageUrl(path: string | null | undefined, size: TmdbImageSize = 'w500'): string | null {
@@ -1135,43 +1135,49 @@ export class SeasonComponent implements OnDestroy {
     this.toasts[type](message);
   }
 
-  private loadSeason(tmdbId: string, seasonNumber: number): void {
+  private loadSeason(tmdbId: string, seasonNumber: number, preserveExisting = false): void {
     if (this.ratingPromptSeasonAfterLoad?.seriesTmdbId !== tmdbId) {
       this.ratingPromptSeasonAfterLoad = null;
     }
     this.request?.unsubscribe();
     this.requests.unsubscribe();
     this.requests = new Subscription();
-    this.page.set(null);
-    this.seasons.set([]);
-    this.status.set('loading');
+    const keepCurrentPage = preserveExisting && this.page() !== null;
+    if (!keepCurrentPage) {
+      this.page.set(null);
+      this.seasons.set([]);
+      this.status.set('loading');
+      this.contentId.set('');
+      this.latestOwnSeasonReview.set(null);
+      this.reviews.set([]);
+      this.comments.set([]);
+      this.reviewPage.set(null);
+      this.commentPage.set(null);
+      this.reviewStatus.set('loading');
+      this.commentStatus.set('loading');
+      this.userLists.set([]);
+      this.userListsPage.set(null);
+      this.userListsStatus.set('loading');
+      this.listsOpen.set(false);
+      this.detailsExpanded.set(false);
+    }
     this.pageError.set('');
     this.tmdbId.set(tmdbId);
     this.seasonNumber.set(seasonNumber);
     this.activeSeasonMenu.set(null);
     this.bulkWatchSeason.set(null);
-    this.contentId.set('');
-    this.latestOwnSeasonReview.set(null);
     this.actionPending.set(false);
     this.ratingReviewLoading.set(false);
-    this.reviews.set([]);
-    this.comments.set([]);
-    this.reviewPage.set(null);
-    this.commentPage.set(null);
-    this.reviewStatus.set('loading');
-    this.commentStatus.set('loading');
-    this.userLists.set([]);
-    this.userListsPage.set(null);
-    this.userListsStatus.set('loading');
-    this.listsOpen.set(false);
     this.activeEpisodeMenu.set(null);
-    this.detailsExpanded.set(false);
     if (!tmdbId || !Number.isInteger(seasonNumber) || seasonNumber < 1) {
       this.pageError.set('Esta temporada não foi encontrada.');
       this.status.set('error');
       return;
     }
-    this.request = this.api.createSeasonReference(tmdbId, seasonNumber).pipe(
+    const reference$ = keepCurrentPage && this.contentId()
+      ? of({ id: this.contentId() })
+      : this.api.createSeasonReference(tmdbId, seasonNumber);
+    this.request = reference$.pipe(
       switchMap((reference) => {
         this.contentId.set(reference.id);
         return forkJoin({
@@ -1181,6 +1187,10 @@ export class SeasonComponent implements OnDestroy {
     ).subscribe({
       next: ({ page }) => {
         if (page.details.type !== 'SEASON') {
+          if (keepCurrentPage) {
+            this.showToast('Esta temporada não foi encontrada.', 'warning');
+            return;
+          }
           this.pageError.set('Esta temporada não foi encontrada.');
           this.status.set('error');
           return;
@@ -1219,7 +1229,12 @@ export class SeasonComponent implements OnDestroy {
         }
       },
       error: (error: unknown) => {
-        if (!this.handleSessionError(error)) this.pageError.set(this.errorMessage(error));
+        if (this.handleSessionError(error)) return;
+        if (keepCurrentPage) {
+          this.showToast(this.errorMessage(error), 'warning');
+          return;
+        }
+        this.pageError.set(this.errorMessage(error));
         this.status.set('error');
       },
     });

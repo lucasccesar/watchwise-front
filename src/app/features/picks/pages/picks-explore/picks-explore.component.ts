@@ -121,7 +121,25 @@ export class PicksExploreComponent {
     if (this.busyLikeIds().has(template.id)) return;
     this.busyLikeIds.update((current) => new Set(current).add(template.id));
     const request = template.isLikedByViewer ? this.api.unlikeTemplate(template.id) : this.api.likeTemplate(template.id);
-    request.subscribe({ next: () => { this.busyLikeIds.update((current) => { const next = new Set(current); next.delete(template.id); return next; }); this.load(); }, error: () => this.busyLikeIds.update((current) => { const next = new Set(current); next.delete(template.id); return next; }) });
+    request.subscribe({
+      next: () => {
+        const liked = !template.isLikedByViewer;
+        const updatePage = (page: PicksTemplatePage | null): PicksTemplatePage | null => page ? {
+          ...page,
+          content: page.content.map((item) => item.id === template.id ? {
+            ...item,
+            isLikedByViewer: liked,
+            likesCount: Math.max(0, (item.likesCount ?? 0) + (liked ? 1 : -1)),
+          } : item),
+        } : page;
+        this.popular.update(updatePage);
+        this.mostPicked.update(updatePage);
+        this.recent.update(updatePage);
+        this.allTemplates.update(updatePage);
+        this.busyLikeIds.update((current) => { const next = new Set(current); next.delete(template.id); return next; });
+      },
+      error: () => this.busyLikeIds.update((current) => { const next = new Set(current); next.delete(template.id); return next; }),
+    });
   }
 
   protected creatorName(template: PicksTemplatePreview): string { return template.creator?.name || template.creator?.username || this.copy.unknownCreator; }

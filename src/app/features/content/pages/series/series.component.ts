@@ -234,24 +234,27 @@ export class SeriesComponent implements OnInit, OnDestroy {
     if (this.stylesheet) this.renderer.removeChild(this.document.head, this.stylesheet);
   }
 
-  protected loadSeries(tmdbId: string, knownContentId = ''): void {
+  protected loadSeries(tmdbId: string, knownContentId = '', preserveExisting = false): void {
     this.requests.unsubscribe();
     this.requests = new Subscription();
-    this.page.set(null);
-    this.progressRecord.set(null);
-    this.pageStatus.set('loading');
+    const keepCurrentPage = preserveExisting && this.page() !== null;
+    if (!keepCurrentPage) {
+      this.page.set(null);
+      this.progressRecord.set(null);
+      this.pageStatus.set('loading');
+      this.contentId.set('');
+      this.reviews.set([]);
+      this.comments.set([]);
+      this.reviewPage.set(null);
+      this.commentPage.set(null);
+      this.reviewStatus.set('loading');
+      this.commentStatus.set('loading');
+      this.listsExpanded.set(false);
+      this.userLists.set([]);
+      this.userListsPage.set(null);
+    }
     this.pageError.set('');
-    this.contentId.set('');
     this.tmdbId.set(tmdbId);
-    this.reviews.set([]);
-    this.comments.set([]);
-    this.reviewPage.set(null);
-    this.commentPage.set(null);
-    this.reviewStatus.set('loading');
-    this.commentStatus.set('loading');
-    this.listsExpanded.set(false);
-    this.userLists.set([]);
-    this.userListsPage.set(null);
 
     if (!tmdbId) {
       this.pageError.set('Esta série não foi encontrada.');
@@ -269,6 +272,10 @@ export class SeriesComponent implements OnInit, OnDestroy {
     })).subscribe({
       next: ({ page, progress }) => {
         if (page.details.type !== 'SERIES') {
+          if (keepCurrentPage) {
+            this.showToast('Esta série não foi encontrada.', 'warning');
+            return;
+          }
           this.pageError.set('Esta série não foi encontrada.');
           this.pageStatus.set('error');
           return;
@@ -297,6 +304,10 @@ export class SeriesComponent implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         if (this.handleSessionError(error)) return;
+        if (keepCurrentPage) {
+          this.showToast(this.errorMessage(error), 'warning');
+          return;
+        }
         this.pageError.set(this.errorMessage(error));
         this.pageStatus.set('error');
       },
@@ -304,7 +315,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected reload(): void {
-    this.loadSeries(this.tmdbId(), this.contentId());
+    this.loadSeries(this.tmdbId(), this.contentId(), true);
   }
 
   private refreshSeriesAfterDiaryChange(): void {

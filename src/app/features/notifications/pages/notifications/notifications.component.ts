@@ -101,7 +101,7 @@ export class NotificationsComponent {
     this.api.markAsRead(item.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.load(),
+        next: () => this.load(true),
         error: () => this.toasts.error(this.copy.actionError),
       });
   }
@@ -117,7 +117,7 @@ export class NotificationsComponent {
       .subscribe({
         next: () => {
           this.markingAllRead.set(false);
-          this.load();
+          this.load(true);
         },
         error: () => {
           this.markingAllRead.set(false);
@@ -139,7 +139,7 @@ export class NotificationsComponent {
       next: () => {
         this.followDecisions.update((current) => new Map(current).set(item.id, decision));
         this.toasts.success(decision === 'accepted' ? this.copy.acceptedMessage : this.copy.declinedMessage);
-        this.load();
+        this.load(true);
       },
       error: () => this.toasts.error(this.copy.actionError),
     });
@@ -291,16 +291,23 @@ export class NotificationsComponent {
     return null;
   }
 
-  private load(): void {
-    this.page.set(1);
-    this.status.set('loading');
-    this.notifications.set([]);
-    this.loadError.set('');
-    this.api.getView({ page: 1, size: 20, ...this.readFilter() })
+  private load(preserveExisting = false): void {
+    const keepCurrentView = preserveExisting && this.status() === 'ready';
+    if (!keepCurrentView) {
+      this.page.set(1);
+      this.status.set('loading');
+      this.notifications.set([]);
+      this.loadError.set('');
+    }
+    this.api.getView({ page: keepCurrentView ? this.page() : 1, size: 20, ...this.readFilter() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => this.applyPage(result, true),
         error: () => {
+          if (keepCurrentView) {
+            this.toasts.error(this.copy.loadError);
+            return;
+          }
           this.status.set('error');
           this.loadError.set(this.copy.loadError);
           this.loadingMore.set(false);

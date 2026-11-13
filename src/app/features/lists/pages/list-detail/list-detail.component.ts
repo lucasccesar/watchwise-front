@@ -151,10 +151,13 @@ export class ListDetailComponent {
     });
   }
 
-  protected load(): void {
+  protected load(preserveExisting = false): void {
     this.request?.unsubscribe();
-    this.status.set('loading');
-    this.errorMessage.set('');
+    const keepCurrentView = preserveExisting && this.status() === 'ready' && this.detail() !== null;
+    if (!keepCurrentView) {
+      this.status.set('loading');
+      this.errorMessage.set('');
+    }
     const params = {
       page: this.page(),
       size: 30,
@@ -178,6 +181,10 @@ export class ListDetailComponent {
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        if (keepCurrentView) {
+          this.toasts.error(this.copy.actionError);
+          return;
+        }
         this.status.set('error');
         this.errorMessage.set(error instanceof HttpErrorResponse && error.status === 0
           ? this.homeCopy.actionConnectionError
@@ -243,11 +250,11 @@ export class ListDetailComponent {
     ).subscribe({
       next: () => {
         this.finishReorderMode();
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.toasts.error(this.copy.actionError);
-        this.load();
+        this.load(true);
       },
     });
   }
@@ -558,7 +565,7 @@ export class ListDetailComponent {
       this.watchDialogSaving.set(false);
       this.watchDialogItem.set(null);
       this.updateItemViewerState(item.id, { watchStatus: 'WATCHED', lastWatchedDate: submission.watchedDate });
-      this.load();
+      this.load(true);
       const opener = this.watchDialogOpener();
       this.watchDialogOpener.set(null);
       if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
@@ -585,7 +592,7 @@ export class ListDetailComponent {
       this.watchDialogSaving.set(false);
       this.watchDialogItem.set(null);
       this.updateItemViewerState(item.id, { watchStatus: 'WATCHED', lastWatchedDate: watchedDate });
-      this.load();
+      this.load(true);
       const opener = this.watchDialogOpener();
       this.watchDialogOpener.set(null);
       if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
@@ -875,7 +882,7 @@ export class ListDetailComponent {
     if (!item || this.deletingItemId()) return;
     this.deletingItemId.set(item.id);
     this.api.removeItem(this.listId(), item.id).subscribe({
-      next: () => { this.deletingItemId.set(null); this.deleteItem.set(null); this.load(); },
+      next: () => { this.deletingItemId.set(null); this.deleteItem.set(null); this.load(true); },
       error: () => { this.deletingItemId.set(null); this.toasts.error(this.copy.deleteError); },
     });
   }

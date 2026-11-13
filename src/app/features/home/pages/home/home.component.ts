@@ -189,18 +189,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ratingDetailsRequest?.unsubscribe();
   }
 
-  protected loadSummary(userId = this.session.user()?.id): void {
+  protected loadSummary(userId = this.session.user()?.id, preserveExisting = false): void {
     if (!userId) {
       this.session.clear();
       void this.router.navigateByUrl('/login');
       return;
     }
 
-    this.status.set('loading');
-    this.errorMessage.set(null);
-    this.socialActivityDetailsLoaded.set(false);
-    this.socialDetailsRequestSequence += 1;
-    this.shellState.clearHomeState();
+    if (!preserveExisting) {
+      this.status.set('loading');
+      this.errorMessage.set(null);
+      this.socialActivityDetailsLoaded.set(false);
+      this.socialDetailsRequestSequence += 1;
+      this.shellState.clearHomeState();
+    }
     this.api.getHomeSummary(userId).subscribe({
       next: (summary) => {
         this.summary.set(summary);
@@ -211,7 +213,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         );
         this.status.set('ready');
       },
-      error: (error: unknown) => this.handleLoadError(error),
+      error: (error: unknown) => {
+        if (preserveExisting && this.summary()) {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            this.session.clear();
+            void this.router.navigateByUrl('/login');
+          } else {
+            this.toasts.error(this.actionErrorMessage(error));
+          }
+          return;
+        }
+        this.handleLoadError(error);
+      },
     });
   }
 
@@ -539,7 +552,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.contentApi.markSeriesDropped(seriesTmdbId).subscribe({
       next: () => {
         this.isSaving.set(false);
-        this.loadSummary();
+        this.loadSummary(undefined, true);
         this.toasts.success(this.copy.seriesDropped);
       },
       error: (error: unknown) => {
@@ -651,7 +664,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       next: () => {
         this.isSaving.set(false);
         this.closeDialog();
-        this.loadSummary();
+        this.loadSummary(undefined, true);
         this.toasts.success(movieMessages['pt-BR'].removed);
       },
       error: (error: unknown) => {
@@ -830,7 +843,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       next: () => {
         this.isSaving.set(false);
         this.closeDialog();
-        this.loadSummary();
+        this.loadSummary(undefined, true);
       },
       error: (error: unknown) => {
         this.isSaving.set(false);

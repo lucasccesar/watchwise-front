@@ -223,7 +223,7 @@ export class EpisodeComponent implements OnDestroy {
   }
 
   protected reload(): void {
-    this.load(this.tmdbId(), this.seasonNumber(), this.episodeNumber());
+    this.load(this.tmdbId(), this.seasonNumber(), this.episodeNumber(), this.page()?.details.contentId ?? null, true);
   }
 
   protected openShareReview(): void {
@@ -703,31 +703,42 @@ export class EpisodeComponent implements OnDestroy {
     this.toasts.success(message);
   }
 
-  private load(tmdbId: string, seasonNumber: number, episodeNumber: number, contentId: string | null = null): void {
+  private load(
+    tmdbId: string,
+    seasonNumber: number,
+    episodeNumber: number,
+    contentId: string | null = null,
+    preserveExisting = false,
+  ): void {
     this.request?.unsubscribe();
     this.communityRequests.unsubscribe();
     this.communityRequests = new Subscription();
-    this.reviewPage.set(null);
-    this.commentPage.set(null);
-    this.reviewsLoading.set(false);
-    this.commentsLoading.set(false);
-    this.reviewsError.set('');
-    this.commentsError.set('');
+    const keepCurrentPage = preserveExisting && this.page() !== null;
+    if (!keepCurrentPage) {
+      this.reviewPage.set(null);
+      this.commentPage.set(null);
+      this.reviewsLoading.set(false);
+      this.commentsLoading.set(false);
+      this.reviewsError.set('');
+      this.commentsError.set('');
+      this.status.set('loading');
+      this.page.set(null);
+      this.detailsExpanded.set(false);
+      this.reviews.set([]);
+      this.comments.set([]);
+      this.userLists.set([]);
+      this.userListsPage.set(null);
+      this.userListsStatus.set('loading');
+      this.userListsError.set('');
+    }
     this.tmdbId.set(tmdbId);
     this.seasonNumber.set(seasonNumber);
     this.episodeNumber.set(episodeNumber);
-    this.status.set('loading');
-    this.page.set(null);
-    this.detailsExpanded.set(false);
-    this.reviews.set([]);
-    this.comments.set([]);
-    this.userLists.set([]);
-    this.userListsPage.set(null);
-    this.userListsStatus.set('loading');
-    this.userListsError.set('');
-    this.dialog.set(null);
-    this.selectedVideoKey.set(null);
-    this.videoPlaying.set(false);
+    if (!keepCurrentPage) {
+      this.dialog.set(null);
+      this.selectedVideoKey.set(null);
+      this.videoPlaying.set(false);
+    }
     if (!tmdbId || !Number.isInteger(seasonNumber) || !Number.isInteger(episodeNumber) || seasonNumber < 0 || episodeNumber < 1) {
       this.status.set('error');
       this.actionError.set('Este episódio não foi encontrado.');
@@ -745,6 +756,10 @@ export class EpisodeComponent implements OnDestroy {
     ).subscribe({
       next: ({ episode, reviews, comments }) => {
         if (episode.details.type !== 'EPISODE') {
+          if (keepCurrentPage) {
+            this.showToast('Este episódio não foi encontrado.');
+            return;
+          }
           this.status.set('error');
           this.actionError.set('Este episódio não foi encontrado.');
           return;
@@ -763,7 +778,14 @@ export class EpisodeComponent implements OnDestroy {
           this.openProfileActionAfterLoad();
         }
       },
-      error: (error: unknown) => { this.status.set('error'); this.actionError.set(this.errorText(error)); },
+      error: (error: unknown) => {
+        if (keepCurrentPage) {
+          this.showToast(this.errorText(error));
+          return;
+        }
+        this.status.set('error');
+        this.actionError.set(this.errorText(error));
+      },
     });
   }
 

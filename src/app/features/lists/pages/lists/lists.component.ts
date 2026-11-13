@@ -84,17 +84,20 @@ export class ListsComponent {
     this.heroBackdropLoading.set(false);
   }
 
-  protected load(): void {
+  protected load(preserveExisting = false): void {
     if (!this.session.user()) {
       void this.router.navigateByUrl('/login');
       return;
     }
     this.request?.unsubscribe();
-    this.status.set('loading');
-    this.heroBackdropPath.set(undefined);
-    this.heroBackdropLoading.set(true);
-    this.heroBackdropFailed.set(false);
-    this.error.set('');
+    const keepCurrentView = preserveExisting && this.status() === 'ready' && this.pageData() !== null;
+    if (!keepCurrentView) {
+      this.status.set('loading');
+      this.heroBackdropPath.set(undefined);
+      this.heroBackdropLoading.set(true);
+      this.heroBackdropFailed.set(false);
+      this.error.set('');
+    }
     const options = { page: this.page(), itemType: this.itemType() ?? undefined };
     const selectedSort = this.sort();
     const omitDefaultSort = selectedSort === 'updatedAt' && this.isCommunity;
@@ -109,13 +112,19 @@ export class ListsComponent {
     this.request = request.subscribe({
       next: (page) => {
         const backdropPath = page.backdropPath ?? null;
-        this.heroBackdropPath.set(backdropPath);
-        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
-        this.heroBackdropFailed.set(false);
+        if (!keepCurrentView || backdropPath !== this.heroBackdropPath()) {
+          this.heroBackdropPath.set(backdropPath);
+          this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));
+          this.heroBackdropFailed.set(false);
+        }
         this.pageData.set(page);
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        if (keepCurrentView) {
+          this.toasts.error(this.homeCopy.genericError);
+          return;
+        }
         this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.homeCopy.actionConnectionError : this.homeCopy.genericError);
@@ -202,7 +211,7 @@ export class ListsComponent {
         this.deleteListTarget.set(null);
         this.toasts.success(this.copy.deleteListSuccess);
         if (this.page() > 1 && this.pageData()?.content.length === 1) this.page.update((page) => page - 1);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.deletingList.set(false);
@@ -229,7 +238,7 @@ export class ListsComponent {
           if (refreshForMembership && this.page() > 1 && this.pageData()?.content.length === 1) {
             this.page.update((page) => page - 1);
           }
-          this.load();
+          this.load(true);
           return;
         }
 
@@ -325,7 +334,7 @@ export class ListsComponent {
         this.sortDirection.set('asc');
         this.page.set(1);
         this.toasts.success(this.copy.orderSaved);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.toasts.error(this.copy.reorderError);

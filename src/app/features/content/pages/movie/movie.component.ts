@@ -241,23 +241,26 @@ export class MovieComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected loadMovie(tmdbId: string, knownContentId = ''): void {
+  protected loadMovie(tmdbId: string, knownContentId = '', preserveExisting = false): void {
     this.requestSubscriptions.unsubscribe();
     this.requestSubscriptions = new Subscription();
-    this.page.set(null);
-    this.pageStatus.set('loading');
+    const keepCurrentPage = preserveExisting && this.page() !== null;
+    if (!keepCurrentPage) {
+      this.page.set(null);
+      this.pageStatus.set('loading');
+      this.contentId.set('');
+      this.listsExpanded.set(false);
+      this.userListsPage.set(null);
+      this.userLists.set([]);
+      this.reviews.set([]);
+      this.comments.set([]);
+      this.reviewPage.set(null);
+      this.commentPage.set(null);
+      this.reviewStatus.set('loading');
+      this.commentStatus.set('loading');
+    }
     this.pageError.set('');
-    this.contentId.set('');
     this.tmdbId.set(tmdbId);
-    this.listsExpanded.set(false);
-    this.userListsPage.set(null);
-    this.userLists.set([]);
-    this.reviews.set([]);
-    this.comments.set([]);
-    this.reviewPage.set(null);
-    this.commentPage.set(null);
-    this.reviewStatus.set('loading');
-    this.commentStatus.set('loading');
 
     if (!tmdbId) {
       this.pageStatus.set('error');
@@ -280,6 +283,10 @@ export class MovieComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (page) => {
             if (page.details.type !== 'MOVIE') {
+              if (keepCurrentPage) {
+                this.showToast(this.copy.notFound, 'warning');
+                return;
+              }
               this.pageStatus.set('error');
               this.pageError.set(this.copy.notFound);
               return;
@@ -306,6 +313,10 @@ export class MovieComponent implements OnInit, OnDestroy {
           },
           error: (error: unknown) => {
             if (this.handleSessionError(error)) return;
+            if (keepCurrentPage) {
+              this.showToast(this.errorMessage(error), 'warning');
+              return;
+            }
             this.pageError.set(this.errorMessage(error));
             this.pageStatus.set('error');
           },
@@ -316,9 +327,9 @@ export class MovieComponent implements OnInit, OnDestroy {
   protected reload(): void {
     const contentId = this.contentId();
     if (contentId) {
-      this.loadMovie(this.tmdbId(), contentId);
+      this.loadMovie(this.tmdbId(), contentId, true);
     } else {
-      this.loadMovie(this.tmdbId());
+      this.loadMovie(this.tmdbId(), '', true);
     }
   }
 

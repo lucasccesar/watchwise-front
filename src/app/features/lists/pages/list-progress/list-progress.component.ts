@@ -67,17 +67,27 @@ export class ListProgressComponent {
     this.load();
   }
 
-  protected load(): void {
+  protected load(preserveExisting = false): void {
     this.request?.unsubscribe();
-    this.status.set('loading');
-    this.errorMessage.set('');
+    const keepCurrentView = preserveExisting && this.status() === 'ready' && this.data() !== null;
+    const expandedItems = this.expanded();
+    if (!keepCurrentView) {
+      this.status.set('loading');
+      this.errorMessage.set('');
+    }
     this.request = this.api.getProgress(this.listId).subscribe({
       next: (data) => {
         this.data.set(data);
-        this.expanded.set(new Set(this.seriesItems()[0]?.id ? [this.seriesItems()[0].id] : []));
+        const validIds = new Set(this.seriesItems().map((item) => item.id));
+        const retained = keepCurrentView ? [...expandedItems].filter((id) => validIds.has(id)) : [];
+        this.expanded.set(new Set(retained.length ? retained : this.seriesItems()[0]?.id ? [this.seriesItems()[0].id] : []));
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        if (keepCurrentView) {
+          this.toasts.error(this.copy.actionError);
+          return;
+        }
         this.status.set('error');
         this.errorMessage.set(error instanceof HttpErrorResponse && error.status === 0
           ? this.homeCopy.actionConnectionError
@@ -163,7 +173,7 @@ export class ListProgressComponent {
       },
       watchedDate: new Date().toISOString().slice(0, 10),
     }).subscribe({
-      next: () => { this.savingSeriesId.set(null); this.load(); },
+      next: () => { this.savingSeriesId.set(null); this.load(true); },
       error: () => { this.savingSeriesId.set(null); this.toasts.error(this.copy.actionError); },
     });
   }

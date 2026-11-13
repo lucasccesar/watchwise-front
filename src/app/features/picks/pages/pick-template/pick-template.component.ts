@@ -87,7 +87,17 @@ export class PickTemplateComponent {
     const detail = this.detail(); if (!detail || this.likesBusy()) return;
     this.likesBusy.set(true);
     const request = detail.isLikedByViewer ? this.api.unlikeTemplate(detail.id) : this.api.likeTemplate(detail.id);
-    request.subscribe({ next: () => { this.likesBusy.set(false); this.load(); }, error: () => this.likesBusy.set(false) });
+    request.subscribe({
+      next: () => {
+        this.detail.update((current) => current ? {
+          ...current,
+          isLikedByViewer: !current.isLikedByViewer,
+          likesCount: Math.max(0, (current.likesCount ?? 0) + (current.isLikedByViewer ? -1 : 1)),
+        } : current);
+        this.likesBusy.set(false);
+      },
+      error: () => this.likesBusy.set(false),
+    });
   }
   protected togglePickLike(pick: PicksTemplatePickView): void {
     if (this.busyPickIds().has(pick.id)) return;
@@ -96,7 +106,11 @@ export class PickTemplateComponent {
     request.subscribe({
       next: () => {
         this.busyPickIds.update((current) => { const next = new Set(current); next.delete(pick.id); return next; });
-        this.api.getTemplatePicks(this.templateId, { page: 1, size: 10, sort: this.communitySort() }).subscribe({ next: (page) => this.communityPicks.set(page.content) });
+        this.communityPicks.update((items) => items.map((item) => item.id === pick.id ? {
+          ...item,
+          isLikedByViewer: !item.isLikedByViewer,
+          likesCount: Math.max(0, (item.likesCount ?? 0) + (item.isLikedByViewer ? -1 : 1)),
+        } : item));
       },
       error: () => this.busyPickIds.update((current) => { const next = new Set(current); next.delete(pick.id); return next; }),
     });

@@ -69,15 +69,19 @@ export class ProgressComponent {
     this.load();
   }
 
-  protected load(): void {
+  protected load(preserveExisting = false): void {
     const user = this.session.user();
     if (!user) {
       void this.router.navigateByUrl('/login');
       return;
     }
     this.request?.unsubscribe();
-    this.status.set('loading');
-    this.errorMessage.set('');
+    const keepCurrentView = preserveExisting && this.status() === 'ready' && this.summary() !== null;
+    const expandedSeries = this.expandedIds();
+    if (!keepCurrentView) {
+      this.status.set('loading');
+      this.errorMessage.set('');
+    }
     this.request = this.api.getSeriesInProgress(user.id, {
       page: this.currentPage(),
       size: this.pageSize,
@@ -86,11 +90,17 @@ export class ProgressComponent {
     }).subscribe({
       next: (summary) => {
         this.summary.set(summary);
+        const currentIds = new Set(summary.content.map((series) => series.seriesTmdbId));
+        const retainedIds = keepCurrentView ? [...expandedSeries].filter((id) => currentIds.has(id)) : [];
         const firstId = summary.content[0]?.seriesTmdbId;
-        this.expandedIds.set(firstId ? new Set([firstId]) : new Set());
+        this.expandedIds.set(new Set(retainedIds.length ? retainedIds : firstId ? [firstId] : []));
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        if (keepCurrentView) {
+          this.toasts.error(this.homeCopy.genericError);
+          return;
+        }
         this.status.set('error');
         this.errorMessage.set(error instanceof HttpErrorResponse && error.status === 0
           ? this.homeCopy.actionConnectionError
@@ -217,7 +227,7 @@ export class ProgressComponent {
     }).subscribe({
       next: () => {
         this.savingSeriesId.set(null);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.savingSeriesId.set(null);

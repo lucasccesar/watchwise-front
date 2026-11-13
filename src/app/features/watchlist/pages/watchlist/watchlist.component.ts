@@ -174,7 +174,7 @@ export class WatchlistComponent implements OnDestroy {
     this.cardActionRequests.unsubscribe();
   }
 
-  protected load(): void {
+  protected load(preserveExisting = false): void {
     const user = this.session.user();
     if (!user) {
       void this.router.navigateByUrl('/login');
@@ -187,12 +187,15 @@ export class WatchlistComponent implements OnDestroy {
         error: () => { this.genreUserId = ''; },
       });
     }
+    const keepCurrentView = preserveExisting && this.status() === 'ready' && this.view() !== null;
     this.request?.unsubscribe();
-    this.status.set('loading');
-    this.heroBackdropPath.set(undefined);
-    this.heroBackdropLoading.set(true);
-    this.heroBackdropFailed.set(false);
-    this.error.set('');
+    if (!keepCurrentView) {
+      this.status.set('loading');
+      this.heroBackdropPath.set(undefined);
+      this.heroBackdropLoading.set(true);
+      this.heroBackdropFailed.set(false);
+      this.error.set('');
+    }
     this.request = this.api.getView(user.id, {
       type: this.type(),
       genre: this.genre(),
@@ -211,6 +214,10 @@ export class WatchlistComponent implements OnDestroy {
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        if (keepCurrentView) {
+          this.toasts.error(this.homeCopy.genericError);
+          return;
+        }
         this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.error.set(error instanceof HttpErrorResponse && error.status === 0
@@ -319,7 +326,7 @@ export class WatchlistComponent implements OnDestroy {
       ? this.contentApi.removeFromWatchlist(item.id)
       : this.contentApi.removeSeriesFromWatchlist(item.id);
     remove.subscribe({
-      next: () => { this.busyId.set(null); this.toasts.success(this.trendingCopy.watchlistRemoved); this.load(); },
+      next: () => { this.busyId.set(null); this.toasts.success(this.trendingCopy.watchlistRemoved); this.load(true); },
       error: () => { this.busyId.set(null); this.toasts.error(this.copy.removeError); },
     });
   }

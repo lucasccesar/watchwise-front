@@ -55,7 +55,17 @@ export interface ProfileContentCard {
   numberOfEpisodes?: number | null;
   genres?: string[] | null;
   stats?: { averageScore: number | null } | null;
-  viewerState?: { watchStatus?: string | null; myRating?: number | null } | null;
+  viewerState?: {
+    watchStatus?: string | null;
+    myRating?: number | null;
+    currentRatingVersion?: number | null;
+    latestDiaryEntryId?: string | null;
+    lastWatchedDate?: string | null;
+    lastWatchNumber?: number | null;
+    watchedInTheater?: boolean | null;
+    playsCount?: number | null;
+    reviewIds?: string[] | null;
+  } | null;
 }
 
 export type ProfileHighlightContentCard = Omit<ProfileContentCard, 'backdropPath'> & {

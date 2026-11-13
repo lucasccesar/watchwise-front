@@ -283,20 +283,23 @@ export class DiaryComponent implements OnDestroy {
     this.heroBackdropLoading.set(false);
   }
 
-  protected load(): void {
+  protected load(preserveExisting = false): void {
     const user = this.session.user();
     if (!user) {
       void this.router.navigateByUrl('/login');
       return;
     }
+    const keepCurrentView = preserveExisting && this.status() === 'ready';
     this.request?.unsubscribe();
     this.viewRequest?.unsubscribe();
     this.seriesGroupingBusy.set(false);
-    this.status.set('loading');
-    this.heroBackdropPath.set(undefined);
-    this.heroBackdropLoading.set(true);
-    this.heroBackdropFailed.set(false);
-    this.errorMessage.set('');
+    if (!keepCurrentView) {
+      this.status.set('loading');
+      this.heroBackdropPath.set(undefined);
+      this.heroBackdropLoading.set(true);
+      this.heroBackdropFailed.set(false);
+      this.errorMessage.set('');
+    }
     this.request = forkJoin({
       summary: this.api.getHomeSummary(user.id),
       diary: this.isReviewsPage
@@ -315,11 +318,18 @@ export class DiaryComponent implements OnDestroy {
         this.diaryViewItems.set(view);
         this.seriesGrouping.set(true);
         this.seriesGroupingError.set('');
-        this.page.set(1);
-        this.diaryEntries.set(diary.map((record) => this.toGridEntry(record)));
+        const entries = diary.map((record) => this.toGridEntry(record));
+        this.page.set(keepCurrentView
+          ? Math.min(this.page(), Math.max(1, Math.ceil(entries.length / this.currentPageSize())))
+          : 1);
+        this.diaryEntries.set(entries);
         this.status.set('ready');
       },
       error: (error: unknown) => {
+        if (keepCurrentView) {
+          this.toasts.error(this.homeCopy.genericError);
+          return;
+        }
         this.heroBackdropLoading.set(false);
         this.status.set('error');
         this.errorMessage.set(error instanceof HttpErrorResponse && error.status === 0
@@ -843,7 +853,7 @@ export class DiaryComponent implements OnDestroy {
         this.watchAgainSaving.set(false);
         this.closeWatchAgainDialog();
         this.toasts.success(this.copy.watchAgainSaved);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.watchAgainSaving.set(false);
@@ -892,7 +902,7 @@ export class DiaryComponent implements OnDestroy {
         this.watchAgainSaving.set(false);
         this.closeWatchAgainDialog();
         this.toasts.success(this.copy.watchAgainSaved);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.watchAgainSaving.set(false);
@@ -955,7 +965,7 @@ export class DiaryComponent implements OnDestroy {
         this.ratingDialogSaving.set(false);
         this.closeRatingDialog();
         this.toasts.success(this.copy.ratingSaved);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.ratingDialogSaving.set(false);
@@ -978,7 +988,7 @@ export class DiaryComponent implements OnDestroy {
         this.ratingDialogSaving.set(false);
         this.closeRatingDialog();
         this.toasts.success(this.copy.removeHistorySuccess);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.ratingDialogSaving.set(false);
@@ -1150,7 +1160,7 @@ export class DiaryComponent implements OnDestroy {
       next: () => {
         this.diaryActionPending.set(false);
         this.toasts.success(this.copy.removeHistorySuccess);
-        this.load();
+        this.load(true);
       },
       error: () => {
         this.diaryActionPending.set(false);
