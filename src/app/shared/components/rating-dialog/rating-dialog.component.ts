@@ -91,6 +91,7 @@ export class RatingDialogComponent {
   readonly loading = input(false);
   readonly loadError = input('');
   readonly canRemove = input(false);
+  readonly allowClear = input(true);
   readonly allowEmpty = input(false);
   readonly labels = input<Partial<RatingDialogLabels>>({});
   readonly returnFocusTarget = input<HTMLElement | null>(null);
@@ -178,7 +179,7 @@ export class RatingDialogComponent {
 
   protected setScore(score: number): void {
     const existingScore = this.initialValue().score ?? this.initialScore();
-    const canClear = this.type() !== 'MOVIE' || existingScore === null;
+    const canClear = this.allowClear() && (this.type() !== 'MOVIE' || existingScore === null);
     this.score.update((current) => canClear && current === score ? null : score);
   }
 

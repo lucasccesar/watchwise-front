@@ -384,7 +384,7 @@
     @if (ratingTarget()?.type === 'EPISODE' || ratingTarget()?.type === 'SEASON') {
       <label class="watch-review"><span>Sua resenha <span>(opcional)</span></span><textarea rows="5" placeholder="O que você achou?" [value]="ratingReview()" (input)="updateRatingReview($event)"></textarea></label>
     }
-    <footer class="watch-log-actions"><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="(!ratingScore() && !ratingReview().trim()) || ratingReviewLoading() || actionPending()" (click)="saveRating()" data-ww-button="primary">Salvar</button></footer>
+    <footer class="watch-log-actions"><button type="button" class="movie-button movie-button--secondary" (click)="closeDialog()" data-ww-button="secondary">Cancelar</button><button type="button" class="movie-button movie-button--primary" [disabled]="!canSaveRating() || ratingReviewLoading() || actionPending()" (click)="saveRating()" data-ww-button="primary">Salvar</button></footer>
   </section></app-dialog-backdrop>
 }
 @if (shareReviewOpen()) {

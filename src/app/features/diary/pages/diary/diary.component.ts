@@ -34,8 +34,9 @@ import { ConfirmationDialogService } from '../../../../shared/components/confirm
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
-import { RatingDialogComponent, RatingDialogSubmission, type RatingDialogCompanion, type RatingDialogContentType, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { RatingDialogComponent, RatingDialogSubmission, type RatingDialogCompanion, type RatingDialogContentType, type RatingDialogLabels, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
+import { PostWatchRatingFlowComponent, type PostWatchRatingSaved, type PostWatchRatingTarget } from '../../../../shared/components/post-watch-rating-flow/post-watch-rating-flow.component';
 
 type DiaryFilter = 'type' | 'series' | 'rating' | 'date' | 'sort' | null;
 
@@ -70,6 +71,8 @@ interface DiaryGridEntry extends HomeRecentlyWatched {
   companions: DiaryReviewCompanion[];
   watchedWithIds: string[];
   derivedCompletion?: boolean;
+  currentRatingVersion?: number | null;
+  ratingReviewId?: string | null;
   sourceEntries?: DiaryGridEntry[];
 }
 
@@ -106,7 +109,7 @@ type DiaryTimelineEntry = DiaryGridEntry | DiaryGroupedGridEntry;
 @Component({
   selector: 'app-diary',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent, ShareReviewDialogComponent, WatchLogDialogComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
+  imports: [RouterLink, ContentImageActionsComponent, ResponsiveBannerComponent, CheckIconComponent, ShareReviewDialogComponent, WatchLogDialogComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent, PostWatchRatingFlowComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diary.component.html',
   styleUrl: './diary.component.css',
@@ -198,6 +201,7 @@ export class DiaryComponent implements OnDestroy {
   protected readonly watchAgainTarget = signal<DiaryTimelineEntry | null>(null);
   protected readonly watchAgainOpener = signal<HTMLElement | null>(null);
   protected readonly watchAgainSaving = signal(false);
+  protected readonly postWatchRatingTarget = signal<PostWatchRatingTarget | null>(null);
   protected readonly ratingDialogEntry = signal<DiaryGridEntry | null>(null);
   protected readonly ratingDialogInitialValue = computed<Partial<RatingDialogValue>>(() => {
     const entry = this.ratingDialogEntry();
@@ -227,6 +231,8 @@ export class DiaryComponent implements OnDestroy {
   }
   protected readonly ratingDialogOpener = signal<HTMLElement | null>(null);
   protected readonly ratingDialogSaving = signal(false);
+  protected readonly ratingDialogLoading = signal(false);
+  protected readonly ratingDialogLoadError = signal('');
   protected readonly shareReviewModel = computed<ShareReviewDialogModel | null>(() => {
     const entry = this.shareReviewTarget();
     if (!entry) return null;
@@ -771,12 +777,20 @@ export class DiaryComponent implements OnDestroy {
 
   protected posterActionsFor(entry: DiaryTimelineEntry): readonly ContentImageAction[] {
     const records = this.actionRecords(entry);
-    const hasRating = records.some((record) => record.score !== null);
-    const hasWatched = records.some((record) => record.reviewSource === 'DIARY' || (record.watchNumber ?? 0) > 0);
+    const ratingRecords = records.filter((record) => !this.isSeriesOrSeason(record.content.type) || this.isCurrentRatingPass(record));
+    const canEditEntryRating = this.isGroupedEntry(entry) || !this.isSeriesOrSeason(entry.content.type)
+      || this.isCurrentRatingPass(entry);
+    const hasRating = this.isGroupedEntry(entry)
+      ? ratingRecords.some((record) => record.score !== null)
+      : canEditEntryRating && (entry.derivedCompletion ? entry.score !== null : records.some((record) => record.score !== null));
+    const hasWatched = this.isGroupedEntry(entry)
+      ? records.some((record) => record.reviewSource === 'DIARY' || (record.watchNumber ?? 0) > 0)
+      : entry.derivedCompletion ? (entry.watchNumber ?? 0) > 0
+        : records.some((record) => record.reviewSource === 'DIARY' || (record.watchNumber ?? 0) > 0);
     const actions: ContentImageAction[] = [];
     if (hasRating) {
       actions.push({ id: 'edit-rating', label: this.copy.editRatingAction, icon: 'star' });
-    } else if (hasWatched) {
+    } else if (hasWatched && (this.isGroupedEntry(entry) ? ratingRecords.length > 0 : canEditEntryRating)) {
       actions.push({ id: 'rate', label: this.homeCopy.rate, icon: 'star' });
     }
     if (hasWatched) {
@@ -790,7 +804,8 @@ export class DiaryComponent implements OnDestroy {
         id: 'remove-history',
         label: this.copy.removeHistoryAction,
         icon: 'trash',
-        disabled: this.isReviewsPage || records.length === 0 || records.some((record) => record.reviewSource !== 'DIARY'),
+        disabled: this.isReviewsPage || records.length === 0 || (!this.isGroupedEntry(entry) && !!entry.derivedCompletion)
+          || records.some((record) => record.reviewSource !== 'DIARY'),
       },
     );
     return actions;
@@ -818,15 +833,21 @@ export class DiaryComponent implements OnDestroy {
       return;
     }
     if (selection.action.id === 'rate' || selection.action.id === 'edit-rating') {
-      const ratingTarget = this.actionRecords(entry).find((record) => record.score !== null) ?? target;
+      const ratingTarget = !this.isGroupedEntry(entry) && entry.derivedCompletion
+        ? entry
+        : this.actionRecords(entry).find((record) => (!this.isSeriesOrSeason(record.content.type) || this.isCurrentRatingPass(record))
+          && record.score !== null)
+          ?? this.actionRecords(entry).find((record) => !this.isSeriesOrSeason(record.content.type) || this.isCurrentRatingPass(record))
+          ?? null;
       if (ratingTarget) this.openRatingDialog(ratingTarget, selection.event);
       return;
     }
     if (selection.action.id === 'share-review') {
-      if (!target) return;
+      const shareTarget = !this.isGroupedEntry(entry) && entry.derivedCompletion ? entry : target;
+      if (!shareTarget) return;
       const actionButton = selection.event.currentTarget as HTMLElement;
       this.shareReviewOpener.set(actionButton.closest('app-content-image-actions')?.querySelector<HTMLElement>('.content-menu-trigger') ?? null);
-      this.shareReviewTarget.set(target);
+      this.shareReviewTarget.set(shareTarget);
       return;
     }
     if (selection.action.id === 'remove-history') this.removeHistory(entry);
@@ -900,9 +921,12 @@ export class DiaryComponent implements OnDestroy {
     this.actionRequests.add(forkJoin(requests).subscribe({
       next: () => {
         this.watchAgainSaving.set(false);
+        const opener = this.watchAgainOpener();
         this.closeWatchAgainDialog();
         this.toasts.success(this.copy.watchAgainSaved);
         this.load(true);
+        const ratingTarget = this.postWatchRatingTargetFor(target, opener);
+        if (ratingTarget) this.postWatchRatingTarget.set(ratingTarget);
       },
       error: () => {
         this.watchAgainSaving.set(false);
@@ -913,6 +937,47 @@ export class DiaryComponent implements OnDestroy {
 
   protected watchAgainBulkTitle(entry: DiaryTimelineEntry): string {
     return `Registrar ${this.watchAgainTitle(entry)} novamente`;
+  }
+
+  private postWatchRatingTargetFor(entry: DiaryTimelineEntry, returnFocusTarget = this.watchAgainOpener()): PostWatchRatingTarget | null {
+    if (this.isGroupedEntry(entry)) {
+      if (entry.groupType === 'SERIES') {
+        const tmdbId = entry.content.tmdbId ?? entry.content.seriesTmdbId;
+        return tmdbId ? {
+          type: 'SERIES',
+          tmdbId,
+          title: this.groupedTitle(entry),
+          subtitle: this.watchAgainSubtitle(entry),
+          returnFocusTarget,
+        } : null;
+      }
+      const seasonNumber = entry.seasonNumbers.length === 1 ? entry.seasonNumbers[0] : null;
+      const seriesTmdbId = entry.content.seriesTmdbId ?? entry.content.tmdbId;
+      return entry.groupType === 'SEASON' && seasonNumber !== null && seriesTmdbId ? {
+        type: 'SEASON',
+        seriesTmdbId,
+        seasonNumber,
+        title: this.groupedTitle(entry),
+        subtitle: this.watchAgainSubtitle(entry),
+        returnFocusTarget,
+      } : null;
+    }
+    if (entry.content.type !== 'SERIES' && entry.content.type !== 'SEASON') return null;
+    return {
+      type: entry.content.type,
+      contentId: entry.content.id,
+      tmdbId: entry.content.type === 'SERIES' ? entry.content.tmdbId : null,
+      seriesTmdbId: entry.content.seriesTmdbId ?? (entry.content.type === 'SERIES' ? entry.content.tmdbId : null),
+      seasonNumber: entry.content.seasonNumber,
+      title: this.watchAgainTitle(entry),
+      subtitle: this.watchAgainSubtitle(entry),
+      returnFocusTarget,
+    };
+  }
+
+  protected handlePostWatchRatingSaved(_event: PostWatchRatingSaved): void {
+    this.postWatchRatingTarget.set(null);
+    this.load(true);
   }
 
   protected watchAgainBulkSubtitle(entry: DiaryTimelineEntry): string {
@@ -935,13 +1000,107 @@ export class DiaryComponent implements OnDestroy {
   private openRatingDialog(entry: DiaryGridEntry, event: MouseEvent): void {
     this.ratingDialogEntry.set(entry);
     this.ratingDialogOpener.set(this.menuTriggerFor(event));
+    this.ratingDialogLoadError.set('');
+    this.ratingDialogLoading.set(false);
+    if (!entry.derivedCompletion && entry.reviewSource === 'CONTENT_REVIEW'
+      && this.isSeriesOrSeason(entry.content.type) && entry.content.id && this.isCurrentRatingPass(entry)) {
+      this.loadCurrentContentRating(entry);
+    }
+  }
+
+  protected ratingDialogLabels(entry: DiaryGridEntry): Partial<RatingDialogLabels> {
+    return this.isSeriesOrSeason(entry.content.type)
+      ? { remove: movieMessages['pt-BR'].removeRating }
+      : {};
+  }
+
+  protected canRemoveRatingEntry(entry: DiaryGridEntry): boolean {
+    if (entry.score === null) return false;
+    if (this.isSeriesOrSeason(entry.content.type)) {
+      return this.isCurrentRatingPass(entry)
+        && (entry.derivedCompletion || (entry.reviewSource === 'CONTENT_REVIEW' && Boolean(entry.content.id)));
+    }
+    return entry.reviewSource === 'DIARY';
+  }
+
+  protected canClearRating(entry: DiaryGridEntry): boolean {
+    return !this.isSeriesOrSeason(entry.content.type) || this.isCurrentRatingPass(entry);
+  }
+
+  protected retryRatingDialogLoad(): void {
+    const entry = this.ratingDialogEntry();
+    if (entry) this.loadCurrentContentRating(entry);
+  }
+
+  private loadCurrentContentRating(entry: DiaryGridEntry): void {
+    const contentId = entry.content.id;
+    if (!contentId) return;
+    this.ratingDialogLoading.set(true);
+    this.ratingDialogLoadError.set('');
+    this.actionRequests.add(this.contentApi.getMyContentRating(contentId).subscribe({
+      next: (rating) => {
+        if (this.ratingDialogEntry() !== entry) return;
+        this.ratingDialogLoading.set(false);
+        this.ratingDialogEntry.set({
+          ...entry,
+          score: rating.score,
+          currentRatingVersion: rating.version,
+        });
+      },
+      error: () => {
+        if (this.ratingDialogEntry() !== entry) return;
+        this.ratingDialogLoading.set(false);
+        this.ratingDialogLoadError.set(movieMessages['pt-BR'].ratingVersionUnavailable);
+      },
+    }));
+  }
+
+  private isSeriesOrSeason(type: string | null | undefined): boolean {
+    return type === 'SERIES' || type === 'SEASON';
+  }
+
+  private isLatestCompletionPass(entry: DiaryGridEntry): boolean {
+    if (!entry.derivedCompletion || !entry.content.id || entry.watchNumber === null) return false;
+    const latestWatchNumber = this.diaryViewItems()
+      .filter((item): item is DiaryViewEntryItem => item.kind !== 'GROUPED'
+        && item.content.id === entry.content.id
+        && item.content.type === entry.content.type)
+      .reduce((latest, item) => Math.max(latest, item.watchNumber ?? 0), 0);
+    return latestWatchNumber === entry.watchNumber;
+  }
+
+  private isCurrentRatingPass(entry: DiaryGridEntry): boolean {
+    if (!this.isSeriesOrSeason(entry.content.type)) return true;
+    if (entry.derivedCompletion) return this.isLatestCompletionPass(entry);
+    const contentId = entry.content.id;
+    const watchNumber = entry.watchNumber;
+    if (!contentId || watchNumber === null) return false;
+    const latestWatchNumber = this.diaryViewItems()
+      .filter((item): item is DiaryViewEntryItem => item.kind !== 'GROUPED'
+        && item.content.id === contentId
+        && item.content.type === entry.content.type)
+      .reduce((latest, item) => Math.max(latest, item.watchNumber ?? 0), 0);
+    const latestRecordWatchNumber = this.diaryEntries()
+      .filter((record) => record.content.id === contentId && record.content.type === entry.content.type)
+      .reduce((latest, record) => Math.max(latest, record.watchNumber ?? 0), 0);
+    return Math.max(latestWatchNumber, latestRecordWatchNumber) > 0
+      && Math.max(latestWatchNumber, latestRecordWatchNumber) === watchNumber;
   }
 
   protected saveRatingDialog(submission: RatingDialogSubmission): void {
     const entry = this.ratingDialogEntry();
-    if (!entry || this.ratingDialogSaving()) return;
+    if (!entry || this.ratingDialogSaving() || this.ratingDialogLoading() || this.ratingDialogLoadError()) return;
+    if (this.isSeriesOrSeason(entry.content.type) && !this.isCurrentRatingPass(entry)) return;
+    if (this.isSeriesOrSeason(entry.content.type)
+      && submission.score !== null && entry.score !== null
+      && submission.score !== entry.score && entry.currentRatingVersion == null) {
+      this.toasts.error(movieMessages['pt-BR'].ratingVersionUnavailable);
+      return;
+    }
     this.ratingDialogSaving.set(true);
-    const request = entry.reviewSource !== 'CONTENT_REVIEW'
+    const request = entry.derivedCompletion
+      ? this.saveDerivedCompletionRating(entry, submission)
+      : entry.reviewSource !== 'CONTENT_REVIEW'
       ? this.contentApi.updateDiaryEntry(entry.id, {
           score: submission.score,
           comment: submission.comment || null,
@@ -953,13 +1112,14 @@ export class DiaryComponent implements OnDestroy {
       : submission.comment
         ? this.contentApi.updateContentReview(entry.id, submission.comment)
         : this.contentApi.deleteContentReview(entry.id);
-    const scoreRequest = entry.reviewSource === 'CONTENT_REVIEW'
-      && submission.score !== null
-      && submission.score !== entry.score
-      && entry.content.id
-      ? this.contentApi.setContentRating(entry.content.id, submission.score, null)
+    const scoreChanged = submission.score !== entry.score;
+    const ratingRequest = !entry.derivedCompletion && entry.reviewSource === 'CONTENT_REVIEW'
+      && this.isSeriesOrSeason(entry.content.type) && scoreChanged && entry.content.id
+      ? submission.score === null
+        ? this.contentApi.deleteMyContentRating(entry.content.id)
+        : this.contentApi.setContentRating(entry.content.id, submission.score, entry.currentRatingVersion ?? null)
       : null;
-    const saving = scoreRequest ? forkJoin([request, scoreRequest]) : request;
+    const saving = ratingRequest ? forkJoin([request, ratingRequest]) : request;
     this.actionRequests.add(saving.subscribe({
       next: () => {
         this.ratingDialogSaving.set(false);
@@ -976,18 +1136,22 @@ export class DiaryComponent implements OnDestroy {
 
   protected async removeRatingEntry(): Promise<void> {
     const entry = this.ratingDialogEntry();
-    if (!entry || entry.reviewSource !== 'DIARY' || this.ratingDialogSaving()) return;
+    if (!entry || !this.canRemoveRatingEntry(entry) || this.ratingDialogSaving()) return;
+    const removeContentRating = this.isSeriesOrSeason(entry.content.type);
     const confirmed = await this.confirmation.requestConfirmation({
-      message: movieMessages['pt-BR'].removeWatchConfirm,
-      confirmLabel: movieMessages['pt-BR'].removeWatch,
+      message: removeContentRating ? movieMessages['pt-BR'].removeRatingConfirm : movieMessages['pt-BR'].removeWatchConfirm,
+      confirmLabel: removeContentRating ? movieMessages['pt-BR'].removeRating : movieMessages['pt-BR'].removeWatch,
     });
     if (!confirmed || this.ratingDialogSaving()) return;
     this.ratingDialogSaving.set(true);
-    this.actionRequests.add(this.contentApi.deleteDiaryEntry(entry.id).subscribe({
+    const request = removeContentRating && entry.content.id
+      ? this.contentApi.deleteMyContentRating(entry.content.id)
+      : this.contentApi.deleteDiaryEntry(entry.id);
+    this.actionRequests.add(request.subscribe({
       next: () => {
         this.ratingDialogSaving.set(false);
         this.closeRatingDialog();
-        this.toasts.success(this.copy.removeHistorySuccess);
+        this.toasts.success(removeContentRating ? movieMessages['pt-BR'].ratingRemoved : this.copy.removeHistorySuccess);
         this.load(true);
       },
       error: () => {
@@ -1000,7 +1164,47 @@ export class DiaryComponent implements OnDestroy {
   protected closeRatingDialog(): void {
     if (this.ratingDialogSaving()) return;
     this.ratingDialogEntry.set(null);
+    this.ratingDialogLoading.set(false);
+    this.ratingDialogLoadError.set('');
     this.restoreFocus(this.ratingDialogOpener);
+  }
+
+  private saveDerivedCompletionRating(entry: DiaryGridEntry, submission: RatingDialogSubmission): Observable<unknown> {
+    const contentId = entry.content.id;
+    if (!contentId) return of(null);
+    const comment = submission.comment.trim();
+    const score = submission.score;
+    const ratingChanged = score !== entry.score;
+    const reviewId = entry.ratingReviewId;
+    const requests: Observable<unknown>[] = [];
+
+    if (reviewId) {
+      if (comment && comment !== (entry.comment ?? '').trim()) {
+        requests.push(this.contentApi.updateContentReview(reviewId, comment));
+      } else if (!comment) {
+        requests.push(this.contentApi.deleteContentReview(reviewId));
+      }
+      if (ratingChanged) {
+        if (score === null) requests.push(this.contentApi.deleteMyContentRating(contentId));
+        else requests.push(this.contentApi.setContentRating(contentId, score, entry.currentRatingVersion ?? null));
+      }
+    } else if (comment) {
+      requests.push(this.contentApi.createContentReview(contentId, {
+        comment,
+        ...(score !== null ? {
+          score,
+          ...(entry.currentRatingVersion !== null && entry.currentRatingVersion !== undefined
+            ? { expectedRatingVersion: entry.currentRatingVersion }
+            : {}),
+        } : {}),
+      }, crypto.randomUUID()));
+      if (score === null && entry.score !== null) requests.push(this.contentApi.deleteMyContentRating(contentId));
+    } else if (ratingChanged) {
+      if (score === null) requests.push(this.contentApi.deleteMyContentRating(contentId));
+      else requests.push(this.contentApi.setContentRating(contentId, score, entry.currentRatingVersion ?? null));
+    }
+
+    return requests.length ? forkJoin(requests) : of(null);
   }
 
   protected ratingDialogTitle(entry: DiaryGridEntry): string {
@@ -1292,7 +1496,9 @@ export class DiaryComponent implements OnDestroy {
         const record = recordsById.get(item.diaryEntryId);
         if (record) {
           consumedIds.add(record.id);
-          result.push(record);
+          result.push(record.content.type === 'SERIES' || record.content.type === 'SEASON'
+            ? { ...record, score: item.currentScore, currentRatingVersion: item.currentRatingVersion }
+            : record);
           continue;
         }
       }
@@ -1382,6 +1588,9 @@ export class DiaryComponent implements OnDestroy {
         && entry.content.episodeNumber === item.content.episodeNumber;
       return item.content.type === 'SERIES' && entry.content.type === 'EPISODE';
     });
+    const review = item.reviewPreviews.find((preview) => preview.watchNumber === item.watchNumber && Boolean(preview.id && preview.comment?.trim()))
+      ?? item.reviewPreviews.find((preview) => preview.watchNumber === item.watchNumber && Boolean(preview.id))
+      ?? null;
     return {
       id: item.completionKey || `completion:${item.content.type}:${item.content.tmdbId ?? item.content.seriesTmdbId ?? item.orderedAt}`,
       reviewSource: 'DIARY',
@@ -1410,10 +1619,12 @@ export class DiaryComponent implements OnDestroy {
       companionProfilePictures: [],
       card: null,
       score: item.currentScore,
+      currentRatingVersion: item.currentRatingVersion,
+      ratingReviewId: review?.id ?? null,
       likesCount: 0,
       likedByMe: false,
       commentsCount: 0,
-      comment: null,
+      comment: review?.comment ?? null,
       watchedInTheater: null,
       sourceEntries,
     };
@@ -1494,6 +1705,8 @@ export class DiaryComponent implements OnDestroy {
         previewStatus: card.previewStatus ?? null,
       } : null,
       score: record.score,
+      currentRatingVersion: card?.viewerState?.currentRatingVersion ?? null,
+      ratingReviewId: record.reviewSource === 'CONTENT_REVIEW' ? record.id : null,
       likesCount: record.likesCount,
       likedByMe: record.likedByMe,
       commentsCount: record.commentsCount,

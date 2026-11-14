@@ -34,6 +34,7 @@ export interface DiaryRecord {
     runtimeMinutes: number | null;
     tmdbVoteAverage?: number | null;
     stats?: { averageScore: number | null; playsCount: number; reviewsCount: number; commentsCount: number } | null;
+    viewerState?: { myRating?: number | null; currentRatingVersion?: number | null } | null;
     previewStatus?: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE' | null;
   } | null;
   comment: string | null;
@@ -107,8 +108,20 @@ export interface DiaryViewEntryItem {
   orderedAt: string;
   currentScore: number | null;
   currentRatingVersion: number | null;
-  reviewPreviews: unknown[];
+  reviewPreviews: DiaryViewReviewPreview[];
   reviewCount: number;
+}
+
+export interface DiaryViewReviewPreview {
+  id?: string;
+  publicationKind?: 'WRITTEN_REVIEW';
+  contextKind?: 'UNKNOWN' | 'MANUAL' | 'COMPLETION';
+  comment?: string | null;
+  scoreAtPublication?: number | null;
+  watchNumber?: number | null;
+  sourcePublishedAt?: string | null;
+  sourcePublishedOn?: string | null;
+  createdAt?: string;
 }
 
 export interface DiaryViewGroupedItem {

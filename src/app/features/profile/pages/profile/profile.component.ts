@@ -45,7 +45,7 @@ import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-
 import { resolveRating, type RatingSource } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
-import { RatingDialogComponent, type RatingDialogCompanion, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
+import { RatingDialogComponent, type RatingDialogCompanion, type RatingDialogLabels, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 
 type ProfileSection = 'profile' | 'progress' | 'history' | 'reviews' | 'lists' | 'watchlist' | 'picks' | 'episode-ratings-map' | 'episode-ratings-map-show' | 'month-in-review' | 'year-in-review' | 'all-time-stats';
@@ -91,6 +91,8 @@ type RecentSeriesCard = {
   score: number | null;
   currentRatingVersion: number | null;
   reviewIds: string[];
+  lastWatchNumber: number | null;
+  canEditRating: boolean;
 };
 type ProfileShareReviewRecord = {
   id: string;
@@ -99,6 +101,7 @@ type ProfileShareReviewRecord = {
   card: (NonNullable<DiaryRecord['card']> & { viewerState?: ProfileContentCard['viewerState'] }) | null;
   comment: string | null;
   score: number | null;
+  watchNumber: number | null;
   customPosterUrl: string | null;
   seriesTitle?: string | null;
 };
@@ -202,6 +205,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileRatingFriends = computed<RatingDialogCompanion[]>(() => this.profileRatingTarget()?.companions ?? []);
   protected readonly profileRatingOpener = signal<HTMLElement | null>(null);
   protected readonly profileRatingLoading = signal(false);
+  protected readonly profileRatingLoadError = signal('');
   protected readonly profileRatingSaving = signal(false);
   protected readonly shareReviewDialogReturnFocus = signal<HTMLElement | null>(null);
   protected readonly recentReviewLikeBusyIds = signal<ReadonlySet<string>>(new Set());
@@ -340,6 +344,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           card.viewerState?.watchStatus,
           this.isOwnProfile() ? hasOwnerWatched : null,
         );
+        const lastWatchNumber = activity.timesWatched ?? card.viewerState?.lastWatchNumber ?? null;
+        const currentWatchNumber = card.viewerState?.lastWatchNumber ?? activity.timesWatched ?? null;
         return {
           activityId: activity.id,
           contentId: activity.content?.id ?? null,
@@ -357,6 +363,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           score: activity.score ?? card.viewerState?.myRating ?? null,
           currentRatingVersion: card.viewerState?.currentRatingVersion ?? null,
           reviewIds: card.viewerState?.reviewIds ?? [],
+          lastWatchNumber,
+          canEditRating: lastWatchNumber !== null && lastWatchNumber === currentWatchNumber,
         };
       })
       .filter((item): item is RecentSeriesCard => item !== null)
@@ -583,7 +591,10 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected profileRecentSeriesActionsFor(entry: RecentSeriesCard): readonly ContentImageAction[] {
-    return this.profileContentActionsFor(entry.viewerRating, entry.canShareReview, entry.hasWatched);
+    const actions = this.profileContentActionsFor(entry.viewerRating, entry.canShareReview, entry.hasWatched);
+    return entry.canEditRating
+      ? actions
+      : actions.filter((action) => action.id !== 'rate' && action.id !== 'edit-rating');
   }
 
   private profileViewerStateForDiaryEntry(entry: DiaryRecord): ProfileContentCard['viewerState'] | null {
@@ -1394,7 +1405,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         currentRatingVersion: entry.card?.viewerState?.currentRatingVersion ?? null,
         reviewIds: [],
         lastWatchedDate: null,
-        lastWatchNumber: null,
+        lastWatchNumber: entry.contentType === 'SERIES' ? entry.card?.viewerState?.lastWatchNumber ?? null : null,
         watchedInTheater: null,
         playsCount: null,
       },
@@ -1424,18 +1435,20 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       ?? matchingActivities.find((item) => item.source === 'SERIES_COMPLETION')
       ?? matchingActivities[0]
       ?? null;
-    const review = this.profileShareReviews().find((item) => item.content.type.toUpperCase() === entry.contentType
-      && (item.content.tmdbId === entry.content.tmdbId || item.content.seriesTmdbId === entry.content.tmdbId)) ?? null;
     const cardViewerState = entry.card?.viewerState;
     const activityViewerState = activity?.card?.viewerState;
     const summaryReviewViewerState = summaryDiaryEntry?.card?.viewerState;
+    const seriesPassNumber = entry.contentType === 'SERIES'
+      ? cardViewerState?.lastWatchNumber ?? activity?.timesWatched ?? summaryDiaryEntry?.watchNumber ?? null
+      : null;
+    const review = entry.contentType === 'SERIES'
+      ? this.profileContentReviewForPass('SERIES', entry.content.id, seriesPassNumber)
+      : this.profileShareReviews().find((item) => item.content.type.toUpperCase() === entry.contentType
+        && (item.content.tmdbId === entry.content.tmdbId || item.content.seriesTmdbId === entry.content.tmdbId)) ?? null;
+    const viewerPassReview = this.isOwnProfile() ? review : null;
     const reviewViewerState = review?.card?.viewerState;
     const reviewId = entry.contentType === 'SERIES'
-      ? (review?.source === 'CONTENT_REVIEW' ? review.id : null)
-        ?? cardViewerState?.reviewIds?.[0]
-        ?? activityViewerState?.reviewIds?.[0]
-        ?? summaryReviewViewerState?.reviewIds?.[0]
-        ?? null
+      ? (viewerPassReview?.source === 'CONTENT_REVIEW' ? viewerPassReview.id : null)
       : null;
     const diaryEntryId = entry.contentType === 'MOVIE'
       ? movieDiaryEntry?.id
@@ -1447,12 +1460,16 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       : null;
     const viewerState: ProfileActionViewerState = {
       myRating: entry.viewerRating ?? cardViewerState?.myRating ?? activityViewerState?.myRating ?? summaryReviewViewerState?.myRating ?? reviewViewerState?.myRating ?? null,
-      myReview: movieDiaryEntry?.comment ?? summaryDiaryEntry?.comment ?? review?.comment ?? null,
+      myReview: entry.contentType === 'SERIES'
+        ? viewerPassReview?.comment ?? null
+        : movieDiaryEntry?.comment ?? summaryDiaryEntry?.comment ?? review?.comment ?? null,
       latestDiaryEntryId: diaryEntryId,
       currentRatingVersion: cardViewerState?.currentRatingVersion ?? activityViewerState?.currentRatingVersion ?? summaryReviewViewerState?.currentRatingVersion ?? reviewViewerState?.currentRatingVersion ?? null,
       reviewIds: reviewId ? [reviewId] : [],
       lastWatchedDate: movieDiaryEntry?.watchedDate ?? summaryDiaryEntry?.watchedDate ?? activity?.watchedDate ?? activity?.lastWatchedDate ?? cardViewerState?.lastWatchedDate ?? null,
-      lastWatchNumber: movieDiaryEntry?.watchNumber ?? summaryDiaryEntry?.watchNumber ?? activity?.timesWatched ?? cardViewerState?.lastWatchNumber ?? null,
+      lastWatchNumber: entry.contentType === 'SERIES'
+        ? this.isOwnProfile() ? seriesPassNumber : null
+        : movieDiaryEntry?.watchNumber ?? summaryDiaryEntry?.watchNumber ?? activity?.timesWatched ?? cardViewerState?.lastWatchNumber ?? null,
       watchedInTheater: movieDiaryEntry?.watchedInTheater ?? cardViewerState?.watchedInTheater ?? null,
       playsCount: activity?.timesWatched ?? movieDiaryEntry?.watchNumber ?? summaryDiaryEntry?.watchNumber ?? cardViewerState?.playsCount ?? null,
     };
@@ -1472,23 +1489,35 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       }, selection.event);
       return;
     }
+    const openShareWithoutReview = () => {
+      const user = this.session.user();
+      this.openShareReviewDialog({
+        title: target.title,
+        subtitle: target.subtitle,
+        rating: viewerState.myRating,
+        review: viewerState.myReview,
+        backgroundUrl: this.imageUrl(entry.backdropPath || entry.posterPath, 'w1280'),
+        posterUrl: this.imageUrl(entry.posterPath, 'w780'),
+        username: user?.username ?? null,
+        avatarUrl: user?.profilePicture ?? null,
+        selectionType: entry.contentType,
+        tmdbId: entry.content.tmdbId,
+      }, selection.event);
+    };
+    if (selection.action.id === 'share-review' && entry.contentType === 'SERIES' && !review && seriesPassNumber !== null) {
+      this.findProfileContentReviewForPass(entry.content.id, 'SERIES', seriesPassNumber, 1, this.profile()?.id)
+        .pipe(catchError(() => of(null)))
+        .subscribe((loadedReview) => {
+          if (loadedReview) this.openShareReviewDialog(this.shareReviewModelForDiaryEntry(loadedReview, true), selection.event);
+          else openShareWithoutReview();
+        });
+      return;
+    }
     if (review) {
       this.openShareReviewDialog(this.shareReviewModelForDiaryEntry(review, true), selection.event);
       return;
     }
-    const user = this.session.user();
-    this.openShareReviewDialog({
-      title: target.title,
-      subtitle: target.subtitle,
-      rating: viewerState.myRating,
-      review: viewerState.myReview,
-      backgroundUrl: this.imageUrl(entry.backdropPath || entry.posterPath, 'w1280'),
-      posterUrl: this.imageUrl(entry.posterPath, 'w780'),
-      username: user?.username ?? null,
-      avatarUrl: user?.profilePicture ?? null,
-      selectionType: entry.contentType,
-      tmdbId: entry.content.tmdbId,
-    }, selection.event);
+    openShareWithoutReview();
   }
   protected handleRecentDiaryAction(entry: DiaryRecord, selection: ContentImageActionSelection): void {
     if (selection.action.id === 'share-review') {
@@ -1541,16 +1570,26 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected handleRecentSeriesAction(entry: RecentSeriesCard, selection: ContentImageActionSelection): void {
     if (selection.action.id === 'share-review') {
       const isOwnProfile = !!this.profile()?.id && this.profile()?.id === this.session.user()?.id;
-      const review = isOwnProfile
-        ? this.profileShareReviews().find((item) => item.content.type === 'SERIES'
-          && (item.content.tmdbId === entry.seriesTmdbId || item.content.seriesTmdbId === entry.seriesTmdbId))
-        : undefined;
-      this.openShareReviewDialog(review
-        ? this.shareReviewModelForDiaryEntry(review, true)
-        : this.shareReviewModelForSeriesCard(entry, isOwnProfile), selection.event);
+      const fallback = () => this.openShareReviewDialog(this.shareReviewModelForSeriesCard(entry, isOwnProfile), selection.event);
+      if (!isOwnProfile || entry.lastWatchNumber === null || !entry.contentId) {
+        fallback();
+        return;
+      }
+      const review = this.profileContentReviewForPass('SERIES', entry.contentId, entry.lastWatchNumber);
+      if (review) {
+        this.openShareReviewDialog(this.shareReviewModelForDiaryEntry(review, true), selection.event);
+        return;
+      }
+      this.findProfileContentReviewForPass(entry.contentId, 'SERIES', entry.lastWatchNumber)
+        .pipe(catchError(() => of(null)))
+        .subscribe((loadedReview) => {
+          if (loadedReview) this.openShareReviewDialog(this.shareReviewModelForDiaryEntry(loadedReview, true), selection.event);
+          else fallback();
+        });
       return;
     }
     if (!this.isOwnProfile()) return;
+    if (!entry.canEditRating && (selection.action.id === 'rate' || selection.action.id === 'edit-rating')) return;
     const target: ProfileActionContent = {
       type: 'SERIES',
       contentId: entry.contentId,
@@ -1568,7 +1607,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         currentRatingVersion: entry.currentRatingVersion,
         reviewIds: entry.reviewIds,
         lastWatchedDate: entry.lastWatchedDate,
-        lastWatchNumber: null,
+        lastWatchNumber: entry.lastWatchNumber,
         watchedInTheater: null,
         playsCount: null,
       },
@@ -1576,20 +1615,19 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (selection.action.id === 'rewatch' || selection.action.id === 'mark-watched') {
       this.openProfileWatchDialog(target, selection.event, selection.action.id === 'rewatch');
     } else if ((selection.action.id === 'rate' || selection.action.id === 'edit-rating') && target.contentId) {
-      const review = this.profileShareReviews().find((item) => item.content.type === 'SERIES'
-        && (item.content.tmdbId === entry.seriesTmdbId || item.content.seriesTmdbId === entry.seriesTmdbId)) ?? null;
-      const reviewId = (review?.source === 'CONTENT_REVIEW' ? review.id : null) ?? entry.reviewIds[0] ?? null;
+      const review = this.profileContentReviewForPass('SERIES', entry.contentId ?? '', entry.lastWatchNumber);
+      const reviewId = review?.source === 'CONTENT_REVIEW' ? review.id : null;
       this.openProfileRatingDialog({
         ...target,
         reviewId,
         viewerState: {
-          myRating: entry.viewerRating ?? review?.score ?? null,
+          myRating: review?.score ?? entry.viewerRating ?? null,
           myReview: review?.comment ?? null,
           latestDiaryEntryId: null,
           currentRatingVersion: entry.currentRatingVersion ?? review?.card?.viewerState?.currentRatingVersion ?? null,
-          reviewIds: reviewId ? [reviewId] : entry.reviewIds,
+          reviewIds: reviewId ? [reviewId] : [],
           lastWatchedDate: entry.lastWatchedDate,
-          lastWatchNumber: null,
+          lastWatchNumber: entry.lastWatchNumber,
           watchedInTheater: null,
           playsCount: null,
         },
@@ -1713,9 +1751,125 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   private openProfileRatingDialog(target: ProfileRatingDialogTarget, event: MouseEvent): void {
-    this.profileRatingTarget.set(target);
     this.profileRatingOpener.set(this.profileActionOpener(event));
     this.activePosterMenu.set(null);
+    this.activateProfileRatingTarget(target);
+  }
+
+  private activateProfileRatingTarget(target: ProfileRatingDialogTarget): void {
+    this.profileRatingTarget.set(target);
+    this.profileRatingLoadError.set('');
+    this.profileRatingLoading.set(false);
+    if ((target.type !== 'SERIES' && target.type !== 'SEASON') || !target.contentId) return;
+
+    this.profileRatingLoading.set(true);
+    const passReview = target.viewerState.lastWatchNumber !== null
+      ? this.findProfileContentReviewForPass(target.contentId, target.type, target.viewerState.lastWatchNumber).pipe(catchError(() => of(null)))
+      : of(null);
+    forkJoin({ rating: this.contentApi.getMyContentRating(target.contentId), review: passReview }).subscribe({
+      next: ({ rating, review }) => {
+        if (this.profileRatingTarget() !== target) return;
+        this.profileRatingLoading.set(false);
+        const reviewId = review?.id ?? target.reviewId ?? null;
+        const reviewComment = review?.comment ?? target.viewerState.myReview ?? null;
+        this.profileRatingTarget.set({
+          ...target,
+          reviewId,
+          viewerState: {
+            ...target.viewerState,
+            myRating: rating.score,
+            currentRatingVersion: rating.version,
+            myReview: reviewComment,
+            reviewIds: reviewId ? [reviewId] : [],
+          },
+          initialValue: {
+            ...target.initialValue,
+            score: rating.score,
+            comment: reviewComment ?? '',
+          },
+        });
+      },
+      error: (error: unknown) => {
+        if (this.profileRatingTarget() !== target) return;
+        this.profileRatingLoading.set(false);
+        this.handleProfileActionError(error);
+        this.profileRatingLoadError.set(this.copy.ratingVersionUnavailable);
+      },
+    });
+  }
+
+  protected retryProfileRatingLoad(): void {
+    const target = this.profileRatingTarget();
+    if (target) this.activateProfileRatingTarget(target);
+  }
+
+  protected profileRatingLabels(target: ProfileRatingDialogTarget): Partial<RatingDialogLabels> {
+    return target.type === 'SERIES' || target.type === 'SEASON'
+      ? { remove: movieMessages['pt-BR'].removeRating }
+      : {};
+  }
+
+  protected canRemoveProfileRating(target: ProfileRatingDialogTarget): boolean {
+    if (!this.isOwnProfile()) return false;
+    if (target.type === 'SERIES' || target.type === 'SEASON') {
+      return Boolean(target.contentId) && target.viewerState.myRating != null;
+    }
+    return Boolean(target.diaryEntryId || target.viewerState.latestDiaryEntryId);
+  }
+
+  private profileContentReviewForPass(
+    contentType: 'SERIES' | 'SEASON',
+    contentId: string,
+    watchNumber: number | null,
+  ): ProfileShareReviewRecord | null {
+    if (watchNumber === null) return null;
+    return this.profileShareReviews().find((review) => review.source === 'CONTENT_REVIEW'
+      && review.content.type.toUpperCase() === contentType
+      && (review.content.id === contentId || review.content.tmdbId === contentId || review.content.seriesTmdbId === contentId)
+      && review.watchNumber === watchNumber) ?? null;
+  }
+
+  private findProfileContentReviewForPass(
+    contentId: string,
+    contentType: 'SERIES' | 'SEASON',
+    watchNumber: number,
+    page = 1,
+    userId = this.session.user()?.id,
+  ): Observable<ProfileShareReviewRecord | null> {
+    const cached = userId === this.profile()?.id
+      ? this.profileShareReviews().find((review) => review.source === 'CONTENT_REVIEW'
+        && review.content.id === contentId
+        && review.content.type.toUpperCase() === contentType
+        && review.watchNumber === watchNumber) ?? null
+      : null;
+    if (cached) return of(cached);
+    if (!userId) return of(null);
+    return this.diaryApi.getUserReviewsPage(userId, page, 1000).pipe(switchMap((response) => {
+      const review = response.content.find((item) => item.source === 'CONTENT_REVIEW'
+        && item.content?.id === contentId
+        && item.content?.type.toUpperCase() === contentType
+        && item.watchNumber === watchNumber);
+      if (review) {
+        const loadedReview: ProfileShareReviewRecord = {
+          id: review.id,
+          source: review.source,
+          content: review.content,
+          card: review.card,
+          comment: review.comment,
+          score: review.score,
+          watchNumber: review.watchNumber ?? null,
+          customPosterUrl: review.customPosterUrl,
+          seriesTitle: review.seriesTitle,
+        };
+        this.profileShareReviews.update((current) => current.some((item) => item.id === loadedReview.id)
+          ? current
+          : [...current, loadedReview]);
+        return of(loadedReview);
+      }
+      return response.hasNext
+        ? this.findProfileContentReviewForPass(contentId, contentType, watchNumber, page + 1, userId)
+        : of(null);
+    }));
   }
 
   protected closeProfileWatchDialog(): void {
@@ -1763,7 +1917,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   private profileRatingTargetForWatchedContent(target: ProfileActionContent): ProfileRatingDialogTarget {
-    const viewerState = target.viewerState ?? {
+    const sourceState = target.viewerState ?? {
       myRating: null,
       myReview: null,
       latestDiaryEntryId: null,
@@ -1774,6 +1928,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       watchedInTheater: null,
       playsCount: null,
     };
+    const viewerState: ProfileActionViewerState = target.type === 'SERIES' || target.type === 'SEASON'
+      ? {
+        ...sourceState,
+        myRating: null,
+        myReview: null,
+        currentRatingVersion: null,
+        reviewIds: [],
+        lastWatchNumber: null,
+        playsCount: null,
+      }
+      : sourceState;
     return {
       ...target,
       viewerState,
@@ -1790,7 +1955,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.profilePostWatchRatingTarget.set(null);
     this.profileRatingOpener.set(this.profilePostWatchOpener());
     this.profilePostWatchOpener.set(null);
-    this.profileRatingTarget.set(target);
+    this.activateProfileRatingTarget(target);
   }
 
   protected closeProfilePostWatchRatingPrompt(): void {
@@ -1800,8 +1965,10 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected closeProfileRatingDialog(): void {
-    if (this.profileRatingSaving() || this.profileRatingLoading()) return;
+    if (this.profileRatingSaving()) return;
     this.profileRatingTarget.set(null);
+    this.profileRatingLoading.set(false);
+    this.profileRatingLoadError.set('');
     this.restoreProfileActionFocus(this.profileRatingOpener);
   }
 
@@ -1857,11 +2024,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected saveProfileRating(submission: RatingDialogSubmission): void {
     const target = this.profileRatingTarget();
     const contentId = target?.contentId;
-    if (!target || this.profileRatingSaving()) return;
+    if (!target || this.profileRatingSaving() || this.profileRatingLoading() || this.profileRatingLoadError()) return;
     const isUpdatingSeriesRating = (target.type === 'SERIES' || target.type === 'SEASON')
       && target.viewerState.myRating !== null
       && target.viewerState.myRating !== undefined
-      && submission.score !== target.viewerState.myRating;
+      && submission.score !== null
+      && (submission.score !== target.viewerState.myRating
+        || (Boolean(submission.comment.trim()) && !target.reviewId && !target.viewerState.reviewIds?.[0]));
     if (isUpdatingSeriesRating && target.viewerState.currentRatingVersion == null) {
       this.toasts.error(this.copy.ratingVersionUnavailable);
       return;
@@ -1939,19 +2108,27 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   protected async removeProfileRatingEntry(): Promise<void> {
     const target = this.profileRatingTarget();
+    const removeContentRating = target?.type === 'SERIES' || target?.type === 'SEASON';
     const diaryEntryId = target?.diaryEntryId || target?.viewerState.latestDiaryEntryId;
-    if (!target || !this.isOwnProfile() || !diaryEntryId || this.profileRatingSaving()) return;
+    if (!target || !this.canRemoveProfileRating(target) || this.profileRatingSaving()) return;
     const confirmed = await this.confirmation.requestConfirmation({
-      message: movieMessages['pt-BR'].removeWatchConfirm,
-      confirmLabel: movieMessages['pt-BR'].removeWatch,
+      message: removeContentRating ? movieMessages['pt-BR'].removeRatingConfirm : movieMessages['pt-BR'].removeWatchConfirm,
+      confirmLabel: removeContentRating ? movieMessages['pt-BR'].removeRating : movieMessages['pt-BR'].removeWatch,
     });
     if (!confirmed || this.profileRatingSaving()) return;
     this.profileRatingSaving.set(true);
-    this.contentApi.deleteDiaryEntry(diaryEntryId).subscribe({
+    const request = removeContentRating && target.contentId
+      ? this.contentApi.deleteMyContentRating(target.contentId)
+      : diaryEntryId ? this.contentApi.deleteDiaryEntry(diaryEntryId) : null;
+    if (!request) {
+      this.profileRatingSaving.set(false);
+      return;
+    }
+    request.subscribe({
       next: () => {
         this.profileRatingSaving.set(false);
         this.closeProfileRatingDialog();
-        this.toasts.success(movieMessages['pt-BR'].removed);
+        this.toasts.success(removeContentRating ? movieMessages['pt-BR'].ratingRemoved : movieMessages['pt-BR'].removed);
         this.loadSectionData(true);
       },
       error: (error: unknown) => {
@@ -1983,16 +2160,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           : null;
     }
     if (target.reviewId) {
-      if (!contentId && score !== null && score > 0 && score !== state.myRating) return null;
       const calls: Observable<unknown>[] = [
         comment
           ? this.contentApi.updateContentReview(target.reviewId, comment)
           : this.contentApi.deleteContentReview(target.reviewId),
       ];
-      if (score !== null && score > 0 && score !== state.myRating) {
-        if (!contentId) return null;
-        calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
-      }
+      this.appendProfileRatingChange(calls, target, score);
       return forkJoin(calls);
     }
     if (target.type === 'EPISODE') {
@@ -2010,36 +2183,59 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       if (comment) {
         if (reviewId) {
           calls.push(this.contentApi.updateContentReview(reviewId, comment));
-          if (score !== null && score > 0 && score !== state.myRating) calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+          this.appendProfileRatingChange(calls, target, score);
         } else {
-          calls.push(this.contentApi.createContentReview(contentId, { comment, ...(score !== null ? { score, expectedRatingVersion: state.currentRatingVersion ?? null } : {}) }, crypto.randomUUID()));
+          calls.push(this.contentApi.createContentReview(contentId, {
+            comment,
+            ...(score !== null ? {
+              score,
+              ...(state.currentRatingVersion != null ? { expectedRatingVersion: state.currentRatingVersion } : {}),
+            } : {}),
+          }, crypto.randomUUID()));
+          if (score === null) this.appendProfileRatingChange(calls, target, score);
         }
       } else {
         if (reviewId) calls.push(this.contentApi.deleteContentReview(reviewId));
-        if (score !== null && score > 0 && score !== state.myRating) calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
+        this.appendProfileRatingChange(calls, target, score);
       }
     } else if (target.type === 'SEASON') {
       const reviewId = state.reviewIds?.[0] ?? null;
       if (comment) {
         if (reviewId) {
           calls.push(this.contentApi.updateContentReview(reviewId, comment));
-          if (score !== null && score > 0 && score !== state.myRating) {
-            calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
-          }
+          this.appendProfileRatingChange(calls, target, score);
         } else {
           calls.push(this.contentApi.createContentReview(contentId, {
             comment,
-            ...(score !== null && score > 0 ? { score, expectedRatingVersion: state.currentRatingVersion ?? null } : {}),
+            ...(score !== null && score > 0 ? {
+              score,
+              ...(state.currentRatingVersion != null ? { expectedRatingVersion: state.currentRatingVersion } : {}),
+            } : {}),
           }, crypto.randomUUID()));
+          if (score === null) this.appendProfileRatingChange(calls, target, score);
         }
       } else {
         if (reviewId) calls.push(this.contentApi.deleteContentReview(reviewId));
-        if (score !== null && score > 0 && score !== state.myRating) {
-          calls.push(this.contentApi.setContentRating(contentId, score, state.currentRatingVersion ?? null));
-        }
+        this.appendProfileRatingChange(calls, target, score);
       }
     }
     return calls.length ? forkJoin(calls) : of(null);
+  }
+
+  private appendProfileRatingChange(
+    calls: Observable<unknown>[],
+    target: ProfileRatingDialogTarget,
+    score: number | null,
+  ): void {
+    if (target.type !== 'SERIES' && target.type !== 'SEASON') return;
+    const contentId = target.contentId;
+    const currentScore = target.viewerState.myRating;
+    if (!contentId) return;
+    if (score === null) {
+      if (currentScore != null) calls.push(this.contentApi.deleteMyContentRating(contentId));
+    } else if (score > 0 && score !== currentScore) {
+      calls.push(this.contentApi.setContentRating(contentId, score, target.viewerState.currentRatingVersion ?? null));
+    }
   }
 
   private handleProfileActionError(error: unknown): void {
@@ -2604,6 +2800,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             card: review.card,
             comment: review.comment,
             score: review.score,
+            watchNumber: review.watchNumber ?? null,
             customPosterUrl: review.customPosterUrl,
             seriesTitle: review.seriesTitle,
           })));

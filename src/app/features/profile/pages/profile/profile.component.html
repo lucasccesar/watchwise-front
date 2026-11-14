@@ -1257,12 +1257,15 @@
       [subtitle]="target.title + (target.subtitle ? ' · ' + target.subtitle : '')"
       [initialValue]="profileRatingInitialValue()"
       [friends]="profileRatingFriends()"
-      [canRemove]="isOwnProfile() && !!(target.diaryEntryId || target.viewerState.latestDiaryEntryId)"
+      [canRemove]="canRemoveProfileRating(target)"
+      [labels]="profileRatingLabels(target)"
       [saving]="profileRatingSaving()"
       [loading]="profileRatingLoading()"
+      [loadError]="profileRatingLoadError()"
       [returnFocusTarget]="profileRatingOpener()"
       (save)="saveProfileRating($event)"
       (remove)="removeProfileRatingEntry()"
+      (retryLoad)="retryProfileRatingLoad()"
       (dismiss)="closeProfileRatingDialog()"
     />
   }

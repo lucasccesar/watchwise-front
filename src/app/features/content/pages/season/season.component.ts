@@ -777,11 +777,20 @@ export class SeasonComponent implements OnDestroy {
     this.ratingReview.set((event.currentTarget as HTMLTextAreaElement).value);
   }
 
+  protected canSaveRating(): boolean {
+    const target = this.ratingTarget();
+    const existingRating = target?.type === 'SEASON'
+      ? (target.season ? target.season.viewerState.myRating : this.page()?.viewerState.myRating) ?? null
+      : null;
+    return !!target && (this.ratingScore() > 0 || this.ratingReview().trim().length > 0
+      || (target.type === 'SEASON' && this.ratingScore() === 0 && existingRating !== null));
+  }
+
   protected saveRating(): void {
     const target = this.ratingTarget();
     const page = this.page();
     const score = this.ratingScore();
-    if (!target || !page || this.actionPending()) return;
+    if (!target || !page || this.actionPending() || !this.canSaveRating()) return;
     if (target.type === 'SEASON') {
       this.saveSeasonRating(target, score);
       return;
@@ -835,32 +844,49 @@ export class SeasonComponent implements OnDestroy {
     const passNumber = this.seasonReviewPassNumber(target.season);
     const comment = this.ratingReview().trim();
     const state = target.season?.viewerState ?? this.page()?.viewerState;
-    const currentRating = state?.myRating ?? 0;
-    const ratingVersion = state?.currentRatingVersion ?? this.page()?.viewerState.currentRatingVersion ?? null;
-    if (!contentId || (!score && !comment) || (comment && (!userId || passNumber === null))) return;
+    const currentRating = state?.myRating ?? null;
+    const ratingVersion = target.season
+      ? target.season.viewerState.currentRatingVersion ?? null
+      : this.page()?.viewerState.currentRatingVersion ?? null;
+    const nextScore = score > 0 ? score : null;
+    if (!contentId || (!nextScore && !comment && currentRating === null) || (comment && (!userId || passNumber === null))) return;
+    if (nextScore !== null && currentRating !== null && nextScore !== currentRating && ratingVersion === null) {
+      this.showToast('Não foi possível carregar a versão atual desta avaliação. Tente novamente.', 'warning');
+      return;
+    }
 
-    const reviewRequest = this.findSeasonReview(contentId, (review) =>
-      review.source === 'CONTENT_REVIEW'
-      && review.reviewer.id === userId
-      && review.watchNumber === passNumber,
-    ).pipe(switchMap((existingReview) => {
+    const saveReviewAndRating = (existingReview: ContentReview | null): Observable<unknown> => {
       const requests: Observable<unknown>[] = [];
       if (comment) {
         if (existingReview) {
           if (existingReview.comment !== comment) requests.push(this.api.updateContentReview(existingReview.id, comment));
-          if (score > 0 && score !== currentRating) requests.push(this.api.setContentRating(contentId, score, ratingVersion));
+          if (nextScore !== currentRating) requests.push(nextScore === null
+            ? this.api.deleteMyContentRating(contentId)
+            : this.api.setContentRating(contentId, nextScore, ratingVersion));
         } else {
           requests.push(this.api.createContentReview(contentId, {
             comment,
-            ...(score > 0 ? { score, expectedRatingVersion: ratingVersion } : {}),
+            ...(nextScore !== null ? { score: nextScore } : {}),
+            ...(nextScore !== null && ratingVersion !== null ? { expectedRatingVersion: ratingVersion } : {}),
           }, crypto.randomUUID()));
+          if (nextScore === null && currentRating !== null) requests.push(this.api.deleteMyContentRating(contentId));
         }
       } else {
         if (existingReview) requests.push(this.api.deleteContentReview(existingReview.id));
-        if (score > 0 && score !== currentRating) requests.push(this.api.setContentRating(contentId, score, ratingVersion));
+        if (nextScore !== currentRating) requests.push(nextScore === null
+          ? this.api.deleteMyContentRating(contentId)
+          : this.api.setContentRating(contentId, nextScore, ratingVersion));
       }
       return requests.length ? forkJoin(requests) : of(null);
-    }));
+    };
+
+    const reviewRequest = passNumber !== null && userId
+      ? this.findSeasonReview(contentId, (review) =>
+          review.source === 'CONTENT_REVIEW'
+          && review.reviewer.id === userId
+          && review.watchNumber === passNumber,
+        ).pipe(switchMap(saveReviewAndRating))
+      : saveReviewAndRating(null);
 
     this.runAction(reviewRequest, () => {
       this.ratingDialogOpen.set(false);

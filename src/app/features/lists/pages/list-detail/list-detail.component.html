@@ -271,3 +271,8 @@
 @if (shareDialogOpen()) {
   <app-share-preview [returnFocusTarget]="listMenuTrigger?.nativeElement ?? null" [model]="shareModel()" [shareUrl]="shareLink()" (closed)="shareDialogOpen.set(false)" />
 }
+<app-post-watch-rating-flow
+  [target]="postWatchRatingTarget()"
+  (closed)="postWatchRatingTarget.set(null)"
+  (saved)="handlePostWatchRatingSaved($event)"
+/>

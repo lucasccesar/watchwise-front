@@ -559,6 +559,11 @@ export interface ContentReviewCreationRequest {
   expectedRatingVersion?: number | null;
 }
 
+export interface MyContentRating {
+  score: number | null;
+  version: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ContentApiService {
   constructor(private readonly http: HttpClient) {}
@@ -855,10 +860,23 @@ export class ContentApiService {
     return this.http.post('/api/v1/diary', request);
   }
 
+  getMyContentRating(contentId: string): Observable<MyContentRating> {
+    return this.http.get<MyContentRating>(
+      `/api/v1/contents/${encodeURIComponent(contentId)}/my-rating`,
+    );
+  }
+
   setContentRating(contentId: string, score: number, expectedVersion: number | null): Observable<{ score: number; version: number }> {
+    const request = expectedVersion === null ? { score } : { score, expectedVersion };
     return this.http.put<{ score: number; version: number }>(
       `/api/v1/contents/${encodeURIComponent(contentId)}/my-rating`,
-      { score, expectedVersion },
+      request,
+    );
+  }
+
+  deleteMyContentRating(contentId: string): Observable<void> {
+    return this.http.delete<void>(
+      `/api/v1/contents/${encodeURIComponent(contentId)}/my-rating`,
     );
   }
 

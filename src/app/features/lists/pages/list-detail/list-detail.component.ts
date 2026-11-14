@@ -9,6 +9,7 @@ import { ToastNotificationsService } from '../../../../shared/components/toast-n
 import { canAddContentToWatchlist, isContentFullyWatched, shouldShowContentWatchlistAction } from '../../../../shared/utils/content-watch-status';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
+import { PostWatchRatingFlowComponent, type PostWatchRatingSaved, type PostWatchRatingTarget } from '../../../../shared/components/post-watch-rating-flow/post-watch-rating-flow.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -34,7 +35,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent, SeriesBulkWatchDialogComponent],
+    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent, SeriesBulkWatchDialogComponent, PostWatchRatingFlowComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
@@ -68,6 +69,7 @@ export class ListDetailComponent {
   protected readonly watchDialogItem = signal<ListDetailItem | null>(null);
   protected readonly watchDialogOpener = signal<HTMLElement | null>(null);
   protected readonly watchDialogSaving = signal(false);
+  protected readonly postWatchRatingTarget = signal<PostWatchRatingTarget | null>(null);
   protected readonly busyListId = signal<string | null>(null);
   protected readonly reorderMode = signal(false);
   protected readonly reorderDraft = signal<ListDetailItem[]>([]);
@@ -569,7 +571,24 @@ export class ListDetailComponent {
       const opener = this.watchDialogOpener();
       this.watchDialogOpener.set(null);
       if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
+      if (card.type === 'SERIES' || card.type === 'SEASON') {
+        this.postWatchRatingTarget.set({
+          type: card.type,
+          contentId: card.contentId,
+          tmdbId: card.type === 'SERIES' ? card.tmdbId : null,
+          seriesTmdbId: card.seriesTmdbId ?? (card.type === 'SERIES' ? card.tmdbId : null),
+          seasonNumber: card.seasonNumber,
+          title: card.title || this.homeCopy.titleUnavailable,
+          subtitle: this.watchDialogBulkSubtitle(item),
+          returnFocusTarget: opener,
+        });
+      }
     });
+  }
+
+  protected handlePostWatchRatingSaved(_event: PostWatchRatingSaved): void {
+    this.postWatchRatingTarget.set(null);
+    this.load(true);
   }
 
   private formatNumber(value: number): string {

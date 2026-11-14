@@ -287,3 +287,8 @@
     }
   }
 </main>
+<app-post-watch-rating-flow
+  [target]="postWatchRatingTarget()"
+  (closed)="postWatchRatingTarget.set(null)"
+  (saved)="handlePostWatchRatingSaved($event)"
+/>

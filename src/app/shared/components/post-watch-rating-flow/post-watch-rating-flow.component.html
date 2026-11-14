@@ -1,0 +1,29 @@
+@if (target(); as target) {
+  @if (promptOpen()) {
+    <app-post-watch-rating-prompt
+      [title]="promptTitle(target)"
+      [message]="promptMessage(target)"
+      [ratingLabel]="promptRatingLabel(target)"
+      [returnFocusTarget]="target.returnFocusTarget ?? null"
+      (evaluate)="evaluate()"
+      (dismiss)="dismiss()"
+    />
+  }
+  @if (ratingDialogOpen()) {
+    <app-rating-dialog
+      [type]="target.type"
+      [title]="ratingTitle()"
+      [subtitle]="target.title + (target.subtitle ? ' · ' + target.subtitle : '')"
+      [initialValue]="initialValue()"
+      [loading]="loading()"
+      [loadError]="loadError()"
+      [saving]="saving()"
+      [canRemove]="false"
+      [allowClear]="true"
+      [returnFocusTarget]="target.returnFocusTarget ?? null"
+      (save)="submit($event)"
+      (retryLoad)="retryLoad()"
+      (dismiss)="dismiss()"
+    />
+  }
+}

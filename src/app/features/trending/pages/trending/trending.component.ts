@@ -25,6 +25,7 @@ import { ResponsiveBannerComponent } from '../../../../shared/components/respons
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
 import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
+import { PostWatchRatingFlowComponent, type PostWatchRatingSaved, type PostWatchRatingTarget } from '../../../../shared/components/post-watch-rating-flow/post-watch-rating-flow.component';
 import { tmdbImageUrl as buildTmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { ContentApiService, ContentPageResult, UserListDetailItem, UserListSummary } from '../../../content/data-access/content-api.service';
 import {
@@ -68,7 +69,7 @@ function emptySection(loading = false): SectionState {
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent],
+  imports: [RouterLink, ContentImageActionsComponent, DialogBackdropComponent, ModalFocusDirective, ResponsiveBannerComponent, CheckIconComponent, RatingDialogComponent, SeriesBulkWatchDialogComponent, PostWatchRatingFlowComponent],
   templateUrl: './trending.component.html',
   styleUrl: './trending.component.css',
 })
@@ -104,6 +105,7 @@ export class TrendingComponent implements OnInit, OnDestroy {
   protected readonly watchDialogCalendarOpen = signal(false);
   protected readonly watchDialogCalendarMonth = signal(this.firstOfMonth(new Date()));
   protected readonly watchDialogSaving = signal(false);
+  protected readonly postWatchRatingTarget = signal<PostWatchRatingTarget | null>(null);
   protected readonly ratingOptions = Array.from({ length: 10 }, (_, index) => index + 1);
   protected readonly calendarWeekdays = this.footerCopy.calendarWeekdays.split(' ');
   protected readonly watchDialogDays = computed(() =>
@@ -572,6 +574,13 @@ export class TrendingComponent implements OnInit, OnDestroy {
         this.updateCardViewerState(card, { watchStatus: 'WATCHED', lastWatchedDate: submission.watchedDate });
         this.toasts.success(isRewatch ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
         this.closeWatchedDialog();
+        this.postWatchRatingTarget.set({
+          type: 'SERIES',
+          tmdbId,
+          title: this.cardTitle(card),
+          subtitle: this.footerCopy.series,
+          returnFocusTarget: this.listDialogOpener(),
+        });
       },
       error: (error: unknown) => {
         this.watchDialogSaving.set(false);
@@ -579,6 +588,11 @@ export class TrendingComponent implements OnInit, OnDestroy {
         this.toasts.error(this.copy.actionError);
       },
     }));
+  }
+
+  protected handlePostWatchRatingSaved(_event: PostWatchRatingSaved): void {
+    this.postWatchRatingTarget.set(null);
+    this.load();
   }
 
   protected toggleCardWatchlist(card: TrendingCard): void {

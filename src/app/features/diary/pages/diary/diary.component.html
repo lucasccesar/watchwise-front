@@ -472,11 +472,21 @@
     [subtitle]="ratingDialogSubtitle(entry)"
     [initialValue]="ratingDialogInitialValue()"
     [friends]="ratingDialogFriends()"
-    [canRemove]="entry.reviewSource === 'DIARY'"
+    [canRemove]="canRemoveRatingEntry(entry)"
+    [allowClear]="canClearRating(entry)"
+    [labels]="ratingDialogLabels(entry)"
     [saving]="ratingDialogSaving()"
+    [loading]="ratingDialogLoading()"
+    [loadError]="ratingDialogLoadError()"
     [returnFocusTarget]="ratingDialogOpener()"
     (save)="saveRatingDialog($event)"
     (remove)="removeRatingEntry()"
+    (retryLoad)="retryRatingDialogLoad()"
     (dismiss)="closeRatingDialog()"
   />
 }
+<app-post-watch-rating-flow
+  [target]="postWatchRatingTarget()"
+  (closed)="postWatchRatingTarget.set(null)"
+  (saved)="handlePostWatchRatingSaved($event)"
+/>

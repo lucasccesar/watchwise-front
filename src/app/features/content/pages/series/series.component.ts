@@ -152,6 +152,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly watchDateMode = signal<WatchDateMode>('today');
   protected readonly watchDate = signal(this.localDate(new Date()));
   protected readonly ratingTarget = signal<RatingTarget | null>(null);
+  protected readonly ratingReviewId = signal<string | null>(null);
   protected readonly episodeWatchTarget = signal<EpisodeWatchTarget | null>(null);
   protected readonly ratingScore = signal(0);
   protected readonly ratingReview = signal('');
@@ -691,6 +692,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected openRating(target: RatingTarget, event?: Event): void {
     this.captureDialogOpener(event);
     this.ratingReviewLoading.set(false);
+    this.ratingReviewId.set(null);
     this.ratingTarget.set(target);
     const series = this.page();
     this.ratingScore.set(target.type === 'SERIES'
@@ -699,7 +701,29 @@ export class SeriesComponent implements OnInit, OnDestroy {
         ? this.seasonMyRating(target.season) ?? 0
         : this.episodeMyRating(target.episode) ?? 0);
     if (target.type === 'SERIES') {
-      this.ratingReview.set(series?.viewerState.myReview ?? '');
+      this.ratingReview.set('');
+      const contentId = series?.details.contentId;
+      const userId = this.session.user()?.id;
+      const passNumber = this.seriesReviewPassNumber();
+      if (contentId && userId && passNumber !== null) {
+        this.ratingReviewLoading.set(true);
+        this.requests.add(this.findSeriesReview(contentId, (review) =>
+          review.source === 'CONTENT_REVIEW'
+          && review.reviewer.id === userId
+          && review.watchNumber === passNumber,
+        ).subscribe({
+          next: (review) => {
+            this.ratingReviewLoading.set(false);
+            if (this.ratingTarget()?.type !== 'SERIES' || this.page()?.details.contentId !== contentId) return;
+            this.ratingReviewId.set(review?.id ?? null);
+            this.ratingReview.set(review?.comment ?? '');
+          },
+          error: (error: unknown) => {
+            this.ratingReviewLoading.set(false);
+            if (!this.handleSessionError(error)) this.showToast(this.errorMessage(error), 'error');
+          },
+        }));
+      }
     } else if (target.type === 'EPISODE') {
       this.ratingReview.set(this.findEpisodeCard(target.episode)?.viewerState.myReview ?? '');
     } else {
@@ -779,8 +803,12 @@ export class SeriesComponent implements OnInit, OnDestroy {
 
   protected canSaveRating(): boolean {
     const target = this.ratingTarget();
+    const existingRating = target?.type === 'SERIES'
+      ? this.page()?.viewerState.myRating
+      : target?.type === 'SEASON' ? this.findSeasonCard(target.season)?.viewerState.myRating : null;
     return !!target && !this.ratingReviewLoading()
-      && (this.ratingScore() > 0 || this.ratingReview().trim().length > 0);
+      && (this.ratingScore() > 0 || this.ratingReview().trim().length > 0
+        || ((target.type === 'SERIES' || target.type === 'SEASON') && this.ratingScore() === 0 && existingRating != null));
   }
 
   protected saveRating(): void {
@@ -793,27 +821,39 @@ export class SeriesComponent implements OnInit, OnDestroy {
       const contentId = currentPage?.details.contentId;
       if (!contentId) return;
       const comment = this.ratingReview().trim();
-      const reviewId = currentPage.viewerState.reviewIds?.[0] ?? null;
-      const currentScore = currentPage.viewerState.myRating ?? 0;
+      const passNumber = this.seriesReviewPassNumber();
+      if (comment && passNumber === null) {
+        this.showToast('Conclua uma passada da série para publicar uma resenha.', 'warning');
+        return;
+      }
+      const reviewId = this.ratingReviewId();
+      const currentScore = currentPage.viewerState.myRating;
+      const nextScore = score > 0 ? score : null;
+      const ratingVersion = currentPage.viewerState.currentRatingVersion ?? null;
+      if (nextScore !== null && currentScore !== null && (nextScore !== currentScore || (comment && !reviewId)) && ratingVersion === null) {
+        this.showToast('Não foi possível carregar a versão atual desta avaliação. Tente novamente.', 'warning');
+        return;
+      }
       const requests: Observable<unknown>[] = [];
       if (comment) {
         if (reviewId) {
-          requests.push(this.api.updateContentReview(reviewId, comment));
-          if (score > 0 && score !== currentScore) {
-            requests.push(this.api.setContentRating(contentId, score, currentPage.viewerState.currentRatingVersion ?? null));
-          }
+          if (comment !== (currentPage.viewerState.myReview ?? '').trim()) requests.push(this.api.updateContentReview(reviewId, comment));
+          if (nextScore !== currentScore) requests.push(nextScore === null
+            ? this.api.deleteMyContentRating(contentId)
+            : this.api.setContentRating(contentId, nextScore, ratingVersion));
         } else {
           requests.push(this.api.createContentReview(contentId, {
             comment,
-            ...(score > 0 ? { score } : {}),
-            ...(score > 0 ? { expectedRatingVersion: currentPage.viewerState.currentRatingVersion ?? null } : {}),
+            ...(nextScore !== null ? { score: nextScore } : {}),
+            ...(nextScore !== null && ratingVersion !== null ? { expectedRatingVersion: ratingVersion } : {}),
           }, crypto.randomUUID()));
+          if (nextScore === null && currentScore !== null) requests.push(this.api.deleteMyContentRating(contentId));
         }
       } else {
         if (reviewId) requests.push(this.api.deleteContentReview(reviewId));
-        if (score > 0 && score !== currentScore) {
-          requests.push(this.api.setContentRating(contentId, score, currentPage.viewerState.currentRatingVersion ?? null));
-        }
+        if (nextScore !== currentScore) requests.push(nextScore === null
+          ? this.api.deleteMyContentRating(contentId)
+          : this.api.setContentRating(contentId, nextScore, ratingVersion));
       }
       if (!requests.length) return;
       this.runAction(forkJoin(requests), () => {
@@ -866,27 +906,34 @@ export class SeriesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const currentRating = season.viewerState.myRating ?? 0;
+    const currentRating = season.viewerState.myRating;
     const ratingVersion = season.viewerState.currentRatingVersion ?? null;
+    const nextScore = score > 0 ? score : null;
+    if (nextScore !== null && currentRating !== null && nextScore !== currentRating && ratingVersion === null) {
+      this.showToast('Não foi possível carregar a versão atual desta avaliação. Tente novamente.', 'warning');
+      return;
+    }
     const saveReviewAndRating = (existingReview: ContentReview | null): Observable<unknown> => {
       const actions: Observable<unknown>[] = [];
       if (comment) {
         if (existingReview) {
           if (existingReview.comment !== comment) actions.push(this.api.updateContentReview(existingReview.id, comment));
-          if (score > 0 && score !== currentRating) {
-            actions.push(this.api.setContentRating(season.contentId, score, ratingVersion));
-          }
+          if (nextScore !== currentRating) actions.push(nextScore === null
+            ? this.api.deleteMyContentRating(season.contentId)
+            : this.api.setContentRating(season.contentId, nextScore, ratingVersion));
         } else {
           actions.push(this.api.createContentReview(season.contentId, {
             comment,
-            ...(score > 0 ? { score, expectedRatingVersion: ratingVersion } : {}),
+            ...(nextScore !== null ? { score: nextScore } : {}),
+            ...(nextScore !== null && ratingVersion !== null ? { expectedRatingVersion: ratingVersion } : {}),
           }, crypto.randomUUID()));
+          if (nextScore === null && currentRating !== null) actions.push(this.api.deleteMyContentRating(season.contentId));
         }
       } else {
         if (existingReview) actions.push(this.api.deleteContentReview(existingReview.id));
-        if (score > 0 && score !== currentRating) {
-          actions.push(this.api.setContentRating(season.contentId, score, ratingVersion));
-        }
+        if (nextScore !== currentRating) actions.push(nextScore === null
+          ? this.api.deleteMyContentRating(season.contentId)
+          : this.api.setContentRating(season.contentId, nextScore, ratingVersion));
       }
       return actions.length ? forkJoin(actions) : of(null);
     };
@@ -899,6 +946,8 @@ export class SeriesComponent implements OnInit, OnDestroy {
         ).pipe(switchMap(saveReviewAndRating))
       : score > 0 && score !== currentRating
         ? this.api.setContentRating(season.contentId, score, ratingVersion)
+        : score === 0 && currentRating !== null
+          ? this.api.deleteMyContentRating(season.contentId)
         : of(null);
 
     this.runAction(request, () => {
@@ -1184,6 +1233,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
     this.dialog.set(null);
     this.videoPlaying.set(false);
     this.ratingTarget.set(null);
+    this.ratingReviewId.set(null);
     this.ratingReviewLoading.set(false);
     this.modalOpener?.focus();
     this.modalOpener = null;
@@ -1528,6 +1578,26 @@ export class SeriesComponent implements OnInit, OnDestroy {
     const passNumber = season.viewerState.lastWatchNumber ?? season.viewerState.playsCount;
     if (passNumber !== null && passNumber > 0) return passNumber;
     return season.viewerState.watchStatus === 'WATCHED' ? 1 : null;
+  }
+
+  private seriesReviewPassNumber(): number | null {
+    const state = this.page()?.viewerState;
+    const passNumber = state?.lastWatchNumber ?? state?.playsCount;
+    if (passNumber != null && passNumber > 0) return passNumber;
+    return state?.watchStatus === 'WATCHED' ? 1 : null;
+  }
+
+  private findSeriesReview(
+    contentId: string,
+    predicate: (review: ContentReview) => boolean,
+    pageNumber = 1,
+  ): Observable<ContentReview | null> {
+    return this.api.getReviews(contentId, pageNumber, 'RECENT').pipe(switchMap((response) => {
+      const review = response.content.find(predicate);
+      return review || !response.hasNext
+        ? of(review ?? null)
+        : this.findSeriesReview(contentId, predicate, pageNumber + 1);
+    }));
   }
 
   private findSeasonReview(
