@@ -569,18 +569,21 @@ export class TrendingComponent implements OnInit, OnDestroy {
       content: { type: 'SERIES', tmdbId },
       watchedDate: submission.watchedDate,
     }, crypto.randomUUID()).subscribe({
-      next: () => {
+      next: (result) => {
         this.watchDialogSaving.set(false);
         this.updateCardViewerState(card, { watchStatus: 'WATCHED', lastWatchedDate: submission.watchedDate });
         this.toasts.success(isRewatch ? this.copy.watchAgainSuccess : this.copy.markWatchedSuccess);
         this.closeWatchedDialog();
-        this.postWatchRatingTarget.set({
-          type: 'SERIES',
-          tmdbId,
-          title: this.cardTitle(card),
-          subtitle: this.footerCopy.series,
-          returnFocusTarget: this.listDialogOpener(),
-        });
+        const contentId = result.completions.find(completion => completion.content.type === 'SERIES')?.contentId;
+        if (contentId) {
+          this.postWatchRatingTarget.set({
+            type: 'SERIES',
+            contentId,
+            title: this.cardTitle(card),
+            subtitle: this.footerCopy.series,
+            returnFocusTarget: this.listDialogOpener(),
+          });
+        }
       },
       error: (error: unknown) => {
         this.watchDialogSaving.set(false);

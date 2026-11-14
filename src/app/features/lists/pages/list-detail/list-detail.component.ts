@@ -571,13 +571,10 @@ export class ListDetailComponent {
       const opener = this.watchDialogOpener();
       this.watchDialogOpener.set(null);
       if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
-      if (card.type === 'SERIES' || card.type === 'SEASON') {
+      if ((card.type === 'SERIES' || card.type === 'SEASON') && card.contentId) {
         this.postWatchRatingTarget.set({
           type: card.type,
           contentId: card.contentId,
-          tmdbId: card.type === 'SERIES' ? card.tmdbId : null,
-          seriesTmdbId: card.seriesTmdbId ?? (card.type === 'SERIES' ? card.tmdbId : null),
-          seasonNumber: card.seasonNumber,
           title: card.title || this.homeCopy.titleUnavailable,
           subtitle: this.watchDialogBulkSubtitle(item),
           returnFocusTarget: opener,

@@ -479,14 +479,15 @@ export class WatchlistComponent implements OnDestroy {
         });
         this.toasts.success(isRewatch ? this.trendingCopy.watchAgainSuccess : this.trendingCopy.markWatchedSuccess);
         this.closeWatchedDialog();
-        this.postWatchRatingTarget.set({
-          type: 'SERIES',
-          contentId: item.card.contentId,
-          tmdbId,
-          title: this.title(item),
-          subtitle: this.homeCopy.series,
-          returnFocusTarget: this.posterMenuOpener(),
-        });
+        if (item.card.contentId) {
+          this.postWatchRatingTarget.set({
+            type: 'SERIES',
+            contentId: item.card.contentId,
+            title: this.title(item),
+            subtitle: this.homeCopy.series,
+            returnFocusTarget: this.posterMenuOpener(),
+          });
+        }
       },
       error: (error: unknown) => {
         this.watchDialogSaving.set(false);

@@ -127,6 +127,7 @@ export interface DiaryViewReviewPreview {
 export interface DiaryViewGroupedItem {
   kind: 'GROUPED';
   content: DiaryViewContentRef;
+  ratingContentId: string | null;
   groupType: DiaryContentType;
   backdropPath?: string | null;
   seasonCount: number;

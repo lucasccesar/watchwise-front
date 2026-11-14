@@ -544,6 +544,21 @@ export interface SeriesDiaryBulkRequest {
   watchedWith?: string[];
 }
 
+export interface DiaryCompletionDescriptor {
+  contentId: string;
+  content: {
+    type: 'SERIES' | 'SEASON';
+    tmdbId: string | null;
+    seriesTmdbId: string | null;
+    seasonNumber: number | null;
+  };
+  pass: { watchNumber: number; anchorDiaryEntryId: string; completedOn: string | null; orderedAt: string };
+}
+
+export interface DiaryBulkCreationResult {
+  completions: DiaryCompletionDescriptor[];
+}
+
 export interface SeriesDiaryRequest {
   content: { type: 'EPISODE'; seriesTmdbId: string; seasonNumber: number; episodeNumber: number; isSeasonFinale?: boolean; isSeriesFinale?: boolean; runtimeMinutes?: number };
   watchedDate?: string | null;
@@ -850,8 +865,8 @@ export class ContentApiService {
     return this.http.delete<void>(`/api/v1/users/me/dropped/SERIES/${encodeURIComponent(tmdbId)}`);
   }
 
-  createBulkSeriesDiaryEntry(request: SeriesDiaryBulkRequest, idempotencyKey: string): Observable<unknown> {
-    return this.http.post('/api/v1/diary/bulk', request, {
+  createBulkSeriesDiaryEntry(request: SeriesDiaryBulkRequest, idempotencyKey: string): Observable<DiaryBulkCreationResult> {
+    return this.http.post<DiaryBulkCreationResult>('/api/v1/diary/bulk', request, {
       headers: { 'Idempotency-Key': idempotencyKey },
     });
   }

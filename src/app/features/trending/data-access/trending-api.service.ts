@@ -16,6 +16,7 @@ export interface TrendingViewerState {
 
 export interface TrendingCard {
   tmdbId: string;
+  contentId: string | null;
   type: TrendingType;
   title: string | null;
   posterUrl: string | null;

@@ -14,7 +14,7 @@ export interface WatchlistCard {
   releaseDate: string | null;
   status: Exclude<WatchlistStatus, 'ALL'>;
   card: {
-    contentId: string | null;
+    contentId: string;
     type: WatchlistContentType;
     tmdbId: string | null;
     seriesTmdbId: string | null;

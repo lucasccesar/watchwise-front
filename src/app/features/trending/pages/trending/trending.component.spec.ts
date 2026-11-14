@@ -1,4 +1,5 @@
 import '@angular/compiler';
+import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -11,9 +12,12 @@ import {
   TrendingType,
 } from '../../data-access/trending-api.service';
 import { TrendingComponent } from './trending.component';
+import type { PostWatchRatingTarget } from '../../../../shared/components/post-watch-rating-flow/post-watch-rating-flow.component';
+import type { SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 
 const movie = (index: number): TrendingCard => ({
   tmdbId: String(index),
+  contentId: null,
   type: 'MOVIE',
   title: `Movie ${index}`,
   posterUrl: null,
@@ -89,5 +93,39 @@ describe('TrendingComponent', () => {
 
     expect(session.clear).toHaveBeenCalledOnce();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
+  });
+
+  it('uses the completion descriptor ID for a new series reference after bulk watch', () => {
+    const card: TrendingCard = {
+      ...movie(1396),
+      type: 'SERIES',
+      contentId: null,
+      title: 'Breaking Bad',
+    };
+    const contentId = 'local-series-id';
+    const ratingTarget = signal<PostWatchRatingTarget | null>(null);
+    const component = Object.assign(Object.create(TrendingComponent.prototype), {
+      watchDialogCard: signal(card),
+      watchDialogSaving: signal(false),
+      watchDialogRewatch: signal(false),
+      contentApi: {
+        createBulkSeriesDiaryEntry: vi.fn().mockReturnValue(of({
+          completions: [{ contentId, content: { type: 'SERIES' } }],
+        })),
+      },
+      cardActionRequests: new Set(),
+      updateCardViewerState: vi.fn(),
+      toasts: { success: vi.fn(), error: vi.fn() },
+      copy: { watchAgainSuccess: 'Assistida novamente', markWatchedSuccess: 'Assistida' },
+      closeWatchedDialog: vi.fn(),
+      postWatchRatingTarget: ratingTarget,
+      cardTitle: vi.fn(() => 'Breaking Bad'),
+      footerCopy: { series: 'Série' },
+      listDialogOpener: signal(null),
+    }) as unknown as { saveSeriesWatchedCard(submission: SeriesBulkWatchSubmission): void };
+
+    component.saveSeriesWatchedCard({ watchedDate: '2026-11-14' });
+
+    expect(ratingTarget()?.contentId).toBe(contentId);
   });
 });

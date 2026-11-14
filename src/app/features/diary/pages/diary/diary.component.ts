@@ -96,6 +96,7 @@ interface DiaryGroupedGridEntry {
   seriesPosterPath: string | null;
   backdropPath: string | null;
   groupType: DiaryViewGroupedItem['groupType'];
+  ratingContentId: string | null;
   seasonCount: number;
   seasonNumbers: number[];
   episodeCount: number;
@@ -941,34 +942,29 @@ export class DiaryComponent implements OnDestroy {
 
   private postWatchRatingTargetFor(entry: DiaryTimelineEntry, returnFocusTarget = this.watchAgainOpener()): PostWatchRatingTarget | null {
     if (this.isGroupedEntry(entry)) {
+      if (!entry.ratingContentId) return null;
       if (entry.groupType === 'SERIES') {
-        const tmdbId = entry.content.tmdbId ?? entry.content.seriesTmdbId;
-        return tmdbId ? {
+        return {
           type: 'SERIES',
-          tmdbId,
+          contentId: entry.ratingContentId,
           title: this.groupedTitle(entry),
           subtitle: this.watchAgainSubtitle(entry),
           returnFocusTarget,
-        } : null;
+        };
       }
-      const seasonNumber = entry.seasonNumbers.length === 1 ? entry.seasonNumbers[0] : null;
-      const seriesTmdbId = entry.content.seriesTmdbId ?? entry.content.tmdbId;
-      return entry.groupType === 'SEASON' && seasonNumber !== null && seriesTmdbId ? {
+      return entry.groupType === 'SEASON' && entry.seasonNumbers.length === 1 ? {
         type: 'SEASON',
-        seriesTmdbId,
-        seasonNumber,
+        contentId: entry.ratingContentId,
         title: this.groupedTitle(entry),
         subtitle: this.watchAgainSubtitle(entry),
         returnFocusTarget,
       } : null;
     }
     if (entry.content.type !== 'SERIES' && entry.content.type !== 'SEASON') return null;
+    if (!entry.content.id) return null;
     return {
       type: entry.content.type,
       contentId: entry.content.id,
-      tmdbId: entry.content.type === 'SERIES' ? entry.content.tmdbId : null,
-      seriesTmdbId: entry.content.seriesTmdbId ?? (entry.content.type === 'SERIES' ? entry.content.tmdbId : null),
-      seasonNumber: entry.content.seasonNumber,
       title: this.watchAgainTitle(entry),
       subtitle: this.watchAgainSubtitle(entry),
       returnFocusTarget,
@@ -1557,6 +1553,7 @@ export class DiaryComponent implements OnDestroy {
       seriesPosterPath,
       backdropPath: item.backdropPath ?? null,
       groupType: item.groupType,
+      ratingContentId: item.ratingContentId,
       seasonCount: item.seasonCount,
       seasonNumbers: item.seasonNumbers ?? [],
       episodeCount: item.episodeCount,

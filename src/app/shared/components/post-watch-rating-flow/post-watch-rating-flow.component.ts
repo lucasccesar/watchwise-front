@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, input, output, signal } from '@angular/core';
-import { forkJoin, of, switchMap, type Observable, type Subscription } from 'rxjs';
+import { forkJoin, type Observable, type Subscription } from 'rxjs';
 import { ContentApiService, type MyContentRating } from '../../../features/content/data-access/content-api.service';
 import { movieMessages } from '../../../features/content/i18n/movie.messages';
 import { messageCatalog } from '../../i18n/messages';
@@ -9,10 +9,7 @@ import { ToastNotificationsService } from '../toast-notifications/toast-notifica
 
 export interface PostWatchRatingTarget {
   type: 'SERIES' | 'SEASON';
-  contentId?: string | null;
-  tmdbId?: string | null;
-  seriesTmdbId?: string | null;
-  seasonNumber?: number | null;
+  contentId: string;
   title: string;
   subtitle: string;
   returnFocusTarget?: HTMLElement | null;
@@ -60,7 +57,7 @@ export class PostWatchRatingFlowComponent implements OnDestroy {
       this.request = undefined;
       this.promptOpen.set(Boolean(this.target()));
       this.ratingDialogOpen.set(false);
-      this.contentId.set(null);
+      this.contentId.set(this.target()?.contentId ?? null);
       this.rating.set(null);
       this.loading.set(false);
       this.saving.set(false);
@@ -104,20 +101,18 @@ export class PostWatchRatingFlowComponent implements OnDestroy {
   }
 
   private loadCurrentRating(target: PostWatchRatingTarget): void {
-    const contentIdRequest = this.resolveContentId(target);
-    if (!contentIdRequest) {
+    const contentId = target.contentId;
+    if (!contentId) {
       this.loadError.set(movieMessages['pt-BR'].ratingVersionUnavailable);
       return;
     }
     this.loading.set(true);
     this.loadError.set('');
     this.request?.unsubscribe();
-    this.request = contentIdRequest.pipe(
-      switchMap((id) => this.api.getMyContentRating(id).pipe(switchMap((rating) => of({ id, rating })))),
-    ).subscribe({
-      next: ({ id, rating }) => {
+    this.request = this.api.getMyContentRating(contentId).subscribe({
+      next: (rating) => {
         if (this.target() !== target) return;
-        this.contentId.set(id);
+        this.contentId.set(contentId);
         this.rating.set(rating);
         this.loading.set(false);
       },
@@ -127,19 +122,6 @@ export class PostWatchRatingFlowComponent implements OnDestroy {
         this.loadError.set(movieMessages['pt-BR'].ratingVersionUnavailable);
       },
     });
-  }
-
-  private resolveContentId(target: PostWatchRatingTarget): Observable<string> | null {
-    const resolvedContentId = this.contentId();
-    if (resolvedContentId) return of(resolvedContentId);
-    if (target.contentId) return of(target.contentId);
-    if (target.type === 'SERIES' && target.tmdbId) {
-      return this.api.createSeriesReference(target.tmdbId).pipe(switchMap((reference) => of(reference.id)));
-    }
-    if (target.type === 'SEASON' && target.seriesTmdbId && target.seasonNumber !== null && target.seasonNumber !== undefined) {
-      return this.api.createSeasonReference(target.seriesTmdbId, target.seasonNumber).pipe(switchMap((reference) => of(reference.id)));
-    }
-    return null;
   }
 
   protected submit(submission: RatingDialogSubmission): void {

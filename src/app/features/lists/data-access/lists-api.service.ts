@@ -71,7 +71,7 @@ export interface UserListCardPage {
 
 export interface ListDetailItem {
   id: string;
-  card: ListCardPreview | null;
+  card: (Omit<ListCardPreview, 'contentId'> & { contentId: string }) | null;
   nestedList: { id: string; name: string; description: string | null; visibility: ListVisibility; itemsCount: number; previewCards: ListCardPreview[] } | null;
   position: number;
   description: string | null;
