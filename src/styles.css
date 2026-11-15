@@ -8,6 +8,11 @@
 @import './app/features/profile/pages/profile/profile-progress-page.css';
 @import './app/features/profile/pages/profile/profile-episode-ratings-map-page.css';
 
+/* Keep the shared content menu beneath the sticky application header. */
+.cdk-overlay-container {
+  z-index: 29;
+}
+
 :root {
   color-scheme: dark;
   --color-text: #f2f7fa;
