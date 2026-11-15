@@ -296,6 +296,7 @@ export class DiaryComponent implements OnDestroy {
   private ratingDrag?: { pointerId: number; track: HTMLElement; handle: 'min' | 'max' | null };
 
   constructor() {
+    this.restoreViewPreferences();
     this.load();
   }
 
@@ -333,12 +334,17 @@ export class DiaryComponent implements OnDestroy {
     }
     this.cursorPages = [];
     this.cursorHasNext.set(false);
+    const groupedViewRequest = this.isReviewsPage
+      ? of({ mode: 'none' as const })
+      : this.seriesGrouping()
+        ? this.readGroupedCursorPage(user.id, null).pipe(map(value => ({ mode: 'cursor' as const, value })))
+        : this.readDiaryView(user.id, false).pipe(map(items => ({ mode: 'flat' as const, items })));
     this.request = forkJoin({
       summary: this.api.getHomeSummary(user.id),
       diary: this.isReviewsPage
         ? this.diaryApi.getAllReviews(user.id)
-        : of([] as DiaryRecord[]),
-      view: this.isReviewsPage ? of(null) : this.readGroupedCursorPage(user.id, null),
+        : this.seriesGrouping() ? of([] as DiaryRecord[]) : this.diaryApi.getAllDiaryEntries(user.id),
+      view: groupedViewRequest,
       series: this.diaryApi.getDiarySeries(user.id),
     }).subscribe({
       next: ({ summary, diary, view, series }) => {
@@ -348,20 +354,20 @@ export class DiaryComponent implements OnDestroy {
         this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath.trim()));
         this.heroBackdropFailed.set(false);
         this.diarySeries.set(series);
-        this.diaryViewItems.set(view?.page.content ?? []);
-        this.seriesGrouping.set(true);
+        const cursorView = view.mode === 'cursor' ? view.value : null;
+        this.diaryViewItems.set(cursorView?.page.content ?? (view.mode === 'flat' ? view.items : []));
         this.seriesGroupingError.set('');
-        const entries = (view?.records ?? diary).map((record) => this.toGridEntry(record));
+        const entries = (cursorView?.records ?? diary).map((record) => this.toGridEntry(record));
         this.page.set(this.isReviewsPage && keepCurrentView
           ? Math.min(this.page(), Math.max(1, Math.ceil(entries.length / this.currentPageSize())))
           : 1);
-        if (view) {
+        if (cursorView) {
           const firstPage: DiaryCursorPageState = {
             cursor: null,
-            nextCursor: view.page.nextCursor,
-            hasNext: view.page.hasNext,
+            nextCursor: cursorView.page.nextCursor,
+            hasNext: cursorView.page.hasNext,
             loaded: true,
-            viewItems: view.page.content,
+            viewItems: cursorView.page.content,
             diaryEntries: entries,
           };
           this.cursorPages = [firstPage];
@@ -607,6 +613,7 @@ export class DiaryComponent implements OnDestroy {
 
   protected toggleGrouping(): void {
     this.grouped.update(value => !value);
+    this.persistViewPreferences();
   }
 
   protected toggleSeriesGrouping(): void {
@@ -634,6 +641,7 @@ export class DiaryComponent implements OnDestroy {
           this.diaryEntries.set(entries);
           this.diaryViewItems.set(result.page.content);
           this.seriesGrouping.set(true);
+          this.persistViewPreferences();
           this.seriesGroupingBusy.set(false);
           this.page.set(1);
         },
@@ -654,6 +662,7 @@ export class DiaryComponent implements OnDestroy {
         this.diaryEntries.set(diary.map((record) => this.toGridEntry(record)));
         this.diaryViewItems.set(view);
         this.seriesGrouping.set(false);
+        this.persistViewPreferences();
         this.seriesGroupingBusy.set(false);
         this.page.set(1);
       },
@@ -1603,6 +1612,37 @@ export class DiaryComponent implements OnDestroy {
       getAllDiaryViewItems?: (ownerId: string, grouped: boolean) => ReturnType<DiaryApiService['getAllDiaryViewItems']>;
     };
     return api.getAllDiaryViewItems?.(userId, grouped) ?? of([] as DiaryViewResponseItem[]);
+  }
+
+  private restoreViewPreferences(): void {
+    const userId = this.session.user()?.id;
+    if (this.isReviewsPage || !userId) return;
+    try {
+      if (typeof localStorage === 'undefined') return;
+      const serialized = localStorage.getItem(`watchwise:diary-view:${userId}`);
+      if (!serialized) return;
+      const preferences: unknown = JSON.parse(serialized);
+      if (!preferences || typeof preferences !== 'object') return;
+      const values = preferences as { grouped?: unknown; seriesGrouping?: unknown };
+      if (typeof values.grouped === 'boolean') this.grouped.set(values.grouped);
+      if (typeof values.seriesGrouping === 'boolean') this.seriesGrouping.set(values.seriesGrouping);
+    } catch {
+      // Keep the default view if storage is unavailable or contains invalid data.
+    }
+  }
+
+  private persistViewPreferences(): void {
+    const userId = this.session.user()?.id;
+    if (this.isReviewsPage || !userId) return;
+    try {
+      if (typeof localStorage === 'undefined') return;
+      localStorage.setItem(`watchwise:diary-view:${userId}`, JSON.stringify({
+        grouped: this.grouped(),
+        seriesGrouping: this.seriesGrouping(),
+      }));
+    } catch {
+      // Keep the in-memory view if storage is unavailable.
+    }
   }
 
   private readGroupedCursorPage(userId: string, cursor: string | null) {
