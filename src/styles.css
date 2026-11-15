@@ -1,3 +1,4 @@
+@import '@angular/cdk/overlay-prebuilt.css';
 @import './app/features/auth/auth-shared.css';
 @import './app/layout/authenticated-layout.component.css';
 @import './app/features/search-content/components/header-search/header-search.component.css';

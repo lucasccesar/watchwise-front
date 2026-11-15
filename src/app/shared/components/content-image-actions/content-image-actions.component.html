@@ -11,6 +11,8 @@
 
   <button
     #trigger
+    cdkOverlayOrigin
+    #menuOrigin="cdkOverlayOrigin"
     class="content-menu-trigger"
     type="button"
     [attr.aria-label]="optionsLabel"
@@ -25,15 +27,18 @@
     </svg>
   </button>
 
-  @if (menuExpanded()) {
+  <ng-template
+    cdkConnectedOverlay
+    [cdkConnectedOverlayOrigin]="menuOrigin"
+    [cdkConnectedOverlayOpen]="menuExpanded()"
+    [cdkConnectedOverlayPositions]="menuPositions"
+    [cdkConnectedOverlayPush]="true"
+    [cdkConnectedOverlayViewportMargin]="12"
+  >
     <div
       class="content-dropdown-menu"
       role="menu" data-ww-menu
       [attr.aria-label]="optionsLabel"
-      [style.position]="menuPosition ? 'fixed' : null"
-      [style.top.px]="menuPosition?.top ?? null"
-      [style.left.px]="menuPosition?.left ?? null"
-      [style.right]="menuPosition ? 'auto' : null"
     >
       @for (action of menuActions(); track action.id) {
         <button
@@ -87,7 +92,7 @@
         </button>
       }
     </div>
-  }
+  </ng-template>
 </div>
 
 @if (listPickerOpen()) {

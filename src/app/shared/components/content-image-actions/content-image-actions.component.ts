@@ -10,6 +10,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Router } from '@angular/router';
 import { Observable, Subscription, of, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../core/session/session.service';
@@ -41,7 +42,7 @@ export type ContentListTarget =
 @Component({
   selector: 'app-content-image-actions',
   standalone: true,
-  imports: [CheckIconComponent],
+  imports: [CdkConnectedOverlay, CdkOverlayOrigin, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './content-image-actions.component.html',
   styleUrl: './content-image-actions.component.css',
@@ -59,7 +60,12 @@ export class ContentImageActionsComponent implements OnDestroy {
     new EventEmitter<ContentImageActionSelection>();
 
   protected internalExpanded = false;
-  protected menuPosition: { top: number; left: number } | null = null;
+  protected readonly menuPositions: ConnectedPosition[] = [
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
+    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
+  ];
   protected readonly listPickerOpen = signal(false);
   protected readonly listPickerPosition = signal<{ top: number; left: number } | null>(null);
   protected readonly userLists = signal<UserListSummary[]>([]);
@@ -103,9 +109,6 @@ export class ContentImageActionsComponent implements OnDestroy {
     event.stopPropagation();
     const willOpen = this.expanded === undefined ? !this.internalExpanded : !this.expanded;
     if (this.expanded === undefined) this.internalExpanded = willOpen;
-    this.menuPosition = willOpen && window.matchMedia('(max-width: 560px)').matches
-      ? this.mobileMenuPosition(event.currentTarget as HTMLElement)
-      : null;
     this.toggle.emit(event);
   }
 
@@ -114,7 +117,6 @@ export class ContentImageActionsComponent implements OnDestroy {
     if (this.expanded !== undefined || !this.internalExpanded) return;
     if (event.target instanceof Node && !this.element.nativeElement.contains(event.target)) {
       this.internalExpanded = false;
-      this.menuPosition = null;
     }
   }
 
@@ -123,7 +125,6 @@ export class ContentImageActionsComponent implements OnDestroy {
     if (this.expanded !== undefined || !this.internalExpanded) return;
     event.stopPropagation();
     this.internalExpanded = false;
-    this.menuPosition = null;
     this.trigger?.nativeElement.focus();
   }
 
@@ -135,19 +136,7 @@ export class ContentImageActionsComponent implements OnDestroy {
       return;
     }
     if (this.expanded === undefined) this.internalExpanded = false;
-    this.menuPosition = null;
     this.actionSelected.emit({ action, event });
-  }
-
-  private mobileMenuPosition(trigger: HTMLElement): { top: number; left: number } {
-    const rect = trigger.getBoundingClientRect();
-    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-    const menuWidth = Math.min(200, viewportWidth - 24);
-    const menuHeight = Math.min(Math.max(58, this.menuActions().length * 40 + 18), window.innerHeight * 0.7);
-    return {
-      left: Math.max(12, Math.min(rect.right - menuWidth, viewportWidth - menuWidth - 12)),
-      top: Math.max(12, Math.min(rect.bottom + 4, window.innerHeight - menuHeight - 12)),
-    };
   }
 
   protected canToggleList(list: UserListSummary): boolean {
