@@ -66,6 +66,7 @@ export class ContentImageActionsComponent implements OnDestroy {
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
   ];
+  protected readonly menuViewportMargin = { top: 72, right: 12, bottom: 12, left: 12 };
   protected readonly listPickerOpen = signal(false);
   protected readonly listPickerPosition = signal<{ top: number; left: number } | null>(null);
   protected readonly userLists = signal<UserListSummary[]>([]);
