@@ -262,6 +262,10 @@
   stroke-width: 1.8;
 }
 
+.diary-filter-button .diary-rating-filter-icon {
+  color: var(--color-text);
+}
+
 .diary-filter-button:hover,
 .diary-collapse-button:hover {
   background: var(--color-secondary);
@@ -436,6 +440,20 @@
 
 .diary-day-group + .diary-day-group {
   margin-top: var(--space-8);
+}
+
+.diary-day-group {
+  position: relative;
+}
+
+.diary-day-group:not(:last-child)::after {
+  position: absolute;
+  right: 0;
+  bottom: calc(0px - var(--space-4));
+  left: 0;
+  height: 1px;
+  background: var(--color-border);
+  content: '';
 }
 
 .diary-day-heading {
