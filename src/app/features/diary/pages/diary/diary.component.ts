@@ -723,6 +723,20 @@ export class DiaryComponent implements OnDestroy {
 
   protected groupedMetadataParts(entry: DiaryGroupedGridEntry): string[] {
     const format = new Intl.NumberFormat('pt-BR');
+    if (entry.seasonEpisodeCounts.length > 0) {
+      const episodeLabel = this.copy.groupEpisodes.replace('{count}', '').trim();
+      const parts: string[] = [];
+      const seasonEpisodeCounts = [...entry.seasonEpisodeCounts]
+        .sort((a, b) => a.seasonNumber - b.seasonNumber);
+      seasonEpisodeCounts.forEach(({ seasonNumber, episodeCount }, index) => {
+        if (index > 0) parts.push('');
+        const unit = episodeCount === 1 ? episodeLabel.replace(/s$/, '') : episodeLabel;
+        parts.push(`${this.copy.season} ${format.format(seasonNumber)}:`);
+        parts.push(`${format.format(episodeCount)} ${unit}`);
+      });
+      return parts;
+    }
+
     const parts: string[] = [];
     const seasonNumbers = [...new Set(entry.seasonNumbers.filter(Number.isInteger))].sort((a, b) => a - b);
     if (seasonNumbers.length > 0) parts.push(this.groupedSeasonNumbersLabel(seasonNumbers));
