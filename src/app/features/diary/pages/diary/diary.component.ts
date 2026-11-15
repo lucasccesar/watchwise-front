@@ -728,12 +728,23 @@ export class DiaryComponent implements OnDestroy {
       const parts: string[] = [];
       const seasonEpisodeCounts = [...entry.seasonEpisodeCounts]
         .sort((a, b) => a.seasonNumber - b.seasonNumber);
-      seasonEpisodeCounts.forEach(({ seasonNumber, episodeCount }, index) => {
+      const visibleSeasonCount = seasonEpisodeCounts.length > 4 ? 3 : seasonEpisodeCounts.length;
+      seasonEpisodeCounts.slice(0, visibleSeasonCount).forEach(({ seasonNumber, episodeCount }, index) => {
         if (index > 0) parts.push('');
         const unit = episodeCount === 1 ? episodeLabel.replace(/s$/, '') : episodeLabel;
         parts.push(`${this.copy.season} ${format.format(seasonNumber)}:`);
         parts.push(`${format.format(episodeCount)} ${unit}`);
       });
+      if (seasonEpisodeCounts.length > 4) {
+        const hiddenSeasonCounts = seasonEpisodeCounts.slice(visibleSeasonCount);
+        const hiddenEpisodeCount = hiddenSeasonCounts.reduce((total, season) => total + season.episodeCount, 0);
+        const hiddenSeasonsLabel = this.copy.groupSeasons.replace('{count}', format.format(hiddenSeasonCounts.length));
+        const episodeUnit = hiddenEpisodeCount === 1 ? episodeLabel.replace(/s$/, '') : episodeLabel;
+        const hiddenEpisodesLabel = `${format.format(hiddenEpisodeCount)} ${episodeUnit}`;
+        const summary = new Intl.ListFormat('pt-BR', { type: 'conjunction' })
+          .format([hiddenSeasonsLabel, hiddenEpisodesLabel]);
+        parts.push('', `+${summary}`);
+      }
       return parts;
     }
 
