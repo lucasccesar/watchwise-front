@@ -738,11 +738,9 @@ export class DiaryComponent implements OnDestroy {
       const seasonEpisodeCounts = [...entry.seasonEpisodeCounts]
         .sort((a, b) => a.seasonNumber - b.seasonNumber);
       const visibleSeasonCount = seasonEpisodeCounts.length > 4 ? 3 : seasonEpisodeCounts.length;
-      seasonEpisodeCounts.slice(0, visibleSeasonCount).forEach(({ seasonNumber, episodeCount }, index) => {
-        if (index > 0) parts.push('');
+      seasonEpisodeCounts.slice(0, visibleSeasonCount).forEach(({ seasonNumber, episodeCount }) => {
         const unit = episodeCount === 1 ? episodeLabel.replace(/s$/, '') : episodeLabel;
-        parts.push(`${this.copy.season} ${format.format(seasonNumber)}:`);
-        parts.push(`${format.format(episodeCount)} ${unit}`);
+        parts.push(`${this.copy.season} ${format.format(seasonNumber)}: ${format.format(episodeCount)} ${unit}`);
       });
       if (seasonEpisodeCounts.length > 4) {
         const hiddenSeasonCounts = seasonEpisodeCounts.slice(visibleSeasonCount);
