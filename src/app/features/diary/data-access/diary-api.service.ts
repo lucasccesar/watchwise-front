@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, concatMap, from, map, of, toArray } from 'rxjs';
 import { readAllPages } from '../../../shared/data-access/read-all-pages';
 
 export interface DiarySeriesOption { seriesTmdbId: string; title: string; entriesCount: number; }
@@ -110,6 +110,7 @@ export interface DiaryViewEntryItem {
   currentRatingVersion: number | null;
   reviewPreviews: DiaryViewReviewPreview[];
   reviewCount: number;
+  relatedDiaryEntryIds?: string[];
 }
 
 export interface DiaryViewReviewPreview {
@@ -132,11 +133,13 @@ export interface DiaryViewGroupedItem {
   backdropPath?: string | null;
   seasonCount: number;
   seasonNumbers?: number[];
+  seasonEpisodeCounts?: Array<{ seasonNumber: number; episodeCount: number }>;
   episodeCount: number;
   totalRuntimeMinutes: number | null;
   groupDate: string;
   watchNumber: number | null;
   orderedAt: string;
+  memberEntryIds?: string[];
 }
 
 export type DiaryViewResponseItem = DiaryViewEntryItem | DiaryViewGroupedItem;
@@ -147,6 +150,13 @@ export interface DiaryViewPage {
   size: number;
   totalElements: number;
   totalPages: number;
+  hasNext: boolean;
+}
+
+export interface DiaryViewCursorPage {
+  content: DiaryViewResponseItem[];
+  size: number;
+  nextCursor: string | null;
   hasNext: boolean;
 }
 
@@ -255,6 +265,54 @@ export class DiaryApiService {
     return this.http.get<DiaryViewPage>(
       `/api/v1/users/${encodeURIComponent(userId)}/diary/view`,
       { params },
+    );
+  }
+
+  getDiaryViewCursorPage(
+    userId: string,
+    options: {
+      cursor?: string | null;
+      size: number;
+      type?: DiaryContentType;
+      dateStart?: string;
+      dateEnd?: string;
+      scoreMin?: number;
+      scoreMax?: number;
+      seriesTmdbId?: string;
+      watchedInTheater?: boolean;
+      sortBy?: DiarySortBy;
+    },
+  ): Observable<DiaryViewCursorPage> {
+    let params = new HttpParams().set('grouped', true).set('size', options.size);
+    if (options.cursor) params = params.set('cursor', options.cursor);
+    if (options.type) params = params.set('type', options.type);
+    if (options.dateStart) params = params.set('dateStart', options.dateStart);
+    if (options.dateEnd) params = params.set('dateEnd', options.dateEnd);
+    if (options.scoreMin !== undefined) params = params.set('scoreMin', options.scoreMin);
+    if (options.scoreMax !== undefined) params = params.set('scoreMax', options.scoreMax);
+    if (options.seriesTmdbId) params = params.set('seriesTmdbId', options.seriesTmdbId);
+    if (options.watchedInTheater !== undefined) params = params.set('watchedInTheater', options.watchedInTheater);
+    if (options.sortBy) params = params.set('sortBy', options.sortBy);
+    return this.http.get<DiaryViewCursorPage>(
+      `/api/v1/users/${encodeURIComponent(userId)}/diary/view`,
+      { params },
+    );
+  }
+
+  getDiaryEntriesByIds(userId: string, entryIds: string[]): Observable<DiaryRecord[]> {
+    const uniqueIds = [...new Set(entryIds)];
+    if (!uniqueIds.length) return of([]);
+    const batches: string[][] = [];
+    for (let index = 0; index < uniqueIds.length; index += 500) {
+      batches.push(uniqueIds.slice(index, index + 500));
+    }
+    return from(batches).pipe(
+      concatMap((batch) => this.http.post<DiaryRecord[]>(
+        `/api/v1/users/${encodeURIComponent(userId)}/diary/batch`,
+        { entryIds: batch },
+      )),
+      toArray(),
+      map((results) => results.flat()),
     );
   }
 

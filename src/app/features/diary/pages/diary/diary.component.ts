@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, Observable, of, Subscription } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import {
   DiaryApiService,
@@ -49,6 +50,15 @@ interface DiaryDayGroup {
 interface DiaryPaginationItem {
   key: string;
   page: number | null;
+}
+
+interface DiaryCursorPageState {
+  cursor: string | null;
+  nextCursor: string | null;
+  hasNext: boolean;
+  loaded: boolean;
+  viewItems: DiaryViewResponseItem[];
+  diaryEntries: DiaryGridEntry[];
 }
 
 interface DiaryReviewCompanion {
@@ -99,6 +109,7 @@ interface DiaryGroupedGridEntry {
   ratingContentId: string | null;
   seasonCount: number;
   seasonNumbers: number[];
+  seasonEpisodeCounts: Array<{ seasonNumber: number; episodeCount: number }>;
   episodeCount: number;
   totalRuntimeMinutes: number | null;
   watchNumber: number | null;
@@ -128,6 +139,8 @@ export class DiaryComponent implements OnDestroy {
   protected readonly diarySeries = signal<DiarySeriesOption[]>([]);
   protected readonly diaryEntries = signal<DiaryGridEntry[]>([]);
   protected readonly diaryViewItems = signal<DiaryViewResponseItem[]>([]);
+  protected readonly cursorHasNext = signal(false);
+  protected readonly cursorLoading = signal(false);
   protected readonly loadingPlaceholders = Array.from({ length: 12 }, (_, index) => index);
   protected readonly reviewLoadingPlaceholders = [0, 1, 2];
   protected readonly busyReviewLikeIds = signal<ReadonlySet<string>>(new Set());
@@ -152,6 +165,7 @@ export class DiaryComponent implements OnDestroy {
   protected readonly reviewsPageSize = 15;
   protected readonly isReviewsPage = this.route.snapshot.data['mode'] === 'reviews';
   protected readonly currentPageSize = computed(() => this.isReviewsPage ? this.reviewsPageSize : this.pageSize);
+  protected readonly cursorDiary = computed(() => !this.isReviewsPage && this.seriesGrouping());
   private readonly activeDiaryFilters = computed(() => ({
     type: this.typeFilter(), ratingMin: this.ratingMin(), ratingMax: this.ratingMax(),
     seriesId: this.selectedSeriesId(), dateFrom: this.dateFrom(), dateTo: this.dateTo(),
@@ -160,9 +174,8 @@ export class DiaryComponent implements OnDestroy {
   protected readonly entries = computed<DiaryTimelineEntry[]>(() => this.isReviewsPage
     ? filterDiaryEntries(this.diaryEntries(), this.activeDiaryFilters())
     : this.filteredTimelineEntries());
-  protected readonly visibleEntries = computed(() => this.entries().slice(
-    (this.page() - 1) * this.currentPageSize(), this.page() * this.currentPageSize(),
-  ));
+  protected readonly visibleEntries = computed(() => this.cursorDiary() ? this.entries().slice(0, this.pageSize)
+    : this.entries().slice((this.page() - 1) * this.currentPageSize(), this.page() * this.currentPageSize()));
   protected readonly visibleReviewEntries = computed(() => filterDiaryEntries(this.diaryEntries(), this.activeDiaryFilters()).slice(
     (this.page() - 1) * this.currentPageSize(), this.page() * this.currentPageSize(),
   ));
@@ -180,11 +193,21 @@ export class DiaryComponent implements OnDestroy {
     { value: 'highest', label: this.copy.highestRated }, { value: 'lowest', label: this.copy.lowestRated },
   ];
   protected readonly totalPlays = computed(() => this.entries().length);
-  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalPlays() / this.currentPageSize())));
+  protected readonly totalPages = computed(() => this.cursorDiary()
+    ? this.page() + (this.cursorHasNext() ? 1 : 0)
+    : Math.max(1, Math.ceil(this.totalPlays() / this.currentPageSize())));
   protected readonly visibleStart = computed(() => this.totalPlays() === 0
-    ? 0 : (this.page() - 1) * this.currentPageSize() + 1);
-  protected readonly visibleEnd = computed(() => Math.min(this.totalPlays(), this.page() * this.currentPageSize()));
+    ? 0 : this.cursorDiary() ? 1 : (this.page() - 1) * this.currentPageSize() + 1);
+  protected readonly visibleEnd = computed(() => this.cursorDiary()
+    ? this.visibleEntries().length
+    : Math.min(this.totalPlays(), this.page() * this.currentPageSize()));
   protected readonly paginationItems = computed<DiaryPaginationItem[]>(() => {
+    if (this.cursorDiary()) {
+      const total = this.totalPages();
+      const start = Math.max(1, total - 5);
+      const pages = Array.from({ length: total - start + 1 }, (_, index) => start + index);
+      return pages.map((page) => ({ key: `page-${page}`, page }));
+    }
     const total = this.totalPages();
     const current = this.page();
     let pages: Array<number | null>;
@@ -268,6 +291,7 @@ export class DiaryComponent implements OnDestroy {
   private request?: Subscription;
   private viewRequest?: Subscription;
   private actionRequests = new Subscription();
+  private cursorPages: DiaryCursorPageState[] = [];
   private filterOpener?: HTMLButtonElement;
   private ratingDrag?: { pointerId: number; track: HTMLElement; handle: 'min' | 'max' | null };
 
@@ -307,12 +331,14 @@ export class DiaryComponent implements OnDestroy {
       this.heroBackdropFailed.set(false);
       this.errorMessage.set('');
     }
+    this.cursorPages = [];
+    this.cursorHasNext.set(false);
     this.request = forkJoin({
       summary: this.api.getHomeSummary(user.id),
       diary: this.isReviewsPage
         ? this.diaryApi.getAllReviews(user.id)
-        : this.diaryApi.getAllDiaryEntries(user.id),
-      view: this.isReviewsPage ? of([] as DiaryViewResponseItem[]) : this.readDiaryView(user.id, true),
+        : of([] as DiaryRecord[]),
+      view: this.isReviewsPage ? of(null) : this.readGroupedCursorPage(user.id, null),
       series: this.diaryApi.getDiarySeries(user.id),
     }).subscribe({
       next: ({ summary, diary, view, series }) => {
@@ -322,13 +348,25 @@ export class DiaryComponent implements OnDestroy {
         this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath.trim()));
         this.heroBackdropFailed.set(false);
         this.diarySeries.set(series);
-        this.diaryViewItems.set(view);
+        this.diaryViewItems.set(view?.page.content ?? []);
         this.seriesGrouping.set(true);
         this.seriesGroupingError.set('');
-        const entries = diary.map((record) => this.toGridEntry(record));
-        this.page.set(keepCurrentView
+        const entries = (view?.records ?? diary).map((record) => this.toGridEntry(record));
+        this.page.set(this.isReviewsPage && keepCurrentView
           ? Math.min(this.page(), Math.max(1, Math.ceil(entries.length / this.currentPageSize())))
           : 1);
+        if (view) {
+          const firstPage: DiaryCursorPageState = {
+            cursor: null,
+            nextCursor: view.page.nextCursor,
+            hasNext: view.page.hasNext,
+            loaded: true,
+            viewItems: view.page.content,
+            diaryEntries: entries,
+          };
+          this.cursorPages = [firstPage];
+          this.cursorHasNext.set(firstPage.hasNext);
+        }
         this.diaryEntries.set(entries);
         this.status.set('ready');
       },
@@ -350,6 +388,7 @@ export class DiaryComponent implements OnDestroy {
     this.typeFilter.set(value);
     this.closeFilter();
     this.page.set(1);
+    this.reloadCursorPage();
   }
 
   protected updateRating(handle: 'min' | 'max', event: Event): void {
@@ -399,7 +438,14 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected endRatingDrag(event: PointerEvent): void {
-    if (this.ratingDrag?.pointerId === event.pointerId) this.ratingDrag = undefined;
+    if (this.ratingDrag?.pointerId === event.pointerId) {
+      this.ratingDrag = undefined;
+      this.reloadCursorPage();
+    }
+  }
+
+  protected commitRatingFilter(): void {
+    this.reloadCursorPage();
   }
 
   private ratingValueAtPointer(track: HTMLElement, clientX: number): number {
@@ -412,6 +458,7 @@ export class DiaryComponent implements OnDestroy {
     this.ratingMin.set(1);
     this.ratingMax.set(10);
     this.page.set(1);
+    this.reloadCursorPage();
   }
 
   protected toggleFilter(filter: Exclude<DiaryFilter, null>, event?: Event): void {
@@ -430,6 +477,7 @@ export class DiaryComponent implements OnDestroy {
     this.selectedSeriesId.set(value);
     this.closeFilter();
     this.page.set(1);
+    this.reloadCursorPage();
   }
 
   protected updateDate(value: 'from' | 'to', event: Event): void {
@@ -438,6 +486,7 @@ export class DiaryComponent implements OnDestroy {
     if (value === 'from') this.dateFrom.set(date);
     else this.dateTo.set(date);
     this.page.set(1);
+    this.reloadCursorPage();
   }
 
   protected setDateShortcut(shortcut: 'week' | 'month' | 'year' | 'all'): void {
@@ -450,6 +499,7 @@ export class DiaryComponent implements OnDestroy {
     this.dateTo.set(shortcut === 'all' ? '' : localDiaryDay(today.toISOString()));
     this.page.set(1);
     this.closeFilter();
+    this.reloadCursorPage();
   }
 
   protected seriesOptions(): Array<{ id: string; title: string }> {
@@ -475,6 +525,7 @@ export class DiaryComponent implements OnDestroy {
     this.sortOrder.set(value);
     this.closeFilter();
     this.page.set(1);
+    this.reloadCursorPage();
   }
 
   protected typeFilterLabel(): string {
@@ -551,6 +602,7 @@ export class DiaryComponent implements OnDestroy {
   protected toggleTheaterFilter(): void {
     this.theaterOnly.update((value) => !value);
     this.page.set(1);
+    this.reloadCursorPage();
   }
 
   protected toggleGrouping(): void {
@@ -565,10 +617,43 @@ export class DiaryComponent implements OnDestroy {
     this.seriesGroupingBusy.set(true);
     this.seriesGroupingError.set('');
     this.viewRequest?.unsubscribe();
-    this.viewRequest = this.readDiaryView(user.id, nextGrouped).subscribe({
-      next: (items) => {
-        this.diaryViewItems.set(items);
-        this.seriesGrouping.set(nextGrouped);
+    if (nextGrouped) {
+      this.viewRequest = this.readGroupedCursorPage(user.id, null).subscribe({
+        next: (result) => {
+          const entries = result.records.map((record) => this.toGridEntry(record));
+          const firstPage: DiaryCursorPageState = {
+            cursor: null,
+            nextCursor: result.page.nextCursor,
+            hasNext: result.page.hasNext,
+            loaded: true,
+            viewItems: result.page.content,
+            diaryEntries: entries,
+          };
+          this.cursorPages = [firstPage];
+          this.cursorHasNext.set(firstPage.hasNext);
+          this.diaryEntries.set(entries);
+          this.diaryViewItems.set(result.page.content);
+          this.seriesGrouping.set(true);
+          this.seriesGroupingBusy.set(false);
+          this.page.set(1);
+        },
+        error: () => {
+          this.seriesGroupingBusy.set(false);
+          this.seriesGroupingError.set(this.homeCopy.genericError);
+        },
+      });
+      return;
+    }
+    this.viewRequest = forkJoin({
+        diary: this.diaryApi.getAllDiaryEntries(user.id),
+        view: this.readDiaryView(user.id, false),
+      }).subscribe({
+      next: ({ diary, view }) => {
+        this.cursorPages = [];
+        this.cursorHasNext.set(false);
+        this.diaryEntries.set(diary.map((record) => this.toGridEntry(record)));
+        this.diaryViewItems.set(view);
+        this.seriesGrouping.set(false);
         this.seriesGroupingBusy.set(false);
         this.page.set(1);
       },
@@ -1370,7 +1455,62 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected goToPage(page: number): void {
+    if (this.cursorDiary()) {
+      this.goToCursorPage(page);
+      return;
+    }
     this.page.set(Math.min(this.totalPages(), Math.max(1, page)));
+  }
+
+  private goToCursorPage(pageNumber: number): void {
+    if (this.cursorLoading() || pageNumber < 1) return;
+    const cachedPage = this.cursorPages[pageNumber - 1];
+    if (cachedPage?.loaded) {
+      this.showCursorPage(cachedPage, pageNumber);
+      return;
+    }
+    const previousPage = this.cursorPages[pageNumber - 2];
+    const cursor = cachedPage?.cursor ?? previousPage?.nextCursor;
+    if (!cursor && pageNumber !== 1) return;
+    if (!cachedPage && (!previousPage?.hasNext || pageNumber !== this.cursorPages.length + 1)) return;
+
+    const user = this.session.user();
+    if (!user) return;
+    this.cursorLoading.set(true);
+    this.viewRequest?.unsubscribe();
+    this.viewRequest = this.readGroupedCursorPage(user.id, cursor).subscribe({
+      next: (result) => {
+        const loadedPage: DiaryCursorPageState = {
+          cursor,
+          nextCursor: result.page.nextCursor,
+          hasNext: result.page.hasNext,
+          loaded: true,
+          viewItems: result.page.content,
+          diaryEntries: result.records.map((record) => this.toGridEntry(record)),
+        };
+        if (cachedPage) this.cursorPages[pageNumber - 1] = loadedPage;
+        else this.cursorPages.push(loadedPage);
+        this.cursorLoading.set(false);
+        this.showCursorPage(loadedPage, pageNumber);
+      },
+      error: () => {
+        this.cursorLoading.set(false);
+        this.toasts.error(this.homeCopy.genericError);
+      },
+    });
+  }
+
+  private showCursorPage(pageState: DiaryCursorPageState, pageNumber: number): void {
+    this.page.set(pageNumber);
+    this.cursorHasNext.set(pageState.hasNext);
+    this.diaryViewItems.set(pageState.viewItems);
+    this.diaryEntries.set(pageState.diaryEntries);
+    this.cursorPages = this.cursorPages.map((cachedPage, index) => index === pageNumber - 1 ? cachedPage : {
+      ...cachedPage,
+      loaded: false,
+      viewItems: [],
+      diaryEntries: [],
+    });
   }
 
   protected formatScore(value: number): string {
@@ -1421,6 +1561,11 @@ export class DiaryComponent implements OnDestroy {
   }
 
   protected showingLabel(): string {
+    if (this.cursorDiary()) {
+      const count = this.visibleEntries().length;
+      const suffix = this.cursorHasNext() ? '+' : '';
+      return `Página ${this.page()} · ${this.statsNumber(count)} itens${suffix}`;
+    }
     const format = new Intl.NumberFormat('pt-BR');
     return (this.isReviewsPage ? this.copy.showingReviews : this.copy.showingCount)
       .replace('{shown}', format.format(this.visibleEnd() - this.visibleStart() + 1))
@@ -1433,6 +1578,79 @@ export class DiaryComponent implements OnDestroy {
       getAllDiaryViewItems?: (ownerId: string, grouped: boolean) => ReturnType<DiaryApiService['getAllDiaryViewItems']>;
     };
     return api.getAllDiaryViewItems?.(userId, grouped) ?? of([] as DiaryViewResponseItem[]);
+  }
+
+  private readGroupedCursorPage(userId: string, cursor: string | null) {
+    const type = ({ movies: 'MOVIE', series: 'SERIES', seasons: 'SEASON', episodes: 'EPISODE' } as const)[this.typeFilter() as 'movies' | 'series' | 'seasons' | 'episodes'];
+    const options = {
+      cursor,
+      size: this.pageSize,
+      type: this.typeFilter() === 'all' ? undefined : type,
+      dateStart: this.dateFrom() || undefined,
+      dateEnd: this.dateTo() || undefined,
+      scoreMin: this.ratingApplied() ? this.ratingMin() : undefined,
+      scoreMax: this.ratingApplied() ? this.ratingMax() : undefined,
+      seriesTmdbId: this.selectedSeriesId() || undefined,
+      watchedInTheater: this.theaterOnly() ? true : undefined,
+      sortBy: ({ newest: 'NEWEST', oldest: 'OLDEST', highest: 'RATING_DESC', lowest: 'RATING_ASC' } as const)[this.sortOrder()],
+    };
+    return this.diaryApi.getDiaryViewCursorPage(userId, options).pipe(
+      switchMap((page) => {
+        const entryIds = this.diaryEntryIdsForView(page.content);
+        return entryIds.length
+          ? this.diaryApi.getDiaryEntriesByIds(userId, entryIds).pipe(map((records) => ({ page, records })))
+          : of({ page, records: [] as DiaryRecord[] });
+      }),
+    );
+  }
+
+  private reloadCursorPage(): void {
+    if (!this.cursorDiary()) return;
+    const user = this.session.user();
+    if (!user) return;
+    this.viewRequest?.unsubscribe();
+    this.cursorPages = [];
+    this.cursorHasNext.set(false);
+    this.page.set(1);
+    this.seriesGroupingError.set('');
+    this.cursorLoading.set(true);
+    this.viewRequest = this.readGroupedCursorPage(user.id, null).subscribe({
+      next: (result) => {
+        const entries = result.records.map((record) => this.toGridEntry(record));
+        const firstPage: DiaryCursorPageState = {
+          cursor: null,
+          nextCursor: result.page.nextCursor,
+          hasNext: result.page.hasNext,
+          loaded: true,
+          viewItems: result.page.content,
+          diaryEntries: entries,
+        };
+        this.cursorPages = [firstPage];
+        this.cursorHasNext.set(firstPage.hasNext);
+        this.diaryViewItems.set(firstPage.viewItems);
+        this.diaryEntries.set(entries);
+        this.cursorLoading.set(false);
+      },
+      error: () => {
+        this.cursorLoading.set(false);
+        this.seriesGroupingError.set(this.homeCopy.genericError);
+      },
+    });
+  }
+
+  private diaryEntryIdsForView(items: DiaryViewResponseItem[]): string[] {
+    const ids = new Set<string>();
+    for (const item of items) {
+      if (item.kind === 'GROUPED') {
+        for (const id of item.memberEntryIds ?? []) ids.add(id);
+      } else if (item.kind === 'PERSISTED_ENTRY') {
+        if (item.diaryEntryId) ids.add(item.diaryEntryId);
+        for (const id of item.relatedDiaryEntryIds ?? []) ids.add(id);
+      } else {
+        for (const id of item.relatedDiaryEntryIds ?? []) ids.add(id);
+      }
+    }
+    return [...ids];
   }
 
   private filteredTimelineEntries(): DiaryTimelineEntry[] {
@@ -1505,6 +1723,17 @@ export class DiaryComponent implements OnDestroy {
   }
 
   private groupedRecords(item: DiaryViewGroupedItem, records: DiaryGridEntry[], consumedIds: ReadonlySet<string>): DiaryGridEntry[] {
+    if (item.memberEntryIds) {
+      const recordsById = new Map(records.map((record) => [record.id, record]));
+      const candidates = item.memberEntryIds
+        .map((id) => recordsById.get(id))
+        .filter((record): record is DiaryGridEntry => Boolean(record && !consumedIds.has(record.id)));
+      if (item.episodeCount > 0) {
+        return candidates.filter((record) => record.content.type === 'EPISODE').slice(0, item.episodeCount);
+      }
+      return candidates.filter((record) => record.content.type === 'SEASON' || record.content.type === 'SERIES')
+        .slice(0, Math.max(1, item.seasonCount));
+    }
     const seriesId = item.content.tmdbId || item.content.seriesTmdbId;
     if (!seriesId) return [];
     const candidates = records.filter(record => {
@@ -1556,6 +1785,7 @@ export class DiaryComponent implements OnDestroy {
       ratingContentId: item.ratingContentId,
       seasonCount: item.seasonCount,
       seasonNumbers: item.seasonNumbers ?? [],
+      seasonEpisodeCounts: item.seasonEpisodeCounts ?? [],
       episodeCount: item.episodeCount,
       totalRuntimeMinutes: item.totalRuntimeMinutes,
       watchNumber: item.watchNumber,
