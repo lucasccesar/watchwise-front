@@ -101,8 +101,20 @@ export class ContentImageActionsComponent implements OnDestroy {
   }
 
   protected menuActions(): readonly ContentImageAction[] {
-    if (!this.listTarget || this.actions.some((action) => action.id === 'add-to-list')) return this.actions;
-    return [...this.actions, { id: 'add-to-list', label: this.listCopy.addToList, icon: 'list' }];
+    const actions = [...this.actions];
+    if (this.listTarget && !actions.some((action) => action.id === 'add-to-list')) {
+      actions.push({ id: 'add-to-list', label: this.listCopy.addToList, icon: 'list' });
+    }
+
+    const regularActions = actions.filter((action) => !this.isRemovalAction(action));
+    const removalActions = actions.filter((action) => this.isRemovalAction(action));
+    return [...regularActions, ...removalActions];
+  }
+
+  private isRemovalAction(action: ContentImageAction): boolean {
+    return action.icon === 'trash'
+      || /(?:^|[-_])(remove|delete|clear)(?:[-_]|$)/i.test(action.id)
+      || /\b(remove|remover|excluir|apagar|deletar|delete|clear)\b/i.test(action.label);
   }
 
   protected menuExpanded(): boolean {

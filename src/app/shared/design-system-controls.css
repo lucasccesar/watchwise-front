@@ -239,6 +239,30 @@ select[data-ww-select-trigger]:disabled {
   stroke-width: 1.8;
 }
 
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) svg * {
+  stroke: #fff !important;
+}
+
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) svg[fill]:not([fill='none']),
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) svg *[fill]:not([fill='none']) {
+  fill: #fff !important;
+}
+
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) app-check-icon,
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) app-check-icon svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+:is([data-ww-menu], [data-ww-menu-item], [role='menu'], [role='listbox']) app-check-icon svg * {
+  stroke: #fff !important;
+}
+
 [data-ww-menu] [role='separator'] {
   height: 1px;
   flex: 0 0 auto;
