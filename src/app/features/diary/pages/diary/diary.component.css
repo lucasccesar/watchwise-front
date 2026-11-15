@@ -588,7 +588,14 @@
   position: absolute;
   z-index: 1;
   inset: 0;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-secondary) 45%, transparent) 0%, color-mix(in srgb, var(--color-surface-secondary) 35%, transparent) 30%, color-mix(in srgb, var(--color-surface-secondary) 80%, transparent) 55%, color-mix(in srgb, var(--color-surface-secondary) 96%, transparent) 75%, var(--color-surface-secondary) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-surface-secondary) 45%, transparent) 0%,
+    color-mix(in srgb, var(--color-surface-secondary) 35%, transparent) 30%,
+    color-mix(in srgb, var(--color-surface-secondary) 80%, transparent) calc(55% - var(--diary-grouped-scrim-shift, 0%)),
+    color-mix(in srgb, var(--color-surface-secondary) 96%, transparent) calc(75% - var(--diary-grouped-scrim-shift, 0%)),
+    var(--color-surface-secondary) 100%
+  );
 }
 
 .diary-grouped-summary > .diary-grouped-metadata {

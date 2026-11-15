@@ -765,6 +765,12 @@ export class DiaryComponent implements OnDestroy {
     return parts;
   }
 
+  protected groupedScrimShift(metadataParts: readonly string[]): string {
+    const visibleLines = metadataParts.filter(part => part.trim().length > 0).length;
+    const additionalLines = Math.max(0, visibleLines - 2);
+    return `${Math.min(20, additionalLines * 4)}%`;
+  }
+
   private groupedSeasonNumbersLabel(seasonNumbers: number[]): string {
     const formatted = seasonNumbers.map(number => new Intl.NumberFormat('pt-BR').format(number));
     const enumeration = formatted.length === 1
