@@ -99,7 +99,7 @@
                   <span class="list-detail-menu-separator" role="separator"></span>
                   <button type="button" role="menuitem" data-ww-menu-item [disabled]="savingItemOrder()" (click)="reorderMode() ? saveItemOrder() : toggleReorder()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>{{ reorderMode() ? copy.saveOrder : copy.reorder }}</button>
                   <button type="button" role="menuitem" data-ww-menu-item (click)="openEdit()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" /></svg>{{ copy.edit }}</button>
-                  <button class="list-detail-menu-danger" type="button" role="menuitem" data-ww-menu-item (click)="deleteListDialogOpen.set(true); listMenuOpen.set(false)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6" /></svg>{{ copy.delete }}</button>
+                  <button class="list-detail-menu-danger" type="button" role="menuitem" data-ww-menu-item data-ww-danger-action (click)="deleteListDialogOpen.set(true); listMenuOpen.set(false)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6" /></svg>{{ copy.delete }}</button>
                 }
               </div>
             }

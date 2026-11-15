@@ -95,7 +95,7 @@
                       @if (list.ownedByMe) {
                         <span class="list-card-menu-separator" role="separator"></span>
                         <button type="button" role="menuitem" data-ww-menu-item (click)="editList(list)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" /></svg>{{ detailCopy.edit }}</button>
-                        <button class="list-card-menu-danger" type="button" role="menuitem" data-ww-menu-item (click)="requestDeleteList(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6" /></svg>{{ detailCopy.delete }}</button>
+                        <button class="list-card-menu-danger" type="button" role="menuitem" data-ww-menu-item data-ww-danger-action (click)="requestDeleteList(list, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6" /></svg>{{ detailCopy.delete }}</button>
                       }
                     </div>
                   }

@@ -49,6 +49,7 @@
           class="content-dropdown-item"
           type="button"
           role="menuitem" data-ww-menu-item
+          [attr.data-ww-danger-action]="isRemovalAction(action) ? '' : null"
           [disabled]="action.disabled"
           (click)="selectAction(action, $event)"
         >

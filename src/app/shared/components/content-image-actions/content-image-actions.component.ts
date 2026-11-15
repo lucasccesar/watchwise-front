@@ -111,7 +111,7 @@ export class ContentImageActionsComponent implements OnDestroy {
     return [...regularActions, ...removalActions];
   }
 
-  private isRemovalAction(action: ContentImageAction): boolean {
+  protected isRemovalAction(action: ContentImageAction): boolean {
     return action.icon === 'trash'
       || /(?:^|[-_])(remove|delete|clear)(?:[-_]|$)/i.test(action.id)
       || /\b(remove|remover|excluir|apagar|deletar|delete|clear)\b/i.test(action.label);

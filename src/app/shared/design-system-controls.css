@@ -223,6 +223,21 @@ select[data-ww-select-trigger]:disabled {
   color: var(--color-error) !important;
 }
 
+[data-ww-menu-item][data-ww-danger-action],
+[data-ww-menu-item][data-ww-danger-action] * {
+  color: var(--color-error) !important;
+}
+
+[data-ww-menu-item][data-ww-danger-action] svg,
+[data-ww-menu-item][data-ww-danger-action] svg * {
+  stroke: var(--color-error) !important;
+}
+
+[data-ww-menu-item][data-ww-danger-action] svg[fill]:not([fill='none']),
+[data-ww-menu-item][data-ww-danger-action] svg *[fill]:not([fill='none']) {
+  fill: var(--color-error) !important;
+}
+
 [data-ww-menu-item]:disabled {
   cursor: not-allowed;
   opacity: .55;

@@ -19,7 +19,7 @@
           @if (watched()) { <button type="button" [disabled]="actionPending()" (click)="openSeasonRewatch($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10s2-2.7 3.6-4.4A9 9 0 1 1 3.4 14.5M2 10V4m0 6h6" /></svg><span>{{ copy.rewatch }}</span><small>{{ formatNumber(seasonPage.viewerState.playsCount, 0) }}</small></button> }
           <button type="button" disabled data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg><span>{{ copy.watchHistory }}</span></button>
           @if (watched()) { <button type="button" [disabled]="actionPending()" (click)="openShareLatestSeasonReview($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4m0-11-6.8 4" /></svg><span>{{ copy.shareReview }}</span></button> }
-          <button class="movie-mobile-action-remove-history" type="button" [disabled]="actionPending()" (click)="openSeasonHistoryConfirmation($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg><span>{{ copy.removeSeasonHistory }}</span></button>
+          <button class="movie-mobile-action-remove-history" type="button" data-ww-danger-action [disabled]="actionPending()" (click)="openSeasonHistoryConfirmation($event)" data-ww-menu-item><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg><span>{{ copy.removeSeasonHistory }}</span></button>
         </div>
       </details>
     </ng-template>
