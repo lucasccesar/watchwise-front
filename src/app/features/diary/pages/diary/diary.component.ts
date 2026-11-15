@@ -765,10 +765,26 @@ export class DiaryComponent implements OnDestroy {
     return parts;
   }
 
-  protected groupedScrimShift(metadataParts: readonly string[]): string {
+  protected groupedScrimStops(metadataParts: readonly string[]): {
+    topOpacity: string;
+    softPosition: string;
+    softOpacity: string;
+    strongPosition: string;
+    opaquePosition: string;
+  } {
     const visibleLines = metadataParts.filter(part => part.trim().length > 0).length;
     const additionalLines = Math.max(0, visibleLines - 2);
-    return `${Math.min(20, additionalLines * 4)}%`;
+    const rise = Math.min(36, additionalLines * 6);
+    const topOpacity = Math.min(66, 45 + additionalLines * 3);
+    const strongPosition = Math.max(24, 55 - rise);
+
+    return {
+      topOpacity: `${topOpacity}%`,
+      softPosition: `${Math.max(6, 30 - rise * 0.5)}%`,
+      softOpacity: `${Math.min(76, topOpacity + 10)}%`,
+      strongPosition: `${strongPosition}%`,
+      opaquePosition: `${Math.max(strongPosition + 30, 75 - rise * 0.4)}%`,
+    };
   }
 
   private groupedSeasonNumbersLabel(seasonNumbers: number[]): string {

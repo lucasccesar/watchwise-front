@@ -590,10 +590,10 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-surface-secondary) 45%, transparent) 0%,
-    color-mix(in srgb, var(--color-surface-secondary) 35%, transparent) 30%,
-    color-mix(in srgb, var(--color-surface-secondary) 80%, transparent) calc(55% - var(--diary-grouped-scrim-shift, 0%)),
-    color-mix(in srgb, var(--color-surface-secondary) 96%, transparent) calc(75% - var(--diary-grouped-scrim-shift, 0%)),
+    color-mix(in srgb, var(--color-surface-secondary) var(--diary-grouped-scrim-top-opacity, 45%), transparent) 0%,
+    color-mix(in srgb, var(--color-surface-secondary) var(--diary-grouped-scrim-soft-opacity, 55%), transparent) var(--diary-grouped-scrim-soft-position, 30%),
+    color-mix(in srgb, var(--color-surface-secondary) 82%, transparent) var(--diary-grouped-scrim-strong-position, 55%),
+    color-mix(in srgb, var(--color-surface-secondary) 96%, transparent) var(--diary-grouped-scrim-opaque-position, 75%),
     var(--color-surface-secondary) 100%
   );
 }

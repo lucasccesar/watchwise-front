@@ -307,11 +307,18 @@
                   @let backdrop = groupedBackdrop(entry);
                   @let runtime = groupedRuntimeLabel(entry);
                   @let metadataParts = groupedMetadataParts(entry);
+                  @let scrimStops = groupedScrimStops(metadataParts);
                   <div class="diary-grouped-card">
                     <article class="diary-grouped-entry" [attr.aria-label]="groupedLabel(entry)">
                       @if (backdrop) {
                         <div class="diary-grouped-summary-backdrop" [style.background-image]="'url(' + backdrop + ')'" aria-hidden="true"></div>
-                        <div class="diary-grouped-summary-scrim" [style.--diary-grouped-scrim-shift]="groupedScrimShift(metadataParts)" aria-hidden="true"></div>
+                        <div class="diary-grouped-summary-scrim"
+                          [style.--diary-grouped-scrim-top-opacity]="scrimStops.topOpacity"
+                          [style.--diary-grouped-scrim-soft-position]="scrimStops.softPosition"
+                          [style.--diary-grouped-scrim-soft-opacity]="scrimStops.softOpacity"
+                          [style.--diary-grouped-scrim-strong-position]="scrimStops.strongPosition"
+                          [style.--diary-grouped-scrim-opaque-position]="scrimStops.opaquePosition"
+                          aria-hidden="true"></div>
                       }
                       <div class="diary-grouped-media">
                         <a class="diary-entry-poster diary-grouped-poster content-image-card" [routerLink]="route" [attr.aria-label]="groupedTitle(entry)" [class.diary-entry-link-disabled]="!route">
