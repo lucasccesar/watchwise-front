@@ -29,6 +29,9 @@ export class AppComponent {
   protected dismissOpenDropdowns(event: PointerEvent): void {
     const target = event.target;
     if (!(target instanceof Node)) return;
+    const targetElement = target instanceof Element ? target : target.parentElement;
+    const portaledMenu = targetElement?.closest<HTMLElement>('[data-ww-menu-owner]') ?? null;
+    const portaledMenuOwnerId = portaledMenu?.getAttribute('data-ww-menu-owner') ?? null;
 
     const openTriggers = document.querySelectorAll<HTMLButtonElement>('button[aria-expanded="true"]');
     for (const trigger of openTriggers) {
@@ -43,7 +46,8 @@ export class AppComponent {
         || Boolean(localPanel);
       const popupPanel = controlledPanel ?? localPanel;
 
-      if (!hasPopup || trigger.contains(target) || popupPanel?.contains(target)) continue;
+      if (!hasPopup || trigger.contains(target) || popupPanel?.contains(target)
+        || (portaledMenuOwnerId !== null && trigger.id === portaledMenuOwnerId)) continue;
       trigger.click();
     }
 

@@ -8,9 +8,9 @@
 @import './app/features/profile/pages/profile/profile-progress-page.css';
 @import './app/features/profile/pages/profile/profile-episode-ratings-map-page.css';
 
-/* Keep the shared content menu beneath the sticky application header. */
+/* Keep connected menus below the list picker and sticky application header. */
 .cdk-overlay-container {
-  z-index: 29;
+  z-index: 28;
 }
 
 :root {

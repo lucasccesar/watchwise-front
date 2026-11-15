@@ -104,6 +104,11 @@
     opacity: 1;
   }
 
+  :host-context(.diary-entry-poster) .content-menu-trigger,
+  :host-context(.diary-grouped-card) .content-menu-trigger {
+    opacity: 1;
+  }
+
   :host-context(.season-episode-card) .content-menu-trigger {
     opacity: 1;
   }
@@ -256,6 +261,8 @@
 
   :host-context(.content-image-card:hover) .content-menu-trigger,
   :host-context(.content-image-card:focus-within) .content-menu-trigger,
+  :host-context(.diary-grouped-card:hover) .content-menu-trigger,
+  :host-context(.diary-grouped-card:focus-within) .content-menu-trigger,
   :host-context(.series-season-card:hover) .content-menu-trigger,
   :host-context(.series-season-card:focus-within) .content-menu-trigger,
   :host-context(.season-episode-card:hover) .content-menu-trigger,

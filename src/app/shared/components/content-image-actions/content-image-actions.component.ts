@@ -48,6 +48,10 @@ export type ContentListTarget =
   styleUrl: './content-image-actions.component.css',
 })
 export class ContentImageActionsComponent implements OnDestroy {
+  private static nextMenuId = 0;
+  protected readonly menuId = `content-image-actions-menu-${++ContentImageActionsComponent.nextMenuId}`;
+  protected readonly menuTriggerId = `${this.menuId}-trigger`;
+
   @Input() ratingValue: string | null = null;
   @Input() ratingLabel = '';
   @Input() optionsLabel = '';
@@ -116,6 +120,7 @@ export class ContentImageActionsComponent implements OnDestroy {
   @HostListener('document:click', ['$event'])
   protected dismissInternalMenu(event: MouseEvent): void {
     if (this.expanded !== undefined || !this.internalExpanded) return;
+    if (this.eventOriginatedInMenu(event.target)) return;
     if (event.target instanceof Node && !this.element.nativeElement.contains(event.target)) {
       this.internalExpanded = false;
     }
@@ -136,6 +141,7 @@ export class ContentImageActionsComponent implements OnDestroy {
       this.openListPicker(event);
       return;
     }
+    if (this.listPickerOpen()) this.closeListPicker(false);
     if (this.expanded === undefined) this.internalExpanded = false;
     this.actionSelected.emit({ action, event });
   }
@@ -205,6 +211,7 @@ export class ContentImageActionsComponent implements OnDestroy {
   @HostListener('document:click', ['$event'])
   protected dismissListPicker(event: MouseEvent): void {
     if (!this.listPickerOpen()) return;
+    if (this.eventOriginatedInMenu(event.target)) return;
     const target = event.target;
     if (target instanceof Node && this.element.nativeElement.contains(target)) return;
     this.closeListPicker(false);
@@ -239,6 +246,10 @@ export class ContentImageActionsComponent implements OnDestroy {
     this.listRequests = new Subscription();
     this.resolvedListContentId.set('');
     this.loadReference(target, userId);
+  }
+
+  private eventOriginatedInMenu(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest('[data-ww-menu]') !== null;
   }
 
   private loadReference(target: ContentListTarget, userId: string): void {

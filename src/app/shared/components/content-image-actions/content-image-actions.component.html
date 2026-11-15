@@ -13,10 +13,12 @@
     #trigger
     cdkOverlayOrigin
     #menuOrigin="cdkOverlayOrigin"
+    [id]="menuTriggerId"
     class="content-menu-trigger"
     type="button"
     [attr.aria-label]="optionsLabel"
     aria-haspopup="menu"
+    [attr.aria-controls]="menuId"
     [attr.aria-expanded]="menuExpanded()"
     (click)="toggleMenu($event)"
    data-ww-ellipsis-trigger>
@@ -36,8 +38,10 @@
     [cdkConnectedOverlayUsePopover]="null"
   >
     <div
+      [id]="menuId"
       class="content-dropdown-menu"
       role="menu" data-ww-menu
+      [attr.data-ww-menu-owner]="menuTriggerId"
       [attr.aria-label]="optionsLabel"
     >
       @for (action of menuActions(); track action.id) {
@@ -100,6 +104,7 @@
     class="content-list-picker"
     role="dialog"
     aria-labelledby="content-list-picker-title"
+    [attr.data-ww-menu-owner]="menuTriggerId"
     [style.top.px]="listPickerPosition()?.top"
     [style.left.px]="listPickerPosition()?.left"
     (click)="$event.stopPropagation()"
