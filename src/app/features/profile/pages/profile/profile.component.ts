@@ -35,7 +35,7 @@ import { PostWatchRatingPromptComponent } from '../../../../shared/components/po
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
-import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
+import { ShareCardModel, SharePreviewComponent, type ShareProfileContentType, type ShareProfileContentVariant } from '../../../../shared/components/share-preview/share-preview.component';
 import { ShareReviewDialogComponent, type ShareReviewDialogCopy, type ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
 import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileSummaryTopFiveEntry, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
@@ -156,7 +156,36 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly shareReturnFocus = signal<HTMLElement | null>(null);
   protected openSharePreview(event?: Event): void {
     this.shareReturnFocus.set(event?.currentTarget as HTMLElement ?? this.profileMenuTrigger?.nativeElement ?? null);
+    this.profileShareVariants.set({});
     this.profileMenuOpen.set(false); this.sharePreviewOpen.set(true);
+  }
+  protected loadProfileShareVariant(type: ShareProfileContentType): void {
+    const current = this.profileShareVariants()[type];
+    if (current?.status === 'ready' || current?.status === 'loading') return;
+    const profile = this.profile();
+    if (!profile) return;
+
+    const userId = profile.id;
+    this.profileShareVariants.update((variants) => ({
+      ...variants,
+      [type]: { status: 'loading', items: [], recentItems: [] },
+    }));
+    this.profileApi.getSummary(userId, type === 'MOVIE' ? 'MOVIE' : 'EPISODE').subscribe({
+      next: (summary) => {
+        if (this.profile()?.id !== userId) return;
+        this.profileShareVariants.update((variants) => ({
+          ...variants,
+          [type]: this.profileShareVariantFor(summary, type),
+        }));
+      },
+      error: () => {
+        if (this.profile()?.id !== userId) return;
+        this.profileShareVariants.update((variants) => ({
+          ...variants,
+          [type]: { status: 'error', items: [], recentItems: [] },
+        }));
+      },
+    });
   }
   protected readonly copy = messageCatalog['pt-BR'].profilePage;
   protected readonly listsCopy = messageCatalog['pt-BR'].listsPage;
@@ -184,6 +213,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
   protected readonly profileShareReviews = signal<ProfileShareReviewRecord[]>([]);
+  protected readonly profileShareVariants = signal<Partial<Record<ShareProfileContentType, ShareProfileContentVariant>>>({});
   protected readonly shareReviewDialogModel = signal<ShareReviewDialogModel | null>(null);
   protected readonly profileWatchTarget = signal<ProfileActionContent | null>(null);
   protected readonly profileWatchIsRewatch = signal(true);
@@ -467,6 +497,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const profile = this.profile();
+    const contentType: ShareProfileContentType = this.mode() === 'MOVIE' ? 'MOVIE' : 'SERIES';
+    const currentVariant = this.profileShareVariantFor(this.summary(), contentType);
+    const profileContentVariants = {
+      ...this.profileShareVariants(),
+      [contentType]: this.profileShareVariants()[contentType] ?? currentVariant,
+    };
     return {
       kind: 'profile',
       title: profile?.name || profile?.username || this.username(),
@@ -476,18 +512,10 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       avatarUrl: profile?.profilePicture,
       backgroundUrl: this.imageUrl(profile?.banner, 'w1280'),
       description: profile?.description,
-      items: this.topFive().slice(0, 5).map((entry) => ({
-        title: entry.title || this.copy.unavailable,
-        imageUrl: this.imageUrl(entry.posterPath, 'w342'),
-        label: entry.title || this.copy.unavailable,
-      })),
-      recentItems: (this.mode() === 'MOVIE' ? this.summary()?.recentReviews : this.summary()?.recentEpisodes ?? [])
-        ?.slice(0, 5)
-        .map((entry) => ({
-          title: entry.card?.title || this.copy.unavailable,
-          imageUrl: this.imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath, 'w342'),
-          rating: entry.score,
-        })) ?? [],
+      items: currentVariant.items,
+      recentItems: currentVariant.recentItems,
+      profileContentType: contentType,
+      profileContentVariants,
     };
   });
   protected readonly mapShareModel = computed<ShareCardModel>(() => {
@@ -2953,6 +2981,25 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           ...(series.seasonProgress ?? []),
           ...(series.completedSeasonProgress ?? []),
         ].sort((first, second) => first.seasonNumber - second.seasonNumber),
+      })),
+    };
+  }
+
+  private profileShareVariantFor(
+    summary: ProfileSummary | null,
+    type: ShareProfileContentType,
+  ): ShareProfileContentVariant {
+    const recentEntries = type === 'MOVIE' ? summary?.recentReviews : summary?.recentEpisodes;
+    return {
+      status: 'ready',
+      items: this.resolveTopFive(summary?.top5 ?? []).slice(0, 5).map((entry) => ({
+        title: entry.title || this.copy.unavailable,
+        imageUrl: this.imageUrl(entry.posterPath, 'w342'),
+      })),
+      recentItems: (recentEntries ?? []).slice(0, 5).map((entry) => ({
+        title: entry.card?.title || this.copy.unavailable,
+        imageUrl: this.imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath, 'w342'),
+        rating: entry.score,
       })),
     };
   }

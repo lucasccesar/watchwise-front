@@ -1,5 +1,5 @@
-<div class="share-layer" appModalScrollLock [class.share-layer--list]="model().kind === 'list'" (click)="onBackdropClick($event)">
-  <section #shareDialog class="share-dialog" [class.share-dialog--list]="model().kind === 'list'" role="dialog" aria-modal="true" aria-labelledby="share-dialog-title" tabindex="-1" (click)="$event.stopPropagation()">
+<div class="share-layer" appModalScrollLock [class.share-layer--list]="model().kind === 'list'" [class.share-layer--profile]="model().kind === 'profile'" (click)="onBackdropClick($event)">
+  <section #shareDialog class="share-dialog" [class.share-dialog--list]="model().kind === 'list'" [class.share-dialog--profile]="model().kind === 'profile'" role="dialog" aria-modal="true" [attr.aria-labelledby]="model().kind === 'profile' ? 'share-profile-dialog-title' : 'share-dialog-title'" tabindex="-1" (click)="$event.stopPropagation()">
     @if (model().kind === 'list') {
       <header class="share-list-header">
         <div>
@@ -111,6 +111,155 @@
             <button class="list-share-copy" type="button" [disabled]="listCopyPending()" (click)="copyListImage()">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
               {{ listCopyPending() ? listCopy.copying : listCopy.copyImage }}
+            </button>
+          </div>
+        </aside>
+      </div>
+    } @else if (model().kind === 'profile') {
+      <header class="profile-share-header">
+        <div>
+          <h2 id="share-profile-dialog-title">{{ profileCopy.title }}</h2>
+          <p>{{ profileCopy.instructions }}</p>
+        </div>
+        <button type="button" class="profile-share-close" [attr.aria-label]="profileCopy.close" (click)="close()">×</button>
+      </header>
+
+      <div class="profile-share-layout">
+        <div
+          #profileSharePreview
+          class="profile-share-preview"
+          role="img"
+          tabindex="0"
+          [attr.aria-label]="profileCopy.previewAlt"
+          (pointerdown)="startProfileBackgroundDrag($event)"
+          (pointermove)="moveProfileBackground($event)"
+          (pointerup)="endProfileBackgroundDrag()"
+          (pointercancel)="endProfileBackgroundDrag()"
+          (wheel)="profileBackgroundWheel($event)"
+        >
+          @if (profileBackgroundImage(); as imageUrl) {
+            <div class="profile-share-background" [style.background-image]="'url(' + imageUrl + ')'" [style.background-size]="'auto ' + profileBackgroundZoom() + '%'" [style.background-position]="profileBackgroundX() + '% ' + profileBackgroundY() + '%'" aria-hidden="true"></div>
+          }
+          <div class="profile-share-scrim" aria-hidden="true"></div>
+          <div class="profile-share-card-content">
+            @if (profileShowUserInfo()) {
+              <div class="profile-share-user">
+                <img [src]="model().avatarUrl || '/default-user-avatar.png'" alt="" draggable="false" />
+                <strong>{{ model().title }}</strong>
+                @if (model().username) { <small>&#64;{{ model().username }}</small> }
+              </div>
+            }
+            @if (profileShowBio() && model().description) {
+              <p class="profile-share-bio">{{ model().description }}</p>
+            }
+
+            @if (profileContentVariant().status === 'loading') {
+              <p class="profile-share-state" role="status">{{ profileCopy.loadingContent }}</p>
+            } @else if (profileContentVariant().status === 'error') {
+              <div class="profile-share-state" role="alert">
+                <p>{{ profileCopy.contentLoadError }}</p>
+                <button type="button" (click)="selectProfileContent(profileContentType())">{{ profileCopy.retry }}</button>
+              </div>
+            } @else {
+              @if (profileShowTopFive()) {
+                <section class="profile-share-section">
+                  <h3>{{ profileCopy.topFive }}</h3>
+                  <div class="profile-share-posters">
+                    @for (item of previewItems(); track $index) {
+                      <div class="profile-share-poster">
+                        @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" draggable="false" /> }
+                        @else { <span>{{ $index + 1 }}</span> }
+                      </div>
+                    } @empty {
+                      <p class="profile-share-empty">{{ profileCopy.emptyTopFive }}</p>
+                    }
+                  </div>
+                </section>
+              }
+              @if (profileShowRecentActivity()) {
+                <section class="profile-share-section profile-share-section--recent">
+                  <h3>{{ profileCopy.recentActivity }}</h3>
+                  <div class="profile-share-posters">
+                    @for (item of previewRecentItems(); track $index) {
+                      <div class="profile-share-poster">
+                        @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" draggable="false" /> }
+                        @else { <span>{{ $index + 1 }}</span> }
+                        @if (item.rating !== null && item.rating !== undefined) { <small aria-label="Nota {{ item.rating | number:'1.0-1' }}"><span aria-hidden="true">★</span> {{ item.rating | number:'1.0-1' }}</small> }
+                      </div>
+                    } @empty {
+                      <p class="profile-share-empty">{{ profileCopy.emptyRecentActivity }}</p>
+                    }
+                  </div>
+                </section>
+              }
+            }
+
+            <footer class="profile-share-watermark"><span>ON</span><strong><img src="/watchwise-logo.svg" alt="Watchwise" draggable="false" /></strong></footer>
+          </div>
+        </div>
+
+        <aside class="profile-share-controls list-share-controls" [attr.aria-label]="profileCopy.title">
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ profileCopy.content }}</h3>
+            <div class="profile-share-segment" role="group" [attr.aria-label]="profileCopy.content">
+              <button type="button" [class.is-active]="profileContentType() === 'MOVIE'" [attr.aria-pressed]="profileContentType() === 'MOVIE'" (click)="selectProfileContent('MOVIE')">{{ profileCopy.movies }}</button>
+              <button type="button" [class.is-active]="profileContentType() === 'SERIES'" [attr.aria-pressed]="profileContentType() === 'SERIES'" (click)="selectProfileContent('SERIES')">{{ profileCopy.series }}</button>
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ profileCopy.showOnCard }}</h3>
+            <div class="profile-share-toggles list-share-toggles">
+              <button type="button" role="switch" [attr.aria-checked]="profileShowUserInfo()" [class.is-on]="profileShowUserInfo()" (click)="toggleProfileUserInfo()"><span>{{ profileCopy.userInfo }}</span><span class="profile-share-switch list-share-switch" aria-hidden="true"></span></button>
+              <button type="button" role="switch" [attr.aria-checked]="profileShowBio()" [class.is-on]="profileShowBio()" (click)="toggleProfileBio()"><span>{{ profileCopy.bio }}</span><span class="profile-share-switch list-share-switch" aria-hidden="true"></span></button>
+              <button type="button" role="switch" [attr.aria-checked]="profileShowTopFive()" [class.is-on]="profileShowTopFive()" (click)="toggleProfileTopFive()"><span>{{ profileCopy.topFive }}</span><span class="profile-share-switch list-share-switch" aria-hidden="true"></span></button>
+              <button type="button" role="switch" [attr.aria-checked]="profileShowRecentActivity()" [class.is-on]="profileShowRecentActivity()" (click)="toggleProfileRecentActivity()"><span>{{ profileCopy.recentActivity }}</span><span class="profile-share-switch list-share-switch" aria-hidden="true"></span></button>
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ profileCopy.images }}</h3>
+            <div class="profile-share-image-picker-wrap list-share-image-picker-wrap">
+              <button class="profile-share-background-button list-share-background-button" type="button" [attr.aria-expanded]="profileBackgroundPickerOpen()" aria-haspopup="listbox" (click)="toggleProfileBackgroundPicker()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                {{ profileCopy.changeBackground }}
+              </button>
+              @if (profileBackgroundPickerOpen()) {
+                <div class="profile-share-image-options list-share-image-options" role="listbox" [attr.aria-label]="profileCopy.changeBackground">
+                  @for (option of profileBackgroundOptions(); track option.url) {
+                    <button type="button" role="option" class="profile-share-image-option list-share-image-option" [class.is-selected]="isProfileBackgroundSelected(option.url)" [class.list-share-image-option--selected]="isProfileBackgroundSelected(option.url)" [attr.aria-label]="option.label" [attr.aria-selected]="isProfileBackgroundSelected(option.url)" (click)="selectProfileBackground(option.url)">
+                      <img [src]="option.url" alt="" loading="lazy" />
+                    </button>
+                  } @empty {
+                    <p class="list-share-image-empty">{{ profileCopy.noImages }}</p>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ profileCopy.backgroundZoom }}</h3>
+            <div class="profile-share-zoom list-share-zoom-control">
+              <button type="button" [attr.aria-label]="profileCopy.zoomOut" (click)="adjustProfileBackgroundZoom(-5)">−</button>
+              <input type="range" min="100" max="250" step="1" [value]="profileBackgroundZoom()" [attr.aria-label]="profileCopy.backgroundZoom" (input)="updateProfileBackgroundZoom($event)" />
+              <button type="button" [attr.aria-label]="profileCopy.zoomIn" (click)="adjustProfileBackgroundZoom(5)">+</button>
+              <output>{{ profileBackgroundZoom() }}%</output>
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group profile-share-position-group list-share-position-group">
+            <h3>{{ profileCopy.backgroundPosition }}</h3>
+            <label><span>{{ profileCopy.horizontal }}</span><input type="range" min="0" max="100" [value]="profileBackgroundX()" [attr.aria-label]="profileCopy.horizontal" (input)="updateProfileBackgroundPosition('x', $event)" /></label>
+            <label><span>{{ profileCopy.vertical }}</span><input type="range" min="0" max="100" [value]="profileBackgroundY()" [attr.aria-label]="profileCopy.vertical" (input)="updateProfileBackgroundPosition('y', $event)" /></label>
+            <button class="profile-share-reset list-share-reset" type="button" (click)="resetProfileBackground()">{{ profileCopy.resetBackground }}</button>
+          </section>
+
+          <div class="profile-share-actions list-share-actions">
+            <button type="button" class="profile-share-cancel list-share-cancel" (click)="close()">{{ profileCopy.cancel }}</button>
+            <button type="button" class="profile-share-download list-share-copy" [disabled]="profileDownloadPending()" (click)="downloadCard()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" /></svg>
+              {{ profileDownloadPending() ? profileCopy.downloading : profileCopy.downloadImage }}
             </button>
           </div>
         </aside>

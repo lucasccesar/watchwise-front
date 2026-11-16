@@ -1200,7 +1200,7 @@
     }
   </main>
   @if (sharePreviewOpen()) {
-    <app-share-preview [returnFocusTarget]="shareReturnFocus()" [model]="activeShareModel()" [shareUrl]="shareUrl()" (closed)="sharePreviewOpen.set(false)" />
+    <app-share-preview [returnFocusTarget]="shareReturnFocus()" [model]="activeShareModel()" [shareUrl]="shareUrl()" (profileContentVariantRequested)="loadProfileShareVariant($event)" (closed)="sharePreviewOpen.set(false)" />
   }
   @if (shareReviewDialogModel(); as model) {
     <app-share-review-dialog

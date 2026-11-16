@@ -6,12 +6,19 @@ import { ModalScrollLockDirective } from '../../directives/modal-scroll-lock.dir
 import { WATCHWISE_STAR_PATH } from '../../utils/watchwise-star';
 
 export type ShareCardKind = 'episode' | 'profile' | 'ratings-map' | 'list' | 'picks';
+export type ShareProfileContentType = 'MOVIE' | 'SERIES';
 
 export interface ShareCardItem {
   title: string;
   imageUrl?: string | null;
   label?: string | null;
   rating?: number | null;
+}
+
+export interface ShareProfileContentVariant {
+  status: 'ready' | 'loading' | 'error';
+  items: readonly ShareCardItem[];
+  recentItems: readonly ShareCardItem[];
 }
 
 export interface ShareCardScoreGroup {
@@ -41,6 +48,8 @@ export interface ShareCardModel {
   quote?: string | null;
   items?: readonly ShareCardItem[];
   recentItems?: readonly ShareCardItem[];
+  profileContentType?: ShareProfileContentType;
+  profileContentVariants?: Partial<Record<ShareProfileContentType, ShareProfileContentVariant>>;
   scores?: readonly (number | null)[];
   scoreGroups?: readonly ShareCardScoreGroup[];
   ratingsMatrix?: ShareRatingsMatrix;
@@ -61,6 +70,7 @@ export class SharePreviewComponent implements OnDestroy {
   readonly returnFocusTarget = input<HTMLElement | null>(null);
   protected readonly closed = output<void>();
   protected readonly listCopy = messageCatalog['pt-BR'].shareListPreview;
+  protected readonly profileCopy = messageCatalog['pt-BR'].shareProfilePreview;
   protected readonly listBackgroundUrl = signal<string | null>(null);
   protected readonly listBackgroundPickerOpen = signal(false);
   protected readonly listShowDescription = signal(true);
@@ -69,6 +79,56 @@ export class SharePreviewComponent implements OnDestroy {
   protected readonly listBackgroundZoom = signal(120);
   protected readonly listBackgroundX = signal(50);
   protected readonly listBackgroundY = signal(30);
+  protected readonly profileSelectedContentType = signal<ShareProfileContentType | null>(null);
+  protected readonly profileContentVariantRequested = output<ShareProfileContentType>();
+  protected readonly profileShowUserInfo = signal(true);
+  protected readonly profileShowBio = signal(true);
+  protected readonly profileShowTopFive = signal(true);
+  protected readonly profileShowRecentActivity = signal(true);
+  protected readonly profileBackgroundUrl = signal<string | null>(null);
+  protected readonly profileBackgroundPickerOpen = signal(false);
+  protected readonly profileBackgroundZoom = signal(120);
+  protected readonly profileBackgroundX = signal(50);
+  protected readonly profileBackgroundY = signal(30);
+  protected readonly profileDownloadPending = signal(false);
+  protected readonly profileContentType = computed(() =>
+    this.profileSelectedContentType() ?? this.model().profileContentType ?? 'MOVIE',
+  );
+  protected readonly profileContentVariant = computed<ShareProfileContentVariant>(() => {
+    const model = this.model();
+    const type = this.profileContentType();
+    const variant = model.profileContentVariants?.[type];
+    if (variant) return variant;
+    if (type === (model.profileContentType ?? 'MOVIE')) {
+      return { status: 'ready', items: model.items ?? [], recentItems: model.recentItems ?? [] };
+    }
+    return { status: 'loading', items: [], recentItems: [] };
+  });
+  protected readonly profileBackgroundImage = computed(() =>
+    this.profileBackgroundUrl() || this.model().backgroundUrl || this.model().imageUrl || null,
+  );
+  protected readonly profileBackgroundOptions = computed(() => {
+    const model = this.model();
+    const variants = Object.values(model.profileContentVariants ?? {})
+      .filter((variant): variant is ShareProfileContentVariant => Boolean(variant));
+    const items = [
+      ...variants.flatMap((variant) => [...variant.items, ...variant.recentItems]),
+      ...(model.items ?? []),
+      ...(model.recentItems ?? []),
+    ];
+    const candidates = [
+      ...(model.backgroundUrl || model.imageUrl
+        ? [{ url: model.backgroundUrl || model.imageUrl!, label: this.profileCopy.profileBanner }]
+        : []),
+      ...items.flatMap((item) => item.imageUrl ? [{ url: item.imageUrl, label: item.title }] : []),
+    ];
+    const seen = new Set<string>();
+    return candidates.filter((option) => {
+      if (seen.has(option.url)) return false;
+      seen.add(option.url);
+      return true;
+    });
+  });
   protected readonly listBackgroundImage = computed(() => this.listBackgroundUrl() || this.model().backgroundUrl || this.model().imageUrl || null);
   protected readonly listItemCount = computed(() => this.model().itemCount ?? this.model().items?.length ?? 0);
   protected readonly listRemainingCount = computed(() => Math.max(0, this.listItemCount() - this.previewItems().length));
@@ -88,6 +148,9 @@ export class SharePreviewComponent implements OnDestroy {
   @ViewChild('listSharePreview')
   private listSharePreview?: ElementRef<HTMLElement>;
 
+  @ViewChild('profileSharePreview')
+  private profileSharePreview?: ElementRef<HTMLElement>;
+
   ngOnDestroy(): void {
     this.restoreFocus();
   }
@@ -104,10 +167,11 @@ export class SharePreviewComponent implements OnDestroy {
   @HostListener('document:keydown', ['$event'])
   protected handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
-      if (this.listBackgroundPickerOpen()) {
+      if (this.listBackgroundPickerOpen() || this.profileBackgroundPickerOpen()) {
         event.preventDefault();
         event.stopPropagation();
         this.listBackgroundPickerOpen.set(false);
+        this.profileBackgroundPickerOpen.set(false);
         return;
       }
       event.preventDefault();
@@ -146,9 +210,13 @@ export class SharePreviewComponent implements OnDestroy {
     (this.returnFocusTarget() ?? this.opener)?.focus();
   }
 
-  protected readonly previewItems = () => this.model().items?.slice(0, this.model().kind === 'list' ? 20 : 16) ?? [];
+  protected readonly previewItems = computed(() => this.model().kind === 'profile'
+    ? this.profileContentVariant().items.slice(0, 5)
+    : this.model().items?.slice(0, this.model().kind === 'list' ? 20 : 16) ?? []);
   protected readonly listBackgroundOptions = computed(() => this.previewItems().filter((item) => Boolean(item.imageUrl)));
-  protected readonly previewRecentItems = () => this.model().recentItems?.slice(0, 5) ?? [];
+  protected readonly previewRecentItems = computed(() => this.model().kind === 'profile'
+    ? this.profileContentVariant().recentItems.slice(0, 5)
+    : this.model().recentItems?.slice(0, 5) ?? []);
   protected readonly kindLabel = () => ({
     episode: 'Episódio',
     profile: 'Perfil',
@@ -189,9 +257,14 @@ export class SharePreviewComponent implements OnDestroy {
 
   @HostListener('document:click', ['$event'])
   protected dismissListBackgroundPicker(event: MouseEvent): void {
-    if (!this.listBackgroundPickerOpen()) return;
-    const picker = this.dialogElement?.querySelector('.list-share-image-picker-wrap');
-    if (picker && !picker.contains(event.target as Node)) this.listBackgroundPickerOpen.set(false);
+    if (this.listBackgroundPickerOpen()) {
+      const picker = this.dialogElement?.querySelector('.list-share-image-picker-wrap');
+      if (picker && !picker.contains(event.target as Node)) this.listBackgroundPickerOpen.set(false);
+    }
+    if (this.profileBackgroundPickerOpen()) {
+      const picker = this.dialogElement?.querySelector('.profile-share-image-picker-wrap');
+      if (picker && !picker.contains(event.target as Node)) this.profileBackgroundPickerOpen.set(false);
+    }
   }
 
   protected adjustListBackgroundZoom(amount: number): void {
@@ -242,10 +315,85 @@ export class SharePreviewComponent implements OnDestroy {
 
   private clampPosition(value: number): number { return Math.max(0, Math.min(100, value)); }
 
+  protected selectProfileContent(type: ShareProfileContentType): void {
+    this.profileSelectedContentType.set(type);
+    const variant = this.model().profileContentVariants?.[type];
+    if (!variant || variant.status === 'error') this.profileContentVariantRequested.emit(type);
+  }
+
+  protected toggleProfileUserInfo(): void { this.profileShowUserInfo.update((value) => !value); }
+  protected toggleProfileBio(): void { this.profileShowBio.update((value) => !value); }
+  protected toggleProfileTopFive(): void { this.profileShowTopFive.update((value) => !value); }
+  protected toggleProfileRecentActivity(): void { this.profileShowRecentActivity.update((value) => !value); }
+
+  protected toggleProfileBackgroundPicker(): void {
+    this.profileBackgroundPickerOpen.update((open) => !open);
+  }
+
+  protected selectProfileBackground(imageUrl: string): void {
+    this.profileBackgroundUrl.set(imageUrl);
+    this.profileBackgroundPickerOpen.set(false);
+  }
+
+  protected isProfileBackgroundSelected(imageUrl: string): boolean {
+    return this.profileBackgroundImage() === imageUrl;
+  }
+
+  protected adjustProfileBackgroundZoom(amount: number): void {
+    this.profileBackgroundZoom.update((value) => Math.max(100, Math.min(250, value + amount)));
+  }
+
+  protected profileBackgroundWheel(event: WheelEvent): void {
+    event.preventDefault();
+    if (event.deltaY !== 0) this.adjustProfileBackgroundZoom(event.deltaY < 0 ? 10 : -10);
+  }
+
+  protected updateProfileBackgroundZoom(event: Event): void {
+    this.profileBackgroundZoom.set(Number((event.currentTarget as HTMLInputElement).value));
+  }
+
+  protected updateProfileBackgroundPosition(axis: 'x' | 'y', event: Event): void {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    (axis === 'x' ? this.profileBackgroundX : this.profileBackgroundY).set(value);
+  }
+
+  protected resetProfileBackground(): void {
+    this.profileBackgroundUrl.set(null);
+    this.profileBackgroundZoom.set(120);
+    this.profileBackgroundX.set(50);
+    this.profileBackgroundY.set(30);
+  }
+
+  protected startProfileBackgroundDrag(event: PointerEvent): void {
+    if (event.button !== 0 || !this.profileBackgroundImage()) return;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+    this.backgroundDragStart = {
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      backgroundX: this.profileBackgroundX(),
+      backgroundY: this.profileBackgroundY(),
+    };
+  }
+
+  protected moveProfileBackground(event: PointerEvent): void {
+    if (!this.backgroundDragStart) return;
+    const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    this.profileBackgroundX.set(this.clampPosition(this.backgroundDragStart.backgroundX - ((event.clientX - this.backgroundDragStart.pointerX) / bounds.width) * 100));
+    this.profileBackgroundY.set(this.clampPosition(this.backgroundDragStart.backgroundY - ((event.clientY - this.backgroundDragStart.pointerY) / bounds.height) * 100));
+  }
+
+  protected endProfileBackgroundDrag(): void { this.backgroundDragStart = null; }
+
   protected downloadCard(): void {
     const model = this.model();
     if (model.kind === 'list') {
       this.downloadListCard();
+      return;
+    }
+    if (model.kind === 'profile') {
+      void this.downloadProfileCard();
       return;
     }
     const title = this.escape(model.title);
@@ -273,13 +421,11 @@ export class SharePreviewComponent implements OnDestroy {
         return `<clipPath id="${clipId}"><rect x="${x}" y="${y}" width="${posterWidth}" height="${posterHeight}" rx="10"/></clipPath>${poster}${number}${rating}${label}`;
       }).join('');
     };
-    const columns = model.kind === 'profile' ? 5 : 4;
-    const posterWidth = model.kind === 'profile' ? 168 : 205;
-    const posterGrid = renderPosterGrid(items, model.kind === 'profile' ? 900 : 465, posterWidth, columns, { showLabels: model.kind !== 'profile' });
-    const recentGrid = model.kind === 'profile' ? renderPosterGrid((model.recentItems ?? []).slice(0, 5), 1310, 168, 5, { showRatings: true }) : '';
+    const columns = 4;
+    const posterWidth = 205;
+    const posterGrid = renderPosterGrid(items, 465, posterWidth, columns, { showLabels: true });
     const rating = model.rating === null || model.rating === undefined ? '' : `<svg x="56" y="364" width="30" height="30" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"><path d="${WATCHWISE_STAR_PATH}"/></svg><text x="92" y="390" class="rating">${this.escape(String(model.rating.toLocaleString('pt-BR', { maximumFractionDigits: 1 })))}</text>`;
-    const avatarClip = model.kind === 'profile' ? 'profileAvatarClip' : 'avatarClip';
-    const avatar = model.avatarUrl ? `<image href="${this.escape(model.avatarUrl)}" x="${model.kind === 'profile' ? 488 : 56}" y="${model.kind === 'profile' ? 205 : 132}" width="${model.kind === 'profile' ? 104 : 72}" height="${model.kind === 'profile' ? 104 : 72}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarClip})"/>` : '';
+    const avatar = model.avatarUrl ? `<image href="${this.escape(model.avatarUrl)}" x="56" y="132" width="72" height="72" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatarClip)"/>` : '';
     const ratingsMap = model.ratingsMatrix?.columnLabels.length
       ? (() => {
           const matrix = model.ratingsMatrix!;
@@ -324,14 +470,9 @@ export class SharePreviewComponent implements OnDestroy {
           return `<rect x="${x}" y="${y}" width="104" height="78" rx="10" fill="#222329" stroke="#444650"/><text x="${x + 52}" y="${y + 48}" class="map-score">${this.escape(score === null || score === undefined ? '0' : String(score))}</text>`;
         }).join(''));
     const episodeImage = model.kind === 'episode' && model.imageUrl ? `<image href="${this.escape(model.imageUrl)}" x="56" y="440" width="968" height="420" preserveAspectRatio="xMidYMid slice" clip-path="url(#episodeClip)"/>` : '';
-    const profileBio = model.kind === 'profile' && model.description
-      ? this.wrapLines(model.description, 66).slice(0, 3).map((line, index) => `<text x="540" y="${586 + index * 34}" text-anchor="middle" class="body-small">${this.escape(line)}</text>`).join('')
-      : '';
-    const profileHeaders = model.kind === 'profile'
-      ? `${avatar}<text x="540" y="470" text-anchor="middle" class="profile-title">${title.slice(0, 46)}</text><text x="540" y="512" text-anchor="middle" class="profile-handle">${handle}</text>${profileBio}<text x="56" y="850" class="section-title">Top 5</text>${posterGrid}<text x="56" y="1260" class="section-title">Atividade recente</text>${recentGrid}`
-      : `${avatar}<text x="56" y="170" class="meta">${author}</text><text x="56" y="208" class="meta">${handle || subtitle}</text><text x="56" y="310" class="title">${title.slice(0, 46)}</text><text x="56" y="365" class="body">${description.slice(0, 96)}</text>`;
+    const headerContent = `${avatar}<text x="56" y="170" class="meta">${author}</text><text x="56" y="208" class="meta">${handle || subtitle}</text><text x="56" y="310" class="title">${title.slice(0, 46)}</text><text x="56" y="365" class="body">${description.slice(0, 96)}</text>`;
     const content = model.kind === 'episode' ? episodeImage : model.kind === 'ratings-map' ? scores : posterGrid;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"><defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#101115" stop-opacity=".38"/><stop offset="1" stop-color="#101115" stop-opacity=".96"/></linearGradient><filter id="blur"><feGaussianBlur stdDeviation="18"/></filter><clipPath id="avatarClip"><circle cx="92" cy="168" r="36"/></clipPath><clipPath id="profileAvatarClip"><circle cx="540" cy="257" r="52"/></clipPath><clipPath id="episodeClip"><rect x="56" y="440" width="968" height="420" rx="16"/></clipPath><style>.meta{font:600 25px Arial,sans-serif;fill:#d7d9df}.title{font:700 52px Arial,sans-serif;fill:#fff}.body{font:400 25px Arial,sans-serif;fill:#d8d9df}.body-small{font:400 27px Arial,sans-serif;fill:#d8d9df}.profile-title{font:700 43px Arial,sans-serif;fill:#fff}.profile-handle{font:600 22px Arial,sans-serif;fill:#d7d9df}.section-title{font:700 28px Arial,sans-serif;fill:#fff}.rating{font:700 34px Arial,sans-serif;fill:#ffcf49}.rating-small{font:700 18px Arial,sans-serif;fill:#ffcf49}.item-title{font:600 20px Arial,sans-serif;fill:#f3f4f6}.rank{font:700 24px Arial,sans-serif;fill:#fff}.map-score{font:700 30px Arial,sans-serif;fill:#ffd25a}.watermark{font:700 30px Arial,sans-serif;fill:#fff;letter-spacing:2px}</style></defs><rect width="1080" height="1920" fill="#17181d"/>${imageLayer}<rect width="1080" height="1920" fill="url(#shade)"/>${profileHeaders}${model.kind === 'profile' ? '' : `${rating}${content}`}<text x="56" y="1780" class="watermark">ON WATCHWISE</text></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"><defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#101115" stop-opacity=".38"/><stop offset="1" stop-color="#101115" stop-opacity=".96"/></linearGradient><filter id="blur"><feGaussianBlur stdDeviation="18"/></filter><clipPath id="avatarClip"><circle cx="92" cy="168" r="36"/></clipPath><clipPath id="episodeClip"><rect x="56" y="440" width="968" height="420" rx="16"/></clipPath><style>.meta{font:600 25px Arial,sans-serif;fill:#d7d9df}.title{font:700 52px Arial,sans-serif;fill:#fff}.body{font:400 25px Arial,sans-serif;fill:#d8d9df}.section-title{font:700 28px Arial,sans-serif;fill:#fff}.rating{font:700 34px Arial,sans-serif;fill:#ffcf49}.rating-small{font:700 18px Arial,sans-serif;fill:#ffcf49}.item-title{font:600 20px Arial,sans-serif;fill:#f3f4f6}.rank{font:700 24px Arial,sans-serif;fill:#fff}.map-score{font:700 30px Arial,sans-serif;fill:#ffd25a}.watermark{font:700 30px Arial,sans-serif;fill:#fff;letter-spacing:2px}</style></defs><rect width="1080" height="1920" fill="#17181d"/>${imageLayer}<rect width="1080" height="1920" fill="url(#shade)"/>${headerContent}${rating}${content}<text x="56" y="1780" class="watermark">ON WATCHWISE</text></svg>`;
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -358,7 +499,7 @@ export class SharePreviewComponent implements OnDestroy {
   }
 
   private async downloadListCard(): Promise<void> {
-    const svg = await this.createListCardSvg();
+    const svg = await this.createPreviewSvg(this.listSharePreview?.nativeElement);
     const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
     const anchor = this.document.createElement('a');
     anchor.href = url;
@@ -367,9 +508,26 @@ export class SharePreviewComponent implements OnDestroy {
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
-  private async createListCardSvg(): Promise<string> {
-    const preview = this.listSharePreview?.nativeElement;
-    if (!preview) throw new Error('list-preview-unavailable');
+  private async downloadProfileCard(): Promise<void> {
+    if (this.profileDownloadPending()) return;
+    this.profileDownloadPending.set(true);
+    try {
+      const image = await this.createPreviewImageBlob(this.profileSharePreview?.nativeElement);
+      const url = URL.createObjectURL(image);
+      const anchor = this.document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'watchwise-perfil.png';
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      this.toasts.error(this.profileCopy.downloadError);
+    } finally {
+      this.profileDownloadPending.set(false);
+    }
+  }
+
+  private async createPreviewSvg(preview: HTMLElement | undefined): Promise<string> {
+    if (!preview) throw new Error('share-preview-unavailable');
 
     const bounds = preview.getBoundingClientRect();
     if (!bounds.width || !bounds.height) throw new Error('list-preview-not-rendered');
@@ -482,7 +640,11 @@ export class SharePreviewComponent implements OnDestroy {
   }
 
   private async createListImageBlob(): Promise<Blob> {
-    const svgDocument = new DOMParser().parseFromString(await this.createListCardSvg(), 'image/svg+xml');
+    return this.createPreviewImageBlob(this.listSharePreview?.nativeElement);
+  }
+
+  private async createPreviewImageBlob(preview: HTMLElement | undefined): Promise<Blob> {
+    const svgDocument = new DOMParser().parseFromString(await this.createPreviewSvg(preview), 'image/svg+xml');
     if (svgDocument.querySelector('parsererror')) throw new Error('invalid-svg');
 
     const svg = new XMLSerializer().serializeToString(svgDocument.documentElement);
@@ -518,19 +680,4 @@ export class SharePreviewComponent implements OnDestroy {
     return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[character]!);
   }
 
-  private wrapLines(value: string, maxLength: number): string[] {
-    const lines: string[] = [];
-    let line = '';
-    for (const word of value.trim().split(/\s+/)) {
-      const next = line ? `${line} ${word}` : word;
-      if (next.length > maxLength && line) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = next;
-      }
-    }
-    if (line) lines.push(line);
-    return lines;
-  }
 }
