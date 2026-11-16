@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, Renderer2, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, Renderer2, ViewChild, inject, input, output, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ContentApiService, ContentImageSelection, ContentImageSelectionKind, ContentImageSelectionType } from '../../../features/content/data-access/content-api.service';
 import { ContentImageLanguageFilterComponent, ContentImageLanguageOption } from '../content-image-language-filter/content-image-language-filter.component';
@@ -86,6 +86,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
   protected readonly shareShowReview = signal(true);
   protected readonly shareCopyPending = signal(false);
   protected readonly activeImagePicker = signal<ContentImageSelectionKind | null>(null);
+  protected readonly imagePickerPosition = signal<{ top: number; left: number } | null>(null);
   protected readonly posterOptions = signal<ContentImageSelection[]>([]);
   protected readonly backdropOptions = signal<ContentImageSelection[]>([]);
   protected readonly posterLanguageOptions = signal<ContentImageLanguageOption[]>([]);
@@ -98,12 +99,19 @@ export class ShareReviewDialogComponent implements OnDestroy {
   protected readonly selectedBackdropUrl = signal<string | null>(null);
   protected readonly imageOptionSkeletons = [0, 1, 2, 3, 4, 5];
   private shareDrag: { x: number; y: number; startX: number; startY: number } | null = null;
+  private imagePickerTrigger: HTMLElement | null = null;
   private imageRequests = new Subscription();
   private readonly imageOptionRequests: Partial<Record<ContentImageSelectionKind, Subscription>> = {};
   private readonly document = inject(DOCUMENT);
   private readonly renderer = inject(Renderer2);
   private readonly contentApi = inject(ContentApiService);
   private readonly toasts = inject(ToastNotificationsService);
+
+  @ViewChild('imageOptionsPanel')
+  private set imageOptionsPanel(reference: ElementRef<HTMLDivElement> | undefined) {
+    if (!reference || !this.activeImagePicker()) return;
+    reference.nativeElement.showPopover();
+  }
 
   ngOnDestroy(): void {
     this.releaseShareImages();
@@ -155,14 +163,45 @@ export class ShareReviewDialogComponent implements OnDestroy {
     else this.onShareImageChanged(event);
   }
 
-  protected toggleImagePicker(kind: ContentImageSelectionKind): void {
+  protected toggleImagePicker(kind: ContentImageSelectionKind, event: MouseEvent): void {
     if (this.activeImagePicker() === kind) {
-      this.activeImagePicker.set(null);
+      this.closeImagePicker();
       return;
     }
+    this.imagePickerTrigger = event.currentTarget as HTMLElement;
+    this.imagePickerPosition.set(this.popupPosition(this.imagePickerTrigger, kind));
     this.activeImagePicker.set(kind);
     const status = kind === 'posters' ? this.posterOptionsStatus() : this.backdropOptionsStatus();
     if (status === 'idle' || status === 'error') this.loadImageOptions(kind);
+  }
+
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  protected repositionImagePicker(): void {
+    const kind = this.activeImagePicker();
+    const trigger = this.imagePickerTrigger;
+    if (!kind || !trigger?.isConnected) return;
+    this.imagePickerPosition.set(this.popupPosition(trigger, kind));
+  }
+
+  private closeImagePicker(): void {
+    this.activeImagePicker.set(null);
+    this.imagePickerPosition.set(null);
+    this.imagePickerTrigger = null;
+  }
+
+  private popupPosition(trigger: HTMLElement, kind: ContentImageSelectionKind): { top: number; left: number } {
+    const rect = trigger.getBoundingClientRect();
+    const viewport = this.document.defaultView;
+    const viewportWidth = this.document.documentElement.clientWidth || viewport?.innerWidth || 0;
+    const viewportHeight = viewport?.innerHeight || 0;
+    const width = Math.min(480, viewportWidth - 24);
+    const height = Math.min(560, viewportHeight * 0.7);
+    const preferredLeft = kind === 'posters' ? rect.right - width : rect.left;
+    const left = Math.max(12, Math.min(preferredLeft, viewportWidth - width - 12));
+    const below = rect.bottom + 8;
+    const top = below + height <= viewportHeight - 12 ? below : Math.max(12, rect.top - height - 8);
+    return { top, left };
   }
 
   protected handleDialogClick(event: MouseEvent): void {
@@ -170,7 +209,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
     if (target instanceof Element
       && !target.closest('.movie-share-image-options')
       && !target.closest('.movie-share-image-picker')) {
-      this.activeImagePicker.set(null);
+      this.closeImagePicker();
     }
     event.stopPropagation();
   }
@@ -211,7 +250,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
       this.shareImageUrl.set(null);
       this.selectedBackdropUrl.set(image.url);
     }
-    if (kind === 'backdrops') this.activeImagePicker.set(null);
+    if (kind === 'backdrops') this.closeImagePicker();
   }
 
   protected isSelectedImage(kind: ContentImageSelectionKind, image: ContentImageSelection): boolean {
@@ -247,7 +286,7 @@ export class ShareReviewDialogComponent implements OnDestroy {
     this.releaseShareImages();
     this.selectedPosterUrl.set(null);
     this.selectedBackdropUrl.set(null);
-    this.activeImagePicker.set(null);
+    this.closeImagePicker();
     this.resetShareBackground();
   }
 

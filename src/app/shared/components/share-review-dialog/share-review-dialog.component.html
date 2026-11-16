@@ -1,5 +1,5 @@
 <div class="movie-modal-backdrop" appModalScrollLock (click)="dismissFromBackdrop($event)">
-  <section #shareDialog class="movie-dialog" role="dialog" appModalFocus [modalReturnFocus]="returnFocusTarget()" (modalDismiss)="close()" aria-modal="true" [attr.aria-labelledby]="'share-review-dialog-title'" (click)="handleDialogClick($event)">
+  <section #shareDialog class="movie-dialog" role="dialog" appModalFocus [modalReturnFocus]="returnFocusTarget()" (modalDismiss)="close()" aria-modal="true" [attr.aria-labelledby]="'share-review-dialog-title'" (click)="handleDialogClick($event)" (scroll)="repositionImagePicker()">
     <header class="movie-dialog-header">
       <div class="movie-dialog-heading">
         <h2 id="share-review-dialog-title">{{ copy().shareTitle }}</h2>
@@ -28,18 +28,18 @@
         <div class="movie-share-control-group movie-share-image-group">
           <strong>{{ copy().shareImages }}</strong>
           <div class="movie-share-image-actions">
-            <button class="movie-button movie-button--secondary movie-share-image-picker" type="button" [attr.aria-expanded]="activeImagePicker() === 'backdrops'" aria-controls="share-image-options" (click)="toggleImagePicker('backdrops')" data-ww-button="secondary">
+            <button class="movie-button movie-button--secondary movie-share-image-picker" type="button" [attr.aria-expanded]="activeImagePicker() === 'backdrops'" aria-controls="share-image-options" (click)="toggleImagePicker('backdrops', $event)" data-ww-button="secondary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
               {{ copy().shareChangeImage }}
             </button>
             @if (model().showPosterPicker !== false) {
-              <button class="movie-button movie-button--secondary movie-share-image-picker" type="button" [attr.aria-expanded]="activeImagePicker() === 'posters'" aria-controls="share-image-options" (click)="toggleImagePicker('posters')" data-ww-button="secondary">
+              <button class="movie-button movie-button--secondary movie-share-image-picker" type="button" [attr.aria-expanded]="activeImagePicker() === 'posters'" aria-controls="share-image-options" (click)="toggleImagePicker('posters', $event)" data-ww-button="secondary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v9M6 18l8-8 6 6M7 8h.01" /></svg>
                 {{ copy().shareChangePoster }}
               </button>
             }
             @if (activeImagePicker(); as imageKind) {
-              <div class="movie-share-image-options" [class.movie-share-image-options--poster]="imageKind === 'posters'" id="share-image-options" role="group" [attr.aria-label]="imageKind === 'posters' ? copy().shareSelectPoster : copy().shareSelectBackdrop">
+              <div #imageOptionsPanel class="movie-share-image-options" id="share-image-options" popover="manual" role="group" [attr.aria-label]="imageKind === 'posters' ? copy().shareSelectPoster : copy().shareSelectBackdrop" [style.top.px]="imagePickerPosition()?.top ?? null" [style.left.px]="imagePickerPosition()?.left ?? null">
                 @if (imageLanguageOptions(imageKind).length) {
                   <app-content-image-language-filter [options]="imageLanguageOptions(imageKind)" [selectedLanguages]="selectedImageLanguages(imageKind)" [label]="copy().shareImageLanguage" [removeLanguageLabel]="copy().shareImageLanguageRemoveLabel" (selectedLanguagesChange)="changeImageLanguages(imageKind, $event)" />
                 }
