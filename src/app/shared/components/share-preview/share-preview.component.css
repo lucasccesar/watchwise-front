@@ -149,9 +149,9 @@
 .share-dialog--profile { box-sizing: border-box; width: min(100%, 820px); max-height: calc(100dvh - 48px); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-6); overflow-y: auto; padding: var(--space-6); border-color: var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-secondary); box-shadow: var(--shadow-2xl); color: var(--color-text); }
 .profile-share-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
 .profile-share-header h2 { margin: 0 !important; color: var(--color-text); font-size: var(--font-size-md) !important; line-height: var(--line-height-md); font-weight: 600; }
-.profile-share-header :is(p,p:hover) { margin: var(--space-1) 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
+.profile-share-header p { margin: var(--space-1) 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
 .profile-share-close { display: grid; width: 36px !important; height: 36px !important; flex: 0 0 36px; place-items: center; border: 1px solid var(--color-border) !important; border-radius: var(--radius-md) !important; background: transparent !important; color: var(--color-text) !important; cursor: pointer; font-size: 24px !important; line-height: 1; }
-.profile-share-layout { display: grid; min-height: 0; grid-template-columns: minmax(0, 324px) minmax(0, 1fr); gap: var(--space-8); }
+.profile-share-layout { display: grid; min-height: 0; grid-template-columns: minmax(0, 324px) minmax(0, 1fr); align-items: stretch; gap: var(--space-8); }
 .profile-share-preview { position: relative; isolation: isolate; width: 100%; height: min(576px, calc(100dvh - 200px)); min-height: 420px; justify-self: center; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-text); cursor: grab; touch-action: none; user-select: none; }
 .profile-share-preview:active { cursor: grabbing; }
 .profile-share-preview > * { pointer-events: none; }
