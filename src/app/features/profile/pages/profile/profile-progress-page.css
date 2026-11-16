@@ -476,7 +476,8 @@
   background: var(--color-primary);
 }
 
-.profile-progress-season--complete .profile-progress-season-bar i { background: var(--color-success); }
+.profile-progress-main > .profile-progress-bar--complete i,
+.profile-progress-season--complete .profile-progress-season-bar i { background: rgb(34, 197, 94); }
 
 .profile-progress-details {
   display: flex;
@@ -530,11 +531,6 @@
   font-weight: 600;
   line-height: 18px;
   cursor: pointer;
-}
-
-.profile-progress-seasons-toggle:hover,
-.profile-progress-seasons-toggle:focus-visible {
-  background: #30343b;
 }
 
 .profile-progress-seasons-toggle svg {
