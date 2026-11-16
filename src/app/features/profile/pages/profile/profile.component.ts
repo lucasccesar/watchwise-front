@@ -2992,18 +2992,27 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     summary: ProfileSummary | null,
     type: ShareProfileContentType,
   ): ShareProfileContentVariant {
-    const recentEntries = type === 'MOVIE' ? summary?.recentReviews : summary?.recentEpisodes;
+    const recentItems = type === 'MOVIE'
+      ? (summary?.recentReviews ?? []).slice(0, 5).map((entry) => ({
+          title: entry.card?.title || this.copy.unavailable,
+          imageUrl: this.imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath, 'w342'),
+          rating: entry.score,
+        }))
+      : (summary?.recentActivity ?? [])
+          .filter((entry) => String(entry.type ?? entry.content?.type ?? entry.card?.type ?? '').toUpperCase() === 'SERIES')
+          .slice(0, 5)
+          .map((entry) => ({
+            title: entry.card?.title || this.copy.unavailable,
+            imageUrl: this.imageUrl(entry.card?.customPosterUrl || entry.card?.posterPath, 'w342'),
+            rating: entry.score,
+          }));
     return {
       status: 'ready',
       items: this.resolveTopFive(summary?.top5 ?? []).slice(0, 5).map((entry) => ({
         title: entry.title || this.copy.unavailable,
         imageUrl: this.imageUrl(entry.posterPath, 'w342'),
       })),
-      recentItems: (recentEntries ?? []).slice(0, 5).map((entry) => ({
-        title: entry.card?.title || this.copy.unavailable,
-        imageUrl: this.imageUrl(entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath, 'w342'),
-        rating: entry.score,
-      })),
+      recentItems,
     };
   }
 

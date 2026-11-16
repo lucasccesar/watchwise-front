@@ -90,7 +90,7 @@ export class SharePreviewComponent implements OnDestroy {
   protected readonly profileBackgroundZoom = signal(120);
   protected readonly profileBackgroundX = signal(50);
   protected readonly profileBackgroundY = signal(30);
-  protected readonly profileDownloadPending = signal(false);
+  protected readonly profileCopyPending = signal(false);
   protected readonly profileContentType = computed(() =>
     this.profileSelectedContentType() ?? this.model().profileContentType ?? 'MOVIE',
   );
@@ -397,7 +397,7 @@ export class SharePreviewComponent implements OnDestroy {
       return;
     }
     if (model.kind === 'profile') {
-      void this.downloadProfileCard();
+      void this.copyProfileCard();
       return;
     }
     const title = this.escape(model.title);
@@ -512,21 +512,19 @@ export class SharePreviewComponent implements OnDestroy {
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
-  private async downloadProfileCard(): Promise<void> {
-    if (this.profileDownloadPending()) return;
-    this.profileDownloadPending.set(true);
+  protected async copyProfileCard(): Promise<void> {
+    if (this.profileCopyPending()) return;
+    this.profileCopyPending.set(true);
     try {
+      const clipboard = navigator.clipboard;
+      if (!clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('clipboard-unavailable');
       const image = await this.createPreviewImageBlob(this.profileShareCanvas?.nativeElement);
-      const url = URL.createObjectURL(image);
-      const anchor = this.document.createElement('a');
-      anchor.href = url;
-      anchor.download = 'watchwise-perfil.png';
-      anchor.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      await clipboard.write([new ClipboardItem({ 'image/png': image })]);
+      this.toasts.success(this.profileCopy.imageCopied);
     } catch {
-      this.toasts.error(this.profileCopy.downloadError);
+      this.toasts.error(this.profileCopy.copyError);
     } finally {
-      this.profileDownloadPending.set(false);
+      this.profileCopyPending.set(false);
     }
   }
 

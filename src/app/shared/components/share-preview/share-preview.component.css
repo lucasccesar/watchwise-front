@@ -156,11 +156,11 @@
 .profile-share-preview:active { cursor: grabbing; }
 .profile-share-preview > * { pointer-events: none; }
 .profile-share-preview img { -webkit-user-drag: none; }
-.profile-share-canvas { position: absolute; inset: 0; isolation: isolate; overflow: hidden; background: var(--color-surface); color: var(--color-text); }
+.profile-share-canvas { position: absolute; inset: 0; isolation: isolate; overflow: hidden; background: var(--color-surface); }
 .profile-share-background { position: absolute; z-index: 0; top: -2.5%; left: -4.45%; width: 108.9%; height: 105%; max-width: none; object-fit: cover; filter: blur(1.8px); }
 .profile-share-scrim { position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 45%, transparent) 0%, color-mix(in srgb, var(--color-surface) 35%, transparent) 30%, color-mix(in srgb, var(--color-surface) 80%, transparent) 55%, color-mix(in srgb, var(--color-surface) 96%, transparent) 75%, var(--color-surface) 100%); }
 .profile-share-card-content { position: relative; z-index: 2; display: flex; width: 100%; height: 100%; box-sizing: border-box; flex-direction: column; align-items: center; justify-content: center; gap: 24px; overflow: hidden; padding: 38.4px 24px 43.2px; }
-.profile-share-identity { position: relative; isolation: isolate; box-sizing: border-box; display: flex; min-width: min(240px, 100%); min-height: 168px; max-width: 100%; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; gap: 9.6px; padding: 14.4px 24px; background: transparent; text-align: center; }
+.profile-share-identity { position: relative; isolation: isolate; box-sizing: border-box; display: flex; min-width: min(240px, 100%); min-height: 168px; max-width: 100%; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; gap: 9.6px; padding: 14.4px 24px; text-align: center; }
 .profile-share-user,.profile-share-bio { position: relative; z-index: 1; }
 .profile-share-user { display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 9.6px; text-align: center; }
 .profile-share-user img { display: block; width: 48px; height: 48px; border: 1.8px solid var(--color-surface); border-radius: var(--radius-full); box-shadow: 0 0 0 1.2px var(--color-primary); object-fit: cover; }
@@ -189,7 +189,7 @@
 .profile-share-segment button { min-width: 0; flex: 1; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text); cursor: pointer; font: inherit; font-size: var(--font-size-sm); font-weight: 600; }
 .profile-share-segment button.is-active { background: var(--color-primary); }
 .profile-share-toggles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-5); }
-.profile-share-download svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.profile-share-copy svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .share-dialog--profile button:focus-visible,.share-dialog--profile input:focus-visible,.profile-share-preview:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 @media (max-width: 760px) {
