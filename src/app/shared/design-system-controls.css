@@ -399,3 +399,12 @@ summary[data-ww-ellipsis-trigger] svg {
 .tr-state-marker--watched app-check-icon {
   transform: scale(.75);
 }
+
+/* Keep leading button icons vertically aligned with their labels. */
+button:has(> svg:first-child) {
+  align-items: center !important;
+}
+
+button:has(> svg:first-child) > svg:first-child {
+  vertical-align: middle;
+}
