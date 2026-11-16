@@ -1675,6 +1675,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           .filter(Boolean).join(' · ')
         : entry.card?.releaseYear ? String(entry.card.releaseYear) : null;
     const posterPath = entry.customPosterUrl || entry.card?.customPosterUrl || entry.card?.posterPath || null;
+    const posterUrl = this.imageUrl(posterPath, 'w780');
+    const backdropUrl = this.imageUrl(entry.card?.backdropPath || posterPath, 'w1280') || posterUrl;
     const user = this.session.user();
 
     return {
@@ -1682,14 +1684,16 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       subtitle,
       rating: includeReview ? entry.score : null,
       review: includeReview ? entry.comment : null,
-      backgroundUrl: this.imageUrl(entry.card?.backdropPath || posterPath, 'w1280'),
-      posterUrl: this.imageUrl(posterPath, 'w780'),
+      backgroundUrl: backdropUrl,
+      posterUrl: isEpisode ? backdropUrl : posterUrl,
       username: user?.username ?? null,
       avatarUrl: user?.profilePicture ?? null,
       selectionType: type === 'MOVIE' ? 'MOVIE' : 'SERIES',
       tmdbId: type === 'MOVIE'
         ? entry.content.tmdbId
         : entry.content.seriesTmdbId || entry.content.tmdbId,
+      showPosterPicker: isEpisode ? false : undefined,
+      posterPreserveAspectRatio: isEpisode,
     };
   }
 

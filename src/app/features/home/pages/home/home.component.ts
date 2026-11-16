@@ -500,20 +500,23 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     ].filter(Boolean).join(' · ');
     const episodeSubtitle = [entry.seriesTitle, episodeCoordinates].filter(Boolean).join(' · ');
     const posterPath = entry.customPosterUrl || card?.customPosterUrl || card?.posterPath || null;
+    const backgroundUrl = this.imageUrl(card?.backdropPath, 'w1920') || this.imageUrl(posterPath, 'w1920');
 
     this.shareReviewTarget.set({
       title: card?.title || this.copy.titleUnavailable,
       subtitle: isEpisode ? episodeSubtitle : card?.releaseYear ? String(card.releaseYear) : null,
       rating: entry.score,
       review: null,
-      backgroundUrl: this.imageUrl(card?.backdropPath, 'w1920') || this.imageUrl(posterPath, 'w1920'),
-      posterUrl: this.imageUrl(posterPath, 'w780'),
+      backgroundUrl,
+      posterUrl: isEpisode ? backgroundUrl : this.imageUrl(posterPath, 'w780'),
       username: this.summary()?.viewer?.username ?? null,
       avatarUrl: this.summary()?.viewer?.profilePicture ?? null,
       selectionType: isEpisode ? 'SERIES' : 'MOVIE',
       tmdbId: isEpisode
         ? entry.content.seriesTmdbId || card?.seriesTmdbId || null
         : entry.content.tmdbId || card?.tmdbId || null,
+      showPosterPicker: isEpisode ? false : undefined,
+      posterPreserveAspectRatio: isEpisode,
     });
     this.shareReviewRequest?.unsubscribe();
     this.shareReviewRequest = this.contentApi.getDiaryEntry(entry.id).subscribe({
@@ -525,7 +528,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           ...current,
           rating: reviewEntry.score,
           review: reviewEntry.comment,
-          posterUrl: this.imageUrl(reviewPoster, 'w780') || current.posterUrl,
+          posterUrl: isEpisode ? current.posterUrl : this.imageUrl(reviewPoster, 'w780') || current.posterUrl,
         });
       },
       error: () => undefined,

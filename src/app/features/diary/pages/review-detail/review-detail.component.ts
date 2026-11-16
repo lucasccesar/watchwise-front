@@ -164,18 +164,24 @@ export class DiaryReviewDetailComponent {
     const content = entry.content;
     const year = entry.card?.releaseYear ?? entry.card?.releaseDate?.slice(0, 4) ?? null;
     let subtitle = year ? String(year) : null;
-    if (content?.type === 'EPISODE') subtitle = this.episodeLabel() || null;
-    else if (content?.type === 'SEASON') subtitle = content.seasonNumber === null ? null : `T${content.seasonNumber}`;
+    if (content?.type === 'EPISODE') {
+      subtitle = [
+        this.contentTitle(),
+        content.seasonNumber !== null ? `T${content.seasonNumber}` : null,
+        content.episodeNumber !== null ? `E${content.episodeNumber}` : null,
+      ].filter(Boolean).join(' · ') || null;
+    } else if (content?.type === 'SEASON') subtitle = content.seasonNumber === null ? null : `T${content.seasonNumber}`;
     const posterUrl = this.posterUrl();
+    const backgroundUrl = this.backdrop() || posterUrl;
     const user = this.currentUser();
     return {
-      title: this.contentTitle(),
+      title: content?.type === 'EPISODE' ? entry.card?.title || this.contentTitle() : this.contentTitle(),
       subtitle,
       subtitleBelowTitle: content?.type === 'EPISODE',
       rating: entry.score,
       review: entry.comment,
-      backgroundUrl: this.backdrop() || posterUrl,
-      posterUrl,
+      backgroundUrl,
+      posterUrl: content?.type === 'EPISODE' ? backgroundUrl : posterUrl,
       username: entry.userId && user && entry.userId === user.id
         ? user.username
         : this.reviewerProfile()?.username ?? null,
@@ -184,6 +190,8 @@ export class DiaryReviewDetailComponent {
       tmdbId: content
         ? (content.type === 'MOVIE' ? content.tmdbId : content.seriesTmdbId || content.tmdbId)
         : null,
+      showPosterPicker: content?.type === 'EPISODE' ? false : undefined,
+      posterPreserveAspectRatio: content?.type === 'EPISODE',
     };
   });
   protected readonly contentRoute = computed(() => {

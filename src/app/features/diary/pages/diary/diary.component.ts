@@ -265,18 +265,26 @@ export class DiaryComponent implements OnDestroy {
     const posterUrl = this.poster(entry);
     const backdropUrl = tmdbImageUrl(entry.card?.backdropPath, 'w1280') || posterUrl;
     const year = entry.card?.releaseYear ?? entry.card?.releaseDate?.slice(0, 4) ?? null;
+    const episodeCoordinates = [
+      entry.content.seasonNumber !== null ? `T${entry.content.seasonNumber}` : null,
+      entry.content.episodeNumber !== null ? `E${entry.content.episodeNumber}` : null,
+    ].filter(Boolean).join(' · ');
     return {
-      title: this.title(entry),
-      subtitle: type === 'EPISODE' ? this.reviewContext(entry) || null : year ? String(year) : null,
+      title: type === 'EPISODE' ? this.episodeTitle(entry) : this.title(entry),
+      subtitle: type === 'EPISODE'
+        ? [entry.seriesTitle, episodeCoordinates].filter(Boolean).join(' · ') || null
+        : year ? String(year) : null,
       subtitleBelowTitle: type === 'EPISODE',
       rating: entry.score,
       review: entry.comment,
       backgroundUrl: backdropUrl,
-      posterUrl,
+      posterUrl: type === 'EPISODE' ? backdropUrl : posterUrl,
       username: user?.username ?? null,
       avatarUrl: user?.profilePicture ?? null,
       selectionType: type === 'MOVIE' ? 'MOVIE' : 'SERIES',
       tmdbId: type === 'MOVIE' ? entry.content.tmdbId : entry.content.seriesTmdbId || entry.content.tmdbId,
+      showPosterPicker: type === 'EPISODE' ? false : undefined,
+      posterPreserveAspectRatio: type === 'EPISODE',
     };
   });
   protected readonly diaryActionPending = signal(false);
