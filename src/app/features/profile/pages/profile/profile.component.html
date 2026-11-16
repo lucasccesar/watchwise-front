@@ -607,12 +607,15 @@
                       <span class="profile-progress-next-heading">{{ progressCopy.episodeUnavailable }}</span>
                       <a class="profile-progress-next-link" [routerLink]="episodeRoute(item.seriesTmdbId, nextEpisode.seasonNumber, nextEpisode.episodeNumber)" [attr.aria-label]="progressCopy.episodeUnavailable + ': ' + (item.seriesTitle || item.title || copy.unavailable) + ', S' + nextEpisode.seasonNumber + ' · E' + nextEpisode.episodeNumber + ', ' + (nextEpisode.title || copy.unavailable)">
                         <span class="profile-progress-still">
-                          @if (imageUrl(nextEpisode.stillPath, 'w780'); as still) { <img [src]="still" alt="" /> }
+                          @if (imageUrl(nextEpisode.stillPath, 'w780') || imageUrl(item.customPosterUrl || item.seriesPosterPath || item.posterPath, 'w342'); as still) { <img [src]="still" alt="" /> }
                         </span>
                         <span class="profile-progress-next-copy">
                           <span class="profile-progress-next-coordinates">S{{ nextEpisode.seasonNumber }} · E{{ nextEpisode.episodeNumber }}</span>
                           <span class="profile-progress-next-title">{{ nextEpisode.title || copy.unavailable }}</span>
-                          <span class="profile-progress-next-meta">{{ nextEpisode.releaseDate ? dateLabel(nextEpisode.releaseDate) : progressCopy.releaseDateUnknown }} · {{ nextEpisode.runtimeMinutes !== null ? runtimeLabel(nextEpisode.runtimeMinutes) : copy.unavailable }}</span>
+                          <span class="profile-progress-next-meta">
+                            <span>{{ nextEpisode.releaseDate ? dateLabel(nextEpisode.releaseDate) : progressCopy.releaseDateUnknown }}</span>
+                            @if (nextEpisode.runtimeMinutes !== null && nextEpisode.runtimeMinutes !== undefined && nextEpisode.runtimeMinutes > 0) { <span>{{ runtimeLabel(nextEpisode.runtimeMinutes) }}</span> }
+                          </span>
                         </span>
                       </a>
                       @if (followState() === 'SELF' && nextEpisode.availableToWatch !== false) {
