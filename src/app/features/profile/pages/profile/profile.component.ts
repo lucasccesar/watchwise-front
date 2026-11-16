@@ -2872,7 +2872,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           const currentExpanded = this.expandedProgress();
           const currentIds = new Set(data.content.map((series) => series.seriesTmdbId));
           const retained = preserveExisting ? [...currentExpanded].filter((id) => currentIds.has(id)) : [];
-          this.expandedProgress.set(new Set(retained.length ? retained : data.content[0] ? [data.content[0].seriesTmdbId] : []));
+          this.expandedProgress.set(new Set(retained));
         },
         error: (error: unknown) => preserveExisting
           ? this.handleProfileActionError(error)
