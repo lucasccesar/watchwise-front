@@ -148,8 +148,8 @@ export class SharePreviewComponent implements OnDestroy {
   @ViewChild('listSharePreview')
   private listSharePreview?: ElementRef<HTMLElement>;
 
-  @ViewChild('profileSharePreview')
-  private profileSharePreview?: ElementRef<HTMLElement>;
+  @ViewChild('profileShareCanvas')
+  private profileShareCanvas?: ElementRef<HTMLElement>;
 
   ngOnDestroy(): void {
     this.restoreFocus();
@@ -380,8 +380,12 @@ export class SharePreviewComponent implements OnDestroy {
     if (!this.backgroundDragStart) return;
     const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
-    this.profileBackgroundX.set(this.clampPosition(this.backgroundDragStart.backgroundX - ((event.clientX - this.backgroundDragStart.pointerX) / bounds.width) * 100));
-    this.profileBackgroundY.set(this.clampPosition(this.backgroundDragStart.backgroundY - ((event.clientY - this.backgroundDragStart.pointerY) / bounds.height) * 100));
+    const zoom = this.profileBackgroundZoom() / 100;
+    const previewScale = bounds.width / 1080;
+    const overflowX = Math.max(60, 1176 * (zoom - 1) * previewScale);
+    const overflowY = Math.max(60, 2016 * (zoom - 1) * previewScale);
+    this.profileBackgroundX.set(this.clampPosition(this.backgroundDragStart.backgroundX - ((event.clientX - this.backgroundDragStart.pointerX) / overflowX) * 100));
+    this.profileBackgroundY.set(this.clampPosition(this.backgroundDragStart.backgroundY - ((event.clientY - this.backgroundDragStart.pointerY) / overflowY) * 100));
   }
 
   protected endProfileBackgroundDrag(): void { this.backgroundDragStart = null; }
@@ -512,7 +516,7 @@ export class SharePreviewComponent implements OnDestroy {
     if (this.profileDownloadPending()) return;
     this.profileDownloadPending.set(true);
     try {
-      const image = await this.createPreviewImageBlob(this.profileSharePreview?.nativeElement);
+      const image = await this.createPreviewImageBlob(this.profileShareCanvas?.nativeElement);
       const url = URL.createObjectURL(image);
       const anchor = this.document.createElement('a');
       anchor.href = url;

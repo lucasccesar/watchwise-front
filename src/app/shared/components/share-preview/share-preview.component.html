@@ -126,7 +126,6 @@
 
       <div class="profile-share-layout">
         <div
-          #profileSharePreview
           class="profile-share-preview"
           role="img"
           tabindex="0"
@@ -137,64 +136,77 @@
           (pointercancel)="endProfileBackgroundDrag()"
           (wheel)="profileBackgroundWheel($event)"
         >
-          @if (profileBackgroundImage(); as imageUrl) {
-            <div class="profile-share-background" [style.background-image]="'url(' + imageUrl + ')'" [style.background-size]="'auto ' + profileBackgroundZoom() + '%'" [style.background-position]="profileBackgroundX() + '% ' + profileBackgroundY() + '%'" aria-hidden="true"></div>
-          }
-          <div class="profile-share-scrim" aria-hidden="true"></div>
-          <div class="profile-share-card-content">
-            @if (profileShowUserInfo()) {
-              <div class="profile-share-user">
-                <img [src]="model().avatarUrl || '/default-user-avatar.png'" alt="" draggable="false" />
-                <strong>{{ model().title }}</strong>
-                @if (model().username) { <small>&#64;{{ model().username }}</small> }
-              </div>
+          <div #profileShareCanvas class="profile-share-canvas">
+            @if (profileBackgroundImage(); as imageUrl) {
+              <img class="profile-share-background" [src]="imageUrl" [style.object-position]="profileBackgroundX() + '% ' + profileBackgroundY() + '%'" [style.transform-origin]="profileBackgroundX() + '% ' + profileBackgroundY() + '%'" [style.transform]="'scale(' + (profileBackgroundZoom() / 100) + ')'" alt="" draggable="false" aria-hidden="true" />
             }
-            @if (profileShowBio() && model().description) {
-              <p class="profile-share-bio">{{ model().description }}</p>
-            }
-
-            @if (profileContentVariant().status === 'loading') {
-              <p class="profile-share-state" role="status">{{ profileCopy.loadingContent }}</p>
-            } @else if (profileContentVariant().status === 'error') {
-              <div class="profile-share-state" role="alert">
-                <p>{{ profileCopy.contentLoadError }}</p>
-                <button type="button" (click)="selectProfileContent(profileContentType())">{{ profileCopy.retry }}</button>
-              </div>
-            } @else {
-              @if (profileShowTopFive()) {
-                <section class="profile-share-section">
-                  <h3>{{ profileCopy.topFive }}</h3>
-                  <div class="profile-share-posters">
-                    @for (item of previewItems(); track $index) {
-                      <div class="profile-share-poster">
-                        @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" draggable="false" /> }
-                        @else { <span>{{ $index + 1 }}</span> }
+            <div class="profile-share-scrim" aria-hidden="true"></div>
+            <div class="profile-share-card-content">
+              @if (profileShowUserInfo() || (profileShowBio() && model().description)) {
+                <header class="profile-share-identity">
+                  @if (profileShowUserInfo()) {
+                    <div class="profile-share-user">
+                      <img [src]="model().avatarUrl || '/default-user-avatar.png'" alt="" draggable="false" />
+                      <div class="profile-share-user-copy">
+                        <strong>{{ model().title }}</strong>
+                        @if (model().username) { <small>&#64;{{ model().username }}</small> }
                       </div>
-                    } @empty {
-                      <p class="profile-share-empty">{{ profileCopy.emptyTopFive }}</p>
+                    </div>
+                  }
+                  @if (profileShowBio() && model().description) {
+                    <p class="profile-share-bio">{{ model().description }}</p>
+                  }
+                  <div class="profile-share-identity-glow" aria-hidden="true"></div>
+                </header>
+              }
+
+              @if (profileContentVariant().status === 'loading') {
+                <p class="profile-share-state" role="status">{{ profileCopy.loadingContent }}</p>
+              } @else if (profileContentVariant().status === 'error') {
+                <div class="profile-share-state" role="alert">
+                  <p>{{ profileCopy.contentLoadError }}</p>
+                  <button type="button" (click)="selectProfileContent(profileContentType())">{{ profileCopy.retry }}</button>
+                </div>
+              } @else {
+                @if (profileShowTopFive() || profileShowRecentActivity()) {
+                  <div class="profile-share-sections">
+                    @if (profileShowTopFive()) {
+                      <section class="profile-share-section">
+                        <h3>{{ profileCopy.topFive }}</h3>
+                        <div class="profile-share-posters">
+                          @for (item of previewItems(); track $index) {
+                            <div class="profile-share-poster">
+                              @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" draggable="false" /> }
+                              @else { <span>{{ $index + 1 }}</span> }
+                            </div>
+                          } @empty {
+                            <p class="profile-share-empty">{{ profileCopy.emptyTopFive }}</p>
+                          }
+                        </div>
+                      </section>
+                    }
+                    @if (profileShowRecentActivity()) {
+                      <section class="profile-share-section profile-share-section--recent">
+                        <h3>{{ profileCopy.recentActivity }}</h3>
+                        <div class="profile-share-posters">
+                          @for (item of previewRecentItems(); track $index) {
+                            <div class="profile-share-poster">
+                              @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" draggable="false" /> }
+                              @else { <span>{{ $index + 1 }}</span> }
+                              @if (item.rating !== null && item.rating !== undefined) { <small aria-label="Nota {{ item.rating | number:'1.0-1' }}"><span aria-hidden="true">★</span> {{ item.rating | number:'1.0-1' }}</small> }
+                            </div>
+                          } @empty {
+                            <p class="profile-share-empty">{{ profileCopy.emptyRecentActivity }}</p>
+                          }
+                        </div>
+                      </section>
                     }
                   </div>
-                </section>
+                }
               }
-              @if (profileShowRecentActivity()) {
-                <section class="profile-share-section profile-share-section--recent">
-                  <h3>{{ profileCopy.recentActivity }}</h3>
-                  <div class="profile-share-posters">
-                    @for (item of previewRecentItems(); track $index) {
-                      <div class="profile-share-poster">
-                        @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.title" loading="lazy" draggable="false" /> }
-                        @else { <span>{{ $index + 1 }}</span> }
-                        @if (item.rating !== null && item.rating !== undefined) { <small aria-label="Nota {{ item.rating | number:'1.0-1' }}"><span aria-hidden="true">★</span> {{ item.rating | number:'1.0-1' }}</small> }
-                      </div>
-                    } @empty {
-                      <p class="profile-share-empty">{{ profileCopy.emptyRecentActivity }}</p>
-                    }
-                  </div>
-                </section>
-              }
-            }
 
-            <footer class="profile-share-watermark"><span>ON</span><strong><img src="/watchwise-logo.svg" alt="Watchwise" draggable="false" /></strong></footer>
+              <footer class="profile-share-watermark"><span>ON</span><strong><img src="/watchwise-logo.svg" alt="Watchwise" draggable="false" /></strong></footer>
+            </div>
           </div>
         </div>
 
@@ -241,9 +253,9 @@
           <section class="profile-share-control-group list-share-control-group">
             <h3>{{ profileCopy.backgroundZoom }}</h3>
             <div class="profile-share-zoom list-share-zoom-control">
-              <button type="button" [attr.aria-label]="profileCopy.zoomOut" (click)="adjustProfileBackgroundZoom(-5)">−</button>
-              <input type="range" min="100" max="250" step="1" [value]="profileBackgroundZoom()" [attr.aria-label]="profileCopy.backgroundZoom" (input)="updateProfileBackgroundZoom($event)" />
-              <button type="button" [attr.aria-label]="profileCopy.zoomIn" (click)="adjustProfileBackgroundZoom(5)">+</button>
+              <button type="button" [attr.aria-label]="profileCopy.zoomOut" (click)="adjustProfileBackgroundZoom(-10)">−</button>
+              <input type="range" min="100" max="250" step="5" [value]="profileBackgroundZoom()" [attr.aria-label]="profileCopy.backgroundZoom" (input)="updateProfileBackgroundZoom($event)" />
+              <button type="button" [attr.aria-label]="profileCopy.zoomIn" (click)="adjustProfileBackgroundZoom(10)">+</button>
               <output>{{ profileBackgroundZoom() }}%</output>
             </div>
           </section>
