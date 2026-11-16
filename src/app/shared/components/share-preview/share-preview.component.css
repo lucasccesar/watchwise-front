@@ -160,14 +160,15 @@
 .profile-share-background { position: absolute; z-index: 0; top: -2.5%; left: -4.45%; width: 108.9%; height: 105%; max-width: none; object-fit: cover; filter: blur(1.8px); }
 .profile-share-scrim { position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 45%, transparent) 0%, color-mix(in srgb, var(--color-surface) 35%, transparent) 30%, color-mix(in srgb, var(--color-surface) 80%, transparent) 55%, color-mix(in srgb, var(--color-surface) 96%, transparent) 75%, var(--color-surface) 100%); }
 .profile-share-card-content { position: relative; z-index: 2; display: flex; width: 100%; height: 100%; box-sizing: border-box; flex-direction: column; align-items: center; justify-content: center; gap: 24px; overflow: hidden; padding: 38.4px 24px 43.2px; }
-.profile-share-identity { position: relative; isolation: isolate; box-sizing: border-box; display: flex; max-width: 100%; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 9.6px; padding: 14.4px 24px; text-align: center; }
+.profile-share-identity { position: relative; isolation: isolate; box-sizing: border-box; display: flex; max-width: 100%; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 9.6px; padding: 14.4px 24px; background: transparent; text-align: center; }
+.profile-share-user,.profile-share-bio { position: relative; z-index: 1; }
 .profile-share-user { display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 9.6px; text-align: center; }
 .profile-share-user img { display: block; width: 48px; height: 48px; border: 1.8px solid var(--color-surface); border-radius: var(--radius-full); box-shadow: 0 0 0 1.2px var(--color-primary); object-fit: cover; }
 .profile-share-user-copy { display: flex; max-width: 100%; flex-direction: column; align-items: center; gap: 0; }
 .profile-share-user strong { max-width: 100%; overflow: hidden; color: var(--color-text); font-size: 14.4px; line-height: 19.2px; font-weight: 700; letter-spacing: -0.02em; text-overflow: ellipsis; white-space: nowrap; }
 .profile-share-user small { color: color-mix(in srgb, var(--color-text) 80%, transparent); font-size: 8.4px; line-height: 12px; font-weight: 500; }
 .profile-share-bio { display: -webkit-box; max-width: 252px; max-height: 39.6px; overflow: hidden; margin: 0; color: var(--color-text); font-size: 9px; line-height: 13.2px; font-weight: 400; text-align: center; text-wrap: balance; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-.profile-share-identity-glow { position: absolute; z-index: -1; inset: 0; border-radius: 240px; background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 45%, transparent) 0%, color-mix(in srgb, var(--color-surface) 70%, transparent) 100%); filter: blur(14.4px); }
+.profile-share-identity-glow { position: absolute; z-index: 0; inset: 0; border-radius: 800px; background: linear-gradient(180deg, rgba(24,24,24,.45) 0%, rgba(24,24,24,.7) 100%); filter: blur(14.4px); }
 .profile-share-sections { display: flex; width: 100%; flex: 0 0 auto; flex-direction: column; gap: 16.8px; }
 .profile-share-section { display: flex; width: 100%; flex: 0 0 auto; flex-direction: column; gap: 7.2px; }
 .profile-share-section h3 { margin: 0; color: var(--color-text); font-size: 9.6px; line-height: 14.4px; font-weight: 600; }
