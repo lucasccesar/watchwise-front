@@ -497,6 +497,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   });
   protected readonly shareModel = computed<ShareCardModel>(() => {
     const profile = this.profile();
+    const heroBackdrop = this.profileHeroBackdrop();
     const contentType: ShareProfileContentType = this.mode() === 'MOVIE' ? 'MOVIE' : 'SERIES';
     const currentVariant = this.profileShareVariantFor(this.summary(), contentType);
     const profileContentVariants = {
@@ -510,7 +511,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       authorName: profile?.name || profile?.username || 'Watchwise',
       username: profile?.username || this.username(),
       avatarUrl: profile?.profilePicture,
-      backgroundUrl: this.imageUrl(profile?.banner, 'w1280'),
+      backgroundUrl: heroBackdrop === undefined
+        ? null
+        : this.imageUrl(heroBackdrop ?? 'https://image.tmdb.org/t/p/w{size}/dg3OindVAGZBjlT3xYKqIAdukPL.jpg', 'w1280'),
       description: profile?.description,
       items: currentVariant.items,
       recentItems: currentVariant.recentItems,
