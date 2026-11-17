@@ -52,6 +52,9 @@
 }
 
 .profile-page .profile-content.profile-map-detail .profile-map-detail-breadcrumb {
+  position: static;
+  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   min-height: 32px;
   align-items: center;
@@ -153,6 +156,8 @@
 }
 
 .profile-page .profile-content.profile-map-detail .profile-map-share--hero {
+  flex: 0 0 auto;
+  margin-left: auto;
   min-height: 40px;
   padding: 0 14px;
   border: 0;
