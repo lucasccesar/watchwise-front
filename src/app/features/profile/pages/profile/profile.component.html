@@ -519,9 +519,9 @@
             <header class="profile-subpage-hero profile-progress-hero">
               <app-responsive-banner [path]="profile()?.banner || data.backdropPath" fallbackPath="" appearance="profile-hero" />
               <div class="profile-subpage-hero-copy profile-progress-hero-copy">
-                <a class="profile-subpage-owner profile-subpage-owner--progress profile-progress-owner" [routerLink]="selectedSectionUrl('')">
+                <a class="profile-subpage-owner profile-map-owner profile-progress-owner" [routerLink]="selectedSectionUrl('')">
                   @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
-                  <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
+                  <span class="profile-subpage-owner-copy profile-map-owner-copy profile-progress-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
                 </a>
                 <h1 id="profile-progress-title" class="ww-detail-hero-title">
                   <span class="profile-progress-hero-title">{{ progressCopy.title }}</span>
