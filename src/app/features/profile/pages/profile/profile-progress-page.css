@@ -47,7 +47,8 @@
   object-fit: cover;
 }
 
-.profile-page .profile-content.profile-progress-page .profile-progress-owner {
+.profile-page .profile-content.profile-progress-page .profile-progress-owner,
+.profile-page .profile-content.profile-map-detail .profile-progress-owner {
   display: inline-flex;
   min-height: 32px;
   align-items: center;
