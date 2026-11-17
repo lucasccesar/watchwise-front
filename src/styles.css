@@ -611,6 +611,6 @@ input:focus-visible {
 }
 
 /* Keep navigation links blue on hover across feature-level styles. */
-a[href]:hover:not(.profile-tabs a):not(.profile-subnav a):not([aria-disabled='true']):not(:is([data-ww-button], [role='button'], [role='menuitem'], [class*='button'], [class*='action'], .picks-create, .profile-picks-create, .game-continue, .not-found-primary, .not-found-secondary)):not(:has(svg, img)) {
+a[href]:hover:not(.profile-tabs a):not(.profile-subnav a):not([aria-disabled='true']):not(:is([data-ww-button], [role='button'], [role='menuitem'], [class*='button'], [class*='action'], .profile-episode-rating-cell, .picks-create, .profile-picks-create, .game-continue, .not-found-primary, .not-found-secondary)):not(:has(svg, img)) {
   color: var(--color-primary) !important;
 }
