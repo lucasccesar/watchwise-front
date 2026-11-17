@@ -34,6 +34,8 @@ export interface ShareRatingsMatrix {
   averages: readonly (number | null)[];
 }
 
+export type ShareRatingsMapView = 'MY' | 'AVERAGE';
+
 export interface ShareCardModel {
   kind: ShareCardKind;
   title: string;
@@ -53,6 +55,7 @@ export interface ShareCardModel {
   scores?: readonly (number | null)[];
   scoreGroups?: readonly ShareCardScoreGroup[];
   ratingsMatrix?: ShareRatingsMatrix;
+  ratingsMapVariants?: Partial<Record<ShareRatingsMapView, ShareRatingsMatrix>>;
   itemCount?: number;
 }
 
@@ -71,6 +74,7 @@ export class SharePreviewComponent implements OnDestroy {
   protected readonly closed = output<void>();
   protected readonly listCopy = messageCatalog['pt-BR'].shareListPreview;
   protected readonly profileCopy = messageCatalog['pt-BR'].shareProfilePreview;
+  protected readonly ratingsMapCopy = messageCatalog['pt-BR'].shareRatingsMapPreview;
   protected readonly listBackgroundUrl = signal<string | null>(null);
   protected readonly listBackgroundPickerOpen = signal(false);
   protected readonly listShowDescription = signal(true);
@@ -91,6 +95,11 @@ export class SharePreviewComponent implements OnDestroy {
   protected readonly profileBackgroundX = signal(50);
   protected readonly profileBackgroundY = signal(30);
   protected readonly profileCopyPending = signal(false);
+  protected readonly ratingsMapSelectedView = signal<ShareRatingsMapView>('MY');
+  protected readonly ratingsMapSelectedSeasons = signal<readonly string[] | null>(null);
+  protected readonly ratingsMapDownloadPending = signal(false);
+  protected readonly ratingsMapUploadedBackgroundUrl = signal<string | null>(null);
+  private ratingsMapUploadObjectUrl: string | null = null;
   protected readonly profileContentType = computed(() =>
     this.profileSelectedContentType() ?? this.model().profileContentType ?? 'MOVIE',
   );
@@ -105,7 +114,31 @@ export class SharePreviewComponent implements OnDestroy {
     return { status: 'loading', items: [], recentItems: [] };
   });
   protected readonly profileBackgroundImage = computed(() =>
-    this.profileBackgroundUrl() || this.model().backgroundUrl || this.model().imageUrl || null,
+    this.ratingsMapUploadedBackgroundUrl() || this.profileBackgroundUrl() || this.model().backgroundUrl || this.model().imageUrl || null,
+  );
+  protected readonly ratingsMapSourceMatrix = computed(() => {
+    const model = this.model();
+    return model.ratingsMapVariants?.[this.ratingsMapSelectedView()] ?? model.ratingsMatrix ?? {
+      columnLabels: [], rowLabels: [], cells: [], averages: [],
+    };
+  });
+  protected readonly ratingsMapPreviewMatrix = computed(() => {
+    const matrix = this.ratingsMapSourceMatrix();
+    const selected = this.ratingsMapSelectedSeasons();
+    if (!selected) return matrix;
+    const indices = matrix.columnLabels
+      .map((label, index) => selected.includes(label) ? index : -1)
+      .filter((index) => index >= 0);
+    if (!indices.length) return matrix;
+    return {
+      columnLabels: indices.map((index) => matrix.columnLabels[index]),
+      rowLabels: matrix.rowLabels,
+      cells: matrix.cells.map((row) => indices.map((index) => row[index] ?? null)),
+      averages: indices.map((index) => matrix.averages[index] ?? null),
+    };
+  });
+  protected readonly ratingsMapCellHeight = computed(() =>
+    `${Math.max(8, Math.min(17, 360 / Math.max(1, this.ratingsMapPreviewMatrix().rowLabels.length)))}px`,
   );
   protected readonly profileBackgroundOptions = computed(() => {
     const model = this.model();
@@ -151,7 +184,11 @@ export class SharePreviewComponent implements OnDestroy {
   @ViewChild('profileShareCanvas')
   private profileShareCanvas?: ElementRef<HTMLElement>;
 
+  @ViewChild('ratingsMapShareCanvas')
+  private ratingsMapShareCanvas?: ElementRef<HTMLElement>;
+
   ngOnDestroy(): void {
+    if (this.ratingsMapUploadObjectUrl) URL.revokeObjectURL(this.ratingsMapUploadObjectUrl);
     this.restoreFocus();
   }
 
@@ -321,6 +358,58 @@ export class SharePreviewComponent implements OnDestroy {
     if (!variant || variant.status === 'error') this.profileContentVariantRequested.emit(type);
   }
 
+  protected selectRatingsMapView(view: ShareRatingsMapView): void {
+    this.ratingsMapSelectedView.set(view);
+  }
+
+  protected isRatingsMapSeasonSelected(label: string): boolean {
+    return (this.ratingsMapSelectedSeasons() ?? this.ratingsMapSourceMatrix().columnLabels).includes(label);
+  }
+
+  protected toggleRatingsMapSeason(label: string): void {
+    const available = this.ratingsMapSourceMatrix().columnLabels;
+    const selected = this.ratingsMapSelectedSeasons() ?? available;
+    if (selected.includes(label)) {
+      if (selected.length === 1) return;
+      this.ratingsMapSelectedSeasons.set(selected.filter((season) => season !== label));
+      return;
+    }
+    const next = new Set([...selected, label]);
+    this.ratingsMapSelectedSeasons.set(available.filter((season) => next.has(season)));
+  }
+
+  protected ratingsMapScoreBucket(score: number | null): number | null {
+    if (score === null) return null;
+    if (this.ratingsMapSelectedView() === 'AVERAGE' && score >= 9.7) return 10;
+    return Math.max(2, Math.min(10, Math.floor(score)));
+  }
+
+  protected ratingsMapScoreLabel(score: number | null): string {
+    if (score === null) return '';
+    return this.ratingsMapSelectedView() === 'MY' ? String(Math.round(score)) : score.toFixed(1);
+  }
+
+  protected ratingsMapAverageLabel(score: number | null): string {
+    return score === null ? '' : score.toFixed(1);
+  }
+
+  protected selectRatingsMapBackground(event: Event): void {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.toasts.error(this.ratingsMapCopy.invalidImage);
+      return;
+    }
+    if (this.ratingsMapUploadObjectUrl) URL.revokeObjectURL(this.ratingsMapUploadObjectUrl);
+    this.ratingsMapUploadObjectUrl = URL.createObjectURL(file);
+    this.ratingsMapUploadedBackgroundUrl.set(this.ratingsMapUploadObjectUrl);
+    this.profileBackgroundZoom.set(120);
+    this.profileBackgroundX.set(50);
+    this.profileBackgroundY.set(30);
+  }
+
   protected toggleProfileUserInfo(): void { this.profileShowUserInfo.update((value) => !value); }
   protected toggleProfileBio(): void { this.profileShowBio.update((value) => !value); }
   protected toggleProfileTopFive(): void { this.profileShowTopFive.update((value) => !value); }
@@ -358,6 +447,11 @@ export class SharePreviewComponent implements OnDestroy {
   }
 
   protected resetProfileBackground(): void {
+    if (this.ratingsMapUploadObjectUrl) {
+      URL.revokeObjectURL(this.ratingsMapUploadObjectUrl);
+      this.ratingsMapUploadObjectUrl = null;
+      this.ratingsMapUploadedBackgroundUrl.set(null);
+    }
     this.profileBackgroundUrl.set(null);
     this.profileBackgroundZoom.set(120);
     this.profileBackgroundX.set(50);
@@ -525,6 +619,26 @@ export class SharePreviewComponent implements OnDestroy {
       this.toasts.error(this.profileCopy.copyError);
     } finally {
       this.profileCopyPending.set(false);
+    }
+  }
+
+  protected async downloadRatingsMapImage(): Promise<void> {
+    if (this.ratingsMapDownloadPending()) return;
+    this.ratingsMapDownloadPending.set(true);
+    try {
+      const image = await this.createPreviewImageBlob(this.ratingsMapShareCanvas?.nativeElement);
+      const url = URL.createObjectURL(image);
+      const title = this.model().title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const anchor = this.document.createElement('a');
+      anchor.href = url;
+      anchor.download = `watchwise-mapa-de-notas-${title || 'serie'}.png`;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      this.toasts.success(this.ratingsMapCopy.imageDownloaded);
+    } catch {
+      this.toasts.error(this.ratingsMapCopy.downloadError);
+    } finally {
+      this.ratingsMapDownloadPending.set(false);
     }
   }
 

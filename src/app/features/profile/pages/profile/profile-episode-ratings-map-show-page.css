@@ -31,7 +31,7 @@
 .profile-page .profile-content.profile-map-detail .profile-map-detail-hero-inner {
   position: relative;
   display: flex;
-  width: 70%;
+  width: min(1280px, calc(100% - 160px));
   height: 100%;
   align-items: center;
   justify-content: center;
@@ -42,8 +42,9 @@
   position: absolute;
   z-index: 2;
   top: 24px;
-  right: 0;
-  left: 0;
+  left: 50%;
+  width: min(1280px, calc(100vw - 160px));
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -449,6 +450,11 @@
   border-color: var(--profile-map-rating-color, transparent);
 }
 
+.profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-row > a.profile-episode-rating-cell[data-score] {
+  background: var(--profile-map-rating-color, var(--color-secondary)) !important;
+  border-color: var(--profile-map-rating-color, transparent) !important;
+}
+
 .profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-rating-cell:hover {
   color: var(--color-text);
 }
@@ -551,7 +557,9 @@
 
   .profile-page .profile-content.profile-map-detail .profile-map-detail-hero-topbar {
     position: static;
+    width: 100%;
     min-height: 32px;
+    transform: none;
   }
 
   .profile-page .profile-content.profile-map-detail .profile-map-detail-breadcrumb {

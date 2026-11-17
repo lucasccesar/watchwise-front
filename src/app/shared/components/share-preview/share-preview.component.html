@@ -1,5 +1,5 @@
-<div class="share-layer" appModalScrollLock [class.share-layer--list]="model().kind === 'list'" [class.share-layer--profile]="model().kind === 'profile'" (click)="onBackdropClick($event)">
-  <section #shareDialog class="share-dialog" [class.share-dialog--list]="model().kind === 'list'" [class.share-dialog--profile]="model().kind === 'profile'" role="dialog" aria-modal="true" [attr.aria-labelledby]="model().kind === 'profile' ? 'share-profile-dialog-title' : 'share-dialog-title'" tabindex="-1" (click)="$event.stopPropagation()">
+<div class="share-layer" appModalScrollLock [class.share-layer--list]="model().kind === 'list'" [class.share-layer--profile]="model().kind === 'profile'" [class.share-layer--ratings-map]="model().kind === 'ratings-map'" (click)="onBackdropClick($event)">
+  <section #shareDialog class="share-dialog" [class.share-dialog--list]="model().kind === 'list'" [class.share-dialog--profile]="model().kind === 'profile'" [class.share-dialog--ratings-map]="model().kind === 'ratings-map'" role="dialog" aria-modal="true" [attr.aria-labelledby]="model().kind === 'ratings-map' ? 'share-map-dialog-title' : model().kind === 'profile' ? 'share-profile-dialog-title' : 'share-dialog-title'" tabindex="-1" (click)="$event.stopPropagation()">
     @if (model().kind === 'list') {
       <header class="share-list-header">
         <div>
@@ -272,6 +272,123 @@
             <button type="button" class="profile-share-copy list-share-copy" [disabled]="profileCopyPending()" (click)="copyProfileCard()">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
               {{ profileCopyPending() ? profileCopy.copying : profileCopy.copyImage }}
+            </button>
+          </div>
+        </aside>
+      </div>
+    } @else if (model().kind === 'ratings-map') {
+      <header class="profile-share-header ratings-map-share-header">
+        <div>
+          <h2 id="share-map-dialog-title">{{ ratingsMapCopy.title }}</h2>
+          <p>{{ ratingsMapCopy.instructions }}</p>
+        </div>
+        <button type="button" class="profile-share-close" [attr.aria-label]="ratingsMapCopy.close" (click)="close()">×</button>
+      </header>
+
+      <div class="profile-share-layout ratings-map-share-layout">
+        <div
+          class="profile-share-preview ratings-map-share-preview"
+          role="img"
+          tabindex="0"
+          [attr.aria-label]="ratingsMapCopy.previewAlt"
+          (pointerdown)="startProfileBackgroundDrag($event)"
+          (pointermove)="moveProfileBackground($event)"
+          (pointerup)="endProfileBackgroundDrag()"
+          (pointercancel)="endProfileBackgroundDrag()"
+          (wheel)="profileBackgroundWheel($event)"
+        >
+          <div #ratingsMapShareCanvas class="profile-share-canvas ratings-map-share-canvas">
+            @if (profileBackgroundImage(); as imageUrl) {
+              <img class="profile-share-background" [src]="imageUrl" [style.object-position]="profileBackgroundX() + '% ' + profileBackgroundY() + '%'" [style.transform-origin]="profileBackgroundX() + '% ' + profileBackgroundY() + '%'" [style.transform]="'scale(' + (profileBackgroundZoom() / 100) + ')'" alt="" draggable="false" aria-hidden="true" />
+            }
+            <div class="profile-share-scrim" aria-hidden="true"></div>
+            <div class="ratings-map-share-card-content">
+              <header class="ratings-map-share-heading">
+                <div class="ratings-map-share-owner">
+                  <img [src]="model().avatarUrl || '/default-user-avatar.png'" alt="" draggable="false" />
+                  <span>&#64;{{ model().username || 'watchwise' }}</span>
+                </div>
+                <h3>{{ model().title }}</h3>
+                <p><span aria-hidden="true"></span>{{ ratingsMapCopy.previewSubtitle }}<span aria-hidden="true"></span></p>
+              </header>
+              @if (ratingsMapPreviewMatrix(); as matrix) {
+                @if (matrix.columnLabels.length && matrix.rowLabels.length) {
+                  <div class="ratings-map-share-matrix">
+                    <table>
+                      <thead><tr><th aria-hidden="true"></th>@for (label of matrix.columnLabels; track label) { <th>{{ label }}</th> }</tr></thead>
+                      <tbody>
+                        @for (label of matrix.rowLabels; track $index) {
+                          <tr>
+                            <th>{{ label }}</th>
+                            @for (score of matrix.cells[$index]; track $index) {
+                              <td [style.height]="ratingsMapCellHeight()" [attr.data-score]="ratingsMapScoreBucket(score)">{{ ratingsMapScoreLabel(score) }}</td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                      <tfoot><tr><th>{{ ratingsMapCopy.averageLabel }}</th>@for (average of matrix.averages; track $index) { <td [style.height]="ratingsMapCellHeight()" [attr.data-score]="ratingsMapScoreBucket(average)">{{ ratingsMapAverageLabel(average) }}</td> }</tr></tfoot>
+                    </table>
+                  </div>
+                } @else {
+                  <p class="ratings-map-share-empty">{{ model().description }}</p>
+                }
+              }
+              <footer class="profile-share-watermark"><span>ON</span><strong><img src="/watchwise-logo.svg" alt="Watchwise" draggable="false" /></strong></footer>
+            </div>
+          </div>
+        </div>
+
+        <aside class="profile-share-controls list-share-controls ratings-map-share-controls" [attr.aria-label]="ratingsMapCopy.title">
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ ratingsMapCopy.ratings }}</h3>
+            <div class="profile-share-segment" role="group" [attr.aria-label]="ratingsMapCopy.ratings">
+              <button type="button" [class.is-active]="ratingsMapSelectedView() === 'MY'" [attr.aria-pressed]="ratingsMapSelectedView() === 'MY'" (click)="selectRatingsMapView('MY')">{{ ratingsMapCopy.myRatings }}</button>
+              <button type="button" [class.is-active]="ratingsMapSelectedView() === 'AVERAGE'" [attr.aria-pressed]="ratingsMapSelectedView() === 'AVERAGE'" (click)="selectRatingsMapView('AVERAGE')">{{ ratingsMapCopy.averageRatings }}</button>
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ ratingsMapCopy.seasons }}</h3>
+            <div class="ratings-map-share-seasons" role="group" [attr.aria-label]="ratingsMapCopy.seasons">
+              @for (label of ratingsMapSourceMatrix().columnLabels; track label) {
+                <button type="button" [class.is-active]="isRatingsMapSeasonSelected(label)" [attr.aria-pressed]="isRatingsMapSeasonSelected(label)" (click)="toggleRatingsMapSeason(label)">{{ label }}</button>
+              } @empty {
+                <span class="ratings-map-share-empty-seasons">—</span>
+              }
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ ratingsMapCopy.images }}</h3>
+            <button class="profile-share-background-button list-share-background-button" type="button" (click)="ratingsMapBackgroundInput.click()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+              {{ ratingsMapCopy.changeBackground }}
+            </button>
+            <input #ratingsMapBackgroundInput class="ratings-map-share-file-input" type="file" accept="image/*" [attr.aria-label]="ratingsMapCopy.changeBackground" (change)="selectRatingsMapBackground($event)" />
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group">
+            <h3>{{ ratingsMapCopy.backgroundZoom }}</h3>
+            <div class="profile-share-zoom list-share-zoom-control">
+              <button type="button" [attr.aria-label]="ratingsMapCopy.zoomOut" (click)="adjustProfileBackgroundZoom(-10)">−</button>
+              <input type="range" min="100" max="250" step="5" [value]="profileBackgroundZoom()" [attr.aria-label]="ratingsMapCopy.backgroundZoom" (input)="updateProfileBackgroundZoom($event)" />
+              <button type="button" [attr.aria-label]="ratingsMapCopy.zoomIn" (click)="adjustProfileBackgroundZoom(10)">+</button>
+              <output>{{ profileBackgroundZoom() }}%</output>
+            </div>
+          </section>
+
+          <section class="profile-share-control-group list-share-control-group profile-share-position-group list-share-position-group">
+            <h3>{{ ratingsMapCopy.backgroundPosition }}</h3>
+            <label><span>{{ ratingsMapCopy.horizontal }}</span><input type="range" min="0" max="100" [value]="profileBackgroundX()" [attr.aria-label]="ratingsMapCopy.horizontal" (input)="updateProfileBackgroundPosition('x', $event)" /></label>
+            <label><span>{{ ratingsMapCopy.vertical }}</span><input type="range" min="0" max="100" [value]="profileBackgroundY()" [attr.aria-label]="ratingsMapCopy.vertical" (input)="updateProfileBackgroundPosition('y', $event)" /></label>
+            <button class="profile-share-reset list-share-reset" type="button" (click)="resetProfileBackground()">{{ ratingsMapCopy.resetBackground }}</button>
+          </section>
+
+          <div class="profile-share-actions list-share-actions">
+            <button type="button" class="profile-share-cancel list-share-cancel" (click)="close()">{{ ratingsMapCopy.cancel }}</button>
+            <button type="button" class="profile-share-copy list-share-copy" [disabled]="ratingsMapDownloadPending()" (click)="downloadRatingsMapImage()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
+              {{ ratingsMapDownloadPending() ? ratingsMapCopy.downloading : ratingsMapCopy.downloadImage }}
             </button>
           </div>
         </aside>

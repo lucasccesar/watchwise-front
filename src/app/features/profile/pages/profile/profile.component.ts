@@ -543,7 +543,27 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const profile = this.profile();
     const seasons = this.episodeSeasons();
     const episodeNumbers = this.episodeNumbers();
-    const isCommunity = this.mapRatingMode() === 'COMMUNITY';
+    const createRatingsMatrix = (isCommunity: boolean) => ({
+      columnLabels: seasons.map((season) => `T${season.seasonNumber}`),
+      rowLabels: episodeNumbers.map((episodeNumber) => `E${episodeNumber}`),
+      cells: episodeNumbers.map((episodeNumber) => seasons.map((season) => {
+        const episode = this.episodeAt(episodeNumber, season.seasonNumber);
+        return episode ? (isCommunity ? episode.averageScore : episode.score) : null;
+      })),
+      averages: seasons.map((season) => {
+        const rated = season.episodes.filter((episode) => isCommunity
+          ? episode.averageScore !== null && episode.ratingCount > 0
+          : episode.score !== null);
+        if (!rated.length) return null;
+        if (isCommunity) {
+          const count = rated.reduce((sum, episode) => sum + episode.ratingCount, 0);
+          return count ? rated.reduce((sum, episode) => sum + (episode.averageScore ?? 0) * episode.ratingCount, 0) / count : null;
+        }
+        return rated.reduce((sum, episode) => sum + (episode.score ?? 0), 0) / rated.length;
+      }),
+    });
+    const myRatings = createRatingsMatrix(false);
+    const averageRatings = createRatingsMatrix(true);
     return {
       kind: 'ratings-map',
       title: grid?.title || this.copy.unavailable,
@@ -553,25 +573,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       username: profile?.username || this.username(),
       avatarUrl: profile?.profilePicture,
       backgroundUrl: this.imageUrl(grid?.backdropPath, 'w1280') || this.imageUrl(grid?.posterPath, 'w780'),
-      ratingsMatrix: {
-        columnLabels: seasons.map((season) => `T${season.seasonNumber}`),
-        rowLabels: episodeNumbers.map((episodeNumber) => `E${episodeNumber}`),
-        cells: episodeNumbers.map((episodeNumber) => seasons.map((season) => {
-          const episode = this.episodeAt(episodeNumber, season.seasonNumber);
-          return episode ? (isCommunity ? episode.averageScore : episode.score) : null;
-        })),
-        averages: seasons.map((season) => {
-          const rated = season.episodes.filter((episode) => isCommunity
-            ? episode.averageScore !== null && episode.ratingCount > 0
-            : episode.score !== null);
-          if (!rated.length) return null;
-          if (isCommunity) {
-            const count = rated.reduce((sum, episode) => sum + episode.ratingCount, 0);
-            return count ? rated.reduce((sum, episode) => sum + (episode.averageScore ?? 0) * episode.ratingCount, 0) / count : null;
-          }
-          return rated.reduce((sum, episode) => sum + (episode.score ?? 0), 0) / rated.length;
-        }),
-      },
+      ratingsMatrix: myRatings,
+      ratingsMapVariants: { MY: myRatings, AVERAGE: averageRatings },
     };
   });
   protected readonly activeShareModel = computed(() => this.section() === 'episode-ratings-map-show' ? this.mapShareModel() : this.shareModel());
