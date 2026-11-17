@@ -210,6 +210,7 @@ export interface SeriesInProgressRecord {
 
 export interface SeriesInProgressPage {
   content: SeriesInProgressRecord[];
+  backdropPath: string | null;
   page: number;
   size: number;
   totalElements: number;

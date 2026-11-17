@@ -502,7 +502,7 @@
         <section class="profile-content profile-section-page profile-progress-page">
           @if (progress(); as data) {
             <header class="profile-subpage-hero profile-progress-hero">
-              <app-responsive-banner [path]="profile()?.banner ?? null" fallbackPath="" appearance="profile-hero" />
+              <app-responsive-banner [path]="profile()?.banner || data.backdropPath" fallbackPath="" appearance="profile-hero" />
               <div class="profile-subpage-hero-copy profile-progress-hero-copy">
                 <a class="profile-subpage-owner profile-subpage-owner--progress profile-progress-owner" [routerLink]="selectedSectionUrl('')">
                   @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
