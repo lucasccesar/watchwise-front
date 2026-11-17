@@ -580,16 +580,43 @@
               <span aria-hidden="true"></span>
               @if (data.totalPages > 1) {
                 <nav class="profile-pagination" aria-label="{{ progressCopy.pagination }}">
-                  <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="progressCopy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  <button type="button" [disabled]="progressPageLoading() || currentPage() === 1" [attr.aria-label]="progressCopy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
                   @for (page of progressPageNumbers(data.totalPages); track $index) {
                     @if (page === null) { <span class="profile-progress-ellipsis" aria-hidden="true">…</span> }
-                    @else { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                    @else { <button type="button" [disabled]="progressPageLoading()" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
                   }
-                  <button type="button" [disabled]="!data.hasNext" [attr.aria-label]="progressCopy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                  <button type="button" [disabled]="progressPageLoading() || !data.hasNext" [attr.aria-label]="progressCopy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
                 </nav>
               }
               <p class="profile-pagination-summary">{{ progressCopy.showing.replace('{start}', asText(progressRangeStart(data))).replace('{end}', asText(progressRangeEnd(data))).replace('{total}', formatCount(data.totalElements)) }}</p>
             </div>
+            @if (progressPageLoading()) {
+              <section class="profile-progress-grid ww-profile-progress-skeleton-list profile-progress-pagination-skeleton" role="status" aria-live="polite" aria-busy="true" [attr.aria-label]="copy.loading">
+                @for (skeleton of progressSkeletonItems; track skeleton) {
+                  <article class="ww-profile-progress-skeleton-card" aria-hidden="true">
+                    <div class="ww-skeleton-shape ww-profile-progress-skeleton-poster"></div>
+                    <div class="ww-profile-progress-skeleton-main">
+                      <div class="ww-profile-progress-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                      <div class="ww-skeleton-shape ww-profile-progress-skeleton-bar"></div>
+                      <div class="ww-skeleton-shape ww-profile-progress-skeleton-detail"></div>
+                      <div class="ww-skeleton-shape ww-profile-progress-skeleton-detail ww-profile-progress-skeleton-detail--short"></div>
+                      <div class="ww-skeleton-shape ww-profile-progress-skeleton-toggle"></div>
+                    </div>
+                    <div class="ww-profile-progress-skeleton-next">
+                      <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-heading"></span>
+                      <div>
+                        <span class="ww-skeleton-shape ww-profile-progress-skeleton-still"></span>
+                        <div class="ww-profile-progress-skeleton-next-copy">
+                          <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-title"></span>
+                          <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-coordinates"></span>
+                          <span class="ww-profile-progress-skeleton-next-meta"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                }
+              </section>
+            } @else {
             <section class="profile-progress-grid" aria-label="{{ progressCopy.title }}">
               @for (item of data.content; track item.seriesTmdbId) {
                 <article class="profile-progress-card" [attr.aria-label]="progressCopy.progressFor.replace('{title}', item.seriesTitle || item.title || copy.unavailable)">
@@ -650,15 +677,16 @@
                 </article>
               } @empty { <p class="profile-empty">{{ copy.noItems }}</p> }
             </section>
+            }
             @if (data.totalPages > 1) {
               <div class="profile-progress-bottom-pagination">
                 <nav class="profile-pagination" aria-label="{{ progressCopy.pagination }}">
-                  <button type="button" [disabled]="currentPage() === 1" [attr.aria-label]="progressCopy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+                  <button type="button" [disabled]="progressPageLoading() || currentPage() === 1" [attr.aria-label]="progressCopy.previousPage" (click)="previousPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
                   @for (page of progressPageNumbers(data.totalPages); track $index) {
                     @if (page === null) { <span class="profile-progress-ellipsis" aria-hidden="true">…</span> }
-                    @else { <button type="button" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
+                    @else { <button type="button" [disabled]="progressPageLoading()" [class.profile-page-number--active]="page === currentPage()" [attr.aria-current]="page === currentPage() ? 'page' : null" (click)="goToPage(page)">{{ page }}</button> }
                   }
-                  <button type="button" [disabled]="!data.hasNext" [attr.aria-label]="progressCopy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+                  <button type="button" [disabled]="progressPageLoading() || !data.hasNext" [attr.aria-label]="progressCopy.nextPage" (click)="nextPage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
                 </nav>
               </div>
             }

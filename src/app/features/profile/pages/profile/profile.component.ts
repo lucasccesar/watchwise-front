@@ -274,6 +274,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly diary = signal<DiaryRecordPage | null>(null);
   protected readonly progress = signal<SeriesInProgressPage | null>(null);
   protected readonly progressLoading = signal(false);
+  protected readonly progressPageLoading = signal(false);
   private profileLoadVersion = 0;
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
@@ -334,6 +335,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly activePosterMenu = signal<string | null>(null);
   protected readonly pageSize = 20;
   protected readonly progressPageSize = 6;
+  protected readonly progressSkeletonItems = Array.from({ length: this.progressPageSize }, (_, index) => index);
   protected readonly watchlistGenreOptions = signal<string[]>([]);
   private genreUserId = '';
   private genreRequest?: Subscription;
@@ -1310,9 +1312,11 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected previousPage(): void {
+    if (this.progressPageLoading()) return;
     if (this.currentPage() <= 1) return;
     this.currentPage.update((page) => page - 1);
     if (this.section() === 'progress') {
+      this.progressPageLoading.set(true);
       this.loadSectionData();
       return;
     }
@@ -1335,10 +1339,12 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected goToPage(page: number): void {
+    if (this.progressPageLoading()) return;
     const maximum = this.pageTotalPages();
     if (page < 1 || page > maximum || page === this.currentPage()) return;
     this.currentPage.set(page);
     if (this.section() === 'progress') {
+      this.progressPageLoading.set(true);
       this.loadSectionData();
       return;
     }
@@ -2819,9 +2825,11 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   protected nextPage(): void {
+    if (this.progressPageLoading()) return;
     if (this.currentPage() >= this.pageTotalPages()) return;
     this.currentPage.update((page) => page + 1);
     if (this.section() === 'progress') {
+      this.progressPageLoading.set(true);
       this.loadSectionData();
       return;
     }
@@ -2978,6 +2986,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           }
           this.progress.set(this.withCompletedSeasonProgress(data));
           this.progressLoading.set(false);
+          this.progressPageLoading.set(false);
           const currentExpanded = this.expandedProgress();
           const currentIds = new Set(data.content.map((series) => series.seriesTmdbId));
           const retained = preserveExisting ? [...currentExpanded].filter((id) => currentIds.has(id)) : [];
@@ -2985,6 +2994,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         },
         error: (error: unknown) => {
           this.progressLoading.set(false);
+          this.progressPageLoading.set(false);
           if (preserveExisting) this.handleProfileActionError(error);
           else this.handleError(error);
         },
@@ -3192,6 +3202,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.diary.set(null);
     this.progress.set(null);
     this.progressLoading.set(false);
+    this.progressPageLoading.set(false);
     this.expandedProgress.set(new Set());
     this.progressSortOpen.set(false);
     this.lists.set(null);
