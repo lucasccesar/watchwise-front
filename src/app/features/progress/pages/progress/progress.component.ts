@@ -1,10 +1,10 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { ContentApiService } from '../../../content/data-access/content-api.service';
+import { ContentApiService, type SeriesDiaryRequest } from '../../../content/data-access/content-api.service';
 import {
   DiaryApiService,
   ProgressSortBy,
@@ -21,13 +21,19 @@ import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
+import { RatingDialogComponent, type RatingDialogSubmission, type RatingDialogValue } from '../../../../shared/components/rating-dialog/rating-dialog.component';
 
 type ProgressSort = 'watched' | 'remaining';
+type ProgressWatchLogTarget = {
+  title: string;
+  subtitle: string;
+  content: { type: 'EPISODE'; seriesTmdbId: string; seasonNumber: number; episodeNumber: number };
+};
 
 @Component({
   selector: 'app-progress',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, PageSkeletonComponent],
+  imports: [DecimalPipe, RouterLink, ContentImageActionsComponent, PageSkeletonComponent, RatingDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './progress.component.html',
   styleUrl: './progress.component.css',
@@ -49,6 +55,12 @@ export class ProgressComponent {
   protected readonly episodeLeftCount = computed(() => this.summary()?.aggregate.remainingEpisodeCount ?? 0);
   protected readonly items = computed(() => this.summary()?.content ?? []);
   protected readonly visibleEnd = computed(() => Math.min(this.currentPage() * this.pageSize, this.visibleCount()));
+  protected readonly openContentMenuId = signal<string | null>(null);
+  protected readonly watchLogTarget = signal<ProgressWatchLogTarget | null>(null);
+  protected readonly watchLogDate = signal(this.toDateKey(new Date()));
+  protected readonly watchLogRewatch = signal(false);
+  protected readonly savingAction = signal(false);
+  protected activeDialogOpener: HTMLElement | null = null;
   protected readonly posterActions: readonly ContentImageAction[] = [
     { id: 'open-series', label: this.copy.openSeries, icon: 'eye' },
   ];
@@ -209,31 +221,166 @@ export class ProgressComponent {
   }
 
   protected imageAction(episode: SeriesInProgressRecord, selection: ContentImageActionSelection): void {
+    this.openContentMenuId.set(null);
     if (selection.action.id === 'open-series') void this.router.navigate(this.seriesRoute(episode));
   }
 
-  protected markEpisodeWatched(episode: SeriesInProgressRecord): void {
+  protected listTargetForNextEpisode(episode: SeriesInProgressRecord): ContentListTarget | null {
     const next = episode.nextEpisode;
-    if (this.savingSeriesId() || !next || next.availableToWatch === false) return;
-    this.savingSeriesId.set(episode.seriesTmdbId);
-    this.contentApi.createSeriesDiaryEntry({
+    return next ? {
+      type: 'EPISODE',
+      seriesTmdbId: episode.seriesTmdbId,
+      seasonNumber: next.seasonNumber,
+      episodeNumber: next.episodeNumber,
+    } : null;
+  }
+
+  protected continueContentActions(episode: SeriesInProgressRecord): readonly ContentImageAction[] {
+    return [
+      {
+        id: 'mark-watched',
+        label: this.homeCopy.markWatched,
+        icon: 'check',
+        disabled: episode.nextEpisode?.availableToWatch === false || !episode.nextEpisode,
+      },
+      { id: 'drop-series', label: this.homeCopy.dropSeries, icon: 'ban' },
+    ];
+  }
+
+  protected toggleContentMenu(event: MouseEvent, menuId: string): void {
+    event.stopPropagation();
+    this.openContentMenuId.update((openId) => openId === menuId ? null : menuId);
+  }
+
+  protected handleEpisodeContentAction(episode: SeriesInProgressRecord, selection: ContentImageActionSelection): void {
+    this.openContentMenuId.set(null);
+    if (selection.action.id === 'mark-watched') {
+      this.openWatchLogForEpisode(episode, selection.event);
+    } else if (selection.action.id === 'drop-series') {
+      this.dropSeries(episode.seriesTmdbId);
+    }
+  }
+
+  protected openWatchLogForEpisode(episode: SeriesInProgressRecord, event?: MouseEvent): void {
+    const next = episode.nextEpisode;
+    if (!next || next.availableToWatch === false) return;
+    const menuTrigger = (event?.currentTarget as HTMLElement | null)
+      ?.closest('.content-menu-anchor')
+      ?.querySelector<HTMLElement>('.content-menu-trigger');
+    this.activeDialogOpener = menuTrigger
+      ?? document.querySelector<HTMLElement>('.content-menu-trigger[aria-expanded="true"]')
+      ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    this.openContentMenuId.set(null);
+    this.watchLogTarget.set({
+      title: this.title(episode),
+      subtitle: `${this.homeCopy.seasonShort}${next.seasonNumber} · ${this.homeCopy.episodeShort}${next.episodeNumber} · ${next.title || this.homeCopy.episode}`,
       content: {
         type: 'EPISODE',
         seriesTmdbId: episode.seriesTmdbId,
         seasonNumber: next.seasonNumber,
         episodeNumber: next.episodeNumber,
       },
-      watchedDate: new Date().toISOString().slice(0, 10),
-    }).subscribe({
+    });
+    this.watchLogDate.set(this.toDateKey(new Date()));
+    this.watchLogRewatch.set(false);
+    this.savingAction.set(false);
+  }
+
+  protected watchLogInitialValue(): Partial<RatingDialogValue> {
+    return {
+      watchedDate: this.watchLogDate(),
+      isRewatch: this.watchLogRewatch(),
+      score: null,
+      comment: '',
+      watchedInTheater: false,
+      watchedWith: [],
+    };
+  }
+
+  protected saveWatchLog(submission: RatingDialogSubmission): void {
+    const target = this.watchLogTarget();
+    if (!target || this.savingAction()) return;
+    const request: SeriesDiaryRequest = {
+      content: target.content,
+      watchedDate: submission.watchedDate ?? this.watchLogDate(),
+      isRewatch: submission.isRewatch ?? this.watchLogRewatch(),
+    };
+    if (submission.score !== null) request.score = submission.score;
+    const comment = submission.comment.trim();
+    if (comment) request.comment = comment;
+    if (submission.watchedInTheater !== undefined) request.watchedInTheater = submission.watchedInTheater;
+    this.savingAction.set(true);
+    this.contentApi.createSeriesDiaryEntry(request).subscribe({
+      next: () => {
+        this.savingAction.set(false);
+        this.closeWatchLog();
+        this.load(true);
+      },
+      error: (error: unknown) => {
+        this.savingAction.set(false);
+        this.toasts.error(this.actionErrorMessage(error));
+      },
+    });
+  }
+
+  protected closeWatchLog(): void {
+    if (this.savingAction()) return;
+    this.watchLogTarget.set(null);
+    const opener = this.activeDialogOpener;
+    this.activeDialogOpener = null;
+    if (opener) window.setTimeout(() => opener.isConnected && opener.focus());
+  }
+
+  @HostListener('document:click')
+  protected onDocumentClick(): void {
+    this.openContentMenuId.set(null);
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  protected onDocumentEscape(event: Event): void {
+    if (this.watchLogTarget()) {
+      event.preventDefault();
+      this.closeWatchLog();
+      return;
+    }
+    this.openContentMenuId.set(null);
+  }
+
+  private dropSeries(seriesTmdbId: string): void {
+    if (this.savingSeriesId()) return;
+    this.savingSeriesId.set(seriesTmdbId);
+    this.contentApi.markSeriesDropped(seriesTmdbId).subscribe({
       next: () => {
         this.savingSeriesId.set(null);
         this.load(true);
+        this.toasts.success(this.homeCopy.seriesDropped);
       },
-      error: () => {
+      error: (error: unknown) => {
         this.savingSeriesId.set(null);
-        this.toasts.error(this.copy.markWatchedError);
+        this.toasts.error(this.actionErrorMessage(error));
       },
     });
+  }
+
+  private actionErrorMessage(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) return this.homeCopy.actionSaveError;
+    if (error.status === 0) return this.homeCopy.actionConnectionError;
+    switch (error.status) {
+      case 400: return this.homeCopy.actionInvalidError;
+      case 401: return this.homeCopy.actionSessionError;
+      case 403: return this.homeCopy.actionForbiddenError;
+      case 404: return this.homeCopy.actionNotFoundError;
+      case 409: return this.homeCopy.actionConflictError;
+      case 429: return this.homeCopy.actionRateLimitError;
+      default: return this.homeCopy.actionSaveError;
+    }
+  }
+
+  private toDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   protected formatDuration(minutes: number | null): string {

@@ -1129,11 +1129,13 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (!(event.target instanceof Element) || !event.target.closest('.profile-progress-sort-control')) {
       this.progressSortOpen.set(false);
     }
+    this.activePosterMenu.set(null);
   }
 
   @HostListener('document:keydown.escape')
   protected closeProgressSortOnEscape(): void {
     this.progressSortOpen.set(false);
+    this.activePosterMenu.set(null);
   }
 
   protected toggleProgressDirection(): void {
@@ -1142,27 +1144,74 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.loadSectionData();
   }
 
-  protected markProgressEpisodeWatched(item: SeriesInProgressRecord): void {
-    const next = item.nextEpisode;
-    if (this.followState() !== 'SELF' || this.savingProgressSeriesId() || !next || next.availableToWatch === false) return;
-    this.savingProgressSeriesId.set(item.seriesTmdbId);
-    this.contentApi.createSeriesDiaryEntry({
-      content: {
-        type: 'EPISODE',
-        seriesTmdbId: item.seriesTmdbId,
-        seasonNumber: next.seasonNumber,
-        episodeNumber: next.episodeNumber,
+  protected profileProgressEpisodeListTarget(
+    item: SeriesInProgressRecord,
+    nextEpisode: NonNullable<SeriesInProgressRecord['nextEpisode']>,
+  ): ContentListTarget {
+    return {
+      type: 'EPISODE',
+      seriesTmdbId: item.seriesTmdbId,
+      seasonNumber: nextEpisode.seasonNumber,
+      episodeNumber: nextEpisode.episodeNumber,
+    };
+  }
+
+  protected profileProgressEpisodeActions(
+    item: SeriesInProgressRecord,
+    nextEpisode: NonNullable<SeriesInProgressRecord['nextEpisode']>,
+  ): readonly ContentImageAction[] {
+    return [
+      {
+        id: 'mark-watched',
+        label: this.homeCopy.markWatched,
+        icon: 'check',
+        disabled: nextEpisode.availableToWatch === false,
       },
-      watchedDate: new Date().toISOString().slice(0, 10),
-    }).subscribe({
+      {
+        id: 'drop-series',
+        label: this.homeCopy.dropSeries,
+        icon: 'ban',
+        disabled: this.savingProgressSeriesId() === item.seriesTmdbId,
+      },
+    ];
+  }
+
+  protected handleProfileProgressEpisodeAction(
+    item: SeriesInProgressRecord,
+    nextEpisode: NonNullable<SeriesInProgressRecord['nextEpisode']>,
+    selection: ContentImageActionSelection,
+  ): void {
+    this.activePosterMenu.set(null);
+    if (selection.action.id === 'mark-watched') {
+      if (this.followState() !== 'SELF' || nextEpisode.availableToWatch === false) return;
+      const coordinates = `${this.homeCopy.seasonShort}${nextEpisode.seasonNumber} · ${this.homeCopy.episodeShort}${nextEpisode.episodeNumber}`;
+      this.openProfileWatchDialog({
+        type: 'EPISODE',
+        contentId: null,
+        tmdbId: null,
+        seriesTmdbId: item.seriesTmdbId,
+        seasonNumber: nextEpisode.seasonNumber,
+        episodeNumber: nextEpisode.episodeNumber,
+        title: item.seriesTitle || item.title || this.copy.unavailable,
+        subtitle: `${coordinates} · ${nextEpisode.title || this.homeCopy.episode}`,
+      }, selection.event, false);
+    } else if (selection.action.id === 'drop-series') {
+      if (this.followState() === 'SELF') this.dropProgressSeries(item.seriesTmdbId);
+    }
+  }
+
+  private dropProgressSeries(seriesTmdbId: string): void {
+    if (this.savingProgressSeriesId()) return;
+    this.savingProgressSeriesId.set(seriesTmdbId);
+    this.contentApi.markSeriesDropped(seriesTmdbId).subscribe({
       next: () => {
         this.savingProgressSeriesId.set(null);
-        const profile = this.profile();
-        if (profile) this.loadSection(profile.id, true);
+        this.loadSectionData(true);
+        this.toasts.success(this.homeCopy.seriesDropped);
       },
-      error: () => {
+      error: (error: unknown) => {
         this.savingProgressSeriesId.set(null);
-        this.toasts.error(this.progressCopy.markWatchedError);
+        this.handleProfileActionError(error);
       },
     });
   }
@@ -1775,7 +1824,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   private profileActionOpener(event: MouseEvent): HTMLElement | null {
     return (event.currentTarget as HTMLElement | null)?.closest('app-content-image-actions')
-      ?.querySelector<HTMLElement>('.content-menu-trigger') ?? null;
+      ?.querySelector<HTMLElement>('.content-menu-trigger')
+      ?? document.querySelector<HTMLElement>('.content-menu-trigger[aria-expanded="true"]');
   }
 
   private openProfileWatchDialog(target: ProfileActionContent, event: MouseEvent, isRewatch = true): void {
@@ -2041,7 +2091,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       next: () => {
         this.profileWatchSaving.set(false);
         this.closeProfileWatchDialog();
-        this.toasts.success(messageCatalog['pt-BR'].trendingPage.watchAgainSuccess);
+        this.toasts.success(this.profileWatchIsRewatch()
+          ? messageCatalog['pt-BR'].trendingPage.watchAgainSuccess
+          : messageCatalog['pt-BR'].trendingPage.markWatchedSuccess);
         this.loadSectionData(true);
       },
       error: (error: unknown) => {

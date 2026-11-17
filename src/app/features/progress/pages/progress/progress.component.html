@@ -53,7 +53,7 @@
           <a class="progress-poster content-image-card" [routerLink]="seriesRoute(episode)" [attr.aria-label]="title(episode)">
             @if (image) { <img [src]="image" alt="" loading="lazy" /> }
             @else { <span class="progress-poster-empty">{{ title(episode) }}</span> }
-            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForSeries(episode)" [actions]="posterActions" (actionSelected)="imageAction(episode, $event)" />
+            <app-content-image-actions [optionsLabel]="homeCopy.contentOptions" [listTarget]="listTargetForSeries(episode)" [expanded]="openContentMenuId() === 'poster:' + episode.seriesTmdbId" [actions]="posterActions" (toggle)="toggleContentMenu($event, 'poster:' + episode.seriesTmdbId)" (actionSelected)="imageAction(episode, $event)" />
           </a>
 
           <div class="progress-item-info">
@@ -82,17 +82,43 @@
             }
 
             @if (next) {
-              <a class="progress-next-episode" [routerLink]="episodeRoute(episode)">
-                <div class="progress-next-image">
-                  @if (next.stillPath) { <img [src]="episodeStill(next.stillPath)" alt="" loading="lazy" /> }
-                  @else { <span>{{ title(episode) }}</span> }
-                </div>
-                <span class="progress-next-copy"><strong>{{ episodeTitle(episode) }}</strong><small>T{{ next.seasonNumber }} · E{{ next.episodeNumber }}</small><small>{{ next.releaseDate || copy.releaseDateUnknown }} · {{ formatDuration(next.runtimeMinutes) }}</small></span>
-              </a>
+              <div class="progress-next-episode content-image-card">
+                <a class="progress-next-link" [routerLink]="episodeRoute(episode)">
+                  <div class="progress-next-image">
+                    @if (next.stillPath) { <img [src]="episodeStill(next.stillPath)" alt="" loading="lazy" /> }
+                    @else { <span>{{ title(episode) }}</span> }
+                  </div>
+                  <span class="progress-next-copy"><strong>{{ episodeTitle(episode) }}</strong><small>T{{ next.seasonNumber }} · E{{ next.episodeNumber }}</small><small>{{ next.releaseDate || copy.releaseDateUnknown }} · {{ formatDuration(next.runtimeMinutes) }}</small></span>
+                </a>
+                <app-content-image-actions
+                  [ratingValue]="null"
+                  [ratingLabel]="''"
+                  [optionsLabel]="homeCopy.contentOptions"
+                  [listTarget]="listTargetForNextEpisode(episode)"
+                  [expanded]="openContentMenuId() === 'continue:' + episode.seriesTmdbId"
+                  [actions]="continueContentActions(episode)"
+                  (toggle)="toggleContentMenu($event, 'continue:' + episode.seriesTmdbId)"
+                  (actionSelected)="handleEpisodeContentAction(episode, $event)"
+                />
+              </div>
             }
           </div>
         </article>
       }
     </section>
+  }
+  @if (watchLogTarget(); as target) {
+    <app-rating-dialog
+      [type]="target.content.type"
+      [title]="homeCopy.markWatched"
+      [subtitle]="target.title + ' · ' + target.subtitle"
+      [initialValue]="watchLogInitialValue()"
+      [saving]="savingAction()"
+      [allowEmpty]="true"
+      [labels]="{ save: homeCopy.save, saving: homeCopy.saving }"
+      [returnFocusTarget]="activeDialogOpener"
+      (save)="saveWatchLog($event)"
+      (dismiss)="closeWatchLog()"
+    />
   }
 </main>

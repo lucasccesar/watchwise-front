@@ -603,7 +603,7 @@
                     }
                   </div>
                   @if (item.nextEpisode; as nextEpisode) {
-                    <div class="profile-progress-next-episode">
+                    <div class="profile-progress-next-episode content-image-card">
                       <span class="profile-progress-next-heading">{{ progressCopy.episodeUnavailable }}</span>
                       <a class="profile-progress-next-link" [routerLink]="episodeRoute(item.seriesTmdbId, nextEpisode.seasonNumber, nextEpisode.episodeNumber)" [attr.aria-label]="progressCopy.episodeUnavailable + ': ' + (item.seriesTitle || item.title || copy.unavailable) + ', S' + nextEpisode.seasonNumber + ' · E' + nextEpisode.episodeNumber + ', ' + (nextEpisode.title || copy.unavailable)">
                         <span class="profile-progress-still">
@@ -618,6 +618,18 @@
                           </span>
                         </span>
                       </a>
+                      @if (followState() === 'SELF') {
+                        <app-content-image-actions
+                          [ratingValue]="null"
+                          [ratingLabel]="''"
+                          [optionsLabel]="homeCopy.contentOptions"
+                          [listTarget]="profileProgressEpisodeListTarget(item, nextEpisode)"
+                          [expanded]="activePosterMenu() === 'progress-episode:' + item.seriesTmdbId"
+                          [actions]="profileProgressEpisodeActions(item, nextEpisode)"
+                          (toggle)="togglePosterMenu('progress-episode:' + item.seriesTmdbId, $event)"
+                          (actionSelected)="handleProfileProgressEpisodeAction(item, nextEpisode, $event)"
+                        />
+                      }
                     </div>
                   }
                 </article>

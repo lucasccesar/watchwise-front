@@ -411,8 +411,16 @@
 }
 
 .progress-next-episode {
+  position: relative;
   display: flex;
   width: min(100%, 320px);
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-next-link {
+  display: flex;
+  width: 100%;
   flex-direction: column;
   gap: 12px;
   color: var(--color-text);
