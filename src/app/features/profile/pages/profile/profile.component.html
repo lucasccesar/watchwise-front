@@ -954,7 +954,7 @@
       @case ('episode-ratings-map') {
         <section class="profile-content profile-section-page profile-map-page">
           <header class="profile-subpage-hero profile-map-hero" aria-labelledby="profile-map-title">
-            <app-responsive-banner [path]="profile()?.banner ?? null" fallbackPath="" appearance="profile-hero" />
+            <app-responsive-banner [path]="episodeMap()?.series[0]?.backdropPath ?? profile()?.banner ?? null" fallbackPath="" appearance="profile-hero" />
             <div class="profile-map-hero-copy">
               <a class="profile-subpage-owner profile-map-owner" [routerLink]="selectedSectionUrl('')">
                 @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }

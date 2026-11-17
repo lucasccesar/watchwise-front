@@ -238,6 +238,7 @@ export interface EpisodeRatingsMapItem {
   title: string | null;
   releaseYear: number | null;
   posterPath: string | null;
+  backdropPath: string | null;
 }
 
 export interface EpisodeRatingsMap {
