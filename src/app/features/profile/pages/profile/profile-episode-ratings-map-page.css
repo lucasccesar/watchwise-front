@@ -219,38 +219,6 @@
   outline-offset: 2px;
 }
 
-.profile-map-watched-badge {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  border-radius: 6px;
-  background: #181818;
-  color: #f2f7fa;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.profile-map-watched-badge svg {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 12px;
-  fill: none;
-  stroke: #f2f7fa;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2px;
-}
-
-.profile-map-watched-badge--complete svg {
-  stroke: #22c55e;
-}
-
 .profile-map-show-info {
   display: flex;
   min-width: 0;
@@ -557,10 +525,6 @@
     grid-column: 1;
     grid-row: 1;
     border-radius: 8px;
-  }
-
-  .profile-map-watched-badge {
-    display: none;
   }
 
   .profile-map-show-info {

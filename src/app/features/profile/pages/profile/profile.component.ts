@@ -2550,11 +2550,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       && (item.watchedEpisodeCount ?? 0) >= item.totalEpisodeCount;
   }
 
-  protected episodeMapWatchedBadge(count: number | null): string {
-    const watched = count ?? 0;
-    return `${watched} ${watched === 1 ? 'ep' : 'eps'}`;
-  }
-
   protected episodeMapSeriesCountLabel(): string {
     const count = this.episodeMap()?.totalElements ?? 0;
     return `${count.toLocaleString('pt-BR')} ${count === 1 ? 'série' : 'séries'}`;

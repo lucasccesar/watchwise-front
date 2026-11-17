@@ -988,9 +988,6 @@
                   <article class="profile-map-show-card" [attr.aria-label]="(item.title || copy.unavailable) + ', ' + (item.watchedEpisodeCount ?? 0) + ' episódios assistidos'">
                     <a class="profile-map-poster" [routerLink]="mapRoute(item.seriesTmdbId)" [attr.aria-label]="item.title || copy.unavailable">
                       @if (imageUrl(item.customPosterUrl || item.posterPath); as poster) { <img [src]="poster" alt="" /> }
-                      @if (!episodeMapComplete(item)) {
-                        <span class="profile-map-watched-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.99c0-.972 0-1.457.202-1.724a1.5 1.5 0 0 1 .738-.394c.334-.02.738.249 1.545.788l10.518 7.012c.667.445 1.001.667 1.117.947a1 1 0 0 1 0 .765c-.116.28-.45.502-1.117.947L7.485 20.344c-.807.538-1.211.807-1.545.787a1.5 1.5 0 0 1-.738-.394C5 20.47 5 19.985 5 19.014V4.99Z" /></svg>{{ episodeMapWatchedBadge(item.watchedEpisodeCount) }}</span>
-                      }
                     </a>
                     <div class="profile-map-show-info">
                       <div class="profile-map-show-heading">
