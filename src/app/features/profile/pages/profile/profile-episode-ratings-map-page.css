@@ -82,6 +82,12 @@
   line-height: 90px;
 }
 
+.profile-page .profile-content.profile-map-page .profile-map-title > span:first-child {
+  font-size: clamp(40px, 5.6vw, 72px);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 .profile-map-title-count {
   display: flex;
   align-items: center;
