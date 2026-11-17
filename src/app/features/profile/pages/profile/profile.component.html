@@ -618,11 +618,6 @@
                           </span>
                         </span>
                       </a>
-                      @if (followState() === 'SELF' && nextEpisode.availableToWatch !== false) {
-                        <button type="button" class="profile-progress-mark-watched" [disabled]="savingProgressSeriesId() === item.seriesTmdbId" [attr.aria-label]="homeCopy.markWatched + ': ' + (nextEpisode.title || progressCopy.episodeUnavailable)" (click)="markProgressEpisodeWatched(item)">
-                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5" /></svg><span>{{ homeCopy.markWatched }}</span>
-                        </button>
-                      }
                     </div>
                   }
                 </article>

@@ -89,7 +89,6 @@
                 </div>
                 <span class="progress-next-copy"><strong>{{ episodeTitle(episode) }}</strong><small>T{{ next.seasonNumber }} · E{{ next.episodeNumber }}</small><small>{{ next.releaseDate || copy.releaseDateUnknown }} · {{ formatDuration(next.runtimeMinutes) }}</small></span>
               </a>
-              <button class="progress-mark-watched" type="button" [disabled]="savingSeriesId() === episode.seriesTmdbId || next.availableToWatch === false" (click)="markEpisodeWatched(episode)">{{ savingSeriesId() === episode.seriesTmdbId ? copy.saving : homeCopy.markWatched }}</button>
             }
           </div>
         </article>

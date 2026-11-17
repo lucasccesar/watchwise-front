@@ -701,53 +701,6 @@
   white-space: nowrap;
 }
 
-.profile-progress-mark-watched {
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  left: 50%;
-  display: flex;
-  height: 22px;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px 0 6px;
-  transform: translate(-50%, -50%);
-  border: 1px solid #2563eb;
-  border-radius: 9999px;
-  background: #181818;
-  box-shadow: 0 0 0 2px #181818;
-  color: #2563eb;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 18px;
-  white-space: nowrap;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: auto;
-  transition: opacity 150ms ease;
-}
-
-.profile-progress-mark-watched svg {
-  width: 10px;
-  height: 10px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 3px;
-}
-
-.profile-progress-next-episode:hover .profile-progress-mark-watched,
-.profile-progress-next-episode:focus-within .profile-progress-mark-watched,
-.profile-progress-mark-watched:disabled {
-  opacity: 1;
-}
-
-.profile-progress-mark-watched:disabled {
-  cursor: wait;
-}
-
 .profile-progress-bottom-pagination {
   display: flex;
   width: 70%;
@@ -973,11 +926,6 @@
     flex: 0 0 136px;
   }
 
-  .profile-progress-mark-watched {
-    top: 38px;
-    left: 80px;
-  }
-
   .profile-progress-next-copy {
     display: flex;
     flex: 1 1 auto;
@@ -1021,11 +969,5 @@
 
   .profile-progress-card {
     column-gap: 16px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .profile-progress-mark-watched {
-    transition: none;
   }
 }
