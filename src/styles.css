@@ -7,6 +7,7 @@
 @import './app/shared/design-system-controls.css';
 @import './app/features/profile/pages/profile/profile-progress-page.css';
 @import './app/features/profile/pages/profile/profile-episode-ratings-map-page.css';
+@import './app/features/profile/pages/profile/profile-episode-ratings-map-show-page.css';
 @import './app/features/profile/pages/profile/profile-loading-skeleton.css';
 
 /* Keep connected menus below the list picker and sticky application header. */

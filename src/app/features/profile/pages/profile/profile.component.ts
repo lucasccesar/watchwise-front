@@ -38,7 +38,7 @@ import { ConfirmationDialogService } from '../../../../shared/components/confirm
 import { ShareCardModel, SharePreviewComponent, type ShareProfileContentType, type ShareProfileContentVariant } from '../../../../shared/components/share-preview/share-preview.component';
 import { ShareReviewDialogComponent, type ShareReviewDialogCopy, type ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
-import { EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileSummaryTopFiveEntry, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
+import { EpisodeRatingsGrid, EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileSummaryTopFiveEntry, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
@@ -327,6 +327,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly progressDirection = signal<'ASC' | 'DESC'>('DESC');
   protected readonly expandedProgress = signal<ReadonlySet<string>>(new Set());
   protected readonly mapRatingMode = signal<'PERSONAL' | 'COMMUNITY'>('PERSONAL');
+  protected readonly communityRatingRanges = ['≥ 9.7', '9.0–9.6', '8.0–8.9', '7.0–7.9', '6.0–6.9', '5.0–5.9', '4.0–4.9', '3.0–3.9', '< 3.0'];
   protected readonly selectedMonth = signal(new Date().toISOString().slice(0, 7));
   protected readonly selectedYear = signal(new Date().getFullYear());
   protected readonly followBusy = signal(false);
@@ -1403,36 +1404,76 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.mapRatingMode.set(mode);
   }
 
+  protected mapRatingLegendRange(index: number, personalRange: string): string {
+    return this.mapRatingMode() === 'COMMUNITY'
+      ? this.communityRatingRanges[index] ?? personalRange
+      : personalRange;
+  }
+
+  protected mapOverallRatingLabel(): string {
+    const grid = this.episodeGrid();
+    const average = grid?.overallAverageScore?.toFixed(1) ?? this.copy.noRating;
+    const count = this.copy.ratingCount.replace('{count}', String(grid?.overallRatingCount ?? 0));
+    return `${this.copy.overallAverage}: ${average} · ${count}`;
+  }
+
   protected mapEpisodeValue(episode: { score: number | null; averageScore: number | null }): number | null {
     return this.mapRatingMode() === 'PERSONAL' ? episode.score : episode.averageScore;
   }
 
   protected mapEpisodeText(episode: { score: number | null; averageScore: number | null; ratingCount: number }): string {
     const value = this.mapEpisodeValue(episode);
-    return value === null ? '' : this.mapRatingMode() === 'PERSONAL' ? String(value) : value.toFixed(1);
+    return value === null ? '' : this.mapRatingMode() === 'PERSONAL' ? String(Math.round(value)) : value.toFixed(1);
   }
 
   protected mapEpisodeBucket(episode: { score: number | null; averageScore: number | null }): number {
     const value = this.mapEpisodeValue(episode);
-    return value === null ? 0 : Math.max(1, Math.min(10, Math.round(value)));
+    return this.mapRatingBucket(value, this.mapRatingMode() === 'PERSONAL');
+  }
+
+  private mapRatingBucket(value: number | null, roundPersonalScore: boolean): number {
+    if (value === null) return 0;
+    const rating = roundPersonalScore && this.mapRatingMode() === 'PERSONAL' ? Math.round(value) : value;
+    if (this.mapRatingMode() === 'COMMUNITY' && rating >= 9.7) return 10;
+    if (this.mapRatingMode() === 'PERSONAL' && rating >= 10) return 10;
+    if (rating >= 9) return 9;
+    if (rating >= 8) return 8;
+    if (rating >= 7) return 7;
+    if (rating >= 6) return 6;
+    if (rating >= 5) return 5;
+    if (rating >= 4) return 4;
+    if (rating >= 3) return 3;
+    return 2;
   }
 
   protected mapEpisodeLabel(episode: { seasonNumber: number | null; episodeNumber: number | null; score: number | null; averageScore: number | null; ratingCount: number }): string {
     const identity = `T${episode.seasonNumber} · E${episode.episodeNumber}`;
     const value = this.mapEpisodeValue(episode);
     if (value === null) return `${identity} · ${this.copy.noRating}`;
-    if (this.mapRatingMode() === 'PERSONAL') return `${identity} · ${this.copy.rating} ${value}`;
+    if (this.mapRatingMode() === 'PERSONAL') return `${identity} · ${this.copy.rating} ${this.mapEpisodeText(episode)}`;
     return `${identity} · ${this.copy.communityEpisodeAverage.replace('{rating}', value.toFixed(1)).replace('{count}', String(episode.ratingCount))}`;
   }
 
-  protected episodeSeasonAverage(episodes: readonly { score: number | null; averageScore: number | null; ratingCount: number }[]): string {
-    if (this.mapRatingMode() === 'PERSONAL') {
-      const scores = episodes.flatMap((episode) => episode.score === null ? [] : [episode.score]);
-      return scores.length ? (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1) : '0.0';
-    }
-    const rated = episodes.filter((episode) => episode.averageScore !== null && episode.ratingCount > 0);
-    const count = rated.reduce((sum, episode) => sum + episode.ratingCount, 0);
-    return count ? (rated.reduce((sum, episode) => sum + (episode.averageScore ?? 0) * episode.ratingCount, 0) / count).toFixed(1) : '0.0';
+  protected episodeSeasonAverageValue(episodes: readonly EpisodeRatingsGrid['episodes'][number][]): number | null {
+    const values = episodes.flatMap((episode) => {
+      const value = this.mapRatingMode() === 'PERSONAL' ? episode.score : episode.averageScore;
+      return value === null || (this.mapRatingMode() === 'COMMUNITY' && episode.ratingCount === 0) ? [] : [value];
+    });
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  }
+
+  protected episodeSeasonAverage(episodes: readonly EpisodeRatingsGrid['episodes'][number][]): string {
+    const average = this.episodeSeasonAverageValue(episodes);
+    return average === null ? '—' : (Math.round(average * 10) / 10).toFixed(1);
+  }
+
+  protected mapSeasonAverageBucket(episodes: readonly EpisodeRatingsGrid['episodes'][number][]): number {
+    const average = this.episodeSeasonAverageValue(episodes);
+    return average === null ? 0 : this.mapRatingBucket(Math.round(average * 10) / 10, false);
+  }
+
+  protected mapSeasonAverageLabel(seasonNumber: number, episodes: readonly EpisodeRatingsGrid['episodes'][number][]): string {
+    return `${this.copy.seasonAverage} ${seasonNumber}: ${this.episodeSeasonAverage(episodes)}`;
   }
 
   protected seriesCountText(): string {

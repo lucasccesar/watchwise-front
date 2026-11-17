@@ -1409,6 +1409,10 @@
   text-decoration: none;
 }
 
+.profile-page .profile-subpage-hero .profile-subpage-owner:hover {
+  color: var(--color-text);
+}
+
 .profile-subpage-owner > img,
 .profile-subpage-owner > span:first-child {
   width: 24px;

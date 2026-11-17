@@ -1037,55 +1037,90 @@
 
       @case ('episode-ratings-map-show') {
         <section class="profile-content profile-section-page profile-map-detail">
-          <header class="profile-subpage-hero profile-map-detail-hero"><app-responsive-banner [path]="profile()?.banner" fallbackPath="" />
+          <header class="profile-subpage-hero profile-map-detail-hero" aria-labelledby="profile-map-show-title">
+            <app-responsive-banner [path]="episodeGrid()?.backdropPath ?? null" fallbackPath="" appearance="profile-hero" />
             <div class="profile-map-detail-hero-inner">
-              <nav class="profile-map-detail-breadcrumb" aria-label="Navegação estrutural">
-                <a [routerLink]="selectedSectionUrl('episode-ratings-map')">{{ copy.mapTitle }}</a>
-                <span aria-hidden="true">›</span>
-                <span>{{ episodeGrid()?.title || copy.unavailable }}</span>
-              </nav>
+              <div class="profile-map-detail-hero-topbar">
+                <nav class="profile-map-detail-breadcrumb" aria-label="Navegação estrutural">
+                  <a [routerLink]="selectedSectionUrl('episode-ratings-map')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7 7m-7-7 7-7" /></svg>
+                    {{ copy.mapTitle }}
+                  </a>
+                  <span aria-hidden="true">/</span>
+                  <span aria-current="page">{{ episodeGrid()?.title || copy.unavailable }}</span>
+                </nav>
+                <button class="profile-map-share profile-map-share--hero" type="button" [attr.aria-label]="copy.shareMap" (click)="openSharePreview($event)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.59 13.51 6.83 3.98M15.41 6.51 8.59 10.49M21 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM9 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm12 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                  <span>{{ copy.shareMap }}</span>
+                </button>
+              </div>
               <div class="profile-map-detail-hero-copy">
                 <a class="profile-subpage-owner profile-subpage-owner--progress" [routerLink]="selectedSectionUrl('')">
                   @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
                   <span class="profile-subpage-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
                 </a>
-                <h1 class="ww-detail-hero-title">{{ episodeGrid()?.title || copy.unavailable }} {{ copy.mapTitle }}</h1>
-                <p>Como {{ userName() }} avaliou cada episódio, temporada por temporada.</p>
+                <h1 id="profile-map-show-title" class="profile-map-detail-title">
+                  <span>{{ episodeGrid()?.title || copy.unavailable }}</span>
+                  <span class="profile-map-detail-subtitle"><span aria-hidden="true"></span>{{ copy.mapTitle }}<span aria-hidden="true"></span></span>
+                </h1>
+                <p>{{ copy.mapShowDescription.replace('{name}', userName()) }}</p>
               </div>
             </div>
           </header>
           <div class="profile-map-ratings-bar">
             <div class="profile-map-ratings-bar-inner">
-              <div class="profile-edition-switch profile-map-ratings-switch ww-segmented-control" role="group" [attr.aria-label]="copy.ratingView">
-                <button type="button" [class.profile-edition-active]="mapRatingMode() === 'PERSONAL'" [attr.aria-pressed]="mapRatingMode() === 'PERSONAL'" (click)="setMapRatingMode('PERSONAL')">{{ copy.myEpisodeRatings.replace('{name}', userName()) }}</button>
-                <button type="button" [class.profile-edition-active]="mapRatingMode() === 'COMMUNITY'" [attr.aria-pressed]="mapRatingMode() === 'COMMUNITY'" (click)="setMapRatingMode('COMMUNITY')">{{ copy.communityEpisodeRatings }}</button>
+              <div class="profile-map-source-switch" role="group" [attr.aria-label]="copy.ratingView">
+                <button type="button" [class.profile-map-source-active]="mapRatingMode() === 'PERSONAL'" [attr.aria-pressed]="mapRatingMode() === 'PERSONAL'" (click)="setMapRatingMode('PERSONAL')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m12.5-13a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" /></svg>
+                  <span>{{ copy.myEpisodeRatings.replace('{name}', userName()) }}</span>
+                </button>
+                <button type="button" [class.profile-map-source-active]="mapRatingMode() === 'COMMUNITY'" [attr.aria-pressed]="mapRatingMode() === 'COMMUNITY'" (click)="setMapRatingMode('COMMUNITY')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 21v-2a4 4 0 0 0-3-3.87M15.5 3.13a4.5 4.5 0 0 1 0 8.74M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m11-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" /></svg>
+                  <span>{{ copy.communityEpisodeRatings }}</span>
+                </button>
               </div>
-              <button class="profile-map-share" type="button" [attr.aria-label]="copy.shareMap" (click)="openSharePreview($event)">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
-                <span>{{ copy.shareMap }}</span>
-              </button>
             </div>
           </div>
-          <section class="profile-map-show-content">
+          <section class="profile-map-show-content" [attr.aria-label]="copy.mapShowTitle.replace('{title}', episodeGrid()?.title || copy.unavailable)">
             <div class="profile-map-show-layout">
-              <aside class="profile-map-show-summary">
+              <aside class="profile-map-show-summary" [attr.aria-label]="copy.mapShowInfo">
                 @if (imageUrl(episodeGrid()?.customPosterUrl || episodeGrid()?.posterPath); as poster) {
                   @if (episodeGrid()?.seriesTmdbId; as tmdbId) { <a class="profile-map-show-poster" [routerLink]="['/content/series', tmdbId]" [attr.aria-label]="episodeGrid()?.title"><img [src]="poster" alt="" /></a> }
                   @else { <span class="profile-map-show-poster"><img [src]="poster" [alt]="episodeGrid()?.title || ''" /></span> }
+                } @else {
+                  <span class="profile-map-show-poster profile-map-show-poster--empty" aria-hidden="true"></span>
                 }
-                <div><h2>{{ episodeGrid()?.title || copy.unavailable }}</h2><p>{{ episodeGrid()?.releaseYear ?? '' }}</p><strong>{{ episodeGrid()?.overallAverageScore?.toFixed(1) ?? '0.0' }} <span>({{ episodeGrid()?.overallRatingCount ?? 0 | number }})</span></strong></div>
+                <div>
+                  <h2>{{ episodeGrid()?.title || copy.unavailable }}</h2>
+                  @if (episodeGrid()?.releaseYear; as releaseYear) { <p>{{ releaseYear }}</p> }
+                  <p class="profile-map-show-rating" [attr.aria-label]="mapOverallRatingLabel()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11.28 3.45-2.3 4.43a1 1 0 0 1-.75.55l-4.89.71a1 1 0 0 0-.55 1.7l3.54 3.45a1 1 0 0 1 .29.89l-.84 4.87a1 1 0 0 0 1.45 1.05l4.37-2.3a1 1 0 0 1 .93 0l4.37 2.3a1 1 0 0 0 1.45-1.05l-.84-4.87a1 1 0 0 1 .29-.89l3.54-3.45a1 1 0 0 0-.55-1.7l-4.89-.71a1 1 0 0 1-.75-.55l-2.3-4.43a1 1 0 0 0-1.78 0Z" /></svg>
+                    <strong>{{ episodeGrid()?.overallAverageScore?.toFixed(1) ?? '—' }}</strong>
+                    <span>({{ (episodeGrid()?.overallRatingCount ?? 0) | number }} {{ copy.ratingCount.replace('{count}', '').trim() }})</span>
+                  </p>
+                </div>
               </aside>
               <div class="profile-map-show-ratings">
                 <ul class="profile-map-rating-legend" aria-label="Notas de episódios">
-                  @for (entry of copy.ratingLegend; track entry.score) { <li><span [attr.data-score]="entry.score === '≤ 2' ? 2 : entry.score"></span>{{ entry.label }} <strong>{{ entry.score }}</strong></li> }
+                  @for (entry of copy.ratingLegend; track entry.score; let index = $index) {
+                    <li><span [attr.data-score]="entry.score === '≤ 2' ? 2 : entry.score"></span>{{ entry.label }} <strong>{{ mapRatingLegendRange(index, entry.score) }}</strong></li>
+                  }
                 </ul>
-                <div class="profile-episode-map" role="grid" aria-label="{{ copy.mapTitle }}">
+                <div class="profile-episode-map" role="grid" [attr.aria-label]="copy.mapTitle">
                   <div class="profile-map-scroll">
                     <div class="profile-episode-row profile-episode-row--header" role="row"><strong aria-hidden="true"></strong>@for (season of episodeSeasons(); track season.seasonNumber) { <span role="columnheader">T{{ season.seasonNumber }}</span> }</div>
                     @for (episodeNumber of episodeNumbers(); track episodeNumber) {
                       <div class="profile-episode-row" role="row"><strong role="rowheader">E{{ episodeNumber }}</strong>@for (season of episodeSeasons(); track season.seasonNumber) { @if (episodeAt(episodeNumber, season.seasonNumber); as episode) { <a role="gridcell" [routerLink]="episodeRoute(episodeGrid()?.seriesTmdbId || '', season.seasonNumber, episodeNumber)" [title]="mapEpisodeLabel(episode)" [attr.aria-label]="mapEpisodeLabel(episode)" [attr.data-score]="mapEpisodeBucket(episode)">{{ mapEpisodeText(episode) }}</a> } @else { <span class="profile-episode-cell--empty" role="gridcell" aria-hidden="true"></span> } }</div>
                     }
-                    <div class="profile-episode-row profile-episode-row--average" role="row"><strong role="rowheader">{{ copy.seasonAverage }}</strong>@for (season of episodeSeasons(); track season.seasonNumber) { <span role="gridcell" [attr.aria-label]="copy.seasonAverage + ' ' + season.seasonNumber + ': ' + episodeSeasonAverage(season.episodes)">{{ episodeSeasonAverage(season.episodes) }}</span> }</div>
+                    <div class="profile-episode-row profile-episode-row--average" role="row">
+                      <strong role="rowheader">{{ copy.seasonAverage }}</strong>
+                      @for (season of episodeSeasons(); track season.seasonNumber) {
+                        <div class="profile-episode-season-average" role="gridcell" [attr.aria-label]="mapSeasonAverageLabel(season.seasonNumber, season.episodes)">
+                          <span>{{ episodeSeasonAverage(season.episodes) }}</span>
+                          @if (episodeSeasonAverageValue(season.episodes) !== null) { <i aria-hidden="true" [attr.data-score]="mapSeasonAverageBucket(season.episodes)"></i> }
+                        </div>
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
