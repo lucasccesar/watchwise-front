@@ -498,9 +498,9 @@
 
 .profile-page .profile-content.profile-map-detail [data-score='1'],
 .profile-page .profile-content.profile-map-detail [data-score='2'] { --profile-map-rating-color: #4a1d40; background-color: #4a1d40; border-color: #4a1d40; }
-.profile-page .profile-content.profile-map-detail [data-score='3'] { --profile-map-rating-color: #6c3483; background-color: #6c3483; border-color: #6c3483; }
-.profile-page .profile-content.profile-map-detail [data-score='4'] { --profile-map-rating-color: #8b1e1e; background-color: #8b1e1e; border-color: #8b1e1e; }
-.profile-page .profile-content.profile-map-detail [data-score='5'] { --profile-map-rating-color: #e74c3c; background-color: #e74c3c; border-color: #e74c3c; }
+.profile-page .profile-content.profile-map-detail [data-score='3'] { --profile-map-rating-color: #8b1e1e; background-color: #8b1e1e; border-color: #8b1e1e; }
+.profile-page .profile-content.profile-map-detail [data-score='4'] { --profile-map-rating-color: #e73c3c; background-color: #e73c3c; border-color: #e73c3c; }
+.profile-page .profile-content.profile-map-detail [data-score='5'] { --profile-map-rating-color: #e7743c; background-color: #e7743c; border-color: #e7743c; }
 .profile-page .profile-content.profile-map-detail [data-score='6'] { --profile-map-rating-color: #ffeb3b; background-color: #ffeb3b; border-color: #ffeb3b; }
 .profile-page .profile-content.profile-map-detail [data-score='7'] { --profile-map-rating-color: #9dc34a; background-color: #9dc34a; border-color: #9dc34a; }
 .profile-page .profile-content.profile-map-detail [data-score='8'] { --profile-map-rating-color: #27ae60; background-color: #27ae60; border-color: #27ae60; }
