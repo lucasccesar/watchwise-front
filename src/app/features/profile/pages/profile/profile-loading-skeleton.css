@@ -36,8 +36,8 @@
   box-sizing: border-box;
 }
 
-.ww-profile-progress-skeleton-backdrop,
-.ww-profile-map-skeleton-backdrop {
+.ww-profile-progress-skeleton-hero > .ww-skeleton-shape.ww-profile-progress-skeleton-backdrop,
+.ww-profile-map-skeleton-hero > .ww-skeleton-shape.ww-profile-map-skeleton-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
