@@ -450,6 +450,10 @@
   border-color: var(--profile-map-rating-color, transparent);
 }
 
+.profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-rating-cell {
+  transition: transform .12s ease;
+}
+
 .profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-row > a.profile-episode-rating-cell[data-score] {
   background: var(--profile-map-rating-color, var(--color-secondary)) !important;
   border-color: var(--profile-map-rating-color, transparent) !important;
@@ -457,6 +461,8 @@
 
 .profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-rating-cell:hover {
   color: var(--color-text);
+  transform: scale(1.06);
+  z-index: 1;
 }
 
 .profile-page .profile-content.profile-map-detail .profile-episode-row--header > span {
@@ -750,5 +756,15 @@
     margin-left: -16px;
     padding-right: 16px;
     padding-left: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-rating-cell {
+    transition: none;
+  }
+
+  .profile-page .profile-content.profile-map-detail .profile-map-show-ratings .profile-episode-rating-cell:hover {
+    transform: none;
   }
 }
