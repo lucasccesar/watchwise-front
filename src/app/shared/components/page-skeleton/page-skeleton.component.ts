@@ -98,6 +98,13 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
                 <div class="ww-profile-progress-skeleton-controls"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
               </div>
             </section>
+            <div class="ww-profile-progress-skeleton-pagebar" aria-hidden="true">
+              <span></span>
+              <div class="ww-profile-progress-skeleton-pagination">
+                <span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span>
+              </div>
+              <span class="ww-skeleton-shape ww-profile-progress-skeleton-page-summary"></span>
+            </div>
             <section class="ww-profile-progress-skeleton-list" aria-hidden="true">
               @for (series of profileProgressCards; track series) {
                 <article class="ww-profile-progress-skeleton-card">
@@ -111,11 +118,21 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
                   </div>
                   <aside class="ww-profile-progress-skeleton-next">
                     <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-heading"></span>
-                    <div><span class="ww-skeleton-shape ww-profile-progress-skeleton-still"></span><span class="ww-skeleton-shape ww-profile-progress-skeleton-next-copy"></span></div>
+                    <div>
+                      <span class="ww-skeleton-shape ww-profile-progress-skeleton-still"></span>
+                      <span class="ww-profile-progress-skeleton-next-copy">
+                        <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-title"></span>
+                        <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-coordinates"></span>
+                        <span class="ww-profile-progress-skeleton-next-meta"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></span>
+                      </span>
+                    </div>
                   </aside>
                 </article>
               }
             </section>
+            <div class="ww-profile-progress-skeleton-bottom-pagination" aria-hidden="true">
+              <span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span>
+            </div>
           </div>
         }
         @case ('profile-episode-ratings-map') {
@@ -141,15 +158,23 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
                     <article>
                       <span class="ww-skeleton-shape ww-profile-map-skeleton-poster"><span class="ww-skeleton-shape"></span></span>
                       <div class="ww-profile-map-skeleton-card-copy">
-                        <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                        <div class="ww-profile-map-skeleton-heading">
+                          <span class="ww-profile-map-skeleton-title-copy"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></span>
+                          <span class="ww-skeleton-shape ww-profile-map-skeleton-percent"></span>
+                        </div>
                         <div class="ww-profile-map-skeleton-progress"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                        <span class="ww-skeleton-shape ww-profile-map-skeleton-mobile-count"></span>
                       </div>
                     </article>
                   </li>
                 }
               </ul>
             </section>
-            <div class="ww-profile-map-skeleton-pagination" aria-hidden="true"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+            <div class="ww-profile-map-skeleton-pagination" aria-hidden="true">
+              <span class="ww-profile-map-skeleton-pagination-spacer"></span>
+              <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+              <span class="ww-skeleton-shape ww-profile-map-skeleton-pagination-summary"></span>
+            </div>
           </div>
         }
         @case ('calendar') {
@@ -280,7 +305,7 @@ export class PageSkeletonComponent {
   protected readonly profileProgressMetrics = [1, 2, 3];
   protected readonly profileProgressCards = [1, 2, 3, 4, 5, 6];
   protected readonly profileEpisodeMapMetrics = [1, 2];
-  protected readonly profileEpisodeMapCards = Array.from({ length: 12 }, (_, index) => index + 1);
+  protected readonly profileEpisodeMapCards = Array.from({ length: 20 }, (_, index) => index + 1);
   protected readonly profileTopFiveCards = [1, 2, 3, 4, 5];
   protected readonly profileRecentCards = [1, 2, 3, 4, 5, 6];
   protected readonly profileGenres = [1, 2, 3, 4, 5, 6];
