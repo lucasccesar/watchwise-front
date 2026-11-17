@@ -8,10 +8,12 @@ import { SeriesComponent } from './series.component';
 function ratingPage(version: number | null) {
   const api = { setContentRating: vi.fn().mockReturnValue(NEVER), createSeriesDiaryEntry: vi.fn().mockReturnValue(NEVER) };
   const component = Object.assign(Object.create(SeriesComponent.prototype), {
-    api, requests: new Subscription(), actionPending: signal(false),
+    api, session: { user: () => null }, toasts: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+    requests: new Subscription(), actionPending: signal(false),
     toast: signal(''), tmdbId: signal('show'), ratingScore: signal(8),
+    ratingReviewLoading: signal(false), ratingReview: signal(''),
     ratingTarget: signal({ type: 'SEASON', season: { seasonNumber: 2 } }),
-    page: signal({ sections: { seasons: [{ contentId: 'season-2', seasonNumber: 2, viewerState: { myRating: version === null ? null : 6, currentRatingVersion: version } }] } }),
+    page: signal({ sections: { seasons: [{ type: 'SEASON', contentId: 'season-2', seasonNumber: 2, viewerState: { myRating: version === null ? null : 6, currentRatingVersion: version } }] } }),
   });
   return { component, api };
 }

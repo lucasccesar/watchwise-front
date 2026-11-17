@@ -36,7 +36,7 @@ import {
 import { movieMessages } from '../../i18n/movie.messages';
 import { getVideoPlatformLabel } from '../../utils/content-video.utils';
 import { sortCrewByRole } from '../../utils/crew-order';
-import { formatSeriesNumber, getSeriesWatchProgress } from './series-page.utils';
+import { formatSeriesNumber, getReportedSeriesWatchProgress, getSeriesWatchProgress } from './series-page.utils';
 import { canAddContentToWatchlist } from '../../../../shared/utils/content-watch-status';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
 import { PostWatchRatingPromptComponent } from '../../../../shared/components/post-watch-rating-prompt/post-watch-rating-prompt.component';
@@ -1321,6 +1321,12 @@ export class SeriesComponent implements OnInit, OnDestroy {
   private calculateWatchProgress(series: SeriesPage | null): { watchedEpisodeCount: number; totalEpisodeCount: number; percentage: number } {
     if (!series) return { watchedEpisodeCount: 0, totalEpisodeCount: 0, percentage: 0 };
 
+    const reportedProgress = getReportedSeriesWatchProgress(
+      series.viewerState.watchedEpisodeCount,
+      series.viewerState.releasedEpisodeCount,
+    );
+    if (reportedProgress) return reportedProgress;
+
     const savedProgress = this.progressRecord();
 
     const seasons = series.details.seasons.map((season) => {
@@ -1486,7 +1492,16 @@ export class SeriesComponent implements OnInit, OnDestroy {
   }
 
   protected seriesIsWatched(series: SeriesPage): boolean {
-    return series.viewerState.watchStatus === 'WATCHED' || this.calculateWatchProgress(series).percentage >= 100;
+    const reportedProgress = getReportedSeriesWatchProgress(
+      series.viewerState.watchedEpisodeCount,
+      series.viewerState.releasedEpisodeCount,
+    );
+    if (reportedProgress) {
+      return reportedProgress.totalEpisodeCount > 0
+        && reportedProgress.watchedEpisodeCount >= reportedProgress.totalEpisodeCount;
+    }
+    return series.viewerState.watchStatus === 'WATCHED'
+      || this.calculateWatchProgress(series).percentage >= 100;
   }
 
   protected seriesLastWatchedDate(series: SeriesPage): string | null {
@@ -1576,15 +1591,13 @@ export class SeriesComponent implements OnInit, OnDestroy {
   ): number | null {
     if (!season || season.type !== 'SEASON') return null;
     const passNumber = season.viewerState.lastWatchNumber ?? season.viewerState.playsCount;
-    if (passNumber !== null && passNumber > 0) return passNumber;
-    return season.viewerState.watchStatus === 'WATCHED' ? 1 : null;
+    return passNumber !== null && passNumber > 0 ? passNumber : null;
   }
 
   private seriesReviewPassNumber(): number | null {
     const state = this.page()?.viewerState;
     const passNumber = state?.lastWatchNumber ?? state?.playsCount;
-    if (passNumber != null && passNumber > 0) return passNumber;
-    return state?.watchStatus === 'WATCHED' ? 1 : null;
+    return passNumber != null && passNumber > 0 ? passNumber : null;
   }
 
   private findSeriesReview(

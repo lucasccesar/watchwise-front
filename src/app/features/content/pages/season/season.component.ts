@@ -40,6 +40,7 @@ import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/components/watch-log-dialog/watch-log-dialog.component';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
+import { getSeasonEpisodeProgress, hasSeasonCompletion, isSeasonWatched } from './season-page.utils';
 
 type PageStatus = 'loading' | 'ready' | 'error';
 type WatchDateMode = 'today' | 'specific' | 'release';
@@ -95,7 +96,13 @@ export class SeasonComponent implements OnDestroy {
   protected readonly watchDialogOpen = signal(false);
   protected readonly bulkWatchSeason = signal<SeasonListItem | null>(null);
   protected readonly seasonHistoryConfirmOpen = signal(false);
-  protected readonly ratingPromptSeason = signal<{ title: string; seriesTmdbId: string; target: SeasonListItem | null } | null>(null);
+  protected readonly ratingPromptSeason = signal<{
+    title: string;
+    seriesTmdbId: string;
+    target: SeasonListItem | null;
+    watchNumber: number;
+  } | null>(null);
+  private readonly completedSeasonPassNumber = signal<number | null>(null);
   protected readonly ratingDialogOpen = signal(false);
   protected readonly shareReviewOpen = signal(false);
   protected readonly ratingTarget = signal<RatingTarget | null>(null);
@@ -137,23 +144,37 @@ export class SeasonComponent implements OnDestroy {
   });
   protected readonly seasonName = computed(() => this.page()?.details.title?.trim() || `Temporada ${this.seasonNumber()}`);
   protected readonly seriesName = computed(() => this.page()?.details.parentTitle?.trim() || 'Série');
-  protected readonly watchedEpisodeCount = computed(() => Math.max(
-    0,
-    this.page()?.viewerState.watchedEpisodeCount ?? 0,
-    this.episodes().filter((episode) => this.episodeIsWatched(episode)).length,
+  private readonly localEpisodeProgress = computed(() => getSeasonEpisodeProgress(
+    this.episodes().map((episode) => ({
+      episodeNumber: episode.episodeNumber,
+      releaseDate: episode.releaseDate,
+      watchStatus: episode.viewerState.watchStatus,
+    })),
+    this.episodeCount(),
+    this.localDateForInput(),
   ));
+  protected readonly watchedEpisodeCount = computed(() => {
+    const reported = this.page()?.viewerState.watchedEpisodeCount;
+    return Math.max(0, reported ?? this.localEpisodeProgress()?.watchedEpisodeCount ?? 0);
+  });
   protected readonly episodeCount = computed(() => {
     const reportedCount = this.page()?.details.episodeCount ?? 0;
     return reportedCount > 0 ? reportedCount : this.episodes().length;
   });
   protected readonly releasedEpisodeCount = computed(() => {
-    const reportedCount = this.page()?.viewerState.releasedEpisodeCount ?? 0;
-    return reportedCount > 0 ? reportedCount : this.episodeCount();
+    const reported = this.page()?.viewerState.releasedEpisodeCount;
+    if (reported != null) return Math.max(0, reported);
+    const seasonCard = this.seasons().find((season) => season.seasonNumber === this.seasonNumber());
+    return Math.max(0, seasonCard?.airedEpisodeCount ?? this.localEpisodeProgress()?.releasedEpisodeCount ?? 0);
   });
   protected readonly watched = computed(() => {
-    const episodeCount = this.episodeCount();
-    return this.page()?.viewerState.watchStatus === 'WATCHED'
-      || (episodeCount > 0 && this.watchedEpisodeCount() >= episodeCount);
+    const viewerState = this.page()?.viewerState;
+    const localProgress = this.localEpisodeProgress();
+    return isSeasonWatched(
+      viewerState?.watchStatus,
+      viewerState?.watchedEpisodeCount ?? localProgress?.watchedEpisodeCount,
+      viewerState?.releasedEpisodeCount ?? localProgress?.releasedEpisodeCount ?? this.releasedEpisodeCount(),
+    );
   });
   protected readonly watchedPercentage = computed(() => {
     const total = this.releasedEpisodeCount();
@@ -322,7 +343,10 @@ export class SeasonComponent implements OnDestroy {
   }
 
   private seasonItemEpisodeCount(season: SeasonListItem): number {
-    return Math.max(0, season.airedEpisodeCount ?? season.viewerState.releasedEpisodeCount ?? season.episodeCount ?? 0);
+    return Math.max(0, season.viewerState.releasedEpisodeCount
+      ?? season.airedEpisodeCount
+      ?? season.episodeCount
+      ?? 0);
   }
 
   private seasonItemWatchedCount(season: SeasonListItem): number {
@@ -330,7 +354,11 @@ export class SeasonComponent implements OnDestroy {
   }
 
   protected seasonItemIsWatched(season: SeasonListItem): boolean {
-    return season.viewerState.watchStatus === 'WATCHED';
+    return isSeasonWatched(
+      season.viewerState.watchStatus,
+      season.viewerState.watchedEpisodeCount,
+      season.viewerState.releasedEpisodeCount ?? season.airedEpisodeCount,
+    );
   }
 
   protected seasonItemMyRating(season: SeasonListItem): number | null {
@@ -386,6 +414,7 @@ export class SeasonComponent implements OnDestroy {
   protected confirmSeasonRating(): void {
     const prompt = this.ratingPromptSeason();
     if (!prompt) return;
+    this.completedSeasonPassNumber.set(prompt.watchNumber);
     this.ratingPromptSeason.set(null);
     this.openRating(prompt.target ? { type: 'SEASON', season: prompt.target } : { type: 'SEASON' });
   }
@@ -693,17 +722,26 @@ export class SeasonComponent implements OnDestroy {
     const targetSeason = this.bulkWatchSeason();
     if (!page || this.actionPending() || !this.bulkWatchEpisodeCount()) return;
     const watchedDate = this.watchDateMode() === 'release' ? null : this.watchDate();
+    const seasonNumber = targetSeason?.seasonNumber ?? this.seasonNumber();
     this.runAction(this.api.createBulkSeriesDiaryEntry({
-      content: { type: 'SEASON', seriesTmdbId: this.tmdbId(), seasonNumber: targetSeason?.seasonNumber ?? this.seasonNumber() },
+      content: { type: 'SEASON', seriesTmdbId: this.tmdbId(), seasonNumber },
       watchedDate,
-    }, crypto.randomUUID()), () => {
+    }, crypto.randomUUID()), (result) => {
       this.watchDialogOpen.set(false);
       this.bulkWatchSeason.set(null);
-      this.ratingPromptSeason.set({
-        title: targetSeason?.name?.trim() || (targetSeason ? `Temporada ${targetSeason.seasonNumber}` : this.seasonName()),
-        seriesTmdbId: this.tmdbId(),
-        target: targetSeason,
-      });
+      const completion = result.completions.find((candidate) =>
+        candidate.content.type === 'SEASON' && candidate.content.seasonNumber === seasonNumber,
+      );
+      if (completion && hasSeasonCompletion(result.completions, seasonNumber)) {
+        this.ratingPromptSeason.set({
+          title: targetSeason?.name?.trim() || (targetSeason ? `Temporada ${targetSeason.seasonNumber}` : this.seasonName()),
+          seriesTmdbId: this.tmdbId(),
+          target: targetSeason,
+          watchNumber: completion.pass.watchNumber,
+        });
+      } else {
+        this.ratingPromptSeason.set(null);
+      }
       this.reload();
     });
   }
@@ -891,16 +929,19 @@ export class SeasonComponent implements OnDestroy {
     this.runAction(reviewRequest, () => {
       this.ratingDialogOpen.set(false);
       this.latestOwnSeasonReview.set(null);
+      this.completedSeasonPassNumber.set(null);
       this.showToast('Avaliação salva.');
       this.reload();
     });
   }
 
   private seasonReviewPassNumber(season?: SeasonListItem): number | null {
+    const completedPassNumber = this.completedSeasonPassNumber();
+    if (completedPassNumber != null && completedPassNumber > 0) return completedPassNumber;
     const state = season?.viewerState ?? this.page()?.viewerState;
     const passNumber = state?.lastWatchNumber ?? state?.playsCount;
     if (passNumber != null && passNumber > 0) return passNumber;
-    return state?.watchStatus === 'WATCHED' ? 1 : null;
+    return null;
   }
 
   private findSeasonReview(
@@ -1139,6 +1180,7 @@ export class SeasonComponent implements OnDestroy {
     this.ratingDialogOpen.set(false);
     this.ratingTarget.set(null);
     this.ratingReviewLoading.set(false);
+    this.completedSeasonPassNumber.set(null);
   }
 
   protected providerLabel(type: 'flatrate' | 'rent' | 'buy'): string {
@@ -1150,6 +1192,7 @@ export class SeasonComponent implements OnDestroy {
   }
 
   private loadSeason(tmdbId: string, seasonNumber: number, preserveExisting = false): void {
+    this.completedSeasonPassNumber.set(null);
     if (this.ratingPromptSeason()?.seriesTmdbId !== tmdbId) {
       this.ratingPromptSeason.set(null);
     }
@@ -1255,13 +1298,13 @@ export class SeasonComponent implements OnDestroy {
     }));
   }
 
-  private runAction<T>(request: Observable<T>, success: () => void): void {
+  private runAction<T>(request: Observable<T>, success: (result: T) => void): void {
     if (this.actionPending()) return;
     this.actionPending.set(true);
     this.requests.add(request.subscribe({
-      next: () => {
+      next: (result) => {
         this.actionPending.set(false);
-        success();
+        success(result);
       },
       error: (error: unknown) => {
         this.actionPending.set(false);
