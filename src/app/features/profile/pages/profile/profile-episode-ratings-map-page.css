@@ -115,6 +115,7 @@
 }
 
 .profile-page .profile-content.profile-map-page .profile-map-summary {
+  display: flex;
   width: auto;
   min-height: 40px;
   margin: 0;
