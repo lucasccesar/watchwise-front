@@ -170,7 +170,8 @@
 }
 
 .profile-page .profile-content.profile-map-detail .profile-map-ratings-bar {
-  position: relative;
+  position: sticky;
+  z-index: 29;
   left: 50%;
   width: 100vw;
   height: 68px;
