@@ -956,9 +956,9 @@
           <header class="profile-subpage-hero profile-map-hero" aria-labelledby="profile-map-title">
             <app-responsive-banner [path]="episodeMap()?.series[0]?.backdropPath ?? profile()?.banner ?? null" fallbackPath="" appearance="profile-hero" />
             <div class="profile-map-hero-copy">
-              <a class="profile-subpage-owner profile-map-owner" [routerLink]="selectedSectionUrl('')">
+              <a class="profile-subpage-owner profile-map-owner profile-progress-owner" [routerLink]="selectedSectionUrl('')">
                 @if (profile()?.profilePicture; as picture) { <img [src]="picture" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }
-                <span class="profile-subpage-owner-copy profile-map-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
+                <span class="profile-subpage-owner-copy profile-map-owner-copy profile-progress-owner-copy"><span>{{ userName() }}</span><small>@{{ profile()?.username || username() }}</small></span>
               </a>
               <h1 id="profile-map-title" class="profile-map-title">
                 <span>{{ copy.mapTitle }}</span>

@@ -48,13 +48,14 @@
   align-items: center;
   gap: 8px;
   padding: 4px 12px 4px 4px;
-  border: 0;
+  border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 9999px;
-  background: #30343b;
-  color: #f2f7fa;
+  background: rgb(24 24 24 / 76%);
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 56%);
 }
 
 .profile-page .profile-content.profile-map-page .profile-map-owner > img {
@@ -469,12 +470,12 @@
   }
 
   .profile-page .profile-content.profile-map-page .profile-map-owner {
-    min-height: 48px;
+    min-height: 32px;
     gap: 12px;
     padding: 0;
     border: 0;
     background: transparent;
-    font-size: 16px;
+    font-size: 14px;
     text-align: left;
   }
 
