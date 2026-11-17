@@ -53,6 +53,7 @@
 
 .profile-tabs a:hover {
   background: var(--color-secondary);
+  color: var(--color-text);
 }
 
 .profile-tabs a.profile-tab--active {
@@ -6992,4 +6993,109 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
+}
+
+/* The episode map uses the six-link navigation from its page prototypes. */
+.profile-page .profile-tabs.profile-map-tabs {
+  min-height: 60px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px var(--content-margin);
+}
+
+.profile-page .profile-tabs.profile-map-tabs a {
+  min-height: 36px;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.profile-page .profile-tabs.profile-map-tabs a:hover {
+  color: var(--color-text);
+}
+
+.profile-page .profile-tabs.profile-map-tabs a.profile-tab--active {
+  background: var(--color-primary);
+  color: var(--color-text);
+}
+
+@media (min-width: 801px) and (max-width: 1599px) {
+  .profile-page .profile-tabs.profile-map-tabs {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 80px;
+    padding-left: 80px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .profile-page .profile-tabs.profile-map-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1200px) {
+  .profile-page .profile-tabs.profile-map-tabs {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 800px) {
+  .profile-page .profile-tabs.profile-map-tabs {
+    min-height: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 8px 32px 0;
+    scrollbar-width: none;
+  }
+
+  .profile-page .profile-tabs.profile-map-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-page .profile-tabs.profile-map-tabs a {
+    min-height: 38px;
+    padding: 8px 12px 12px;
+    border-radius: 0;
+    color: var(--color-tertiary);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 18px;
+  }
+
+  .profile-page .profile-tabs.profile-map-tabs a:hover {
+    background: transparent;
+    color: var(--color-tertiary);
+  }
+
+  .profile-page .profile-tabs.profile-map-tabs a.profile-tab--active {
+    position: relative;
+    background: transparent;
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .profile-page .profile-tabs.profile-map-tabs a.profile-tab--active::after {
+    position: absolute;
+    right: 4px;
+    bottom: 0;
+    left: 4px;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--color-primary);
+    content: '';
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-page .profile-tabs.profile-map-tabs {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
 }

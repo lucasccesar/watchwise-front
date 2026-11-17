@@ -1,6 +1,6 @@
 <ng-template #profileTabsTemplate>
-  <nav class="profile-tabs" [attr.aria-label]="copy.tabs.profile">
-    @for (tab of tabEntries; track tab.key) {
+  <nav class="profile-tabs" [class.profile-map-tabs]="isEpisodeMapNavigation()" [attr.aria-label]="copy.tabs.profile">
+    @for (tab of visibleProfileTabEntries(); track tab.key) {
       <a
         [routerLink]="selectedSectionUrl(tab.path)"
         [class.profile-tab--active]="section() === tab.section || (tab.section === 'episode-ratings-map' && section() === 'episode-ratings-map-show')"

@@ -141,6 +141,15 @@ const PROFILE_OVERVIEW_TAB_KEYS = new Set<ProfileTabKey>([
   'episodeRatingsMap',
 ]);
 
+const EPISODE_MAP_TAB_KEYS = new Set<ProfileTabKey>([
+  'profile',
+  'progress',
+  'episodeRatingsMap',
+  'monthInReview',
+  'yearInReview',
+  'allTimeStats',
+]);
+
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -330,6 +339,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   private genreRequest?: Subscription;
   protected readonly ratingScores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly tabEntries = SECTION_KEYS.filter(({ key }) => PROFILE_OVERVIEW_TAB_KEYS.has(key));
+  protected readonly episodeMapTabEntries = SECTION_KEYS.filter(({ key }) => EPISODE_MAP_TAB_KEYS.has(key));
+  protected readonly isEpisodeMapNavigation = computed(() => {
+    const currentSection = this.section();
+    return currentSection === 'episode-ratings-map' || currentSection === 'episode-ratings-map-show';
+  });
+  protected readonly visibleProfileTabEntries = computed(() =>
+    this.isEpisodeMapNavigation() ? this.episodeMapTabEntries : this.tabEntries,
+  );
   protected readonly overviewRatingsDistribution = computed(() => {
     if (this.mode() === 'MOVIE') return this.summary()?.ratingsDistribution ?? [];
     const counts = new Map<number, number>();
