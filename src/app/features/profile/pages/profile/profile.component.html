@@ -25,14 +25,29 @@
   </div>
 </ng-template>
 
-@if (status() === 'loading' || (status() === 'ready' && section() === 'profile' && profileOverviewLoading())) {
+@if (
+  status() === 'loading'
+  || (status() === 'ready' && section() === 'profile' && profileOverviewLoading())
+  || (status() === 'ready' && section() === 'progress' && progressLoading() && progress() === null)
+  || (status() === 'ready' && section() === 'episode-ratings-map' && episodeMapLoading() && episodeMap() === null)
+) {
   <main class="profile-page" [class.profile-page--overview]="section() === 'profile'">
-    <app-page-skeleton variant="profile" [label]="copy.loading">
-      <ng-container profile-skeleton-tabs><ng-container [ngTemplateOutlet]="profileTabsTemplate" /></ng-container>
-      @if (section() === 'profile') {
-        <ng-container profile-skeleton-type-switch><ng-container [ngTemplateOutlet]="profileTypeSwitchTemplate" /></ng-container>
-      }
-    </app-page-skeleton>
+    @if (section() === 'progress') {
+      <app-page-skeleton variant="profile-progress" [label]="copy.loading">
+        <ng-container profile-skeleton-tabs><ng-container [ngTemplateOutlet]="profileTabsTemplate" /></ng-container>
+      </app-page-skeleton>
+    } @else if (section() === 'episode-ratings-map') {
+      <app-page-skeleton variant="profile-episode-ratings-map" [label]="copy.loading">
+        <ng-container profile-skeleton-tabs><ng-container [ngTemplateOutlet]="profileTabsTemplate" /></ng-container>
+      </app-page-skeleton>
+    } @else {
+      <app-page-skeleton variant="profile" [label]="copy.loading">
+        <ng-container profile-skeleton-tabs><ng-container [ngTemplateOutlet]="profileTabsTemplate" /></ng-container>
+        @if (section() === 'profile') {
+          <ng-container profile-skeleton-type-switch><ng-container [ngTemplateOutlet]="profileTypeSwitchTemplate" /></ng-container>
+        }
+      </app-page-skeleton>
+    }
   </main>
 } @else if (status() === 'private') {
   <main class="profile-page profile-page--private">

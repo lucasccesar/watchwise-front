@@ -1,0 +1,388 @@
+/* Profile-specific skeleton layouts for Progress and Episode Ratings Map. */
+.ww-page-skeleton--profile-progress,
+.ww-page-skeleton--profile-episode-ratings-map {
+  width: 100%;
+  max-width: none;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.ww-profile-progress-skeleton,
+.ww-profile-episode-ratings-map-skeleton {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0;
+  overflow: clip;
+  background: var(--color-surface);
+}
+
+.ww-profile-progress-skeleton-hero {
+  position: relative;
+  display: flex;
+  min-height: 342px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px var(--content-margin);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.ww-profile-progress-skeleton-backdrop,
+.ww-profile-map-skeleton-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  opacity: .48;
+}
+
+.ww-profile-progress-skeleton-identity {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(720px, 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ww-profile-progress-skeleton-owner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ww-profile-progress-skeleton-owner > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ww-profile-progress-skeleton-avatar {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: var(--radius-full);
+}
+
+.ww-profile-progress-skeleton-owner-name { width: 128px; height: 16px; }
+.ww-profile-progress-skeleton-handle { width: 92px; height: 12px; }
+.ww-profile-progress-skeleton-title { width: min(560px, 80vw); height: 72px; margin-top: 8px; }
+.ww-profile-progress-skeleton-subtitle { width: 180px; height: 24px; }
+
+.ww-profile-progress-skeleton-description {
+  display: flex;
+  width: min(480px, 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ww-profile-progress-skeleton-description > span:first-child { width: 100%; height: 14px; }
+.ww-profile-progress-skeleton-description > span:last-child { width: 72%; height: 14px; }
+
+.ww-profile-progress-skeleton-summary {
+  width: 100%;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
+  box-sizing: border-box;
+}
+
+.ww-profile-progress-skeleton-summary-inner {
+  display: flex;
+  width: 70%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 16px 0;
+  box-sizing: border-box;
+}
+
+.ww-profile-progress-skeleton-metrics {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 20px;
+}
+
+.ww-profile-progress-skeleton-metrics > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ww-profile-progress-skeleton-metrics > div > span:first-child { width: 16px; height: 16px; border-radius: var(--radius-full); }
+.ww-profile-progress-skeleton-metrics > div > span:nth-child(2) { width: 36px; height: 14px; }
+.ww-profile-progress-skeleton-metrics > div > span:last-child { width: 72px; height: 14px; }
+
+.ww-profile-progress-skeleton-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.ww-profile-progress-skeleton-controls > span:first-child { width: 196px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.ww-profile-progress-skeleton-controls > span:last-child { width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+
+.ww-profile-progress-skeleton-list {
+  display: flex;
+  width: 70%;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 auto;
+  padding-top: 16px;
+}
+
+.ww-profile-progress-skeleton-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 240px;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0 32px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ww-profile-progress-skeleton-poster {
+  width: 150px;
+  grid-column: 1;
+  grid-row: 1;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-md);
+}
+
+.ww-profile-progress-skeleton-main {
+  display: flex;
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.ww-profile-progress-skeleton-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ww-profile-progress-skeleton-heading > span:first-child { width: min(360px, 70%); height: 24px; }
+.ww-profile-progress-skeleton-heading > span:last-child { width: 48px; height: 24px; }
+.ww-profile-progress-skeleton-bar { width: 100%; height: 6px; border-radius: var(--radius-full); }
+.ww-profile-progress-skeleton-detail { width: min(440px, 90%); height: 14px; }
+.ww-profile-progress-skeleton-detail--short { width: min(320px, 64%); }
+.ww-profile-progress-skeleton-toggle { width: 128px; height: 28px; margin-top: 4px; }
+
+.ww-profile-progress-skeleton-next {
+  display: flex;
+  grid-column: 3;
+  grid-row: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+  box-sizing: border-box;
+}
+
+.ww-profile-progress-skeleton-next-heading { width: 76%; height: 16px; }
+.ww-profile-progress-skeleton-next > div { display: flex; align-items: center; gap: 12px; }
+.ww-profile-progress-skeleton-still { width: 96px; height: 60px; flex: 0 0 96px; border-radius: var(--radius-sm); }
+.ww-profile-progress-skeleton-next-copy { width: 100%; height: 36px; }
+
+.ww-profile-map-skeleton-hero {
+  position: relative;
+  display: flex;
+  min-height: 342px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px var(--content-margin);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.ww-profile-map-skeleton-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(800px, 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.ww-profile-map-skeleton-owner {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-secondary);
+}
+
+.ww-profile-map-skeleton-owner > span:first-child { width: 24px; height: 24px; border-radius: var(--radius-full); }
+.ww-profile-map-skeleton-owner > span:last-child { display: flex; flex-direction: column; gap: 4px; }
+.ww-profile-map-skeleton-owner > span:last-child > span:first-child { width: 96px; height: 14px; }
+.ww-profile-map-skeleton-owner > span:last-child > span:last-child { display: none; }
+.ww-profile-map-skeleton-title { width: min(740px, 80vw); height: 90px; }
+.ww-profile-map-skeleton-count { width: 180px; height: 24px; }
+
+.ww-profile-map-skeleton-description {
+  display: flex;
+  width: min(480px, 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ww-profile-map-skeleton-description > span:first-child { width: 100%; height: 16px; }
+.ww-profile-map-skeleton-description > span:last-child { width: 76%; height: 16px; }
+
+.ww-profile-map-skeleton-summary {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 20px;
+  padding: 16px var(--content-margin);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
+  box-sizing: border-box;
+}
+
+.ww-profile-map-skeleton-summary > div { display: flex; align-items: center; gap: 6px; }
+.ww-profile-map-skeleton-summary > div > span:first-child { width: 16px; height: 16px; border-radius: var(--radius-full); }
+.ww-profile-map-skeleton-summary > div > span:nth-child(2) { width: 44px; height: 14px; }
+.ww-profile-map-skeleton-summary > div > span:last-child { width: 104px; height: 14px; }
+
+.ww-profile-map-skeleton-list { padding: 32px var(--content-margin) 0; }
+.ww-profile-map-skeleton-list > ul { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 24px; row-gap: 32px; margin: 0; padding: 0; list-style: none; }
+.ww-profile-map-skeleton-list li { min-width: 0; }
+.ww-profile-map-skeleton-list article { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
+.ww-profile-map-skeleton-poster { position: relative; display: block; overflow: hidden; aspect-ratio: 2 / 3; border-radius: var(--radius-md); }
+.ww-profile-map-skeleton-poster > span { position: absolute; right: 8px; bottom: 8px; width: 64px; height: 18px; border-radius: var(--radius-sm); }
+.ww-profile-map-skeleton-card-copy { display: flex; min-width: 0; flex-direction: column; gap: 8px; }
+.ww-profile-map-skeleton-card-copy > div:first-child { display: flex; flex-direction: column; gap: 6px; }
+.ww-profile-map-skeleton-card-copy > div:first-child > span:first-child { width: 88%; height: 16px; }
+.ww-profile-map-skeleton-card-copy > div:first-child > span:last-child { width: 42%; height: 12px; }
+.ww-profile-map-skeleton-progress { display: flex; align-items: center; gap: 8px; }
+.ww-profile-map-skeleton-progress > span:first-child { width: 40px; height: 12px; flex: 0 0 40px; }
+.ww-profile-map-skeleton-progress > span:last-child { width: 100%; height: 4px; border-radius: var(--radius-full); }
+
+.ww-profile-map-skeleton-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 48px var(--content-margin);
+}
+
+.ww-profile-map-skeleton-pagination > span { width: 36px; height: 36px; border-radius: var(--radius-md); }
+.ww-profile-map-skeleton-pagination > span:nth-child(2) { background: var(--color-primary); }
+
+@media (min-width: 801px) and (max-width: 1599px) {
+  .ww-profile-progress-skeleton-summary-inner,
+  .ww-profile-progress-skeleton-list { width: auto; margin-right: 80px; margin-left: 80px; }
+
+  .ww-profile-progress-skeleton-hero { padding-right: 80px; padding-left: 80px; }
+
+  .ww-profile-map-skeleton-hero { padding-right: 80px; padding-left: 80px; }
+  .ww-profile-map-skeleton-summary { padding-right: 80px; padding-left: 80px; }
+  .ww-profile-map-skeleton-list { padding-right: 80px; padding-left: 80px; }
+  .ww-profile-map-skeleton-pagination { padding-right: 80px; padding-left: 80px; }
+}
+
+@media (min-width: 801px) and (max-width: 1279px) {
+  .ww-profile-map-skeleton-list > ul { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .ww-profile-progress-skeleton-card { grid-template-columns: 150px minmax(0, 1fr); }
+  .ww-profile-progress-skeleton-next { width: 100%; max-width: 320px; grid-column: 2; grid-row: 2; }
+}
+
+@media (max-width: 800px) {
+  .ww-profile-progress-skeleton-hero,
+  .ww-profile-map-skeleton-hero { min-height: 0; justify-content: flex-start; padding: 32px; }
+
+  .ww-profile-progress-skeleton-identity { width: 100%; align-items: flex-start; }
+  .ww-profile-progress-skeleton-owner { gap: 12px; }
+  .ww-profile-progress-skeleton-owner > span:last-child { gap: 6px; }
+  .ww-profile-progress-skeleton-avatar { width: 48px; height: 48px; flex-basis: 48px; border: 3px solid var(--color-surface); outline: 2px solid var(--color-primary); }
+  .ww-profile-progress-skeleton-owner-name { width: 140px; height: 18px; }
+  .ww-profile-progress-skeleton-handle { width: 104px; height: 16px; }
+  .ww-profile-progress-skeleton-title,
+  .ww-profile-progress-skeleton-subtitle,
+  .ww-profile-progress-skeleton-description { display: none; }
+
+  .ww-profile-progress-skeleton-summary-inner { width: auto; min-height: 42px; justify-content: space-between; gap: 12px; margin: 0 32px; padding: 12px 0; }
+  .ww-profile-progress-skeleton-metrics { gap: 16px; }
+  .ww-profile-progress-skeleton-metrics > div { gap: 4px; }
+  .ww-profile-progress-skeleton-metrics > div > span:first-child { width: 14px; height: 14px; }
+  .ww-profile-progress-skeleton-metrics > div > span:nth-child(2) { width: 28px; }
+  .ww-profile-progress-skeleton-metrics > div > span:last-child { width: 54px; }
+  .ww-profile-progress-skeleton-controls > span:first-child { width: 32px; height: 32px; }
+  .ww-profile-progress-skeleton-controls > span:last-child { display: none; }
+  .ww-profile-progress-skeleton-list { width: auto; margin: 0 32px; }
+  .ww-profile-progress-skeleton-card { grid-template-columns: 64px minmax(0, 1fr); grid-template-rows: auto auto; gap: 12px; }
+  .ww-profile-progress-skeleton-poster { width: 64px; grid-column: 1; grid-row: 1; }
+  .ww-profile-progress-skeleton-main { grid-column: 2; grid-row: 1; gap: 8px; padding-top: 0; }
+  .ww-profile-progress-skeleton-heading > span:first-child { height: 20px; }
+  .ww-profile-progress-skeleton-heading > span:last-child { height: 20px; }
+  .ww-profile-progress-skeleton-detail { height: 12px; }
+  .ww-profile-progress-skeleton-toggle { display: none; }
+  .ww-profile-progress-skeleton-next { grid-column: 1 / -1; grid-row: 2; padding: 12px; }
+  .ww-profile-progress-skeleton-still { width: 136px; height: 76px; flex-basis: 136px; }
+
+  .ww-profile-map-skeleton-hero-copy { width: 100%; align-items: flex-start; gap: 12px; }
+  .ww-profile-map-skeleton-owner { height: 48px; gap: 12px; padding: 0; background: transparent; }
+  .ww-profile-map-skeleton-owner > span:first-child { width: 48px; height: 48px; flex: 0 0 48px; border: 3px solid var(--color-surface); outline: 2px solid var(--color-primary); }
+  .ww-profile-map-skeleton-owner > span:last-child { gap: 4px; }
+  .ww-profile-map-skeleton-owner > span:last-child > span:first-child { width: 132px; height: 16px; }
+  .ww-profile-map-skeleton-owner > span:last-child > span:last-child { display: block; width: 92px; height: 12px; }
+  .ww-profile-map-skeleton-title,
+  .ww-profile-map-skeleton-count,
+  .ww-profile-map-skeleton-description { display: none; }
+  .ww-profile-map-skeleton-summary { min-height: 56px; gap: 16px; padding: 12px 32px; }
+  .ww-profile-map-skeleton-summary > div { gap: 4px; }
+  .ww-profile-map-skeleton-summary > div > span:first-child { width: 14px; height: 14px; }
+  .ww-profile-map-skeleton-summary > div > span:nth-child(2) { width: 32px; height: 12px; }
+  .ww-profile-map-skeleton-summary > div > span:last-child { width: 70px; height: 12px; }
+  .ww-profile-map-skeleton-list { padding: 0 32px; }
+  .ww-profile-map-skeleton-list > ul { display: flex; flex-direction: column; gap: 0; }
+  .ww-profile-map-skeleton-list li { border-bottom: 1px solid var(--color-border); }
+  .ww-profile-map-skeleton-list li:last-child { border-bottom: 0; }
+  .ww-profile-map-skeleton-list article { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: start; column-gap: 12px; padding: 16px 0; }
+  .ww-profile-map-skeleton-poster { grid-column: 1; grid-row: 1; }
+  .ww-profile-map-skeleton-poster > span { display: none; }
+  .ww-profile-map-skeleton-card-copy { grid-column: 2; grid-row: 1; gap: 8px; }
+  .ww-profile-map-skeleton-card-copy > div:first-child { flex-direction: row; align-items: baseline; gap: 6px; }
+  .ww-profile-map-skeleton-card-copy > div:first-child > span:first-child { width: 58%; height: 20px; }
+  .ww-profile-map-skeleton-card-copy > div:first-child > span:last-child { width: 36px; height: 14px; }
+  .ww-profile-map-skeleton-progress { flex-direction: column; align-items: stretch; gap: 8px; }
+  .ww-profile-map-skeleton-progress > span:first-child { display: none; }
+  .ww-profile-map-skeleton-progress > span:last-child { height: 6px; }
+  .ww-profile-map-skeleton-pagination { padding: 32px; }
+}
+
+@media (max-width: 719px) {
+  .ww-profile-progress-skeleton-hero,
+  .ww-profile-map-skeleton-hero { padding-right: 16px; padding-left: 16px; }
+  .ww-profile-progress-skeleton-summary-inner,
+  .ww-profile-progress-skeleton-list { margin-right: 16px; margin-left: 16px; }
+  .ww-profile-progress-skeleton-metrics { gap: 10px; }
+  .ww-profile-progress-skeleton-metrics > div > span:last-child { width: 42px; }
+  .ww-profile-map-skeleton-summary { gap: 12px; padding-right: 16px; padding-left: 16px; }
+  .ww-profile-map-skeleton-summary > div > span:last-child { width: 56px; }
+  .ww-profile-map-skeleton-list { padding-right: 16px; padding-left: 16px; }
+  .ww-profile-map-skeleton-pagination { padding-right: 16px; padding-left: 16px; }
+}

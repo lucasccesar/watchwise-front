@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'content' | 'episode-content' | 'detail' | 'list' | 'profile' | 'rows' | 'settings';
+export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'content' | 'episode-content' | 'detail' | 'list' | 'profile' | 'profile-progress' | 'profile-episode-ratings-map' | 'rows' | 'settings';
 
 @Component({
   selector: 'app-page-skeleton',
@@ -8,15 +8,16 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="ww-page-skeleton" [class]="'ww-page-skeleton ww-page-skeleton--' + variant()" [class.ww-page-skeleton--compact]="compact()" role="status" [attr.aria-label]="label()" aria-busy="true">
-      @if (!compact() && variant() !== 'calendar' && variant() !== 'content' && variant() !== 'episode-content' && variant() !== 'profile') {
+      @if (!compact() && variant() !== 'calendar' && variant() !== 'content' && variant() !== 'episode-content' && variant() !== 'profile' && variant() !== 'profile-progress' && variant() !== 'profile-episode-ratings-map') {
         <span class="ww-skeleton-shape ww-skeleton-title" aria-hidden="true"></span>
         <span class="ww-skeleton-shape ww-skeleton-subtitle" aria-hidden="true"></span>
       }
 
+      <ng-content select="[profile-skeleton-tabs]"></ng-content>
+
       @switch (variant()) {
         @case ('profile') {
           <div class="ww-profile-skeleton">
-            <ng-content select="[profile-skeleton-tabs]"></ng-content>
             <section class="ww-profile-skeleton-hero" aria-hidden="true">
               <span class="ww-skeleton-shape ww-profile-skeleton-banner"></span>
               <span class="ww-skeleton-shape ww-profile-skeleton-options"></span>
@@ -71,6 +72,84 @@ export type PageSkeletonVariant = 'cards' | 'calendar' | 'connections' | 'conten
                 }
               </section>
             </div>
+          </div>
+        }
+        @case ('profile-progress') {
+          <div class="ww-profile-progress-skeleton">
+            <section class="ww-profile-progress-skeleton-hero" aria-hidden="true">
+              <span class="ww-skeleton-shape ww-profile-progress-skeleton-backdrop"></span>
+              <div class="ww-profile-progress-skeleton-identity">
+                <div class="ww-profile-progress-skeleton-owner">
+                  <span class="ww-skeleton-shape ww-profile-progress-skeleton-avatar"></span>
+                  <span><span class="ww-skeleton-shape ww-profile-progress-skeleton-owner-name"></span><span class="ww-skeleton-shape ww-profile-progress-skeleton-handle"></span></span>
+                </div>
+                <span class="ww-skeleton-shape ww-profile-progress-skeleton-title"></span>
+                <span class="ww-skeleton-shape ww-profile-progress-skeleton-subtitle"></span>
+                <div class="ww-profile-progress-skeleton-description"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+              </div>
+            </section>
+            <section class="ww-profile-progress-skeleton-summary" aria-hidden="true">
+              <div class="ww-profile-progress-skeleton-summary-inner">
+                <div class="ww-profile-progress-skeleton-metrics">
+                  @for (metric of profileProgressMetrics; track metric) {
+                    <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                  }
+                </div>
+                <div class="ww-profile-progress-skeleton-controls"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+              </div>
+            </section>
+            <section class="ww-profile-progress-skeleton-list" aria-hidden="true">
+              @for (series of profileProgressCards; track series) {
+                <article class="ww-profile-progress-skeleton-card">
+                  <span class="ww-skeleton-shape ww-profile-progress-skeleton-poster"></span>
+                  <div class="ww-profile-progress-skeleton-main">
+                    <div class="ww-profile-progress-skeleton-heading"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                    <span class="ww-skeleton-shape ww-profile-progress-skeleton-bar"></span>
+                    <span class="ww-skeleton-shape ww-profile-progress-skeleton-detail"></span>
+                    <span class="ww-skeleton-shape ww-profile-progress-skeleton-detail ww-profile-progress-skeleton-detail--short"></span>
+                    <span class="ww-skeleton-shape ww-profile-progress-skeleton-toggle"></span>
+                  </div>
+                  <aside class="ww-profile-progress-skeleton-next">
+                    <span class="ww-skeleton-shape ww-profile-progress-skeleton-next-heading"></span>
+                    <div><span class="ww-skeleton-shape ww-profile-progress-skeleton-still"></span><span class="ww-skeleton-shape ww-profile-progress-skeleton-next-copy"></span></div>
+                  </aside>
+                </article>
+              }
+            </section>
+          </div>
+        }
+        @case ('profile-episode-ratings-map') {
+          <div class="ww-profile-episode-ratings-map-skeleton">
+            <header class="ww-profile-map-skeleton-hero" aria-hidden="true">
+              <span class="ww-skeleton-shape ww-profile-map-skeleton-backdrop"></span>
+              <div class="ww-profile-map-skeleton-hero-copy">
+                <span class="ww-profile-map-skeleton-owner"><span class="ww-skeleton-shape"></span><span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></span></span>
+                <span class="ww-skeleton-shape ww-profile-map-skeleton-title"></span>
+                <span class="ww-skeleton-shape ww-profile-map-skeleton-count"></span>
+                <div class="ww-profile-map-skeleton-description"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+              </div>
+            </header>
+            <section class="ww-profile-map-skeleton-summary" aria-hidden="true">
+              @for (metric of profileEpisodeMapMetrics; track metric) {
+                <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+              }
+            </section>
+            <section class="ww-profile-map-skeleton-list" aria-hidden="true">
+              <ul>
+                @for (series of profileEpisodeMapCards; track series) {
+                  <li>
+                    <article>
+                      <span class="ww-skeleton-shape ww-profile-map-skeleton-poster"><span class="ww-skeleton-shape"></span></span>
+                      <div class="ww-profile-map-skeleton-card-copy">
+                        <div><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                        <div class="ww-profile-map-skeleton-progress"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
+                      </div>
+                    </article>
+                  </li>
+                }
+              </ul>
+            </section>
+            <div class="ww-profile-map-skeleton-pagination" aria-hidden="true"><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span><span class="ww-skeleton-shape"></span></div>
           </div>
         }
         @case ('calendar') {
@@ -198,6 +277,10 @@ export class PageSkeletonComponent {
   protected readonly calendarEventRows = [0, 1];
   protected readonly calendarSingleEvent = [0];
   protected readonly profileSummaryCards = [1, 2];
+  protected readonly profileProgressMetrics = [1, 2, 3];
+  protected readonly profileProgressCards = [1, 2, 3, 4, 5, 6];
+  protected readonly profileEpisodeMapMetrics = [1, 2];
+  protected readonly profileEpisodeMapCards = Array.from({ length: 12 }, (_, index) => index + 1);
   protected readonly profileTopFiveCards = [1, 2, 3, 4, 5];
   protected readonly profileRecentCards = [1, 2, 3, 4, 5, 6];
   protected readonly profileGenres = [1, 2, 3, 4, 5, 6];

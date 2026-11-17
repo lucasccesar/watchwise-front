@@ -273,6 +273,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly topFiveEditorDragStartDelay = { touch: 150, mouse: 0 };
   protected readonly diary = signal<DiaryRecordPage | null>(null);
   protected readonly progress = signal<SeriesInProgressPage | null>(null);
+  protected readonly progressLoading = signal(false);
   private profileLoadVersion = 0;
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
@@ -288,6 +289,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly profileFiltersOpen = signal(false);
   protected readonly picks = signal<UserPickPreviewPage | null>(null);
   protected readonly episodeMap = signal<import('../../data-access/profile-api.service').EpisodeRatingsMap | null>(null);
+  protected readonly episodeMapLoading = signal(false);
   protected readonly episodeGrid = signal<import('../../data-access/profile-api.service').EpisodeRatingsGrid | null>(null);
   protected readonly monthReview = signal<ProfileMonthReview | null>(null);
   protected readonly yearReview = signal<ProfileYearReview | null>(null);
@@ -2921,6 +2923,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     }
 
     if (section === 'progress') {
+      this.progressLoading.set(this.progress() === null);
       this.diaryApi.getSeriesInProgress(userId, {
         page: this.currentPage(),
         size: this.progressPageSize,
@@ -2935,14 +2938,17 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
             return;
           }
           this.progress.set(this.withCompletedSeasonProgress(data));
+          this.progressLoading.set(false);
           const currentExpanded = this.expandedProgress();
           const currentIds = new Set(data.content.map((series) => series.seriesTmdbId));
           const retained = preserveExisting ? [...currentExpanded].filter((id) => currentIds.has(id)) : [];
           this.expandedProgress.set(new Set(retained));
         },
-        error: (error: unknown) => preserveExisting
-          ? this.handleProfileActionError(error)
-          : this.handleError(error),
+        error: (error: unknown) => {
+          this.progressLoading.set(false);
+          if (preserveExisting) this.handleProfileActionError(error);
+          else this.handleError(error);
+        },
       });
       return;
     }
@@ -2993,8 +2999,18 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       return;
     }
     if (section === 'episode-ratings-map') {
+      this.episodeMapLoading.set(this.episodeMap() === null);
       this.profileApi.getEpisodeMap(userId, this.currentPage(), 12)
-        .subscribe({ next: (data) => this.episodeMap.set(data), error: (error: unknown) => this.handleError(error) });
+        .subscribe({
+          next: (data) => {
+            this.episodeMap.set(data);
+            this.episodeMapLoading.set(false);
+          },
+          error: (error: unknown) => {
+            this.episodeMapLoading.set(false);
+            this.handleError(error);
+          },
+        });
       return;
     }
     if (section === 'episode-ratings-map-show') {
@@ -3136,12 +3152,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.topFive.set([]);
     this.diary.set(null);
     this.progress.set(null);
+    this.progressLoading.set(false);
     this.expandedProgress.set(new Set());
     this.progressSortOpen.set(false);
     this.lists.set(null);
     this.watchlist.set(null);
     this.picks.set(null);
     this.episodeMap.set(null);
+    this.episodeMapLoading.set(false);
     this.episodeGrid.set(null);
     this.monthReview.set(null);
     this.yearReview.set(null);
