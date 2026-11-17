@@ -151,17 +151,6 @@
         </header>
 
         <div class="movie-main-details">
-          @if (seasonEpisodeItems().length) {
-            <nav class="season-switcher episode-switcher" [attr.aria-label]="'Episódios da temporada ' + seasonNumber()">
-              <span>Episódio</span>
-              <ul>
-                @for (item of seasonEpisodeItems(); track item.episodeNumber) {
-                  <li><a [routerLink]="item.route" [attr.aria-current]="item.episodeNumber === episodeNumber() ? 'page' : null" [class.is-active]="item.episodeNumber === episodeNumber()">{{ item.episodeNumber }}</a></li>
-                }
-              </ul>
-            </nav>
-          }
-
           <ng-template #episodeMetadata>
             @if (episode.details.releaseDate) {
               <div><dt>Exibido em</dt><dd>{{ formatDate(episode.details.releaseDate) }}</dd></div>

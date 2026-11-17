@@ -146,19 +146,6 @@ export class EpisodeComponent implements OnDestroy {
     previous: this.page()?.navigation?.previousEpisode ?? null,
     next: this.page()?.navigation?.nextEpisode ?? null,
   }));
-  protected readonly seasonEpisodeItems = computed(() => {
-    const navigation = this.page()?.navigation;
-    const count = navigation?.seasonEpisodeCount;
-    const seriesTmdbId = navigation?.seriesTmdbId || this.tmdbId();
-    const seasonNumber = navigation?.seasonNumber ?? this.seasonNumber();
-    if (count == null || !Number.isInteger(count) || count < 1 || !seriesTmdbId) return [];
-
-    return Array.from({ length: count }, (_, index) => {
-      const episodeNumber = index + 1;
-      const route = episodeContentRoute({ seriesTmdbId, seasonNumber, episodeNumber });
-      return route ? { episodeNumber, route } : null;
-    }).filter((item): item is { episodeNumber: number; route: string[] } => item !== null);
-  });
   protected readonly shareModel = computed<ShareReviewDialogModel>(() => {
     const page = this.page();
     const user = this.session.user();
