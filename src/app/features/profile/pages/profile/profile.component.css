@@ -2589,17 +2589,6 @@
   font-weight: 600;
 }
 
-.profile-map-rating-legend [data-score='1'],
-.profile-map-rating-legend [data-score='2'] { background: #4a1d40; }
-.profile-map-rating-legend [data-score='3'] { background: #6c3483; }
-.profile-map-rating-legend [data-score='4'] { background: #c0392b; }
-.profile-map-rating-legend [data-score='5'] { background: #e67e22; }
-.profile-map-rating-legend [data-score='6'] { background: #f39c12; }
-.profile-map-rating-legend [data-score='7'] { background: #f1c40f; }
-.profile-map-rating-legend [data-score='8'] { background: #27ae60; }
-.profile-map-rating-legend [data-score='9'] { background: #1b6b3a; }
-.profile-map-rating-legend [data-score='10'] { background: #52e889; }
-
 .profile-episode-map {
   display: flex;
   flex-direction: column;
@@ -2672,27 +2661,6 @@
 .profile-episode-row > .profile-episode-cell--empty {
   background: transparent;
 }
-
-.profile-episode-row > span[data-score='1'],
-.profile-episode-row > span[data-score='2'],
-.profile-episode-row > a[data-score='1'],
-.profile-episode-row > a[data-score='2'] { background: #4a1d40; }
-.profile-episode-row > span[data-score='3'],
-.profile-episode-row > a[data-score='3'] { background: #6c3483; }
-.profile-episode-row > span[data-score='4'],
-.profile-episode-row > a[data-score='4'] { background: #c0392b; }
-.profile-episode-row > span[data-score='5'],
-.profile-episode-row > a[data-score='5'] { background: #e67e22; }
-.profile-episode-row > span[data-score='6'],
-.profile-episode-row > a[data-score='6'] { background: #f39c12; }
-.profile-episode-row > span[data-score='7'],
-.profile-episode-row > a[data-score='7'] { background: #f1c40f; }
-.profile-episode-row > span[data-score='8'],
-.profile-episode-row > a[data-score='8'] { background: #27ae60; }
-.profile-episode-row > span[data-score='9'],
-.profile-episode-row > a[data-score='9'] { background: #1b6b3a; }
-.profile-episode-row > span[data-score='10'],
-.profile-episode-row > a[data-score='10'] { background: #52e889; color: #11251a; }
 
 .profile-map-legend {
   display: flex;
