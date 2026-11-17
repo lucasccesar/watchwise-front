@@ -359,9 +359,9 @@
 
 @media (max-width: 800px) {
   .ww-profile-progress-skeleton-hero,
-  .ww-profile-map-skeleton-hero { min-height: 0; justify-content: flex-start; padding: 32px; }
+  .ww-profile-map-skeleton-hero { min-height: 0; justify-content: center; padding: 32px; }
 
-  .ww-profile-progress-skeleton-identity { width: 100%; align-items: flex-start; }
+  .ww-profile-progress-skeleton-identity { width: 100%; align-items: center; }
   .ww-profile-progress-skeleton-owner { gap: 12px; }
   .ww-profile-progress-skeleton-owner > span:last-child { gap: 6px; }
   .ww-profile-progress-skeleton-handle { display: block; }
@@ -399,7 +399,7 @@
   .ww-profile-progress-skeleton-next-meta { width: 100%; order: 2; padding-top: 0; }
   .ww-profile-progress-skeleton-bottom-pagination { width: auto; margin: 0 32px; padding: 32px 0 48px; }
 
-  .ww-profile-map-skeleton-hero-copy { width: 100%; align-items: flex-start; gap: 12px; }
+  .ww-profile-map-skeleton-hero-copy { width: 100%; align-items: center; gap: 12px; }
   .ww-profile-map-skeleton-owner { height: 48px; gap: 12px; padding: 0; background: transparent; }
   .ww-profile-map-skeleton-owner > span:first-child { width: 48px; height: 48px; flex: 0 0 48px; border: 3px solid var(--color-surface); outline: 2px solid var(--color-primary); }
   .ww-profile-map-skeleton-owner > span:last-child { gap: 4px; }
