@@ -145,9 +145,6 @@ const EPISODE_MAP_TAB_KEYS = new Set<ProfileTabKey>([
   'profile',
   'progress',
   'episodeRatingsMap',
-  'monthInReview',
-  'yearInReview',
-  'allTimeStats',
 ]);
 
 @Component({
