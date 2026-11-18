@@ -92,8 +92,6 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-item-states { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
 .list-detail-watch-state { padding: 3px 7px; border: 1px solid var(--color-border); border-radius: var(--radius-full); color: var(--color-text-secondary); }
 .list-detail-watch-state-complete { border-color: rgb(83 190 129 / 40%); color: #80d5a7; }
-.list-detail-my-rating { display: inline-flex; align-items: center; gap: 4px; color: var(--color-text); }
-.list-detail-my-rating svg { width: 14px; height: 14px; fill: #f3c969; stroke: #f3c969; stroke-linejoin: round; stroke-width: 1.2; }
 .list-detail-reorder-controls { position: absolute; top: 50%; right: 4px; display: flex; flex-direction: column; gap: 5px; transform: translateY(-50%); }
 .list-detail-reorder-controls button { width: 30px; height: 30px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-secondary); color: var(--color-text); cursor: pointer; }
 .list-detail-reorder-controls button:disabled { opacity: .42; cursor: default; }
@@ -306,13 +304,9 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-poster .tr-state-marker-watchlist { background: var(--color-secondary); color: var(--color-accent); }
 .list-detail-poster .tr-state-marker-watchlist svg { fill: currentColor; stroke: currentColor; stroke-width: 2; }
 .list-detail-dropdown button[aria-checked='true'] app-check-icon { margin-left: auto; }
-.list-detail-watched-date, .list-detail-my-rating { position: absolute; bottom: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
-.list-detail-watched-date { left: 8px; }
-.list-detail-my-rating { right: 8px; min-height: 36px; flex-direction: column; align-items: flex-start; gap: 1px; padding: 4px 7px; }
-.list-detail-my-rating-label { font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); }
-.list-detail-my-rating-value { display: inline-flex; align-items: center; gap: 4px; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); }
-.list-detail-my-rating-value small { font-size: 10px; }
-.list-detail-my-rating svg { width: 13px; height: 13px; fill: var(--color-accent); stroke: var(--color-accent); }
+.list-detail-watched-date { position: absolute; bottom: 8px; left: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
+.list-detail-poster .tr-my-rating { position: absolute; right: var(--space-2); bottom: var(--space-2); z-index: 5; display: inline-flex; min-height: 18px; align-items: center; gap: var(--space-1); padding: 0 var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
+.list-detail-poster .tr-my-rating svg { width: 12px; height: 12px; fill: var(--color-accent); stroke: var(--color-accent); stroke-width: 2; }
 .list-detail-item-copy { width: 100%; min-width: 0; box-sizing: border-box; padding-top: 8px; }
 .list-detail-item-title { font-size: var(--font-size-sm); line-height: var(--line-height-sm); font-weight: 700; }
 .list-detail-item-meta { min-height: 15px; gap: 7px; flex-wrap: wrap; margin: 3px 0 0; font-size: var(--font-size-xs); line-height: var(--line-height-xs); font-weight: 400; }
@@ -368,9 +362,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
   .list-detail-items { width: calc(100% - 32px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
   .list-detail-items--episodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .list-detail-position { width: 27px; height: 27px; }
-  .list-detail-watched-date, .list-detail-my-rating { bottom: 6px; min-height: 18px; padding-inline: 5px; }
-  .list-detail-watched-date { bottom: 46px; left: 6px; }
-  .list-detail-my-rating { right: 6px; bottom: 6px; min-height: 36px; padding: 4px 5px; }
+  .list-detail-watched-date { bottom: 28px; left: 6px; min-height: 18px; padding-inline: 5px; }
   .list-detail-item-copy { padding-top: 6px; }
   .list-detail-item-meta { gap: 5px; margin-top: 3px; }
   .list-detail-item-description { margin-top: 5px; }
@@ -390,6 +382,10 @@ a.list-detail-item-title:hover { text-decoration: underline; }
   .review-comment-submit button { width: auto; min-width: 34px; min-height: 36px; padding: 0 10px; font-size: 11px; white-space: nowrap; }
   .list-detail-reorder-controls { right: 5px; bottom: 5px; }
   .list-detail-reorder-controls button { width: 24px; height: 24px; }
+}
+
+@media (max-width: 800px) {
+  .list-detail-poster .tr-my-rating { right: var(--space-1); bottom: var(--space-1); }
 }
 
 @media (max-width: 380px) {

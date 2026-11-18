@@ -845,9 +845,7 @@ export class ListDetailComponent {
 
   protected viewerRatingLabel(item: ListDetailItem): string {
     const rating = this.viewerRatingFor(item);
-    return rating === null
-      ? `${this.homeCopy.yourRating}: ${this.copy.noRating}`
-      : `${this.homeCopy.yourRating}: ${rating} / 10`;
+    return rating === null ? '' : `${this.trendingCopy.yourRating}: ${rating} / 10`;
   }
 
   protected dateLabel(value: string): string {
