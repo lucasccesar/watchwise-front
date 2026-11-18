@@ -2376,6 +2376,8 @@
   align-items: center;
   justify-content: center;
   margin: 0 0 0 max(80px, calc((100vw - 1280px) / 2));
+  padding-block: 64px;
+  box-sizing: border-box;
 }
 
 .profile-map-detail-breadcrumb {
