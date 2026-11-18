@@ -7,6 +7,7 @@ import { ListsApiService, ListCardPreview, ListItemType, ListSource, UserListCar
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { TooltipWhenTruncatedDirective } from '../../../../shared/directives/tooltip-when-truncated.directive';
 import { ShareCardModel, SharePreviewComponent } from '../../../../shared/components/share-preview/share-preview.component';
 import { ResponsiveBannerComponent } from '../../../../shared/components/responsive-banner/responsive-banner.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -21,7 +22,7 @@ type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'c
 @Component({
   selector: 'app-lists',
   standalone: true,
-  imports: [RouterLink, CdkDrag, CdkDropList, ResponsiveBannerComponent, PageSkeletonComponent, ModalFocusDirective, SharePreviewComponent, CheckIconComponent],
+  imports: [RouterLink, CdkDrag, CdkDropList, ResponsiveBannerComponent, PageSkeletonComponent, ModalFocusDirective, TooltipWhenTruncatedDirective, SharePreviewComponent, CheckIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './lists.component.html',
   styleUrl: './lists.component.css',
