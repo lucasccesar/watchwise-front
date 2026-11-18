@@ -800,6 +800,7 @@ export class ListDetailComponent {
           viewerState: {
             watchStatus: change.watchStatus ?? viewerState?.watchStatus ?? contentState?.watchStatus ?? null,
             myRating: change.myRating ?? viewerState?.myRating ?? contentState?.myRating ?? null,
+            lastWatchedDate: change.lastWatchedDate ?? viewerState?.lastWatchedDate ?? contentState?.lastWatchedDate ?? null,
             inWatchlist: change.inWatchlist ?? viewerState?.inWatchlist ?? contentState?.inWatchlist ?? null,
           },
         },
@@ -834,8 +835,30 @@ export class ListDetailComponent {
     return null;
   }
 
+  protected watchedDateFor(item: ListDetailItem): string | null {
+    return item.contentState?.lastWatchedDate ?? item.card?.viewerState?.lastWatchedDate ?? null;
+  }
+
+  protected viewerRatingFor(item: ListDetailItem): number | null {
+    return item.contentState?.myRating ?? item.card?.viewerState?.myRating ?? null;
+  }
+
+  protected viewerRatingLabel(item: ListDetailItem): string {
+    const rating = this.viewerRatingFor(item);
+    return rating === null
+      ? `${this.homeCopy.yourRating}: ${this.copy.noRating}`
+      : `${this.homeCopy.yourRating}: ${rating} / 10`;
+  }
+
   protected dateLabel(value: string): string {
-    return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value));
+    let date: Date;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-').map(Number);
+      date = new Date(year, month - 1, day);
+    } else {
+      date = new Date(value);
+    }
+    return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
   }
 
   protected durationLabel(minutes: number | null | undefined): string {

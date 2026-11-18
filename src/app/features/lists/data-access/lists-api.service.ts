@@ -35,7 +35,7 @@ export interface ListCardPreview {
   numberOfEpisodes: number | null;
   genres: string[] | null;
   stats: { averageScore: number | null; playsCount: number; reviewsCount: number; commentsCount: number } | null;
-  viewerState: { watchStatus: string | null; myRating: number | null; inWatchlist?: boolean | null } | null;
+  viewerState: { watchStatus: string | null; myRating: number | null; lastWatchedDate?: string | null; inWatchlist?: boolean | null } | null;
   previewStatus: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
 }
 
@@ -77,7 +77,7 @@ export interface ListDetailItem {
   description: string | null;
   createdAt: string;
   customPosterUrl: string | null;
-  contentState: { watchStatus: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN'; lastWatchedDate: string | null; myRating: number | null; inWatchlist: boolean | null } | null;
+  contentState: { watchStatus: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN'; lastWatchedDate?: string | null; myRating?: number | null; inWatchlist?: boolean | null } | null;
   episodeAverageRating: number | null;
   globalEpisodeAverageRating: number | null;
   contentAverageRating: number | null;
