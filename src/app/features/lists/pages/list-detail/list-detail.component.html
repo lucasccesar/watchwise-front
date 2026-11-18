@@ -50,7 +50,7 @@
           @if (owner(); as author) {
             <a class="list-detail-owner" [routerLink]="['/users', author.username]"><span class="list-detail-avatar">@if (userAvatar(author)) { <img [src]="userAvatar(author)" alt="" /> } @else { <img src="/default-user-avatar.png" alt="" /> }</span>{{ author.name }}</a>
           }
-          <h1 id="list-detail-title" class="ww-page-hero-title">{{ list.name }}</h1>
+          <h1 id="list-detail-title" class="ww-page-hero-title" [wwTooltipWhenTruncated]="list.name">{{ list.name }}</h1>
           <p class="list-detail-updated"><span aria-hidden="true"></span>{{ updatedLabel() }}<span aria-hidden="true"></span></p>
           @if (list.description) { <p class="list-detail-description">{{ list.description }}</p> }
         </div>

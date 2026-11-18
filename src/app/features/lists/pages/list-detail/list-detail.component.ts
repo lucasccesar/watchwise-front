@@ -1,4 +1,5 @@
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
+import { TooltipWhenTruncatedDirective } from '../../../../shared/directives/tooltip-when-truncated.directive';
 import { NgTemplateOutlet } from '@angular/common';
 import { SocialActionsMenuComponent, SocialActionMenuEvent } from '../../../../shared/components/social-actions-menu/social-actions-menu.component';
 import { CommentItemComponent } from '../../../../shared/components/comment-item/comment-item.component';
@@ -35,7 +36,7 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
 @Component({
   selector: 'app-list-detail',
   standalone: true,
-    imports: [NgTemplateOutlet, ModalFocusDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent, SeriesBulkWatchDialogComponent, PostWatchRatingFlowComponent],
+    imports: [NgTemplateOutlet, ModalFocusDirective, TooltipWhenTruncatedDirective, RouterLink, CdkDrag, CdkDropList, ContentImageActionsComponent, SharePreviewComponent, PageSkeletonComponent, ResponsiveBannerComponent, SocialActionsMenuComponent, CommentItemComponent, CheckIconComponent, WatchLogDialogComponent, SeriesBulkWatchDialogComponent, PostWatchRatingFlowComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
