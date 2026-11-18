@@ -16,8 +16,8 @@
 .list-detail-visibility { flex: 0 0 auto; padding: 4px 9px; border: 1px solid var(--color-border); border-radius: var(--radius-full); color: var(--color-text-secondary); font-size: var(--font-size-xs); font-weight: 600; }
 .list-detail-visibility-private { border-color: #8d5cff; color: #c1a5ff; }
 .list-detail-visibility-followers { border-color: #547fcf; color: #a5c0f7; }
-.list-detail-updated { margin: 8px 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
-.list-detail-description { max-width: 740px; margin: 16px 0 0; color: var(--color-text-secondary); font-size: var(--font-size-md); line-height: var(--line-height-md); }
+.list-detail-updated { margin: 8px 0 0; }
+.list-detail-description { max-width: 740px; margin: 16px 0 0; }
 .list-detail-header-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 12px; padding-top: 4px; }
 .list-detail-like, .list-detail-comments-link { display: inline-flex; min-height: 40px; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-sm); text-decoration: none; cursor: pointer; }
 .list-detail-like svg, .list-detail-comments-link svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
@@ -82,7 +82,7 @@
 .list-detail-poster-picture { display: block; width: 100%; height: 100%; }
 .list-detail-poster img { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .list-detail-poster-picture img { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
-.list-detail-poster-link > span { padding: 6px; font-size: 10px; }
+.list-detail-poster-link > span { padding: 6px; font-size: var(--font-size-xs); }
 .list-detail-item-copy { min-width: 0; flex: 1; }
 .list-detail-item-title { display: block; overflow: hidden; color: var(--color-text); font-size: var(--font-size-md); line-height: var(--line-height-md); font-weight: 650; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .list-detail-title-inline-info { color: var(--color-text-tertiary); font-weight: 400; }
@@ -230,9 +230,9 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-owner:hover { color: #fff; background: rgb(20 20 22 / 94%); }
 .list-detail-avatar { width: 26px; height: 26px; background: var(--color-surface-secondary); color: var(--color-text); }
 .list-detail-hero-copy h1 { max-width: 100%; overflow: hidden; margin: 0; color: #fff; font-size: clamp(52px, 6vw, 74px); font-weight: 700; letter-spacing: -.035em; line-height: 1.08; text-overflow: ellipsis; white-space: nowrap; }
-.list-detail-updated { display: flex; align-items: center; gap: 12px; margin: 12px 0 0; color: var(--color-accent); font-size: var(--font-size-sm); font-weight: 700; }
+.list-detail-updated { display: flex; align-items: center; gap: 12px; margin: 12px 0 0; }
 .list-detail-updated span { width: 32px; height: 2px; background: currentColor; }
-.list-detail-description { max-width: 540px; margin: 20px 0 0; color: #fff; font-size: var(--font-size-md); line-height: var(--line-height-md); }
+.list-detail-description { max-width: 540px; margin: 20px 0 0; }
 .list-detail-control-band { border-bottom: 1px solid var(--color-border); background: var(--color-surface-secondary); }
 .list-detail-controls { display: flex; width: min(1334px, calc(100% - 48px)); min-height: 88px; align-items: center; justify-content: space-between; gap: 24px; box-sizing: border-box; margin: 0 auto; }
 .list-detail-filters { display: flex; min-width: 0; align-items: center; gap: 12px; }
@@ -240,7 +240,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-type-tabs button { min-width: 74px; }
 .list-detail-toolbar { display: flex; min-width: 0; min-height: 42px; flex: 0 1 auto; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin: 0; }
 .list-detail-control-wrap { position: relative; flex: 0 0 auto; }
-.list-detail-stats { display: flex; min-width: 0; align-items: center; gap: 14px; flex: 0 0 auto; margin: 0 3px 0 0; color: var(--color-text); font-size: var(--font-size-sm); font-weight: 600; }
+.list-detail-stats { display: flex; min-width: 0; align-items: center; gap: 14px; flex: 0 0 auto; margin: 0 3px 0 0; color: var(--color-text); font-size: var(--font-size-sm); line-height: var(--line-height-sm); font-weight: 650; }
 .list-detail-stats > span, .list-detail-stats button, .list-detail-stats a { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .list-detail-stats button { color: var(--color-text); }
 .list-detail-stats a { color: var(--color-text); }
@@ -272,7 +272,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-item--episode .list-detail-poster { aspect-ratio: 16 / 9; }
 .list-detail-poster-link { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--color-surface-secondary); }
 .list-detail-poster img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
-.list-detail-poster-link > span { display: grid; width: 100%; height: 100%; place-items: center; box-sizing: border-box; padding: 12px; background: var(--color-surface-secondary); font-size: var(--font-size-sm); }
+.list-detail-poster-link > span { display: grid; width: 100%; height: 100%; place-items: center; box-sizing: border-box; padding: 12px; background: var(--color-surface-secondary); font-size: var(--font-size-xs); }
 .list-detail-list-picker { position: absolute; top: calc(var(--space-2) + 32px + var(--space-2)); right: 0; z-index: 20; display: flex; width: min(264px, calc(100vw - 24px)); max-height: min(420px, calc(100dvh - 32px)); flex-direction: column; overflow: auto; box-sizing: border-box; padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); box-shadow: var(--shadow-lg); }
 .list-detail-list-picker header { display: flex; min-height: 34px; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .list-detail-list-picker h3 { margin: 0; color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); font-weight: 500; }
@@ -286,7 +286,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-user-lists input { width: 20px; height: 20px; margin: 0; accent-color: var(--color-primary); }
 .list-detail-user-list-name { overflow: hidden; color: var(--color-text); font-size: var(--font-size-sm); line-height: var(--line-height-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .list-detail-user-lists small { color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
-.list-detail-user-list-busy { position: absolute; right: 0; bottom: 1px; overflow: hidden; max-width: calc(100% - 32px); color: var(--color-text-tertiary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.list-detail-user-list-busy { position: absolute; right: 0; bottom: 1px; overflow: hidden; max-width: calc(100% - 32px); color: var(--color-text-tertiary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); text-overflow: ellipsis; white-space: nowrap; }
 .list-detail-user-lists--loading li { display: grid; min-height: 44px; grid-template-columns: 20px minmax(0, 1fr) 20px; align-items: center; gap: var(--space-3); }
 .list-detail-user-lists--loading li span { display: block; overflow: hidden; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--color-surface), var(--color-secondary), var(--color-surface)); background-size: 200% 100%; animation: list-detail-picker-shimmer 1.4s ease-in-out infinite; }
 .list-detail-user-lists--loading li span:first-child { width: 20px; height: 20px; }
@@ -306,13 +306,13 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-poster .tr-state-marker-watchlist { background: var(--color-secondary); color: var(--color-accent); }
 .list-detail-poster .tr-state-marker-watchlist svg { fill: currentColor; stroke: currentColor; stroke-width: 2; }
 .list-detail-dropdown button[aria-checked='true'] app-check-icon { margin-left: auto; }
-.list-detail-added-date, .list-detail-my-rating { position: absolute; bottom: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.list-detail-added-date, .list-detail-my-rating { position: absolute; bottom: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
 .list-detail-added-date { left: 8px; }
 .list-detail-my-rating { right: 8px; }
 .list-detail-my-rating svg { width: 13px; height: 13px; fill: var(--color-accent); stroke: var(--color-accent); }
 .list-detail-item-copy { width: 100%; min-width: 0; box-sizing: border-box; padding-top: 8px; }
-.list-detail-item-title { font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
-.list-detail-item-meta { min-height: 15px; gap: 7px; flex-wrap: wrap; margin: 3px 0 0; font-size: var(--font-size-xs); }
+.list-detail-item-title { font-size: var(--font-size-sm); line-height: var(--line-height-sm); font-weight: 700; }
+.list-detail-item-meta { min-height: 15px; gap: 7px; flex-wrap: wrap; margin: 3px 0 0; font-size: var(--font-size-xs); line-height: var(--line-height-xs); font-weight: 400; }
 .list-detail-item-description { display: -webkit-box; max-width: 100%; margin: 6px 0 0; color: var(--color-text-secondary); font-size: var(--font-size-xs); line-height: var(--line-height-xs); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .list-detail-reorder-controls { top: auto; right: 7px; bottom: 7px; flex-direction: row; transform: none; }
 .list-detail-reorder-controls button { width: 28px; height: 28px; background: rgb(22 22 24 / 94%); }
@@ -343,16 +343,16 @@ a.list-detail-item-title:hover { text-decoration: underline; }
   .list-detail-hero-copy { margin: 57px auto 22px; }
   .list-detail-owner { margin-bottom: 13px; font-size: var(--font-size-xs); }
   .list-detail-hero-copy h1 { font-size: clamp(38px, 11vw, 52px); }
-  .list-detail-updated { gap: 8px; margin-top: 10px; font-size: var(--font-size-xs); }
+  .list-detail-updated { gap: 8px; margin-top: 10px; }
   .list-detail-updated span { width: 22px; }
-  .list-detail-description { margin-top: 14px; font-size: var(--font-size-sm); line-height: var(--line-height-sm); }
+  .list-detail-description { margin-top: 14px; }
   .list-detail-controls { width: calc(100% - 32px); min-height: 0; gap: 12px; padding-block: 14px; }
   .list-detail-filters { width: 100%; align-items: stretch; flex-wrap: wrap; gap: 8px; }
   .list-detail-type-tabs { max-width: 100%; overflow-x: auto; }
   .list-detail-type-tabs button { min-width: auto; min-height: 32px; gap: 4px; padding-inline: 10px; font-size: var(--font-size-xs); }
   .list-detail-control { min-height: 36px; gap: 5px; padding-inline: 9px; font-size: var(--font-size-xs); }
   .list-detail-toolbar { gap: 6px; }
-  .list-detail-stats { width: 100%; order: -1; justify-content: space-between; gap: 9px; padding-bottom: 5px; font-size: 10px; }
+  .list-detail-stats { width: 100%; order: -1; justify-content: space-between; gap: 9px; padding-bottom: 5px; font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
   .list-detail-stats svg { width: 14px; height: 14px; }
   .list-detail-direction { width: 36px; min-height: 36px; }
   .list-detail-more { width: 36px; height: 36px; }
@@ -364,16 +364,15 @@ a.list-detail-item-title:hover { text-decoration: underline; }
   .list-detail-reorder-banner-actions { width: 100%; justify-content: flex-end; }
   .list-detail-items { width: calc(100% - 32px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
   .list-detail-items--episodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .list-detail-position { width: 27px; height: 27px; font-size: var(--font-size-sm); }
-  .list-detail-added-date, .list-detail-my-rating { bottom: 6px; min-height: 18px; padding-inline: 5px; font-size: 9px; }
+  .list-detail-position { width: 27px; height: 27px; }
+  .list-detail-added-date, .list-detail-my-rating { bottom: 6px; min-height: 18px; padding-inline: 5px; }
   .list-detail-added-date { left: 6px; }
   .list-detail-my-rating { right: 6px; }
   .list-detail-item-copy { padding-top: 6px; }
-  .list-detail-item-title { font-size: var(--font-size-xs); line-height: var(--line-height-xs); }
-  .list-detail-item-meta { gap: 5px; margin-top: 3px; font-size: 10px; }
-  .list-detail-item-description { margin-top: 5px; font-size: 10px; }
+  .list-detail-item-meta { gap: 5px; margin-top: 3px; }
+  .list-detail-item-description { margin-top: 5px; }
   .list-detail-comments { width: 100%; margin-top: 36px; padding: 20px 16px 24px; }
-  .list-detail-comments-content > h2 { font-size: 16px; }
+  .list-detail-comments-content > h2 { font-size: 15px; }
   .review-comment-form { grid-template-columns: 34px minmax(0,1fr); gap: 8px; padding-bottom: 15px; }
   .review-comment-avatar { width: 34px; height: 34px; font-size: 11px; }
   .review-comment-compose { display: block; }
