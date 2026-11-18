@@ -306,8 +306,8 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-poster .tr-state-marker-watchlist { background: var(--color-secondary); color: var(--color-accent); }
 .list-detail-poster .tr-state-marker-watchlist svg { fill: currentColor; stroke: currentColor; stroke-width: 2; }
 .list-detail-dropdown button[aria-checked='true'] app-check-icon { margin-left: auto; }
-.list-detail-added-date, .list-detail-my-rating { position: absolute; bottom: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
-.list-detail-added-date { left: 8px; }
+.list-detail-watched-date, .list-detail-my-rating { position: absolute; bottom: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
+.list-detail-watched-date { left: 8px; }
 .list-detail-my-rating { right: 8px; }
 .list-detail-my-rating svg { width: 13px; height: 13px; fill: var(--color-accent); stroke: var(--color-accent); }
 .list-detail-item-copy { width: 100%; min-width: 0; box-sizing: border-box; padding-top: 8px; }
@@ -365,8 +365,8 @@ a.list-detail-item-title:hover { text-decoration: underline; }
   .list-detail-items { width: calc(100% - 32px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
   .list-detail-items--episodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .list-detail-position { width: 27px; height: 27px; }
-  .list-detail-added-date, .list-detail-my-rating { bottom: 6px; min-height: 18px; padding-inline: 5px; }
-  .list-detail-added-date { left: 6px; }
+  .list-detail-watched-date, .list-detail-my-rating { bottom: 6px; min-height: 18px; padding-inline: 5px; }
+  .list-detail-watched-date { bottom: 28px; left: 6px; }
   .list-detail-my-rating { right: 6px; }
   .list-detail-item-copy { padding-top: 6px; }
   .list-detail-item-meta { gap: 5px; margin-top: 3px; }
