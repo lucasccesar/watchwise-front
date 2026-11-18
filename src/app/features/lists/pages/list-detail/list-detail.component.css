@@ -304,7 +304,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
 .list-detail-poster .tr-state-marker-watchlist { background: var(--color-secondary); color: var(--color-accent); }
 .list-detail-poster .tr-state-marker-watchlist svg { fill: currentColor; stroke: currentColor; stroke-width: 2; }
 .list-detail-dropdown button[aria-checked='true'] app-check-icon { margin-left: auto; }
-.list-detail-watched-date { position: absolute; bottom: 8px; left: 8px; z-index: 5; display: inline-flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: var(--radius-sm); background: rgb(22 22 24 / 94%); color: #fff; font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
+.list-detail-watched-date { position: absolute; bottom: var(--space-2); left: var(--space-2); z-index: 5; display: inline-flex; max-width: calc(100% - 16px); min-height: 18px; align-items: center; gap: var(--space-1); overflow: hidden; padding: 0 var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); text-overflow: ellipsis; white-space: nowrap; }
 .list-detail-poster .tr-my-rating { position: absolute; right: var(--space-2); bottom: var(--space-2); z-index: 5; display: inline-flex; min-height: 18px; align-items: center; gap: var(--space-1); padding: 0 var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); white-space: nowrap; }
 .list-detail-poster .tr-my-rating svg { width: 12px; height: 12px; fill: var(--color-accent); stroke: var(--color-accent); stroke-width: 2; }
 .list-detail-item-copy { width: 100%; min-width: 0; box-sizing: border-box; padding-top: 8px; }
@@ -362,7 +362,7 @@ a.list-detail-item-title:hover { text-decoration: underline; }
   .list-detail-items { width: calc(100% - 32px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
   .list-detail-items--episodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .list-detail-position { width: 27px; height: 27px; }
-  .list-detail-watched-date { bottom: 28px; left: 6px; min-height: 18px; padding-inline: 5px; }
+  .list-detail-watched-date { bottom: 28px; left: var(--space-1); }
   .list-detail-item-copy { padding-top: 6px; }
   .list-detail-item-meta { gap: 5px; margin-top: 3px; }
   .list-detail-item-description { margin-top: 5px; }
