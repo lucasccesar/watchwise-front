@@ -8,6 +8,7 @@ export type TrendingWindow = 'day' | 'week';
 export interface TrendingViewerState {
   watchStatus: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN' | null;
   myRating: number | null;
+  myReview?: string | null;
   lastWatchedDate: string | null;
   playsCount: number | null;
   inWatchlist: boolean | null;

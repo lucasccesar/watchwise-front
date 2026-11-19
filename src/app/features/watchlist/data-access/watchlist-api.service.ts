@@ -31,6 +31,8 @@ export interface WatchlistCard {
     stats: { averageScore: number | null; playsCount: number; reviewsCount: number; commentsCount: number } | null;
     viewerState: {
       watchStatus: 'UNWATCHED' | 'PARTIALLY_WATCHED' | 'WATCHED' | 'UNKNOWN' | null;
+      myRating?: number | null;
+      myReview?: string | null;
       watchedEpisodeCount: number | null;
       releasedEpisodeCount: number | null;
     } | null;
