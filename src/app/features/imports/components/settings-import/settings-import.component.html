@@ -1,0 +1,377 @@
+<div class="settings-import-panel settings-panel">
+  <header class="settings-import-heading">
+    <h3>{{ copy.panelTitle }}</h3>
+    <p>{{ copy.panelDescription }}</p>
+  </header>
+
+  @if (error()) {
+    <p class="settings-import-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (job(); as currentJob) {
+    <section id="settings-import-status" class="settings-import-status" tabindex="-1" aria-live="polite">
+      <div>
+        <span class="settings-import-status-label">{{ stateLabel(currentJob.state) }}</span>
+        <p>{{ stateDescription(currentJob.state) }}</p>
+      </div>
+      <div class="settings-import-status-actions">
+        @if (canCancel(currentJob.state)) {
+          <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="cancelImport()" data-ww-button="secondary">{{ copy.actions.cancel }}</button>
+        }
+        @if (currentJob.state === 'FAILED') {
+          <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="retryImport()" data-ww-button="secondary">{{ copy.actions.retry }}</button>
+        }
+        @if (currentJob.state === 'ANALYZING') {
+          <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="refreshJob()" data-ww-button="secondary">{{ copy.actions.refresh }}</button>
+        }
+      </div>
+    </section>
+
+    @if ((currentJob.state === 'RESOLVING' || (currentJob.state === 'READY' && !!currentJob.resolutionProgress?.reviewRequiredCount)) && currentJob.resolutionProgress; as resolutionProgress) {
+      <section class="settings-import-resolution-progress" aria-live="polite" aria-atomic="true">
+        <header class="settings-import-subheading">
+          <div>
+            <h4>{{ resolutionPhaseLabel(resolutionProgress.phase) }}</h4>
+            @if (resolutionProgress.phase === 'MATCHING') {
+              <p>{{ resolutionProgress.examinedItems }} / {{ resolutionProgress.totalItems }} {{ copy.resolutionProgress.examined }}</p>
+            } @else {
+              <p>{{ resolutionReviewCount(resolutionProgress.reviewRequiredCount) }}</p>
+            }
+          </div>
+        </header>
+        @if (resolutionProgressPercentage() !== null) {
+          <div
+            class="settings-import-progressbar"
+            role="progressbar"
+            [attr.aria-label]="copy.resolutionProgress.accessibleLabel"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="resolutionProgressPercentage()"
+            [attr.aria-valuetext]="(resolutionProgressPercentage() ?? 0) + '%'"
+          >
+            <span [style.width.%]="resolutionProgressPercentage() ?? 0"></span>
+          </div>
+          <div class="settings-import-progress-summary">
+            <strong>{{ resolutionProgressPercentage() }}%</strong>
+          </div>
+        } @else {
+          <div class="settings-import-progressbar settings-import-progressbar--indeterminate" role="progressbar" [attr.aria-label]="copy.resolutionProgress.accessibleLabel" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuetext]="copy.resolutionProgress.validating">
+            <span></span>
+          </div>
+        }
+        @if (resolutionProgress.reviewRequiredCount > 0) {
+          <p class="settings-import-review-count">{{ resolutionReviewCount(resolutionProgress.reviewRequiredCount) }}</p>
+        }
+      </section>
+    }
+    @if (currentJob.state === 'RESOLVING' && !currentJob.resolutionProgress) {
+      <section class="settings-import-resolution-progress" aria-live="polite" aria-atomic="true">
+        <header class="settings-import-subheading">
+          <div>
+            <h4>{{ copy.resolutionProgress.initializing }}</h4>
+            <p>{{ copy.resolutionProgress.validating }}</p>
+          </div>
+        </header>
+        <div class="settings-import-progressbar settings-import-progressbar--indeterminate" role="progressbar" [attr.aria-label]="copy.resolutionProgress.accessibleLabel" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuetext]="copy.resolutionProgress.initializing">
+          <span></span>
+        </div>
+      </section>
+    }
+
+    @if (currentJob.state === 'AWAITING_SELECTION' && selectionInventory(); as inventory) {
+      @if (historyCount(inventory) === 0 && watchlistCount(inventory) === 0 && !inventory.lists.length) {
+        <p class="settings-import-empty ww-empty-message">{{ copy.selection.noneFound }}</p>
+      } @else {
+      <form class="settings-import-selection" (submit)="selectArchiveData($event)">
+        <h4>{{ copy.selection.title }}</h4>
+        @if (historyCount(inventory) > 0) {
+          <label class="settings-import-check">
+            <input type="checkbox" [checked]="historySelected()" (change)="historySelected.set($any($event.target).checked)" />
+            <span><strong>{{ copy.selection.history }}</strong><small>{{ historyCount(inventory) }} {{ copy.selection.recordsAvailable }}</small></span>
+          </label>
+        }
+        @if (watchlistCount(inventory) > 0) {
+          <label class="settings-import-check">
+            <input type="checkbox" [checked]="watchlistSelected()" (change)="watchlistSelected.set($any($event.target).checked)" />
+            <span><strong>{{ copy.selection.watchlist }}</strong><small>{{ watchlistCount(inventory) }} {{ copy.selection.itemsAvailable }}</small></span>
+          </label>
+        }
+        @if (inventory.lists.length > 0) {
+          <fieldset class="settings-import-lists">
+            <legend>{{ copy.selection.lists }}</legend>
+            @for (list of inventory.lists; track list.sourceId) {
+              <label class="settings-import-check">
+                <input type="checkbox" [checked]="isSelectedList(list.sourceId)" (change)="toggleList(list.sourceId, $any($event.target).checked)" />
+                <span><strong>{{ list.name || copy.selection.unnamedList }}</strong><small>{{ list.itemCount }} {{ copy.selection.listItems }}{{ list.description ? ' · ' + list.description : '' }}</small></span>
+              </label>
+            }
+            <small>{{ copy.selection.publicLists }}</small>
+          </fieldset>
+        }
+        @if (hasSelectionAccount()) {
+          <label class="settings-field">
+            <span>{{ copy.selection.accountId }}</span>
+            <input type="text" autocomplete="off" [value]="selectionSourceAccount()" (input)="selectionSourceAccount.set($any($event.target).value)" />
+            <small>{{ copy.selection.accountIdHelp }}</small>
+          </label>
+        }
+        <button class="settings-primary-button" type="submit" [disabled]="busy()" data-ww-button="primary">{{ busy() ? copy.actions.selectionBusy : copy.actions.selection }}</button>
+      </form>
+      }
+    }
+
+    @if ((currentJob.state === 'RESOLVING' || currentJob.state === 'READY') && preview(); as currentPreview) {
+      <section class="settings-import-preview">
+        <header class="settings-import-subheading">
+          <div>
+            <h4>{{ currentJob.resolutionProgress && currentJob.resolutionProgress.reviewRequiredCount > 0 ? copy.reviewQueue.title : copy.preview.title }}</h4>
+            @if (currentJob.resolutionProgress && currentJob.resolutionProgress.reviewRequiredCount > 0) {
+              <p>{{ resolutionReviewCount(currentJob.resolutionProgress.reviewRequiredCount) }}</p>
+            } @else {
+              <p>{{ currentPreview.totalElements }} {{ copy.preview.records }} · {{ copy.preview.version }} {{ currentPreview.previewVersion }}</p>
+            }
+          </div>
+          @if (currentJob.state === 'READY' && !currentJob.resolutionProgress?.reviewRequiredCount) {
+            <button class="settings-primary-button" type="button" [disabled]="busy() || !currentPreview.previewDigest" (click)="commitImport()" data-ww-button="primary">{{ busy() ? copy.actions.confirmBusy : copy.actions.confirm }}</button>
+          }
+        </header>
+
+        @if (!currentPreview.items.length) {
+          <p class="settings-import-empty ww-empty-message">{{ currentJob.resolutionProgress && currentJob.resolutionProgress.reviewRequiredCount > 0 ? (reviewLoading() ? copy.reviewQueue.loading : copy.reviewQueue.delayed) : copy.preview.empty }}</p>
+        } @else {
+          <div class="settings-import-items">
+            @for (item of currentPreview.items; track item.itemId) {
+              <article class="settings-import-item">
+                <header>
+                  <span>{{ item.ordinal }} · {{ kindLabel(item.kind) }}</span>
+                  <span class="settings-import-outcome">{{ outcomeLabel(item.outcome) }}</span>
+                </header>
+                @if (item.itemTitle) { <h5>{{ item.itemTitle }}</h5> }
+                @if (item.watchedDate) { <p class="settings-import-meta">{{ copy.preview.watchedOn }} {{ item.watchedDate }}{{ item.datePrecision === 'UNKNOWN' ? ' · ' + copy.preview.unknownDate : '' }}</p> }
+                @if (item.issue && (item.decision || item.outcome === 'NORMALIZATION_ISSUE')) { <p class="settings-import-issue">{{ issueLabel(item) }}</p> }
+                @if (item.itemDescription) { <p class="settings-import-text">{{ item.itemDescription }}</p> }
+                @if (item.reviewText) { <p class="settings-import-text settings-import-review">{{ item.reviewText }}</p> }
+                @if (isTruncated(item)) { <p class="settings-import-truncation">{{ copy.preview.truncated }}</p> }
+
+                @if (item.watchScopePreview) {
+                  <div class="settings-import-scope">
+                    <strong>{{ item.watchScopePreview.episodes.length }} {{ copy.preview.episodes }}</strong>
+                    @if (item.watchScopePreview.issue && item.decision) { <small>{{ issueLabel(item) }}</small> }
+                    @if (item.decision === 'CONFIRM_WATCH_SCOPE' && canConfirmWatchScope(item)) {
+                      <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="confirmWatchScope(item)" data-ww-button="secondary">{{ copy.preview.confirmScope }}</button>
+                    }
+                  </div>
+                }
+
+                @if (canResolveItems(currentJob) && item.decision === 'RESOLVE_TARGET') {
+                  <div class="settings-import-resolution">
+                    <p>{{ copy.preview.chooseMatch }}</p>
+                    @for (candidate of candidatesFor(item); track candidate.candidateId) {
+                      <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="resolveCandidate(item, candidate.candidateId)" data-ww-button="secondary">{{ candidateLabel(candidate) }}</button>
+                    }
+                    @if (!candidatesFor(item).length) { <small>{{ copy.preview.noMatch }}</small> }
+                  </div>
+                }
+
+                @if (canResolveItems(currentJob) && item.decision === 'EDIT_FIELD' && editFields(item).length) {
+                  <form class="settings-import-resolution" (submit)="saveEdit($event, item)">
+                    <label class="settings-field"><span>{{ copy.preview.editField }}</span><select [value]="draftField(item)" (change)="setDraftField(item, $any($event.target).value)">@for (field of editFields(item); track field) { <option [value]="field">{{ editFieldLabel(field) }}</option> }</select></label>
+                    <label class="settings-field"><span>{{ editFieldLabel(draftField(item)) }}</span>
+                      @if (isLongEdit(item)) {
+                        <textarea [value]="draftValue(item)" [attr.maxlength]="editMaxLength(item)" rows="4" (input)="setDraftValue(item, $any($event.target).value)"></textarea>
+                      } @else {
+                        <input [type]="editInputType(item)" [value]="draftValue(item)" [attr.maxlength]="editMaxLength(item)" (input)="setDraftValue(item, $any($event.target).value)" />
+                      }
+                    </label>
+                    <button class="settings-secondary-button" type="submit" [disabled]="busy()" data-ww-button="secondary">{{ copy.actions.saveEdit }}</button>
+                  </form>
+                }
+
+                @if (canResolveItems(currentJob) && item.decision === 'ASSIGN_PASS') {
+                  <div class="settings-import-resolution settings-import-pass">
+                    <label class="settings-field"><span>{{ copy.preview.passNumber }}</span><input type="number" min="1" step="1" [value]="passNumber(item)" (input)="setPassNumber(item, $any($event.target).value)" /></label>
+                    <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="assignPass(item)" data-ww-button="secondary">{{ copy.actions.assignPass }}</button>
+                  </div>
+                }
+
+                @if (canResolveItems(currentJob) && item.decision === 'LINK_IMPORTED_LIST') {
+                  <div class="settings-import-resolution settings-import-pass">
+                    <label class="settings-field"><span>{{ copy.preview.listId }}</span><input type="text" [value]="listTarget(item)" (input)="setListTarget(item, $any($event.target).value)" /></label>
+                    <button class="settings-secondary-button" type="button" [disabled]="busy() || !listTarget(item).trim()" (click)="linkList(item)" data-ww-button="secondary">{{ copy.actions.linkList }}</button>
+                  </div>
+                }
+
+                @if (canResolveItems(currentJob) && item.decision === 'RESOLVE_REVIEW_ORDER') {
+                  <div class="settings-import-resolution settings-import-pass">
+                    <label class="settings-field"><span>{{ copy.preview.orderBefore }}</span><select [value]="reviewOrderTarget(item)" (change)="setReviewOrderTarget(item, $any($event.target).value)"><option value="">{{ copy.preview.chooseRecord }}</option>@for (candidate of reviewOrderOptions(item); track candidate.itemId) { <option [value]="candidate.itemId">{{ candidate.ordinal }} · {{ candidate.itemTitle || kindLabel(candidate.kind) }}</option> }</select></label>
+                    <button class="settings-secondary-button" type="button" [disabled]="busy() || !reviewOrderTarget(item)" (click)="resolveReviewOrder(item)" data-ww-button="secondary">{{ copy.actions.saveOrder }}</button>
+                  </div>
+                }
+
+                @if (canResolveItems(currentJob) && (item.decision === 'REMOVE_NOMINEE' || item.decision === 'REMOVE_CATEGORY')) {
+                  <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="removeTemplateItem(item)" data-ww-button="secondary">{{ copy.actions.removeFromPreview }}</button>
+                }
+                @if (canResolveItems(currentJob) && item.decision === 'SET_CATEGORY_OPEN') {
+                  <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="setTemplateCategoryOpen(item)" data-ww-button="secondary">{{ copy.actions.openCategory }}</button>
+                }
+                @if (canResolveItems(currentJob) && item.decision) {
+                  <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="skipItem(item)" data-ww-button="secondary">{{ copy.actions.skipItem }}</button>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @if ((currentJob.state === 'RESOLVING' || currentJob.state === 'READY') && (reviewPageIndex() > 0 || hasNextReviewPage())) {
+          <nav class="settings-import-pagination" [attr.aria-label]="copy.reviewQueue.title">
+            @if (reviewPageIndex() > 0) {
+              <button class="settings-secondary-button" type="button" [disabled]="busy() || reviewLoading()" (click)="showPreviousReviewItems()" data-ww-button="secondary">{{ copy.actions.previous }}</button>
+            }
+            <span>{{ reviewPageLabel() }}</span>
+            @if (hasNextReviewPage()) {
+              <button class="settings-secondary-button" type="button" [disabled]="busy() || reviewLoading()" (click)="loadMoreReviewItems()" data-ww-button="secondary">
+                {{ reviewLoading() ? copy.reviewQueue.loading : copy.reviewQueue.more }}
+              </button>
+            }
+          </nav>
+        } @else if (currentPreview.totalPages > 1 && !currentJob.resolutionProgress) {
+          <nav class="settings-import-pagination" [attr.aria-label]="copy.preview.pageLabel">
+            <button class="settings-secondary-button" type="button" [disabled]="busy() || previewPage() === 0" (click)="loadPreviewPage(previewPage() - 1)" data-ww-button="secondary">{{ copy.actions.previous }}</button>
+            <span>{{ copy.preview.page }} {{ previewPage() + 1 }} {{ copy.preview.of }} {{ currentPreview.totalPages }}</span>
+            <button class="settings-secondary-button" type="button" [disabled]="busy() || previewPage() + 1 >= currentPreview.totalPages" (click)="loadPreviewPage(previewPage() + 1)" data-ww-button="secondary">{{ copy.actions.next }}</button>
+          </nav>
+        }
+      </section>
+    }
+
+    @if ((currentJob.state === 'COMPLETED' || currentJob.state === 'COMPLETED_WITH_WARNINGS') && !result()) {
+      <button class="settings-secondary-button settings-import-new" type="button" [disabled]="resultLoading()" (click)="loadResultPage(0)" data-ww-button="secondary">
+        {{ resultLoading() ? copy.result.loading : copy.actions.viewResult }}
+      </button>
+    }
+
+    @if (result(); as currentResult) {
+      <section class="settings-import-result">
+        <header class="settings-import-subheading"><div><h4>{{ copy.result.title }}</h4><p>{{ currentResult.totalElements }} {{ copy.result.processed }}</p></div></header>
+        @if (!currentResult.items.length) { <p class="settings-import-empty ww-empty-message">{{ copy.result.empty }}</p> }
+        @else {
+          <div class="settings-import-items">
+            @for (item of currentResult.items; track item.itemId) {
+              <article class="settings-import-item settings-import-item--result">
+                <header><span>{{ item.ordinal }} · {{ kindLabel(item.kind) }}</span><span class="settings-import-outcome">{{ outcomeLabel(item.outcome) }}</span></header>
+                @if (item.itemTitle) { <h5>{{ item.itemTitle }}</h5> }
+                @if (item.issue && (item.decision || item.outcome === 'NORMALIZATION_ISSUE')) { <p class="settings-import-issue">{{ issueLabel(item) }}</p> }
+              </article>
+            }
+          </div>
+        }
+        @if (currentResult.totalPages > 1) {
+          <nav class="settings-import-pagination" [attr.aria-label]="copy.preview.resultPageLabel">
+            <button class="settings-secondary-button" type="button" [disabled]="resultPage() === 0" (click)="loadResultPage(resultPage() - 1)" data-ww-button="secondary">{{ copy.actions.previous }}</button>
+            <span>{{ copy.preview.page }} {{ resultPage() + 1 }} {{ copy.preview.of }} {{ currentResult.totalPages }}</span>
+            <button class="settings-secondary-button" type="button" [disabled]="resultPage() + 1 >= currentResult.totalPages" (click)="loadResultPage(resultPage() + 1)" data-ww-button="secondary">{{ copy.actions.next }}</button>
+          </nav>
+        }
+      </section>
+    }
+
+    @if (currentJob.state === 'COMPLETED' || currentJob.state === 'COMPLETED_WITH_WARNINGS' || currentJob.state === 'FAILED' || currentJob.state === 'CANCELLED' || currentJob.state === 'EXPIRED') {
+      <button class="settings-secondary-button settings-import-new" type="button" (click)="startAnotherImport()" data-ww-button="secondary">{{ copy.actions.newImport }}</button>
+    }
+
+    @if (currentJob.state === 'IMPORTING') {
+      <app-dialog-backdrop>
+        <section
+          class="settings-import-progress ww-dialog-panel"
+          role="dialog"
+          appModalFocus
+          [modalReturnFocus]="progressReturnFocus"
+          aria-modal="true"
+          aria-labelledby="settings-import-progress-title"
+          aria-describedby="settings-import-progress-description"
+          tabindex="-1"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="settings-import-progress-heading">
+            <h2 id="settings-import-progress-title">{{ copy.progress.title }}</h2>
+            <p id="settings-import-progress-description">
+              {{ currentJob.progress && currentJob.progress.totalItems > 0 ? copy.progress.description : copy.progress.waiting }}
+            </p>
+          </header>
+
+          @if (error()) { <p class="settings-import-error" role="alert">{{ error() }}</p> }
+
+          @if (currentJob.progress; as progress) {
+            @if (progress.totalItems > 0) {
+              <div
+                class="settings-import-progressbar"
+                role="progressbar"
+                [attr.aria-label]="copy.progress.accessibleLabel"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-valuenow]="importProgressPercentage() ?? 0"
+                [attr.aria-valuetext]="(importProgressPercentage() ?? 0) + '%'"
+              >
+                <span [style.width.%]="importProgressPercentage() ?? 0"></span>
+              </div>
+              <div class="settings-import-progress-summary">
+                <strong>{{ importProgressPercentage() }}%</strong>
+                <span>{{ progress.processedItems }} / {{ progress.totalItems }} {{ copy.progress.processed }}</span>
+              </div>
+            } @else {
+              <div class="settings-import-progressbar settings-import-progressbar--indeterminate" role="progressbar" [attr.aria-label]="copy.progress.accessibleLabel" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuetext]="copy.progress.waiting">
+                <span></span>
+              </div>
+            }
+
+            <dl class="settings-import-progress-counts">
+              <div><dt>{{ copy.progress.applied }}</dt><dd>{{ progress.appliedItems }}</dd></div>
+              <div><dt>{{ copy.progress.skipped }}</dt><dd>{{ progress.skippedItems }}</dd></div>
+            </dl>
+          } @else {
+            <div class="settings-import-progressbar settings-import-progressbar--indeterminate" role="progressbar" [attr.aria-label]="copy.progress.accessibleLabel" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuetext]="copy.progress.waiting">
+              <span></span>
+            </div>
+          }
+
+          <footer class="settings-import-progress-actions">
+            <button class="settings-secondary-button" type="button" [disabled]="busy()" (click)="cancelImport()" data-ww-button="secondary">{{ copy.actions.cancel }}</button>
+          </footer>
+        </section>
+      </app-dialog-backdrop>
+    }
+  } @else {
+    <form class="settings-import-form" (submit)="upload($event)">
+      <div class="settings-import-fields">
+        <label class="settings-field">
+          <span>{{ copy.form.platform }}</span>
+          <select [value]="platform()" (change)="setPlatform($any($event.target).value)">
+            <option value="LETTERBOXD">{{ copy.form.letterboxd }}</option>
+            <option value="TRAKT">{{ copy.form.trakt }}</option>
+          </select>
+        </label>
+        <label class="settings-field">
+          <span>{{ copy.form.format }}</span>
+          <select [value]="inputKind()" (change)="setInputKind($any($event.target).value)">
+            <option value="PLATFORM_ARCHIVE">{{ copy.form.archive }}</option>
+            <option value="SINGLE_LIST">{{ copy.form.singleList }}</option>
+            <option value="SINGLE_WATCHLIST">{{ copy.form.singleWatchlist }}</option>
+          </select>
+        </label>
+      </div>
+      <label class="settings-field">
+        <span>{{ copy.form.file }}</span>
+        <input id="settings-import-file" type="file" [accept]="fileAccept()" (change)="onFileSelected($event)" />
+        <small>{{ inputKind() === 'PLATFORM_ARCHIVE' ? copy.form.zipHelp : copy.form.singleHelp }} {{ copy.form.limit }}</small>
+      </label>
+      @if (file(); as selectedFile) { <p class="settings-import-selected-file">{{ copy.form.selectedFile }} <strong>{{ selectedFile.name }}</strong></p> }
+      <label class="settings-field">
+        <span>{{ copy.form.accountId }}</span>
+        <input type="text" autocomplete="off" [value]="sourceAccountId()" (input)="sourceAccountId.set($any($event.target).value)" />
+        <small>{{ copy.form.accountIdHelp }}</small>
+      </label>
+      <p class="settings-import-note">{{ copy.form.note }}</p>
+      <button class="settings-primary-button" type="submit" [disabled]="busy() || !file()" data-ww-button="primary">{{ busy() ? copy.actions.uploadBusy : copy.actions.upload }}</button>
+    </form>
+  }
+</div>
