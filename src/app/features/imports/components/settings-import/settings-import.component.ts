@@ -504,6 +504,9 @@ export class SettingsImportComponent {
 
   protected issueLabel(item: ImportPreviewItem): string {
     if (item.outcome === 'SKIPPED') return this.copy.resolutions.skipped;
+    if (item.issue?.startsWith('LIST_ITEM_CONTENT_GROUP_CONFLICT')) {
+      return this.copy.resolutions.listContentGroupConflict;
+    }
     const label = item.decision
       ? this.copy.resolutions[item.decision as keyof typeof this.copy.resolutions]
       : undefined;

@@ -49,6 +49,7 @@ function componentWithApi(api: Partial<ImportsApiService>) {
     syncReviewQueue(job: ImportJob): void;
     handleJob(job: ImportJob): void;
     stopPolling(): void;
+    issueLabel(item: ImportPreviewItem): string;
     editFields(item: ImportPreviewItem): ImportEditableField[];
     editMaxLength(item: ImportPreviewItem): number | null;
     reviewItems: (() => ImportPreviewItem[]) & { set(items: ImportPreviewItem[]): void };
@@ -60,6 +61,21 @@ function componentWithApi(api: Partial<ImportsApiService>) {
 }
 
 describe('SettingsImportComponent review queue', () => {
+  it('explains list content group conflicts', () => {
+    const component = componentWithApi({});
+    const item = {
+      itemId: 'review-1',
+      kind: 'LIST_ITEM',
+      decision: 'SKIP_ITEM',
+      outcome: 'NORMALIZATION_ISSUE',
+      issue: 'LIST_ITEM_CONTENT_GROUP_CONFLICT: This list cannot mix content type groups.',
+    } as ImportPreviewItem;
+
+    expect(component.issueLabel(item)).toBe(
+      'Este item pertence a outro grupo de conteúdo da lista. Ignore-o para importar os demais itens.',
+    );
+  });
+
   it('fetches at most one review page while the job revision stays unchanged', () => {
     const api = { getReviewItems: vi.fn().mockReturnValue(of({
       importId: 'import-1',
