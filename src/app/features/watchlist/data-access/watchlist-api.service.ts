@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
-import { readAllPages } from '../../../shared/data-access/read-all-pages';
+import { Observable } from 'rxjs';
 
 export type WatchlistContentType = 'MOVIE' | 'SERIES';
 export type WatchlistStatus = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'UPCOMING';
@@ -48,6 +47,7 @@ export interface WatchlistView {
   totalPages: number;
   hasNext: boolean;
   backdropPath?: string | null;
+  availableGenres?: string[];
   aggregate: {
     totalCount: number;
     movieCount: number;
@@ -60,12 +60,6 @@ export interface WatchlistView {
 @Injectable({ providedIn: 'root' })
 export class WatchlistApiService {
   constructor(private readonly http: HttpClient) {}
-
-  getGenreOptions(userId: string): Observable<string[]> {
-    return readAllPages(page => this.getView(userId, {
-      type: null, genre: null, status: 'ALL', sort: 'DATE_ADDED', direction: 'DESC', page, size: 1000,
-    })).pipe(map(items => [...new Set(items.flatMap(item => item.card.genres ?? []))].sort((a, b) => a.localeCompare(b, 'pt-BR'))));
-  }
 
   getView(userId: string, options: {
     type: WatchlistContentType | null;

@@ -103,6 +103,7 @@ export interface ProfileRecentActivity {
   type?: string | null;
   status?: string | null;
   timesWatched?: number | null;
+  watchedEpisodeCount?: number | null;
   activityDate?: string | null;
   watchedDate?: string | null;
   lastWatchedDate?: string | null;
@@ -145,6 +146,7 @@ export interface ProfileSummary {
   genreCounts: GenreCount[];
   ratingsSummary: { totalRatings: number; averageScore: number | null } | null;
   ratingsDistribution: RatingCount[];
+  episodeRatings?: { totalRatings: number; averageScore: number | null; distribution: RatingCount[] } | null;
   recentEpisodes: ProfileDiaryPreview[];
   recentReviews: ProfileDiaryPreview[];
   recentActivity: ProfileRecentActivity[];

@@ -111,10 +111,8 @@ export class WatchlistComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastNotificationsService);
   private request?: Subscription;
-  private genreRequest?: Subscription;
   private listRequests = new Subscription();
   private cardActionRequests = new Subscription();
-  private genreUserId = '';
 
   constructor() {
     this.load();
@@ -171,7 +169,6 @@ export class WatchlistComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.request?.unsubscribe();
-    this.genreRequest?.unsubscribe();
     this.listRequests.unsubscribe();
     this.cardActionRequests.unsubscribe();
   }
@@ -181,13 +178,6 @@ export class WatchlistComponent implements OnDestroy {
     if (!user) {
       void this.router.navigateByUrl('/login');
       return;
-    }
-    if (this.genreUserId !== user.id) {
-      this.genreRequest?.unsubscribe(); this.genreUserId = user.id; this.genreOptions.set([]);
-      this.genreRequest = this.api.getGenreOptions(user.id).subscribe({
-        next: genres => this.genreOptions.set(genres),
-        error: () => { this.genreUserId = ''; },
-      });
     }
     const keepCurrentView = preserveExisting && this.status() === 'ready' && this.view() !== null;
     this.request?.unsubscribe();
@@ -208,6 +198,21 @@ export class WatchlistComponent implements OnDestroy {
       size: this.pageSize,
     }).subscribe({
       next: (view) => {
+        if (view.availableGenres) {
+          const genres = [...view.availableGenres].sort((left, right) => left.localeCompare(right, 'pt-BR'));
+          this.genreOptions.set(genres);
+          const selectedGenre = this.genre();
+          if (selectedGenre && !genres.some(
+            (genre) => genre.toLocaleLowerCase('pt-BR') === selectedGenre.toLocaleLowerCase('pt-BR'),
+          )) {
+            this.genre.set(null);
+            this.page.set(1);
+            this.load(true);
+            return;
+          }
+        } else {
+          this.genreOptions.set([]);
+        }
         const backdropPath = view.backdropPath ?? null;
         this.heroBackdropPath.set(backdropPath);
         this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath?.trim()));

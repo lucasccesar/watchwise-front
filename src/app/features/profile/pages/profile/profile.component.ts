@@ -215,8 +215,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   );
   protected readonly recentMovieEntries = signal<DiaryRecord[]>([]);
   protected readonly recentEpisodeEntries = signal<DiaryRecord[]>([]);
-  protected readonly allDiaryEntries = signal<DiaryRecord[]>([]);
-  protected readonly ratedEpisodeEntries = signal<DiaryRecord[]>([]);
   protected readonly reviewComments = signal<Record<string, string>>({});
   protected readonly profileShareReviews = signal<ProfileShareReviewRecord[]>([]);
   protected readonly profileShareVariants = signal<Partial<Record<ShareProfileContentType, ShareProfileContentVariant>>>({});
@@ -337,8 +335,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly progressPageSize = 6;
   protected readonly progressSkeletonItems = Array.from({ length: this.progressPageSize }, (_, index) => index);
   protected readonly watchlistGenreOptions = signal<string[]>([]);
-  private genreUserId = '';
-  private genreRequest?: Subscription;
   protected readonly ratingScores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   protected readonly tabEntries = SECTION_KEYS.filter(({ key }) => PROFILE_OVERVIEW_TAB_KEYS.has(key));
   protected readonly episodeMapTabEntries = SECTION_KEYS.filter(({ key }) => EPISODE_MAP_TAB_KEYS.has(key));
@@ -351,32 +347,14 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   );
   protected readonly overviewRatingsDistribution = computed(() => {
     if (this.mode() === 'MOVIE') return this.summary()?.ratingsDistribution ?? [];
-    const counts = new Map<number, number>();
-    for (const entry of this.ratedEpisodeEntries()) {
-      if (entry.score === null || !Number.isFinite(entry.score)) continue;
-      counts.set(entry.score, (counts.get(entry.score) ?? 0) + 1);
-    }
-    return [...counts].map(([score, count]) => ({ score, count })).sort((a, b) => a.score - b.score);
+    return this.summary()?.episodeRatings?.distribution ?? [];
   });
   protected readonly overviewRatingsSummary = computed(() => {
     if (this.mode() === 'MOVIE') return this.summary()?.ratingsSummary ?? null;
-    const entries = this.ratedEpisodeEntries().filter((entry) => entry.score !== null && Number.isFinite(entry.score));
-    return {
-      totalRatings: entries.length,
-      averageScore: entries.length ? entries.reduce((sum, entry) => sum + (entry.score ?? 0), 0) / entries.length : null,
-    };
+    return this.summary()?.episodeRatings ?? null;
   });
   protected readonly userName = computed(() => this.profile()?.name || this.foundUser()?.name || this.profile()?.username || this.foundUser()?.username || this.username());
   protected readonly recentSeriesItems = computed<RecentSeriesCard[]>(() => {
-    const episodesBySeries = new Map<string, Set<string>>();
-    for (const entry of [...this.allDiaryEntries(), ...this.recentEpisodeEntries()]) {
-      const { type, seriesTmdbId, seasonNumber, episodeNumber } = entry.content;
-      if (type !== 'EPISODE' || !seriesTmdbId || seasonNumber === null || episodeNumber === null) continue;
-      const episodes = episodesBySeries.get(seriesTmdbId) ?? new Set<string>();
-      episodes.add(`${seasonNumber}:${episodeNumber}`);
-      episodesBySeries.set(seriesTmdbId, episodes);
-    }
-
     return (this.summary()?.recentActivity ?? [])
       .filter((activity) => String(activity.type ?? activity.content?.type ?? activity.card?.type ?? '').toUpperCase() === 'SERIES')
       .map((activity) => {
@@ -395,6 +373,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         );
         const lastWatchNumber = activity.timesWatched ?? card.viewerState?.lastWatchNumber ?? null;
         const currentWatchNumber = card.viewerState?.lastWatchNumber ?? activity.timesWatched ?? null;
+        const watchedEpisodeCount = activity.watchedEpisodeCount ?? 0;
         return {
           activityId: activity.id,
           contentId: activity.content?.id ?? null,
@@ -406,8 +385,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
           posterPath: card.customPosterUrl || card.posterPath || null,
           backdropPath: card.backdropPath ?? null,
           releaseYear: card.releaseYear ?? null,
-          watchedEpisodeCount: episodesBySeries.get(String(seriesTmdbId))?.size ?? 0,
-          episodeCount: hasWatched === true ? episodesBySeries.get(String(seriesTmdbId))?.size ?? null : card.numberOfEpisodes ?? null,
+          watchedEpisodeCount,
+          episodeCount: hasWatched === true ? activity.watchedEpisodeCount ?? null : card.numberOfEpisodes ?? null,
           lastWatchedDate: activity.activityDate ?? activity.watchedDate ?? activity.lastWatchedDate ?? null,
           score: activity.score ?? card.viewerState?.myRating ?? null,
           currentRatingVersion: card.viewerState?.currentRatingVersion ?? null,
@@ -678,6 +657,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchApi = inject(SearchApiService);
   private readonly topFiveSearchRequests = new Subject<TopFiveSearchRequest | null>();
+  private watchlistRequest?: Subscription;
   protected readonly topFiveSearchOpener = signal<HTMLElement | null>(null);
   private readonly profileApi = inject(ProfileApiService);
   private readonly diaryApi = inject(DiaryApiService);
@@ -687,7 +667,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   private readonly contentApi = inject(ContentApiService);
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.genreRequest?.unsubscribe());
     this.topFiveSearchRequests
       .pipe(
         switchMap((request) => request
@@ -750,6 +729,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.watchlistRequest?.unsubscribe();
     this.profileGenreLabelChanges?.unsubscribe();
     this.profileGenreLabelObserver?.disconnect();
   }
@@ -1369,11 +1349,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     const content = review.content;
     if (!content?.seriesTmdbId) return null;
     const seriesTmdbId = content.seriesTmdbId;
-
-    const diarySeriesTitle = this.allDiaryEntries().find((entry) =>
-      entry.content.seriesTmdbId === seriesTmdbId && Boolean(entry.seriesTitle),
-    )?.seriesTitle;
-    if (diarySeriesTitle) return diarySeriesTitle;
 
     if (content.type?.toUpperCase() === 'EPISODE') {
       const episode = this.recentEpisodeEntries().find((entry) =>
@@ -2911,6 +2886,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadSection(userId: string, preserveExisting = false): void {
+    this.watchlistRequest?.unsubscribe();
+    this.watchlistRequest = undefined;
     const section = this.section();
     const mode = this.mode();
     if (section === 'profile' && !preserveExisting) this.profileOverviewLoading.set(true);
@@ -2926,20 +2903,15 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         recentEpisodes: mode === 'EPISODE'
           ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 30, type: 'EPISODE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
           : of(null),
-        diaryEntries: mode === 'EPISODE'
-          ? this.diaryApi.getAllDiaryEntries(userId).pipe(catchError(() => of([] as DiaryRecord[])))
-          : of([] as DiaryRecord[]),
         reviews: this.diaryApi.getUserReviewsPage(userId, 1, 50).pipe(catchError(() => of(null))),
       }).subscribe({
-        next: ({ summary, recentMovies, recentEpisodes, diaryEntries, reviews }) => {
+        next: ({ summary, recentMovies, recentEpisodes, reviews }) => {
           if (this.profile()?.id !== userId || this.mode() !== mode || this.section() !== 'profile') return;
           this.summary.set(summary);
           const latestMovieReview = reviews?.content.find((review) => review.content.type === 'MOVIE');
           this.latestMovieReviewBackdropPath.set(latestMovieReview?.card?.backdropPath ?? null);
           this.recentMovieEntries.set(recentMovies?.content ?? []);
           this.recentEpisodeEntries.set(recentEpisodes?.content ?? []);
-          this.allDiaryEntries.set(diaryEntries);
-          this.ratedEpisodeEntries.set(diaryEntries.filter((entry) => entry.content.type === 'EPISODE' && entry.score !== null));
           this.reviewComments.set(Object.fromEntries((reviews?.content ?? [])
             .filter((review) => Boolean(review.comment))
             .map((review) => [review.id, review.comment as string])));
@@ -3029,17 +3001,33 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       return;
     }
     if (section === 'watchlist') {
-      if (this.genreUserId !== userId) {
-        this.genreRequest?.unsubscribe(); this.genreUserId = userId; this.watchlistGenreOptions.set([]);
-        this.genreRequest = this.watchlistApi.getGenreOptions(userId).subscribe({
-          next: genres => this.watchlistGenreOptions.set(genres),
-          error: () => { this.genreUserId = ''; },
-        });
-      }
-      this.watchlistApi.getView(userId, {
+      this.watchlistRequest = this.watchlistApi.getView(userId, {
         type: this.watchlistType(), genre: this.watchlistGenre(), status: this.watchlistStatus(), sort: this.watchlistSort(),
         direction: this.watchlistDirection(), page: this.currentPage(), size: this.pageSize,
-      }).subscribe({ next: (data) => this.watchlist.set(data), error: (error: unknown) => this.handleError(error) });
+      }).subscribe({
+        next: (data) => {
+          if (this.profile()?.id !== userId || this.section() !== 'watchlist') return;
+          if (data.availableGenres) {
+            const genres = [...data.availableGenres].sort((left, right) => left.localeCompare(right, 'pt-BR'));
+            this.watchlistGenreOptions.set(genres);
+            const selectedGenre = this.watchlistGenre();
+            if (selectedGenre && !genres.some(
+              (genre) => genre.toLocaleLowerCase('pt-BR') === selectedGenre.toLocaleLowerCase('pt-BR'),
+            )) {
+              this.watchlistGenre.set(null);
+              this.currentPage.set(1);
+              this.loadSection(userId, preserveExisting);
+              return;
+            }
+        } else {
+          this.watchlistGenreOptions.set([]);
+          }
+          this.watchlist.set(data);
+        },
+        error: (error: unknown) => {
+          if (this.profile()?.id === userId && this.section() === 'watchlist') this.handleError(error);
+        },
+      });
       return;
     }
     if (section === 'picks') {
@@ -3192,8 +3180,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.latestMovieReviewBackdropPath.set(undefined);
     this.recentMovieEntries.set([]);
     this.recentEpisodeEntries.set([]);
-    this.allDiaryEntries.set([]);
-    this.ratedEpisodeEntries.set([]);
     this.reviewComments.set({});
     this.profileShareReviews.set([]);
     this.recentReviewLikeBusyIds.set(new Set());
