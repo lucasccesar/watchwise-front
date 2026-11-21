@@ -1163,9 +1163,13 @@ O resumo fornece:
 - `genreCounts`;
 - `ratingsSummary.totalRatings` e `ratingsSummary.averageScore`;
 - `ratingsDistribution`;
+- `episodeRatings.totalRatings`, `episodeRatings.averageScore` e `episodeRatings.distribution`, calculados pela nota mais recente de cada episódio distinto;
 - `recentActivity`;
 - `recentReviews`;
 - `recentEpisodes`, preenchido somente na aba Series.
+
+O front usa `episodeRatings` e `recentActivity.watchedEpisodeCount` para montar as estatísticas de
+episódios; não percorre o diário completo para reconstruir esses agregados.
 
 Semântica dos agregados:
 
@@ -1175,6 +1179,8 @@ Semântica dos agregados:
 - gêneros de Series contam coordenadas distintas de episódio;
 - ratings usam uma única nota mais recente por filme ou episódio distinto;
 - rewatches não duplicam gêneros nem ratings.
+- `episodeRatings` separa as notas de episódios das opiniões atuais de SERIES e não inclui mais de uma nota por episódio;
+- `recentActivity.watchedEpisodeCount` conta episódios distintos da série, mesmo quando há rewatch.
 
 ### 3. Top 5 da aba selecionada
 
@@ -1222,11 +1228,13 @@ detalhes apenas para reconstruir esses dados.
 | Recent Movies | `summary.recentActivity` com `type=MOVIE` | `/summary?type=MOVIE` |
 | Recent Series | `summary.recentActivity` com `type=SERIES` | `/summary?type=SERIES` |
 | Quantidade assistida | `recentActivity.timesWatched` | Nenhuma adicional |
+| Episódios distintos assistidos por série | `recentActivity.watchedEpisodeCount` | Nenhuma adicional |
 | Status concluído/abandonado | `recentActivity.status` | Nenhuma adicional |
 | Últimos episódios | `summary.recentEpisodes` | Apenas Series |
 | Recent reviews | `summary.recentReviews` | Uma lista compacta por aba |
 | Gêneros | `summary.genreCounts` | Nenhuma adicional |
 | Distribuição de ratings | `summary.ratingsDistribution` | Nenhuma adicional |
+| Distribuição de ratings dos episódios | `summary.episodeRatings.distribution` | Nenhuma adicional |
 | Total e média de ratings | `summary.ratingsSummary` | Nenhuma adicional |
 | Título, pôster e metadata dos cards | `item.card` | Nenhuma chamada adicional |
 
@@ -1650,6 +1658,9 @@ contagens por tipo, runtime total e upcoming. `TITLE`/`RATING` podem responder
 `400` acima do limite de candidatos materializados. A leitura respeita a
 visibilidade do perfil, não cria `Content`, não chama `/contents/details` e não
 cacheia o envelope materializado.
+`availableGenres` retorna os gêneros distintos presentes em toda a Watchlist visível,
+independentemente dos filtros e da página, para popular o seletor sem buscar páginas
+adicionais no navegador.
 
 # Calendar
 
@@ -2191,6 +2202,27 @@ com metadata básica. A tela também não deve usar a rota legada apenas para ob
 - Abrir comentários: `GET /lists/{listId}/comments`.
 - Editar, reordenar ou excluir uma lista própria: `PATCH`/`DELETE /lists/{listId}`.
 
+## Reordenação contínua
+
+Ao entrar no modo Reordenar, carregar somente o primeiro lote de 30 posições por
+`GET /users/me/lists/order?size=30`; buscar lotes seguintes pelo `nextCursor` ao avançar a rolagem,
+com botão Carregar mais e nova tentativa em caso de erro. Mostrar todos os lotes já carregados na
+mesma sequência de arraste, para permitir mover uma lista entre lotes. O modo normal continua usando
+a paginação visual acima. Ao sair do modo, cancelar qualquer leitura de cursor pendente.
+
+Cada resposta de ordem contém `revision`, `items: [{ id, position, label, thumbnailUrl, movable }]` e
+`nextCursor`. Para listas próprias, `movable` é verdadeiro e os metadados vêm da lista. O salvamento
+usa `PATCH /users/me/lists/order` com `{ revision, moves: [{ movedId, anchorId, side }] }`, onde
+`side` é `BEFORE` ou `AFTER`; cada envio comporta até 100 movimentos. Se ainda houver movimentos,
+recarregar o prefixo já mostrado com a revisão nova, manter o rascunho e permitir salvar novamente.
+`thumbnailUrl` pode ser URL de pôster customizado ou caminho TMDB cru; passar pelo utilitário
+`tmdbImageUrl` antes de renderizar.
+
+`409` indica que a ordem mudou em outra sessão: recarregar os dados e não reaplicar automaticamente
+o rascunho antigo. Um timeout no salvamento também exige uma releitura para determinar o resultado
+antes de tentar novamente. Arraste, setas e os controles acessíveis de selecionar e soltar devem
+operar apenas sobre posições já carregadas.
+
 ## Paginação, carregamento e erros
 
 Carregar a primeira página com `source=ALL` e preservar os parâmetros na URL. Alterar source,
@@ -2499,6 +2531,23 @@ backend. O fade usado no protótipo é somente apresentação do cliente e não 
 - `403`: lista FOLLOWERS sem seguimento aceito, lista PRIVATE de outro usuário, nested list não
   visível ou nota do dono privada;
 - `404`: lista não encontrada.
+
+## Reordenação dos itens
+
+O modo Reordenar carrega a ordem gravada por
+`GET /lists/{listId}/items/order?size=30`, seguindo `nextCursor` somente quando o usuário avança.
+Lotes já carregados permanecem em uma única sequência de arraste, sem alterar a paginação usada na
+leitura normal. A resposta tem `revision`, `items: [{ id, position, label, thumbnailUrl, movable }]`
+e `nextCursor`. Se uma lista aninhada não estiver acessível, manter sua posição como marcador, omitir
+seu título e poster, definir `movable=false` e impedir que ela ou sua posição seja usada para mover
+itens através dela.
+Converter caminhos TMDB de `thumbnailUrl` com `tmdbImageUrl`; preservar URLs customizadas.
+
+Salvar com `PATCH /lists/{listId}/items/order` usando `{ revision, moves: [{ movedId, anchorId,
+side }] }`; `side` aceita `BEFORE`/`AFTER` e cada envio pode conter no máximo 100 movimentos. Após
+um lote parcial salvo, atualizar a revisão, reler as posições já carregadas e manter as mudanças
+pendentes para outro salvamento. Em `409` ou resultado incerto de rede, reler a ordem antes de
+permitir nova tentativa; nunca repetir automaticamente o rascunho contra uma revisão antiga.
 
 ---
 
