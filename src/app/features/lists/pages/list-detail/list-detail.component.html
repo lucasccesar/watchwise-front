@@ -57,7 +57,7 @@
       </div>
     </header>
 
-    <section class="list-detail-control-band ww-filter-surface" aria-label="Filtros e ordenação da lista">
+    <section class="list-detail-control-band ww-filter-surface" aria-label="Filtros e ordenação da lista" [hidden]="reorderMode()">
       <div class="list-detail-controls">
         <div class="list-detail-filters">
           @if (list.itemScope === 'MOVIE_OR_SERIES') {
@@ -108,7 +108,33 @@
       </div>
     </section>
 
-    @if (status() === 'ready' && items().length) {
+    @if (reorderMode() && canManage()) {
+      <section class="list-detail-reorder-banner" aria-live="polite">
+        <span class="list-detail-reorder-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01" /></svg></span>
+        <div><h2>{{ copy.reorderItemsTitle }}</h2><p>{{ copy.reorderItemsDescription }}</p><p>{{ copy.reorderBatchLimitDescription }}</p></div>
+        <div class="list-detail-reorder-banner-actions"><button type="button" [disabled]="savingItemOrder()" (click)="cancelItemOrder()" data-ww-button="secondary">{{ copy.cancel }}</button><button type="button" [disabled]="savingItemOrder() || reorderLoading() || !reorderHasChanges()" (click)="saveItemOrder()" data-ww-button="primary">{{ savingItemOrder() ? copy.savingOrder : copy.saveOrder }}</button></div>
+      </section>
+      @if (reorderError()) { <section class="list-detail-empty" role="alert"><p>{{ copy.reorderLoadError }}</p><button type="button" (click)="loadMoreOrder()">{{ copy.retry }}</button></section> }
+      <ol class="list-detail-order-items" aria-label="Itens da lista" cdkDropList cdkDropListOrientation="vertical" cdkDropListLockAxis="y" [cdkDropListData]="reorderDraft()" [cdkDropListDisabled]="savingItemOrder() || reorderLoading()" (cdkDropListDropped)="dropOrderItem($event)">
+        @for (item of reorderDraft(); track item.id; let itemIndex = $index) {
+          <li class="list-detail-order-item" [class.list-detail-order-item--locked]="!item.movable" cdkDrag cdkDragLockAxis="y" [cdkDragData]="item" [cdkDragDisabled]="!item.movable || savingItemOrder() || reorderLoading()" [cdkDragStartDelay]="reorderDragStartDelay">
+            <span class="list-detail-order-position" aria-hidden="true">{{ itemIndex + 1 }}</span>
+            @if (orderThumbnailUrl(item); as thumbnailUrl) { <img class="list-detail-order-thumbnail" [src]="thumbnailUrl" alt="" loading="lazy" /> } @else { <span class="list-detail-order-thumbnail list-detail-order-thumbnail--empty" aria-hidden="true"></span> }
+            <strong class="list-detail-order-label">{{ item.label || copy.hiddenOrderItem }}</strong>
+            <div class="list-detail-order-actions">
+              <button type="button" [disabled]="!item.movable || itemIndex === 0 || savingItemOrder() || reorderLoading()" [attr.aria-label]="copy.moveUp" (click)="moveOrderItem(item.id, -1)">↑</button>
+              <button type="button" [disabled]="!item.movable || itemIndex === reorderDraft().length - 1 || savingItemOrder() || reorderLoading()" [attr.aria-label]="copy.moveDown" (click)="moveOrderItem(item.id, 1)">↓</button>
+              <button type="button" [attr.aria-pressed]="selectedOrderId() === item.id" [disabled]="!item.movable || savingItemOrder() || reorderLoading()" (click)="selectOrDropAfter(item.id)">{{ selectedOrderId() === item.id ? copy.cancelOrderMove : selectedOrderId() ? copy.dropAfterOrderMove : copy.selectOrderMove }}</button>
+            </div>
+          </li>
+        }
+      </ol>
+      <div #reorderSentinel class="list-detail-order-sentinel" aria-hidden="true"></div>
+      @if (reorderLoading()) { <p class="list-detail-order-feedback" role="status">{{ copy.loadingMoreOrder }}</p> }
+      @if (orderCursor() && !reorderLoading()) { <button class="list-detail-order-more" type="button" (click)="loadMoreOrder()">{{ copy.loadMoreOrder }}</button> }
+      @if (!reorderLoading() && !orderCursor() && reorderDraft().length === 0) { <p class="list-detail-order-feedback">{{ copy.emptyTitle }}</p> }
+    }
+    @else if (status() === 'ready' && items().length) {
       <div class="list-detail-page-bar">
         <nav class="list-detail-pagination" [attr.aria-label]="copy.pagination">
           <button type="button" [disabled]="page() <= 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
@@ -117,16 +143,9 @@
         </nav>
         <p class="list-detail-page-label">{{ pageLabel() }}</p>
       </div>
-      @if (reorderMode() && canManage()) {
-        <section class="list-detail-reorder-banner" aria-live="polite">
-          <span class="list-detail-reorder-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01" /></svg></span>
-          <div><h2>{{ copy.reorderItemsTitle }}</h2><p>{{ copy.reorderItemsDescription }}</p></div>
-          <div class="list-detail-reorder-banner-actions"><button type="button" [disabled]="savingItemOrder()" (click)="saveItemOrder()" data-ww-button="primary">{{ copy.saveOrder }}</button></div>
-        </section>
-      }
-      <ol class="list-detail-items" [class.list-detail-items--episodes]="episodeItems()" aria-label="Itens da lista" cdkDropList cdkDropListOrientation="mixed" [cdkDropListData]="reorderDraft()" [cdkDropListDisabled]="!reorderMode() || !canManage() || savingItemOrder()" (cdkDropListDropped)="dropItem($event)">
+      <ol class="list-detail-items" [class.list-detail-items--episodes]="episodeItems()" aria-label="Itens da lista">
         @for (item of displayedItems(); track item.id; let itemIndex = $index) {
-          <li class="list-detail-item" [class.list-detail-item--episode]="item.card?.type === 'EPISODE'" [class.list-detail-item--reorder]="reorderMode() && canManage()" cdkDrag [cdkDragData]="item" [cdkDragDisabled]="!reorderMode() || !canManage() || savingItemOrder()" [cdkDragStartDelay]="reorderDragStartDelay">
+          <li class="list-detail-item" [class.list-detail-item--episode]="item.card?.type === 'EPISODE'">
             <div class="list-detail-poster content-image-card">
               @if (contentRoute(item); as route) { <a class="list-detail-poster-link" [routerLink]="route" [state]="contentNavigationState(item)" [attr.aria-label]="item.card?.title ?? item.nestedList?.name ?? copy.openContent">@if (posterFor(item)) { @if (item.card?.type === 'EPISODE') { <picture class="list-detail-poster-picture"><source media="(max-width: 800px)" [srcset]="posterFor(item, 'w780') ?? ''" /><img [src]="posterFor(item, 'w1280') ?? ''" alt="" loading="lazy" /></picture> } @else { <img [src]="posterFor(item)" alt="" loading="lazy" /> } } @else { <span>{{ item.card?.title ?? item.nestedList?.name ?? copy.openContent }}</span> }</a> }
               @else if (posterFor(item)) { @if (item.card?.type === 'EPISODE') { <picture class="list-detail-poster-picture"><source media="(max-width: 800px)" [srcset]="posterFor(item, 'w780') ?? ''" /><img [src]="posterFor(item, 'w1280') ?? ''" alt="" loading="lazy" /></picture> } @else { <img [src]="posterFor(item)" alt="" loading="lazy" /> } }
@@ -176,7 +195,6 @@
               @if (item.nestedList; as nested) { <a class="list-detail-item-title" [routerLink]="['/lists', nested.id]">{{ nested.name }}</a><p class="list-detail-item-meta">{{ nested.itemsCount }} {{ copy.itemCount.replace('{count}', '').trim() }} · {{ visibilityLabel(nested.visibility) }}</p> }
               @else { @if (contentRoute(item); as route) { <a class="list-detail-item-title" [routerLink]="route" [state]="contentNavigationState(item)">{{ item.card?.title ?? copy.openContent }}@if (item.card?.type === 'SEASON' && item.card?.seasonNumber !== null) { <span class="list-detail-title-inline-info"> · T{{ item.card?.seasonNumber }}</span> } @if (item.card?.type === 'EPISODE' && item.card?.seasonNumber !== null && item.card?.episodeNumber !== null) { <span class="list-detail-title-inline-info"> · T{{ item.card?.seasonNumber }} · E{{ item.card?.episodeNumber }}</span> }</a> } @else { <strong class="list-detail-item-title">{{ item.card?.title ?? copy.openContent }}@if (item.card?.type === 'SEASON' && item.card?.seasonNumber !== null) { <span class="list-detail-title-inline-info"> · T{{ item.card?.seasonNumber }}</span> } @if (item.card?.type === 'EPISODE' && item.card?.seasonNumber !== null && item.card?.episodeNumber !== null) { <span class="list-detail-title-inline-info"> · T{{ item.card?.seasonNumber }} · E{{ item.card?.episodeNumber }}</span> }</strong> }@if (item.card?.releaseYear != null) { <p class="list-detail-item-meta"><span>{{ item.card?.releaseYear }}</span></p> } }
             </div>
-            @if (reorderMode() && canManage()) { <div class="list-detail-reorder-controls"><button type="button" [disabled]="itemIndex === 0 || savingItemOrder()" [attr.aria-label]="copy.moveUp" (click)="moveItem(item, -1)">↑</button><button type="button" [disabled]="itemIndex === displayedItems().length - 1 || savingItemOrder()" [attr.aria-label]="copy.moveDown" (click)="moveItem(item, 1)">↓</button></div> }
           </li>
         }
       </ol>

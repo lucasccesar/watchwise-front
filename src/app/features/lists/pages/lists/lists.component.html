@@ -19,7 +19,7 @@
   <section class="lists-toolbar ww-filter-surface" [attr.aria-label]="copy.filters">
     <div class="lists-toolbar-actions">
       @if (!isCommunity) { <a class="lists-create-button" routerLink="/lists/create" data-ww-button="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{{ copy.createList }}</a> }
-      @if (!isCommunity) { <button class="lists-reorder-button" [class.lists-reorder-button--active]="reorderMode()" type="button" [attr.aria-pressed]="reorderMode()" [disabled]="savingOrder()" (click)="onReorderButtonClick()" data-ww-button="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7 4-4 4 4M12 3v8m4 6-4 4-4-4m4 4v-8" /></svg>{{ copy.reorder }}</button> }
+      @if (!isCommunity) { <button class="lists-reorder-button" [class.lists-reorder-button--active]="reorderMode()" type="button" [attr.aria-pressed]="reorderMode()" [disabled]="savingOrder()" (click)="onReorderButtonClick()" data-ww-button="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7 4-4 4 4M12 3v8m4 6-4 4-4-4m4 4v-8" /></svg>{{ reorderMode() ? copy.saveOrder : copy.reorder }}</button> }
     </div>
     <div class="lists-toolbar-controls">
       @if (pageData()) { <span class="lists-count"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 12h7M9 16h7"></path></svg>{{ listCountLabel() }}</span> }
@@ -41,22 +41,40 @@
     </div>
   </section>
 
-  @if (status() === 'loading') { <app-page-skeleton variant="cards" [label]="copy.loading" /> }
+  @if (reorderMode()) {
+    <section class="lists-reorder-banner" aria-live="polite">
+      <span class="lists-reorder-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01" /></svg></span>
+      <div><h2>{{ copy.reorderBannerTitle }}</h2><p>{{ copy.reorderBannerDescription }}</p><p class="lists-order-limit">{{ copy.reorderBatchLimitDescription }}</p></div>
+      <div class="lists-reorder-banner-actions"><button type="button" [disabled]="savingOrder()" (click)="cancelReorder()" data-ww-button="secondary">{{ copy.cancel }}</button><button class="lists-reorder-save" type="button" [disabled]="savingOrder() || reorderLoading() || !reorderHasChanges()" (click)="saveReorder()" data-ww-button="primary">{{ savingOrder() ? copy.savingOrder : copy.saveOrder }}</button></div>
+    </section>
+    @if (reorderError()) { <section class="lists-state" role="alert"><p>{{ copy.reorderError }}</p><button type="button" (click)="retryLoad()">{{ copy.retry }}</button></section> }
+    <ol class="lists-order-grid" [attr.aria-label]="copy.myLists" cdkDropList cdkDropListOrientation="vertical" cdkDropListLockAxis="y" [cdkDropListData]="reorderDraft()" [cdkDropListDisabled]="savingOrder() || reorderLoading()" (cdkDropListDropped)="dropList($event)">
+      @for (list of reorderDraft(); track list.id; let index = $index) {
+        <li class="lists-order-row" cdkDrag cdkDragLockAxis="y" [cdkDragData]="list" [cdkDragDisabled]="savingOrder() || reorderLoading()" [cdkDragStartDelay]="reorderDragStartDelay">
+          <span class="lists-order-position" aria-hidden="true">{{ index + 1 }}</span>
+          @if (orderThumbnailUrl(list); as thumbnailUrl) { <img class="lists-order-thumbnail" [src]="thumbnailUrl" alt="" loading="lazy" /> } @else { <span class="lists-order-thumbnail lists-order-thumbnail--empty" aria-hidden="true"></span> }
+          <a class="lists-order-label" [routerLink]="['/lists', list.id]">{{ list.label || copy.titleUnavailable }}</a>
+          <div class="lists-order-actions">
+            <button type="button" [disabled]="index === 0 || savingOrder() || reorderLoading()" [attr.aria-label]="copy.moveUp" (click)="moveList(list.id, -1)">↑</button>
+            <button type="button" [disabled]="index === reorderDraft().length - 1 || savingOrder() || reorderLoading()" [attr.aria-label]="copy.moveDown" (click)="moveList(list.id, 1)">↓</button>
+            <button type="button" [attr.aria-pressed]="selectedOrderId() === list.id" [disabled]="savingOrder() || reorderLoading()" (click)="selectOrDropAfter(list.id)">{{ selectedOrderId() === list.id ? copy.cancelOrderMove : selectedOrderId() ? copy.dropAfterOrderMove : copy.selectOrderMove }}</button>
+          </div>
+        </li>
+      }
+    </ol>
+    <div #reorderSentinel class="lists-order-sentinel" aria-hidden="true"></div>
+    @if (reorderLoading()) { <p class="lists-order-feedback" role="status">{{ copy.loadingMoreOrder }}</p> }
+    @if (orderCursor() && !reorderLoading()) { <button class="lists-order-more" type="button" (click)="loadMoreOrder()">{{ copy.loadMoreOrder }}</button> }
+    @if (!reorderLoading() && !orderCursor() && reorderDraft().length === 0) { <p class="lists-order-feedback">{{ copy.emptyTitle }}</p> }
+  }
+  @else if (status() === 'loading') { <app-page-skeleton variant="cards" [label]="copy.loading" /> }
   @else if (status() === 'error') { <section class="lists-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ error() }}</p><button type="button" (click)="retryLoad()">{{ copy.retry }}</button></section> }
   @else if ((pageData()?.content?.length ?? 0) === 0) { <section class="lists-state lists-empty ww-empty-panel ww-empty-panel--page"><h2>{{ isCommunity ? copy.communityEmptyTitle : source() === 'LIKED' ? copy.likedEmptyTitle : copy.emptyTitle }}</h2><p>{{ isCommunity ? copy.communityEmptyDescription : source() === 'LIKED' ? copy.likedEmptyDescription : copy.emptyDescription }}</p>@if (!isCommunity && source() !== 'LIKED') { <a routerLink="/lists/create">{{ copy.createList }}</a> }</section> }
   @else {
     <div class="lists-pagination-bar"><nav class="lists-pagination" [attr.aria-label]="copy.pagination"><button type="button" [disabled]="page() === 1" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>@for (pageNumber of pageNumbers(); track pageNumber) { <button type="button" [class.lists-page-active]="pageNumber === page()" (click)="goToPage(pageNumber)">{{ pageNumber }}</button> }<button type="button" [disabled]="page() === totalPages()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button></nav><p class="lists-page-label">{{ copy.pageLabel.replace('{page}', page().toString()).replace('{total}', totalPages().toString()) }}</p></div>
-    @if (reorderMode()) {
-      <section class="lists-reorder-banner" aria-live="polite">
-        <span class="lists-reorder-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h10M4 7h.01M4 12h.01M4 17h.01" /></svg></span>
-        <div><h2>{{ copy.reorderBannerTitle }}</h2><p>{{ copy.reorderBannerDescription }}</p></div>
-        <div class="lists-reorder-banner-actions"><button type="button" [disabled]="savingOrder()" (click)="cancelReorder()" data-ww-button="secondary">{{ copy.cancel }}</button><button class="lists-reorder-save" type="button" [disabled]="savingOrder() || !reorderHasChanges()" (click)="saveReorder()" data-ww-button="primary">{{ savingOrder() ? copy.savingOrder : copy.saveOrder }}</button></div>
-      </section>
-    }
-    <section class="lists-grid" [attr.aria-label]="isCommunity ? copy.communityLists : copy.myLists" cdkDropList cdkDropListOrientation="vertical" cdkDropListLockAxis="y" [cdkDropListData]="reorderDraft()" [cdkDropListDisabled]="!reorderMode() || savingOrder()" (cdkDropListDropped)="dropList($event)">
-      @for (list of (reorderMode() ? reorderDraft() : pageData()?.content ?? []); track list.id) {
-        <article class="list-card" [class.list-card--episodes]="list.itemScope === 'EPISODE'" [class.list-card--reorder]="reorderMode()" cdkDrag cdkDragLockAxis="y" [cdkDragData]="list" [cdkDragDisabled]="!reorderMode() || !list.ownedByMe || savingOrder()" [cdkDragStartDelay]="reorderDragStartDelay">
-          @if (reorderMode() && list.ownedByMe) { <div class="list-reorder-controls" [attr.aria-label]="copy.reorderControls.replace('{name}', list.name)"><button type="button" [disabled]="listPosition(list.id) <= 1 || savingOrder()" [attr.aria-label]="copy.moveUp" (click)="moveList(list.id, -1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6" /></svg></button><input type="number" min="1" [max]="reorderDraft().length" [value]="listPosition(list.id)" [attr.aria-label]="copy.positionOfList.replace('{name}', list.name)" [disabled]="savingOrder()" (change)="setListPosition(list.id, $any($event.target).value)" /><button type="button" [disabled]="listPosition(list.id) >= reorderDraft().length || savingOrder()" [attr.aria-label]="copy.moveDown" (click)="moveList(list.id, 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6" /></svg></button></div> }
+    <section class="lists-grid" [attr.aria-label]="isCommunity ? copy.communityLists : copy.myLists">
+      @for (list of (pageData()?.content ?? []); track list.id) {
+        <article class="list-card" [class.list-card--episodes]="list.itemScope === 'EPISODE'">
           <div class="list-card-previews" [class.list-card-previews-active]="activePreviewListId() === list.id" [class.list-card-previews--count-2]="list.previewCards.length === 2" [class.list-card-previews--count-3]="list.previewCards.length === 3" [class.list-card-previews--count-4]="list.previewCards.length === 4" (pointerleave)="clearActivePreview(list.id)" (focusin)="clearActivePreview(list.id)">
             @if (list.previewCards.length) {
               @for (card of list.previewCards.slice(0, 5); track $index) {

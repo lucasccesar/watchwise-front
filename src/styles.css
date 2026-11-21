@@ -615,3 +615,34 @@ input:focus-visible {
 a[href]:hover:not(.profile-tabs a):not(.profile-subnav a):not([aria-disabled='true']):not(:is([data-ww-button], [role='button'], [role='menuitem'], [class*='button'], [class*='action'], .profile-episode-rating-cell, .picks-create, .profile-picks-create, .game-continue, .not-found-primary, .not-found-secondary)):not(:has(svg, img)) {
   color: var(--color-primary) !important;
 }
+
+/* Continuous list reordering layouts stay global so row previews remain styled in the CDK overlay. */
+.lists-order-grid { display: flex; width: min(980px, calc(100% - 48px)); flex-direction: column; gap: 8px; padding: 0; margin: 0 auto; list-style: none; }
+.lists-order-row { display: flex; min-height: 68px; align-items: center; gap: 14px; box-sizing: border-box; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.lists-order-row.cdk-drag-preview, .list-detail-order-item.cdk-drag-preview { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
+.lists-order-position, .list-detail-order-position { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 650; }
+.lists-order-thumbnail, .list-detail-order-thumbnail { width: 52px; height: 48px; flex: 0 0 auto; border-radius: var(--radius-sm); background: var(--color-surface); object-fit: cover; }
+.lists-order-thumbnail--empty, .list-detail-order-thumbnail--empty { border: 1px solid var(--color-border); }
+.lists-order-label { min-width: 0; overflow: hidden; color: var(--color-text); font-size: var(--font-size-sm); font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.lists-order-label:hover { color: var(--color-primary); }
+.list-detail-order-label { min-width: 0; overflow: hidden; font-size: var(--font-size-sm); text-overflow: ellipsis; white-space: nowrap; }
+.lists-order-actions, .list-detail-order-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 5px; margin-left: auto; }
+.lists-order-actions button, .list-detail-order-actions button { min-height: 34px; padding: 0 9px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
+.lists-order-actions button:disabled, .list-detail-order-actions button:disabled { opacity: .45; cursor: default; }
+.list-detail-order-item--locked { opacity: .72; }
+.lists-order-limit { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.lists-order-sentinel, .list-detail-order-sentinel { width: 100%; height: 1px; }
+.lists-order-feedback, .lists-order-more, .list-detail-order-feedback, .list-detail-order-more { display: block; margin: 14px auto; color: var(--color-text-secondary); text-align: center; }
+.lists-order-more, .list-detail-order-more { min-height: 40px; padding: 0 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); color: var(--color-text); font: inherit; cursor: pointer; }
+.list-detail-order-items { display: flex; width: min(1120px, calc(100% - 64px)); flex-direction: column; gap: 8px; padding: 0; margin: 0 auto; list-style: none; }
+.list-detail-order-item { display: flex; min-height: 68px; align-items: center; gap: 14px; box-sizing: border-box; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-secondary); }
+.list-detail-control-band[hidden] { display: none !important; }
+
+@media (max-width: 720px) {
+  .lists-order-grid { width: calc(100% - 32px); }
+  .list-detail-order-items { width: calc(100% - 32px); }
+  .lists-order-row, .list-detail-order-item { gap: 8px; padding: 8px; }
+  .lists-order-thumbnail, .list-detail-order-thumbnail { width: 42px; height: 42px; }
+  .lists-order-actions, .list-detail-order-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .lists-order-actions button, .list-detail-order-actions button { min-height: 32px; padding: 0 7px; }
+}

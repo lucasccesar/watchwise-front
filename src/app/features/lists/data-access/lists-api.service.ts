@@ -69,6 +69,131 @@ export interface UserListCardPage {
   backdropPath?: string | null;
 }
 
+export interface ListOrderItem {
+  id: string;
+  position: number;
+  label: string | null;
+  thumbnailUrl: string | null;
+  movable: boolean;
+}
+
+export interface ListOrderPage {
+  revision: string;
+  items: ListOrderItem[];
+  nextCursor: string | null;
+}
+
+export interface ListOrderMove {
+  movedId: string;
+  anchorId: string;
+  side: 'BEFORE' | 'AFTER';
+}
+
+export interface ListOrderUpdateResponse {
+  revision: string;
+}
+
+export function buildOrderMoves(initialIds: string[], desiredIds: string[], movableIds: Iterable<string> = initialIds): ListOrderMove[] {
+  const initialSet = new Set(initialIds);
+  const desiredSet = new Set(desiredIds);
+  if (initialIds.length !== desiredIds.length || initialSet.size !== initialIds.length ||
+    desiredSet.size !== desiredIds.length || initialIds.some((id) => !desiredSet.has(id)) ||
+    desiredIds.some((id) => !initialSet.has(id))) {
+    throw new RangeError('The order draft must contain the same unique IDs as its baseline');
+  }
+
+  const movable = new Set(movableIds);
+  const partition = (ids: string[]) => {
+    const groups: string[][] = [[]];
+    const fixed: string[] = [];
+    ids.forEach((id) => {
+      if (movable.has(id)) groups[groups.length - 1].push(id);
+      else {
+        fixed.push(id);
+        groups.push([]);
+      }
+    });
+    return { groups, fixed };
+  };
+  const initialParts = partition(initialIds);
+  const desiredParts = partition(desiredIds);
+  if (initialParts.fixed.some((id, index) => id !== desiredParts.fixed[index]) ||
+    initialParts.groups.length !== desiredParts.groups.length ||
+    initialParts.groups.some((group, index) => {
+      const desiredGroup = desiredParts.groups[index];
+      const desiredGroupIds = new Set(desiredGroup);
+      return group.length !== desiredGroup.length || group.some((id) => !desiredGroupIds.has(id));
+    })) {
+    throw new RangeError('Rows marked as immovable cannot be crossed or reordered');
+  }
+
+  return initialParts.groups.flatMap((group, index) => buildMovableSegmentMoves(group, desiredParts.groups[index]));
+}
+
+function buildMovableSegmentMoves(initialIds: string[], desiredIds: string[]): ListOrderMove[] {
+  if (desiredIds.length < 2) return [];
+
+  const initialPositions = new Map(initialIds.map((id, index) => [id, index]));
+  const desiredPositions = desiredIds.map((id) => initialPositions.get(id)!);
+  const tails: number[] = [];
+  const tailIndices: number[] = [];
+  const previous = Array.from({ length: desiredIds.length }, () => -1);
+
+  desiredPositions.forEach((position, index) => {
+    let low = 0;
+    let high = tails.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (tails[middle] < position) low = middle + 1;
+      else high = middle;
+    }
+    tails[low] = position;
+    previous[index] = low > 0 ? tailIndices[low - 1] : -1;
+    tailIndices[low] = index;
+  });
+
+  const stationary = new Set<string>();
+  let cursor = tailIndices[tails.length - 1] ?? -1;
+  while (cursor >= 0) {
+    stationary.add(desiredIds[cursor]);
+    cursor = previous[cursor];
+  }
+
+  const moves: ListOrderMove[] = [];
+  for (let index = 0; index < desiredIds.length;) {
+    if (stationary.has(desiredIds[index])) {
+      index++;
+      continue;
+    }
+    const start = index;
+    while (index < desiredIds.length && !stationary.has(desiredIds[index])) index++;
+    const run = desiredIds.slice(start, index);
+    const nextAnchor = desiredIds[index];
+    const previousAnchor = desiredIds[start - 1];
+    const side: ListOrderMove['side'] = nextAnchor ? 'BEFORE' : 'AFTER';
+    const anchorId = nextAnchor ?? previousAnchor;
+    const orderedRun = nextAnchor ? run : [...run].reverse();
+    if (!anchorId) throw new RangeError('A moved run must be anchored to a stationary row');
+    for (const movedId of orderedRun) {
+      moves.push({ movedId, anchorId, side });
+    }
+  }
+  return moves;
+}
+
+export function applyOrderMoves(ids: string[], moves: ListOrderMove[]): string[] {
+  const result = [...ids];
+  for (const { movedId, anchorId, side } of moves) {
+    const movedIndex = result.indexOf(movedId);
+    const anchorIndex = result.indexOf(anchorId);
+    if (movedIndex < 0 || anchorIndex < 0 || movedId === anchorId) continue;
+    result.splice(movedIndex, 1);
+    const indexAfterRemoval = result.indexOf(anchorId);
+    result.splice(indexAfterRemoval + (side === 'AFTER' ? 1 : 0), 0, movedId);
+  }
+  return result;
+}
+
 export interface ListDetailItem {
   id: string;
   card: (Omit<ListCardPreview, 'contentId'> & { contentId: string }) | null;
@@ -225,6 +350,26 @@ export interface ListProgressData {
 @Injectable({ providedIn: 'root' })
 export class ListsApiService {
   constructor(private readonly http: HttpClient) {}
+
+  getOwnedListOrder(cursor?: string | null): Observable<ListOrderPage> {
+    let params = new HttpParams().set('size', 30);
+    if (cursor) params = params.set('cursor', cursor);
+    return this.http.get<ListOrderPage>('/api/v1/users/me/lists/order', { params });
+  }
+
+  updateOwnedListOrder(request: { revision: string; moves: ListOrderMove[] }): Observable<ListOrderUpdateResponse> {
+    return this.http.patch<ListOrderUpdateResponse>('/api/v1/users/me/lists/order', request);
+  }
+
+  getListItemsOrder(listId: string, cursor?: string | null): Observable<ListOrderPage> {
+    let params = new HttpParams().set('size', 30);
+    if (cursor) params = params.set('cursor', cursor);
+    return this.http.get<ListOrderPage>(`/api/v1/lists/${encodeURIComponent(listId)}/items/order`, { params });
+  }
+
+  reorderListItems(listId: string, request: { revision: string; moves: ListOrderMove[] }): Observable<ListOrderUpdateResponse> {
+    return this.http.patch<ListOrderUpdateResponse>(`/api/v1/lists/${encodeURIComponent(listId)}/items/order`, request);
+  }
 
   getMyLists(options: { source: ListSource; page: number; itemType?: ListItemType; genre?: string; sortBy?: 'name' | 'likesCount' | 'itemsCount' | 'commentsCount' | 'updatedAt' | 'rank'; sortDirection?: 'asc' | 'desc' }): Observable<UserListCardPage> {
     let params = new HttpParams().set('source', options.source).set('page', options.page).set('size', 10);

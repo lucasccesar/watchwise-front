@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CdkDrag, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
-import { Subscription, concatMap, finalize, forkJoin, from, map, of, switchMap, toArray } from 'rxjs';
-import { ListsApiService, ListCardPreview, ListItemType, ListSource, UserListCard } from '../../data-access/lists-api.service';
+import { finalize, Subscription } from 'rxjs';
+import { ListsApiService, ListCardPreview, ListItemType, ListOrderItem, ListSource, UserListCard, applyOrderMoves, buildOrderMoves } from '../../data-access/lists-api.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ModalFocusDirective } from '../../../../shared/directives/modal-focus.directive';
@@ -27,7 +27,17 @@ type ListSort = 'updatedAt' | 'rank' | 'name' | 'likesCount' | 'itemsCount' | 'c
   templateUrl: './lists.component.html',
   styleUrl: './lists.component.css',
 })
-export class ListsComponent {
+export class ListsComponent implements OnDestroy {
+  @ViewChild('reorderSentinel') set reorderSentinel(ref: ElementRef<HTMLElement> | undefined) {
+    this.orderObserver?.disconnect();
+    this.orderObserver = undefined;
+    if (!ref || typeof IntersectionObserver === 'undefined') return;
+    this.orderObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) this.loadMoreOrder();
+    }, { rootMargin: '240px 0px' });
+    this.orderObserver.observe(ref.nativeElement);
+  }
+
   protected readonly copy = messageCatalog['pt-BR'].listsPage;
   protected readonly detailCopy = messageCatalog['pt-BR'].listDetailPage;
   protected readonly homeCopy = messageCatalog['pt-BR'].home;
@@ -54,8 +64,13 @@ export class ListsComponent {
   protected readonly activePreviewListId = signal<string | null>(null);
   protected readonly activePreviewIndex = signal<number | null>(null);
   protected readonly reorderMode = signal(false);
-  protected readonly reorderDraft = signal<UserListCard[]>([]);
+  protected readonly reorderDraft = signal<ListOrderItem[]>([]);
   protected readonly reorderInitialIds = signal<string[]>([]);
+  protected readonly orderRevision = signal<string | null>(null);
+  protected readonly orderCursor = signal<string | null>(null);
+  protected readonly reorderLoading = signal(false);
+  protected readonly reorderError = signal(false);
+  protected readonly selectedOrderId = signal<string | null>(null);
   protected readonly savingOrder = signal(false);
   protected readonly reorderDragStartDelay = { touch: 150, mouse: 0 };
   protected readonly reorderHasChanges = computed(() => {
@@ -70,10 +85,20 @@ export class ListsComponent {
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastNotificationsService);
   private request?: Subscription;
+  private orderRequest?: Subscription;
+  private orderObserver?: IntersectionObserver;
+  private refreshTargetIds: string[] | null = null;
+  private refreshBaselineIds: string[] | null = null;
+  private refreshExpectedRevision: string | null = null;
   private previousReorderState: { source: ListsPageSource; itemType: ListItemType | null; sort: ListSort; direction: 'asc' | 'desc'; page: number } | null = null;
 
   constructor() {
     this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.request?.unsubscribe();
+    this.clearOrderSession();
   }
 
   protected onHeroBackdropLoaded(): void {
@@ -134,7 +159,7 @@ export class ListsComponent {
   }
 
   protected retryLoad(): void {
-    if (this.reorderMode()) this.loadAllOwnedLists();
+    if (this.reorderMode()) this.loadMoreOrder();
     else this.load();
   }
 
@@ -293,15 +318,17 @@ export class ListsComponent {
     this.sort.set('rank');
     this.sortDirection.set('asc');
     this.page.set(1);
-    this.loadAllOwnedLists();
+    this.beginOrderSession();
   }
 
   protected cancelReorder(): void {
     if (this.savingOrder()) return;
     const previous = this.previousReorderState;
+    this.clearOrderSession();
     this.reorderMode.set(false);
     this.reorderDraft.set([]);
     this.reorderInitialIds.set([]);
+    this.selectedOrderId.set(null);
     this.previousReorderState = null;
     if (previous) {
       this.source.set(previous.source);
@@ -315,38 +342,35 @@ export class ListsComponent {
 
   protected saveReorder(): void {
     if (!this.reorderHasChanges() || this.savingOrder()) return;
-    const updates = this.reorderDraft().map((list, index) => ({ list, rank: index + 1 }));
-    if (!updates.length) return;
-
+    const revision = this.orderRevision();
+    if (!revision || this.reorderLoading()) return;
+    const baselineIds = this.reorderInitialIds();
+    const targetIds = this.reorderDraft().map((list) => list.id);
+    const allMoves = buildOrderMoves(baselineIds, targetIds);
+    const moves = allMoves.slice(0, 100);
+    if (!moves.length) return;
     this.savingOrder.set(true);
-    from(updates).pipe(
-      concatMap(({ list, rank }) => this.api.updateList(list.id, { rank })),
-      toArray(),
-      finalize(() => this.savingOrder.set(false)),
-    ).subscribe({
-      next: () => {
-        this.reorderMode.set(false);
-        this.reorderDraft.set([]);
-        this.reorderInitialIds.set([]);
-        this.previousReorderState = null;
-        this.source.set('OWNED');
-        this.itemType.set(null);
-        this.sort.set('rank');
-        this.sortDirection.set('asc');
-        this.page.set(1);
-        this.toasts.success(this.copy.orderSaved);
-        this.load(true);
+    this.api.updateOwnedListOrder({ revision, moves }).subscribe({
+      next: (response) => {
+        this.savingOrder.set(false);
+        const newBaseline = applyOrderMoves(baselineIds, moves);
+        if (moves.length < 100 || moves.length === allMoves.length) {
+          this.toasts.success(this.copy.orderSaved);
+          this.finishReorderMode();
+          this.restorePreviousReorderState();
+          this.load(true);
+          return;
+        }
+        this.reorderInitialIds.set(newBaseline);
+        this.toasts.success(this.copy.orderSavedContinue);
+        this.refreshLoadedPrefix(targetIds, newBaseline, response.revision);
       },
       error: () => {
+        this.savingOrder.set(false);
         this.toasts.error(this.copy.reorderError);
-        this.loadAllOwnedLists();
+        this.resetOrderAfterConflict();
       },
     });
-  }
-
-  protected listPosition(listId: string): number {
-    const index = this.reorderDraft().findIndex((list) => list.id === listId);
-    return index < 0 ? 1 : index + 1;
   }
 
   protected moveList(listId: string, offset: number): void {
@@ -356,20 +380,39 @@ export class ListsComponent {
     this.moveDraftList(fromIndex, toIndex);
   }
 
-  protected setListPosition(listId: string, rawPosition: string): void {
-    const position = Number.parseInt(rawPosition, 10);
-    if (!Number.isFinite(position)) return;
-    const current = this.reorderDraft();
-    const fromIndex = current.findIndex((list) => list.id === listId);
-    const toIndex = Math.max(0, Math.min(current.length - 1, position - 1));
-    this.moveDraftList(fromIndex, toIndex);
-  }
-
-  protected dropList(event: CdkDragDrop<UserListCard[]>): void {
+  protected dropList(event: CdkDragDrop<ListOrderItem[]>): void {
     if (!this.reorderMode() || this.savingOrder() || event.previousContainer !== event.container) return;
     const reordered = [...this.reorderDraft()];
     moveItemInArray(reordered, event.previousIndex, event.currentIndex);
     this.reorderDraft.set(reordered);
+  }
+
+  protected loadMoreOrder(): void {
+    if (!this.reorderMode() || this.reorderLoading() || this.savingOrder()) return;
+    if (this.orderRevision() !== null && this.orderCursor() === null) return;
+    this.loadOrderPage(this.orderCursor());
+  }
+
+  protected selectOrDropAfter(id: string): void {
+    const selected = this.selectedOrderId();
+    if (!selected) {
+      if (this.reorderDraft().find((item) => item.id === id)?.movable) this.selectedOrderId.set(id);
+      return;
+    }
+    if (selected === id) {
+      this.selectedOrderId.set(null);
+      return;
+    }
+    const current = this.reorderDraft();
+    const fromIndex = current.findIndex((item) => item.id === selected);
+    const targetIndex = current.findIndex((item) => item.id === id);
+    if (fromIndex < 0 || targetIndex < 0 || current[targetIndex]?.movable !== true) return;
+    const reordered = [...current];
+    const [moved] = reordered.splice(fromIndex, 1);
+    const anchorIndex = reordered.findIndex((item) => item.id === id);
+    reordered.splice(anchorIndex + 1, 0, moved);
+    this.reorderDraft.set(reordered);
+    this.selectedOrderId.set(null);
   }
 
   protected typeLabel(): string {
@@ -406,6 +449,7 @@ export class ListsComponent {
   protected listRoute(list: UserListCard): string[] { return ['/lists', list.id]; }
 
   protected previewPoster(card: ListCardPreview): string | null { return this.imageUrl(card.customPosterUrl || card.posterPath); }
+  protected orderThumbnailUrl(item: ListOrderItem): string | null { return this.imageUrl(item.thumbnailUrl); }
   protected previewRoute(card: ListCardPreview): string[] | null {
     const id = card.tmdbId || card.seriesTmdbId;
     if (!id) return null;
@@ -437,52 +481,131 @@ export class ListsComponent {
     return 'likesCount';
   }
 
-  private loadAllOwnedLists(): void {
+  private beginOrderSession(): void {
     if (!this.session.user()) {
       void this.router.navigateByUrl('/login');
       return;
     }
     this.request?.unsubscribe();
-    this.status.set('loading');
-    this.error.set('');
-    const firstPageRequest = this.api.getMyLists({ source: 'OWNED', page: 1, sortBy: 'rank', sortDirection: 'asc' });
-    this.request = firstPageRequest.pipe(
-      switchMap((firstPage) => {
-        const remainingPages = Array.from(
-          { length: Math.max(0, firstPage.totalPages - 1) },
-          (_, index) => this.api.getMyLists({ source: 'OWNED', page: index + 2, sortBy: 'rank', sortDirection: 'asc' }),
-        );
-        return remainingPages.length
-          ? forkJoin(remainingPages).pipe(map((rest) => [firstPage, ...rest]))
-          : of([firstPage]);
-      }),
-    ).subscribe({
-      next: (pages) => {
-        const firstPage = pages[0];
-        const lists = pages.flatMap((page) => page.content);
-        const backdropPath = firstPage.backdropPath ?? null;
-        this.heroBackdropPath.set(backdropPath);
-        this.heroBackdropLoading.set(backdropPath === null || Boolean(backdropPath.trim()));
-        this.heroBackdropFailed.set(false);
-        this.pageData.set({
-          ...firstPage,
-          content: lists,
-          page: 1,
-          size: lists.length,
-          totalElements: firstPage.totalElements,
-          totalPages: 1,
-          hasNext: false,
-        });
-        this.reorderDraft.set(lists);
-        this.reorderInitialIds.set(lists.map((list) => list.id));
-        this.status.set('ready');
+    this.clearOrderSession();
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.loadOrderPage(null);
+  }
+
+  private loadOrderPage(cursor: string | null): void {
+    this.reorderLoading.set(true);
+    this.reorderError.set(false);
+    this.orderRequest?.unsubscribe();
+    this.orderRequest = this.api.getOwnedListOrder(cursor).subscribe({
+      next: (page) => {
+        if (this.refreshExpectedRevision && page.revision !== this.refreshExpectedRevision) {
+          this.resetOrderAfterConflict();
+          return;
+        }
+        if (this.orderRevision() && this.orderRevision() !== page.revision && !this.refreshExpectedRevision) {
+          this.resetOrderAfterConflict();
+          return;
+        }
+        this.orderRevision.set(page.revision);
+        this.orderCursor.set(page.nextCursor);
+        const existing = this.reorderDraft();
+        const known = new Set(existing.map((item) => item.id));
+        const additions = page.items.filter((item) => !known.has(item.id));
+        const combined = [...existing, ...additions];
+        this.reorderDraft.set(combined);
+
+        if (this.refreshTargetIds) {
+          if (combined.length >= this.refreshTargetIds.length || page.nextCursor === null) {
+            const actualIds = combined.map((item) => item.id).slice(0, this.refreshBaselineIds?.length ?? 0);
+            if (actualIds.length !== this.refreshBaselineIds?.length ||
+              actualIds.some((id, index) => id !== this.refreshBaselineIds?.[index])) {
+              this.resetOrderAfterConflict();
+              return;
+            }
+            const byId = new Map(combined.map((item) => [item.id, item]));
+            this.reorderDraft.set(this.refreshTargetIds.map((id) => byId.get(id)!).filter(Boolean));
+            this.reorderInitialIds.set(this.refreshBaselineIds ?? []);
+            this.refreshTargetIds = null;
+            this.refreshBaselineIds = null;
+            this.refreshExpectedRevision = null;
+            this.reorderLoading.set(false);
+            return;
+          }
+          this.loadOrderPage(page.nextCursor);
+          return;
+        }
+
+        this.reorderInitialIds.update((ids) => [...ids, ...additions.map((item) => item.id)]);
+        this.reorderLoading.set(false);
       },
       error: (error: unknown) => {
-        this.heroBackdropLoading.set(false);
-        this.status.set('error');
-        this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.homeCopy.actionConnectionError : this.homeCopy.genericError);
+        if (error instanceof HttpErrorResponse && error.status === 409) {
+          this.resetOrderAfterConflict();
+          return;
+        }
+        this.reorderLoading.set(false);
+        this.reorderError.set(true);
       },
     });
+  }
+
+  private refreshLoadedPrefix(targetIds: string[], baselineIds: string[], revision: string): void {
+    this.refreshTargetIds = targetIds;
+    this.refreshBaselineIds = baselineIds;
+    this.refreshExpectedRevision = revision;
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.loadOrderPage(null);
+  }
+
+  private resetOrderAfterConflict(): void {
+    this.toasts.error(this.copy.reorderConflict);
+    this.refreshTargetIds = null;
+    this.refreshBaselineIds = null;
+    this.refreshExpectedRevision = null;
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    if (this.reorderMode()) this.loadOrderPage(null);
+  }
+
+  private clearOrderSession(): void {
+    this.orderRequest?.unsubscribe();
+    this.orderRequest = undefined;
+    this.orderObserver?.disconnect();
+    this.orderObserver = undefined;
+    this.refreshTargetIds = null;
+    this.refreshBaselineIds = null;
+    this.refreshExpectedRevision = null;
+    this.reorderLoading.set(false);
+    this.reorderError.set(false);
+  }
+
+  private finishReorderMode(): void {
+    this.clearOrderSession();
+    this.reorderMode.set(false);
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.selectedOrderId.set(null);
+  }
+
+  private restorePreviousReorderState(): void {
+    const previous = this.previousReorderState;
+    this.previousReorderState = null;
+    if (!previous) return;
+    this.source.set(previous.source);
+    this.itemType.set(previous.itemType);
+    this.sort.set(previous.sort);
+    this.sortDirection.set(previous.direction);
+    this.page.set(previous.page);
   }
 
   private moveDraftList(fromIndex: number, toIndex: number): void {

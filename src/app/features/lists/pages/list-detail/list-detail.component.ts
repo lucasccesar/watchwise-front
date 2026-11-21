@@ -12,11 +12,11 @@ import { WatchLogDialogComponent, WatchLogSubmission } from '../../../../shared/
 import { SeriesBulkWatchDialogComponent, type SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
 import { PostWatchRatingFlowComponent, type PostWatchRatingSaved, type PostWatchRatingTarget } from '../../../../shared/components/post-watch-rating-flow/post-watch-rating-flow.component';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CdkDrag, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
-import { concatMap, distinctUntilChanged, finalize, from, map, of, Subscription, switchMap, throwError, toArray, type Observable } from 'rxjs';
+import { distinctUntilChanged, map, of, Subscription, switchMap, throwError, type Observable } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { ContentApiService, type ContentPageResult, type UserListSummary } from '../../../content/data-access/content-api.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent } from '../../../../shared/components/content-image-actions/content-image-actions.component';
@@ -26,7 +26,7 @@ import { tmdbImageUrl } from '../../../../shared/utils/tmdb-image-url';
 import { resolveRating } from '../../../../shared/utils/community-rating';
 import { episodeContentNavigationState, episodeContentRoute } from '../../../../shared/utils/episode-content-route';
 import { CheckIconComponent } from '../../../../shared/components/check-icon/check-icon.component';
-import { ListComment, ListContentReference, ListDetailItem, ListDetailView, ListOwner, ListsApiService, ListVisibility } from '../../data-access/lists-api.service';
+import { applyOrderMoves, buildOrderMoves, ListComment, ListContentReference, ListDetailItem, ListDetailView, ListOrderItem, ListOwner, ListsApiService, ListVisibility } from '../../data-access/lists-api.service';
 
 type ListContentType = 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE' | null;
 type ListWatchStatus = 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN' | null;
@@ -41,8 +41,17 @@ type DetailMenu = 'type' | 'genre' | 'sort' | 'status' | null;
   templateUrl: './list-detail.component.html',
   styleUrl: './list-detail.component.css',
 })
-export class ListDetailComponent {
+export class ListDetailComponent implements OnDestroy {
   @ViewChild('listMenuButton') protected listMenuTrigger?: ElementRef<HTMLElement>;
+  @ViewChild('reorderSentinel') set reorderSentinel(ref: ElementRef<HTMLElement> | undefined) {
+    this.orderObserver?.disconnect();
+    this.orderObserver = undefined;
+    if (!ref || typeof IntersectionObserver === 'undefined') return;
+    this.orderObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) this.loadMoreOrder();
+    }, { rootMargin: '240px 0px' });
+    this.orderObserver.observe(ref.nativeElement);
+  }
   protected readonly copy = messageCatalog['pt-BR'].listDetailPage;
   protected readonly listCopy = messageCatalog['pt-BR'].listsPage;
   protected readonly homeCopy = messageCatalog['pt-BR'].home;
@@ -73,9 +82,19 @@ export class ListDetailComponent {
   protected readonly postWatchRatingTarget = signal<PostWatchRatingTarget | null>(null);
   protected readonly busyListId = signal<string | null>(null);
   protected readonly reorderMode = signal(false);
-  protected readonly reorderDraft = signal<ListDetailItem[]>([]);
+  protected readonly reorderDraft = signal<ListOrderItem[]>([]);
   protected readonly reorderInitialIds = signal<string[]>([]);
+  protected readonly orderRevision = signal<string | null>(null);
+  protected readonly orderCursor = signal<string | null>(null);
+  protected readonly reorderLoading = signal(false);
+  protected readonly reorderError = signal(false);
+  protected readonly selectedOrderId = signal<string | null>(null);
   protected readonly savingItemOrder = signal(false);
+  protected readonly reorderHasChanges = computed(() => {
+    const current = this.reorderDraft().map((item) => item.id);
+    const initial = this.reorderInitialIds();
+    return current.length !== initial.length || current.some((id, index) => id !== initial[index]);
+  });
   protected readonly reorderDragStartDelay = { touch: 150, mouse: 0 };
   protected readonly loadingPlaceholders = Array.from({ length: 30 }, (_, index) => index);
   protected readonly deleteListDialogOpen = signal(false);
@@ -123,7 +142,7 @@ export class ListDetailComponent {
   protected readonly canManage = signal(false);
   protected readonly genreOptions = computed(() => [...new Set((this.detail()?.items.content ?? []).flatMap((item) => item.card?.genres ?? []))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
   protected readonly items = computed(() => this.detail()?.items.content ?? []);
-  protected readonly displayedItems = computed(() => this.reorderMode() ? this.reorderDraft() : this.items());
+  protected readonly displayedItems = computed(() => this.items());
   protected readonly episodeItems = computed(() => this.detail()?.itemScope === 'EPISODE' || this.items().some((item) => item.card?.type === 'EPISODE'));
   protected readonly commentThreads = computed(() => buildCommentTree(this.comments()));
 
@@ -134,6 +153,11 @@ export class ListDetailComponent {
   private readonly route = inject(ActivatedRoute);
   protected readonly router = inject(Router);
   private request?: Subscription;
+  private orderRequest?: Subscription;
+  private orderObserver?: IntersectionObserver;
+  private refreshTargetIds: string[] | null = null;
+  private refreshBaselineIds: string[] | null = null;
+  private refreshExpectedRevision: string | null = null;
   private commentsRequest?: Subscription;
   private listPickerRequests = new Subscription();
 
@@ -152,6 +176,13 @@ export class ListDetailComponent {
       this.load();
       this.loadComments(true);
     });
+  }
+
+  ngOnDestroy(): void {
+    this.request?.unsubscribe();
+    this.commentsRequest?.unsubscribe();
+    this.clearOrderSession();
+    this.listPickerRequests.unsubscribe();
   }
 
   protected load(preserveExisting = false): void {
@@ -174,10 +205,6 @@ export class ListDetailComponent {
     this.request = this.api.getDetail(listId, params).subscribe({
       next: (detail) => {
         this.detail.set(detail);
-        if (this.reorderMode()) {
-          this.reorderInitialIds.set(detail.items.content.map((item) => item.id));
-          this.setReorderDraftOrder(detail.items.content);
-        }
         const owner = detail.owner ?? null;
         this.owner.set(owner);
         this.canManage.set(owner?.id === this.currentUserId());
@@ -223,41 +250,44 @@ export class ListDetailComponent {
   protected scrollToComments(): void { document.getElementById('list-comments')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   protected toggleReorder(): void {
     if (this.savingItemOrder() || this.reorderMode()) return;
-    this.reorderInitialIds.set(this.items().map((item) => item.id));
-    this.setReorderDraftOrder(this.items());
     this.reorderMode.set(true);
     this.listMenuOpen.set(false);
+    this.beginOrderSession();
+  }
+  protected cancelItemOrder(): void {
+    if (this.savingItemOrder()) return;
+    this.finishReorderMode();
   }
   protected saveItemOrder(): void {
-    if (!this.reorderMode() || !this.canManage() || this.savingItemOrder()) return;
-    const draftIds = this.reorderDraft().map((item) => item.id);
-    const initialIds = this.reorderInitialIds();
-    const hasChanges = draftIds.length !== initialIds.length || draftIds.some((id, index) => id !== initialIds[index]);
-    if (!hasChanges) {
-      this.finishReorderMode();
-      return;
-    }
-
-    const updates = this.buildItemOrderUpdates();
-    if (!updates.length) {
-      this.finishReorderMode();
-      return;
-    }
-
+    if (!this.reorderMode() || !this.canManage() || this.savingItemOrder() || this.reorderLoading()) return;
+    const revision = this.orderRevision();
+    if (!revision) return;
+    const baselineIds = this.reorderInitialIds();
+    const targetIds = this.reorderDraft().map((item) => item.id);
+    const movableIds = this.reorderDraft().filter((item) => item.movable).map((item) => item.id);
+    const allMoves = buildOrderMoves(baselineIds, targetIds, movableIds);
+    const moves = allMoves.slice(0, 100);
+    if (!moves.length) return;
     const listId = this.listId();
     this.savingItemOrder.set(true);
-    from(updates).pipe(
-      concatMap(({ item, position }) => this.api.updateItem(listId, item.id, { position })),
-      toArray(),
-      finalize(() => this.savingItemOrder.set(false)),
-    ).subscribe({
-      next: () => {
-        this.finishReorderMode();
-        this.load(true);
+    this.api.reorderListItems(listId, { revision, moves }).subscribe({
+      next: (response) => {
+        this.savingItemOrder.set(false);
+        const newBaseline = applyOrderMoves(baselineIds, moves);
+        if (moves.length < 100 || moves.length === allMoves.length) {
+          this.toasts.success(this.copy.orderSaved);
+          this.finishReorderMode();
+          this.load(true);
+          return;
+        }
+        this.reorderInitialIds.set(newBaseline);
+        this.toasts.success(this.copy.orderSavedContinue);
+        this.refreshLoadedPrefix(targetIds, newBaseline, response.revision);
       },
       error: () => {
-        this.toasts.error(this.copy.actionError);
-        this.load(true);
+        this.savingItemOrder.set(false);
+        this.toasts.error(this.copy.reorderConflict);
+        this.resetOrderAfterConflict();
       },
     });
   }
@@ -311,6 +341,10 @@ export class ListDetailComponent {
     const path = item.customPosterUrl || item.card?.customPosterUrl || item.card?.posterPath;
     if (!path || item.card?.previewStatus === 'UNAVAILABLE') return null;
     return tmdbImageUrl(path, size);
+  }
+
+  protected orderThumbnailUrl(item: ListOrderItem): string | null {
+    return tmdbImageUrl(item.thumbnailUrl, 'w342');
   }
 
   protected contentRoute(item: ListDetailItem): string[] | null {
@@ -807,7 +841,6 @@ export class ListDetailComponent {
       };
     };
     this.detail.update((detail) => detail ? { ...detail, items: { ...detail.items, content: detail.items.content.map(update) } } : detail);
-    this.reorderDraft.update((items) => items.map(update));
   }
 
   private handleSessionError(error: unknown): boolean {
@@ -925,26 +958,57 @@ export class ListDetailComponent {
     });
   }
 
-  protected moveItem(item: ListDetailItem, offset: number): void {
-    if (this.savingItemOrder()) return;
-    const pageContent = this.reorderDraft();
-    const currentIndex = pageContent.findIndex((entry) => entry.id === item.id);
-    const targetIndex = currentIndex + offset;
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= pageContent.length) return;
-    const reordered = [...pageContent];
-    moveItemInArray(reordered, currentIndex, targetIndex);
-    this.setReorderDraftOrder(reordered);
-  }
-
-  protected dropItem(event: CdkDragDrop<ListDetailItem[]>): void {
+  protected dropOrderItem(event: CdkDragDrop<ListOrderItem[]>): void {
     if (!this.reorderMode() || !this.canManage() || this.savingItemOrder() || event.previousContainer !== event.container) return;
     const current = this.reorderDraft();
     const item = current[event.previousIndex];
-    if (!item || !current[event.currentIndex] || event.previousIndex === event.currentIndex) return;
+    const target = current[event.currentIndex];
+    if (!item?.movable || !target?.movable || event.previousIndex === event.currentIndex || !this.canMoveWithinOrderSegment(current, event.previousIndex, event.currentIndex)) return;
 
     const reordered = [...current];
     moveItemInArray(reordered, event.previousIndex, event.currentIndex);
-    this.setReorderDraftOrder(reordered);
+    this.reorderDraft.set(reordered);
+    this.selectedOrderId.set(null);
+  }
+
+  protected moveOrderItem(itemId: string, offset: number): void {
+    if (this.savingItemOrder() || this.reorderLoading()) return;
+    const current = this.reorderDraft();
+    const fromIndex = current.findIndex((item) => item.id === itemId);
+    const toIndex = fromIndex + offset;
+    if (fromIndex < 0 || toIndex < 0 || toIndex >= current.length ||
+      !current[fromIndex]?.movable || !current[toIndex]?.movable || !this.canMoveWithinOrderSegment(current, fromIndex, toIndex)) return;
+    const reordered = [...current];
+    moveItemInArray(reordered, fromIndex, toIndex);
+    this.reorderDraft.set(reordered);
+  }
+
+  protected loadMoreOrder(): void {
+    if (!this.reorderMode() || !this.canManage() || this.reorderLoading() || this.savingItemOrder()) return;
+    if (this.orderRevision() !== null && this.orderCursor() === null) return;
+    this.loadOrderPage(this.orderCursor());
+  }
+
+  protected selectOrDropAfter(id: string): void {
+    const selected = this.selectedOrderId();
+    const current = this.reorderDraft();
+    const targetIndex = current.findIndex((item) => item.id === id);
+    if (!selected) {
+      if (current[targetIndex]?.movable) this.selectedOrderId.set(id);
+      return;
+    }
+    if (selected === id) {
+      this.selectedOrderId.set(null);
+      return;
+    }
+    const fromIndex = current.findIndex((item) => item.id === selected);
+    if (fromIndex < 0 || targetIndex < 0 || !current[targetIndex]?.movable || !this.canMoveWithinOrderSegment(current, fromIndex, targetIndex)) return;
+    const reordered = [...current];
+    const [moved] = reordered.splice(fromIndex, 1);
+    const anchorIndex = reordered.findIndex((item) => item.id === id);
+    reordered.splice(anchorIndex + 1, 0, moved);
+    this.reorderDraft.set(reordered);
+    this.selectedOrderId.set(null);
   }
 
   protected setCommentText(event: Event): void { this.commentText.set((event.target as HTMLTextAreaElement).value); }
@@ -1049,6 +1113,7 @@ export class ListDetailComponent {
   private resetForListChange(): void {
     this.request?.unsubscribe();
     this.commentsRequest?.unsubscribe();
+    this.clearOrderSession();
     this.detail.set(null);
     this.owner.set(null);
     this.canManage.set(false);
@@ -1068,6 +1133,9 @@ export class ListDetailComponent {
     this.reorderMode.set(false);
     this.reorderDraft.set([]);
     this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.selectedOrderId.set(null);
     this.savingItemOrder.set(false);
     this.deleteListDialogOpen.set(false);
     this.deleteItem.set(null);
@@ -1086,42 +1154,122 @@ export class ListDetailComponent {
 
   private resetFilters(): void { this.page.set(1); this.load(); }
 
-  private setReorderDraftOrder(items: ListDetailItem[]): void {
-    const positions = this.items().map((item) => item.position).sort((a, b) => a - b);
-    this.reorderDraft.set(items.map((item, index) => ({ ...item, position: positions[index] ?? item.position })));
-  }
-
-  private buildItemOrderUpdates(): Array<{ item: ListDetailItem; position: number }> {
-    const originalItems = this.items();
-    const targetPositions = originalItems.map((item) => item.position).sort((a, b) => a - b);
-    const simulatedPositions = new Map(originalItems.map((item) => [item.id, item.position]));
-    const updates: Array<{ item: ListDetailItem; position: number }> = [];
-
-    this.reorderDraft().forEach((item, index) => {
-      const oldPosition = simulatedPositions.get(item.id);
-      const newPosition = targetPositions[index];
-      if (oldPosition === undefined || newPosition === undefined || oldPosition === newPosition) return;
-
-      updates.push({ item, position: newPosition });
-      simulatedPositions.set(item.id, newPosition);
-      for (const other of originalItems) {
-        if (other.id === item.id) continue;
-        const position = simulatedPositions.get(other.id);
-        if (position === undefined) continue;
-        if (newPosition < oldPosition && position >= newPosition && position < oldPosition) {
-          simulatedPositions.set(other.id, position + 1);
-        } else if (newPosition > oldPosition && position > oldPosition && position <= newPosition) {
-          simulatedPositions.set(other.id, position - 1);
-        }
-      }
-    });
-
-    return updates;
-  }
-
   private finishReorderMode(): void {
+    this.clearOrderSession();
     this.reorderMode.set(false);
     this.reorderDraft.set([]);
     this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.selectedOrderId.set(null);
+  }
+
+  private beginOrderSession(): void {
+    this.request?.unsubscribe();
+    this.clearOrderSession();
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.selectedOrderId.set(null);
+    this.loadOrderPage(null);
+  }
+
+  private loadOrderPage(cursor: string | null): void {
+    this.reorderLoading.set(true);
+    this.reorderError.set(false);
+    this.orderRequest?.unsubscribe();
+    this.orderRequest = this.api.getListItemsOrder(this.listId(), cursor).subscribe({
+      next: (page) => {
+        if (this.refreshExpectedRevision && page.revision !== this.refreshExpectedRevision) {
+          this.resetOrderAfterConflict();
+          return;
+        }
+        if (this.orderRevision() && this.orderRevision() !== page.revision && !this.refreshExpectedRevision) {
+          this.resetOrderAfterConflict();
+          return;
+        }
+        this.orderRevision.set(page.revision);
+        this.orderCursor.set(page.nextCursor);
+        const existing = this.reorderDraft();
+        const known = new Set(existing.map((item) => item.id));
+        const additions = page.items.filter((item) => !known.has(item.id));
+        const combined = [...existing, ...additions];
+        this.reorderDraft.set(combined);
+
+        if (this.refreshTargetIds) {
+          if (combined.length >= this.refreshTargetIds.length || page.nextCursor === null) {
+            const actualIds = combined.map((item) => item.id).slice(0, this.refreshBaselineIds?.length ?? 0);
+            if (actualIds.length !== this.refreshBaselineIds?.length ||
+              actualIds.some((id, index) => id !== this.refreshBaselineIds?.[index])) {
+              this.resetOrderAfterConflict();
+              return;
+            }
+            const byId = new Map(combined.map((item) => [item.id, item]));
+            this.reorderDraft.set(this.refreshTargetIds.map((id) => byId.get(id)!).filter(Boolean));
+            this.reorderInitialIds.set(this.refreshBaselineIds ?? []);
+            this.refreshTargetIds = null;
+            this.refreshBaselineIds = null;
+            this.refreshExpectedRevision = null;
+            this.reorderLoading.set(false);
+            return;
+          }
+          this.loadOrderPage(page.nextCursor);
+          return;
+        }
+
+        this.reorderInitialIds.update((ids) => [...ids, ...additions.map((item) => item.id)]);
+        this.reorderLoading.set(false);
+      },
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 409) {
+          this.resetOrderAfterConflict();
+          return;
+        }
+        this.reorderLoading.set(false);
+        this.reorderError.set(true);
+      },
+    });
+  }
+
+  private refreshLoadedPrefix(targetIds: string[], baselineIds: string[], revision: string): void {
+    this.refreshTargetIds = targetIds;
+    this.refreshBaselineIds = baselineIds;
+    this.refreshExpectedRevision = revision;
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    this.loadOrderPage(null);
+  }
+
+  private resetOrderAfterConflict(): void {
+    this.toasts.error(this.copy.reorderConflict);
+    this.refreshTargetIds = null;
+    this.refreshBaselineIds = null;
+    this.refreshExpectedRevision = null;
+    this.reorderDraft.set([]);
+    this.reorderInitialIds.set([]);
+    this.orderRevision.set(null);
+    this.orderCursor.set(null);
+    if (this.reorderMode()) this.loadOrderPage(null);
+  }
+
+  private clearOrderSession(): void {
+    this.orderRequest?.unsubscribe();
+    this.orderRequest = undefined;
+    this.orderObserver?.disconnect();
+    this.orderObserver = undefined;
+    this.refreshTargetIds = null;
+    this.refreshBaselineIds = null;
+    this.refreshExpectedRevision = null;
+    this.reorderLoading.set(false);
+    this.reorderError.set(false);
+  }
+
+  private canMoveWithinOrderSegment(items: ListOrderItem[], fromIndex: number, toIndex: number): boolean {
+    const start = Math.min(fromIndex, toIndex);
+    const end = Math.max(fromIndex, toIndex);
+    return items.slice(start + 1, end + 1).every((item) => item.movable);
   }
 }
