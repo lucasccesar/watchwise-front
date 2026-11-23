@@ -33,6 +33,19 @@ export interface PublicUserProfile {
   isContentRestrictedByBlock?: boolean | null;
 }
 
+export type ProfileIdentity = Pick<PublicUserProfile, 'id' | 'username'> & Partial<Pick<PublicUserProfile,
+  'name' | 'description' | 'profilePicture' | 'banner' | 'followersCount' | 'followingCount' |
+  'minutesWatchedMoviesLast30Days' | 'minutesWatchedEpisodesLast30Days'>>;
+
+export interface ProfileHeader extends ProfileIdentity {
+  access: 'VISIBLE' | 'PRIVATE' | 'UNAVAILABLE';
+  isProfilePublic?: boolean;
+  ownedByViewer?: boolean;
+  viewerFollowStatus?: 'ACCEPTED' | 'PENDING';
+  followsViewer?: boolean;
+  blockRelationship: 'NONE' | 'BLOCKED_BY_ME' | 'BLOCKED_ME' | 'MUTUAL';
+}
+
 export interface GenreCount {
   genre: string;
   count: number;
@@ -295,6 +308,12 @@ export interface TopFiveCreateRequest {
 @Injectable({ providedIn: 'root' })
 export class ProfileApiService {
   constructor(private readonly http: HttpClient) {}
+
+  getHeader(username: string): Observable<ProfileHeader> {
+    return this.http.get<ProfileHeader>('/api/v1/users/profile-header', {
+      params: new HttpParams().set('username', username),
+    });
+  }
 
   getUser(userId: string): Observable<PublicUserProfile> {
     return this.http.get<PublicUserProfile>('/api/v1/users/' + encodeURIComponent(userId));

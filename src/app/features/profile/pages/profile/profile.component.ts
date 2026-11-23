@@ -38,7 +38,7 @@ import { ConfirmationDialogService } from '../../../../shared/components/confirm
 import { ShareCardModel, SharePreviewComponent, type ShareProfileContentType, type ShareProfileContentVariant } from '../../../../shared/components/share-preview/share-preview.component';
 import { ShareReviewDialogComponent, type ShareReviewDialogCopy, type ShareReviewDialogModel } from '../../../../shared/components/share-review-dialog/share-review-dialog.component';
 import { ProfileCountryMapComponent } from '../../components/profile-country-map/profile-country-map.component';
-import { EpisodeRatingsGrid, EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileSummaryTopFiveEntry, ProfileYearReview, PublicUserProfile, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
+import { EpisodeRatingsGrid, EpisodeRatingsMapItem, ProfileApiService, ProfileAllTimeEdition, ProfileAllTimeStats, ProfileContentCard, ProfileContentMode, ProfileDiaryPreview, ProfileMonthReview, ProfileSummary, ProfileSummaryTopFiveEntry, ProfileYearReview, ProfileIdentity, TopFiveContentType, TopFiveEntry } from '../../data-access/profile-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { movieMessages } from '../../../content/i18n/movie.messages';
 import { tmdbImageUrl, type TmdbImageSize } from '../../../../shared/utils/tmdb-image-url';
@@ -203,7 +203,7 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly section = signal<ProfileSection>('profile');
   protected readonly status = signal<LoadState>('loading');
   protected readonly profileOverviewLoading = signal(false);
-  protected readonly profile = signal<PublicUserProfile | null>(null);
+  protected readonly profile = signal<ProfileIdentity | null>(null);
   protected readonly foundUser = signal<SearchUserView | null>(null);
   protected readonly username = signal('');
   protected readonly mode = signal<ProfileContentMode>('MOVIE');
@@ -274,6 +274,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   protected readonly progressLoading = signal(false);
   protected readonly progressPageLoading = signal(false);
   private profileLoadVersion = 0;
+  private profileHeaderRequest?: Subscription;
+  private profileOverviewRequest?: Subscription;
   protected readonly lists = signal<UserListCardPage | null>(null);
   protected readonly listItemType = signal<ListItemType | null>(null);
   protected readonly listSort = signal<ProfileListSort>('rank');
@@ -732,6 +734,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.profileHeaderRequest?.unsubscribe();
+    this.profileOverviewRequest?.unsubscribe();
     this.watchlistRequest?.unsubscribe();
     this.profileGenreLabelChanges?.unsubscribe();
     this.profileGenreLabelObserver?.disconnect();
@@ -2405,7 +2409,6 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         this.foundUser.update((user) => user ? { ...user, viewerFollowStatus: nextState === 'FOLLOWING' ? 'ACCEPTED' : nextState === 'PENDING' ? 'PENDING' : null } : user);
         this.profile.update((user) => user ? {
           ...user,
-          viewerRelation: nextState === 'FOLLOWING' ? 'FOLLOWING' : 'NOT_FOLLOWING',
           followersCount: Math.max(0, (user.followersCount ?? 0) + (following && nextState === 'FOLLOWING' ? 1 : !following ? -1 : 0)),
         } : user);
         this.foundUser.update((user) => user ? {
@@ -2833,6 +2836,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
 
   private loadProfile(): void {
     const loadVersion = ++this.profileLoadVersion;
+    this.profileHeaderRequest?.unsubscribe();
+    this.profileOverviewRequest?.unsubscribe();
     const username = this.username().replace(/^@/, '');
     if (!username) {
       this.status.set('error');
@@ -2841,6 +2846,27 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     this.status.set('loading');
     this.profile.set(null);
     this.foundUser.set(null);
+    if (this.section() === 'profile') {
+      this.profileHeaderRequest = this.profileApi.getHeader(this.username()).subscribe({
+        next: (header) => {
+          if (loadVersion !== this.profileLoadVersion) return;
+          this.profile.set(header);
+          this.followState.set(header.ownedByViewer ? 'SELF' : header.viewerFollowStatus === 'ACCEPTED'
+            ? 'FOLLOWING' : header.viewerFollowStatus === 'PENDING' ? 'PENDING' : 'NOT_FOLLOWING');
+          this.followsViewer.set(header.followsViewer ?? false);
+          if (header.access !== 'VISIBLE') {
+            this.status.set(header.access === 'PRIVATE' ? 'private' : 'error');
+            return;
+          }
+          this.status.set('ready');
+          this.loadSection(header.id);
+        },
+        error: (error: unknown) => {
+          if (loadVersion === this.profileLoadVersion) this.handleError(error);
+        },
+      });
+      return;
+    }
     this.searchApi.search(username, 'USER').subscribe({
       next: (results) => {
         if (loadVersion !== this.profileLoadVersion) return;
@@ -2898,7 +2924,8 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
     if (section !== 'progress' && !preserveExisting) this.resetSectionData();
 
     if (section === 'profile') {
-      forkJoin({
+      this.profileOverviewRequest?.unsubscribe();
+      this.profileOverviewRequest = forkJoin({
         summary: this.profileApi.getSummary(userId, mode),
         recentMovies: mode === 'MOVIE'
           ? this.diaryApi.getDiaryPage(userId, { page: 1, size: 6, type: 'MOVIE', sortBy: 'NEWEST' }).pipe(catchError(() => of(null)))
