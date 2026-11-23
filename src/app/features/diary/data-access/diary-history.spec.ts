@@ -33,3 +33,20 @@ describe('Complete Diary reads', () => {
     expect(received).not.toHaveBeenCalled();
   });
 });
+
+
+describe('Series progress reads', () => {
+  it('keeps the paginated endpoint and requested order separate from individual progress', () => {
+    const http = { get: vi.fn((_url: string, _options?: { params: import('@angular/common/http').HttpParams }) => of(null)) };
+    const service = new DiaryApiService(http as never);
+    service.getMySeriesProgress('1396').subscribe();
+    service.getSeriesInProgress('viewer', { page: 2, size: 100, sortBy: 'LAST_WATCHED', direction: 'DESC' }).subscribe();
+
+    expect(http.get).toHaveBeenNthCalledWith(1, '/api/v1/users/me/series-progress/1396');
+    expect(http.get).toHaveBeenNthCalledWith(2, '/api/v1/users/viewer/series-in-progress',
+      expect.objectContaining({ params: expect.any(Object) }));
+    const [, options] = http.get.mock.calls[1];
+    expect(['page', 'size', 'sortBy', 'direction'].map(key => options?.params.get(key)))
+      .toEqual(['2', '100', 'LAST_WATCHED', 'DESC']);
+  });
+});

@@ -15,9 +15,9 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, Title } from '@angular/platform-browser';
 import { combineLatest, forkJoin, Observable, Subscription, of, switchMap, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { DiaryApiService, SeriesInProgressRecord } from '../../../diary/data-access/diary-api.service';
+import { DiaryApiService, IndividualSeriesProgress } from '../../../diary/data-access/diary-api.service';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import {
   ContentApiService,
@@ -77,7 +77,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly dialogCopy = messageCatalog['pt-BR'].home;
   protected readonly page = signal<SeriesPage | null>(null);
   protected readonly crew = computed(() => sortCrewByRole(this.page()?.details.crew ?? [], 'SERIES'));
-  protected readonly progressRecord = signal<SeriesInProgressRecord | null>(null);
+  protected readonly progressRecord = signal<IndividualSeriesProgress | null>(null);
   protected readonly seriesPageRefreshPending = signal(false);
   protected readonly watchProgress = computed(() => this.calculateWatchProgress(this.page()));
   protected readonly pageStatus = signal<PageStatus>('loading');
@@ -95,15 +95,7 @@ export class SeriesComponent implements OnInit, OnDestroy {
   protected readonly commentError = signal('');
   protected readonly reviewSort = signal<ReviewSort>('POPULAR');
   protected readonly reviewCount = computed(() => this.page()?.visibleReviewsCount ?? 0);
-  protected readonly remainingEpisodes = computed(() => {
-    const current = this.page();
-    if (!current) return 0;
-    const apiRemaining = this.progressRecord()?.remainingEpisodeCount;
-    if (apiRemaining != null) return Math.max(0, apiRemaining);
-
-    const progress = this.watchProgress();
-    return Math.max(0, progress.totalEpisodeCount - progress.watchedEpisodeCount);
-  });
+  protected readonly remainingEpisodes = computed(() => this.calculateRemainingEpisodes());
   protected readonly dialog = signal<DialogState>(null);
   protected readonly selectedVideoKey = signal<string | null>(null);
   protected readonly videoPlaying = signal(false);
@@ -1318,6 +1310,21 @@ export class SeriesComponent implements OnInit, OnDestroy {
     });
   }
 
+  private calculateRemainingEpisodes(): number {
+    const current = this.page();
+    if (!current) return 0;
+    const detailProgress = getReportedSeriesWatchProgress(
+      current.viewerState.watchedEpisodeCount, current.viewerState.releasedEpisodeCount,
+    );
+    if (detailProgress) return detailProgress.totalEpisodeCount - detailProgress.watchedEpisodeCount;
+
+    const apiRemaining = this.progressRecord()?.remainingEpisodeCount;
+    if (apiRemaining != null) return Math.max(0, apiRemaining);
+
+    const progress = this.watchProgress();
+    return Math.max(0, progress.totalEpisodeCount - progress.watchedEpisodeCount);
+  }
+
   private calculateWatchProgress(series: SeriesPage | null): { watchedEpisodeCount: number; totalEpisodeCount: number; percentage: number } {
     if (!series) return { watchedEpisodeCount: 0, totalEpisodeCount: 0, percentage: 0 };
 
@@ -1382,19 +1389,10 @@ export class SeriesComponent implements OnInit, OnDestroy {
     };
   }
 
-  private getSeriesProgressRecord(tmdbId: string): Observable<SeriesInProgressRecord | null> {
-    const userId = this.session.user()?.id;
-    if (!userId) return of(null);
+  private getSeriesProgressRecord(tmdbId: string): Observable<IndividualSeriesProgress | null> {
+    if (!this.session.user()?.id) return of(null);
 
-    return this.diaryApi.getSeriesInProgress(userId, {
-      page: 1,
-      size: 100,
-      sortBy: 'LAST_WATCHED',
-      direction: 'DESC',
-    }).pipe(
-      map((page) => page.content.find((item) => String(item.seriesTmdbId) === String(tmdbId)) ?? null),
-      catchError(() => of(null)),
-    );
+    return this.diaryApi.getMySeriesProgress(tmdbId).pipe(catchError(() => of(null)));
   }
 
   protected dateLabel(value: string | null | undefined): string {

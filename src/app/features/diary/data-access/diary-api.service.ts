@@ -185,6 +185,11 @@ export interface SeriesInProgressRecord {
   completedSeasonProgress?: SeriesSeasonProgress[] | null;
 }
 
+export type IndividualSeriesProgress = Pick<SeriesInProgressRecord,
+  'watchedEpisodeCount' | 'totalEpisodeCount' | 'totalReleasedEpisodeCount' | 'watchedPercentage' |
+  'remainingEpisodeCount' | 'lastWatchedDate' | 'lastWatchedSeasonNumber'
+> & { seasonProgress: Pick<SeriesSeasonProgress, 'seasonNumber' | 'watchedEpisodeCount' | 'totalEpisodeCount'>[] };
+
 export interface SeriesInProgressPage {
   content: SeriesInProgressRecord[];
   backdropPath: string | null;
@@ -327,6 +332,12 @@ export class DiaryApiService {
     if (options.dateFrom) params = params.set('dateFrom', options.dateFrom);
     if (options.dateTo) params = params.set('dateTo', options.dateTo);
     return params;
+  }
+
+  getMySeriesProgress(seriesTmdbId: string): Observable<IndividualSeriesProgress | null> {
+    return this.http.get<IndividualSeriesProgress | null>(
+      `/api/v1/users/me/series-progress/${encodeURIComponent(seriesTmdbId)}`,
+    );
   }
 
   getSeriesInProgress(
