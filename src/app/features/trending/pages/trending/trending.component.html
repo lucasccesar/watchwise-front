@@ -73,13 +73,13 @@
                       @if (card.posterUrl) {
                         <a
                           class="tr-poster-link"
-                          [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]"
+                          [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]" [queryParams]="card.type === 'MOVIE' && card.contentId ? { contentId: card.contentId } : null"
                           [attr.aria-label]="cardTitle(card)"
                         ><img [src]="posterImage(card.posterUrl)" alt="" loading="lazy" /></a>
                       } @else {
                         <a
                           class="tr-poster-link tr-poster-empty"
-                          [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]"
+                          [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]" [queryParams]="card.type === 'MOVIE' && card.contentId ? { contentId: card.contentId } : null"
                           [attr.aria-label]="cardTitle(card)"
                           >{{ copy.noPoster }}</a
                         >
@@ -214,7 +214,7 @@
                     <div class="tr-card-text">
                       <div class="tr-card-main">
                         <strong>
-                          <a class="tr-title-link" [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]">{{ cardTitle(card) }}</a>
+                          <a class="tr-title-link" [routerLink]="['/content', card.type.toLowerCase(), card.tmdbId]" [queryParams]="card.type === 'MOVIE' && card.contentId ? { contentId: card.contentId } : null">{{ cardTitle(card) }}</a>
                         </strong><span>{{ cardLength(card) }}</span>
                       </div>
                       <p>{{ cardMeta(card) }}</p>

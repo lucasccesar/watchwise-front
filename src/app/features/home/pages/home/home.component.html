@@ -422,7 +422,7 @@
               <div class="recent-visual">
                 @if (recentPoster(entry); as poster) {
                   @if (contentRoute(entry.content); as route) {
-                    <a class="recent-movie-link" [routerLink]="route" [attr.aria-label]="entry.card?.title || copy.titleUnavailable"><img [src]="poster" alt="" loading="lazy" /></a>
+                    <a class="recent-movie-link" [routerLink]="route" [queryParams]="entry.content.type === 'MOVIE' && entry.content.id ? { contentId: entry.content.id } : null" [attr.aria-label]="entry.card?.title || copy.titleUnavailable"><img [src]="poster" alt="" loading="lazy" /></a>
                   } @else {
                     <img [src]="poster" alt="" loading="lazy" />
                   }
@@ -483,7 +483,7 @@
                   } @else {
                     <strong>
                       @if (contentRoute(entry.content); as route) {
-                        <a class="home-content-title-link" [routerLink]="route">{{ entry.card?.title || copy.titleUnavailable }}</a>
+                        <a class="home-content-title-link" [routerLink]="route" [queryParams]="entry.content.type === 'MOVIE' && entry.content.id ? { contentId: entry.content.id } : null">{{ entry.card?.title || copy.titleUnavailable }}</a>
                       } @else {
                         {{ entry.card?.title || copy.titleUnavailable }}
                       }
@@ -546,7 +546,7 @@
                 @if (posterFor(activity.card); as poster) {
                   <div class="social-poster content-image-card">
                     @if (activity.content?.type === 'MOVIE' && activity.content.tmdbId) {
-                      <a class="social-movie-link" [routerLink]="['/content/movie', activity.content.tmdbId]" [attr.aria-label]="copy.movieSingular + ': ' + (activity.card?.title || activity.targetLabel || copy.titleUnavailable)"><img [src]="poster" alt="" loading="lazy" /></a>
+                      <a class="social-movie-link" [routerLink]="['/content/movie', activity.content.tmdbId]" [queryParams]="activity.content.id ? { contentId: activity.content.id } : null" [attr.aria-label]="copy.movieSingular + ': ' + (activity.card?.title || activity.targetLabel || copy.titleUnavailable)"><img [src]="poster" alt="" loading="lazy" /></a>
                     } @else {
                       <img [src]="poster" alt="" loading="lazy" />
                     }
@@ -570,7 +570,7 @@
                   <div class="social-content-heading" [class.social-content-heading--diary]="activity.eventType === 'DIARY_ENTRY'">
                     <h3>
                       @if (activity.content?.type === 'MOVIE' && activity.content.tmdbId) {
-                        <a class="home-content-title-link" [routerLink]="['/content/movie', activity.content.tmdbId]">{{ socialActivityTitle(activity) }}</a>
+                        <a class="home-content-title-link" [routerLink]="['/content/movie', activity.content.tmdbId]" [queryParams]="activity.content.id ? { contentId: activity.content.id } : null">{{ socialActivityTitle(activity) }}</a>
                       } @else {
                         {{ socialActivityTitle(activity) }}
                       }

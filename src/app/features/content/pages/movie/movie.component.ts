@@ -22,7 +22,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, Title } from '@angular/platform-browser';
-import { combineLatest, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
+import { catchError, combineLatest, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../../../../core/session/session.service';
 import {
   ContentApiService,
@@ -268,18 +268,29 @@ export class MovieComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const reference$ = knownContentId
-      ? of({ id: knownContentId })
-      : this.api.createMovieReference(tmdbId);
-
-    this.requestSubscriptions.add(
-      reference$
-        .pipe(
-          switchMap((reference) => {
-            this.contentId.set(reference.id);
-            return this.api.getPage(reference.id);
+    const resolveByTmdbId = () => this.api.createMovieReference(tmdbId).pipe(
+      switchMap((reference) => this.api.getPage(reference.id)),
+    );
+    const page$ = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(knownContentId)
+      ? this.api.getPage(knownContentId).pipe(
+          catchError((error: unknown) => {
+            if (error instanceof HttpErrorResponse && (error.status === 400 || error.status === 404)) {
+              return of(null);
+            }
+            return throwError(() => error);
+          }),
+          switchMap((page) => {
+            // The API builds this URL from the persisted movie reference.
+            const matchesRoute = page?.details.type === 'MOVIE'
+              && page.details.contentId.toLowerCase() === knownContentId.toLowerCase()
+              && page.metadata.tmdbUrl === `https://www.themoviedb.org/movie/${tmdbId}`;
+            return matchesRoute ? of(page) : resolveByTmdbId();
           }),
         )
+      : resolveByTmdbId();
+
+    this.requestSubscriptions.add(
+      page$
         .subscribe({
           next: (page) => {
             if (page.details.type !== 'MOVIE') {
@@ -291,6 +302,7 @@ export class MovieComponent implements OnInit, OnDestroy {
               this.pageError.set(this.copy.notFound);
               return;
             }
+            this.contentId.set(page.details.contentId);
             this.page.set(page);
             this.title.setTitle(`${page.details.title?.trim() || this.copy.untitled} | Watchwise`);
             this.tmdbId.set(page.details.tmdbId || tmdbId);
