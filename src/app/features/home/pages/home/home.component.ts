@@ -25,7 +25,6 @@ import { episodeContentNavigationState } from '../../../../shared/utils/episode-
 import { AuthSessionService } from '../../../../core/session/session.service';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
 import { ContentApiService } from '../../../content/data-access/content-api.service';
-import { FeedApiService } from '../../../social/data-access/feed-api.service';
 import {
   ContentImageAction,
   ContentImageActionSelection,
@@ -115,7 +114,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     { id: 'open-content', label: this.copy.openContent, icon: 'eye' },
   ];
   protected readonly summary = signal<HomeSummary | null>(null);
-  protected readonly socialActivityDetailsLoaded = signal(false);
   protected readonly busySocialLikeIds = signal<ReadonlySet<string>>(new Set());
   protected readonly hoveredChartDayIndex = signal<number | null>(null);
   protected readonly status = signal<HomeStatus>('loading');
@@ -151,7 +149,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected activeDialogOpener: HTMLElement | null = null;
   private genreLabelObserver: ResizeObserver | null = null;
   private genreLabelChanges?: Subscription;
-  private socialDetailsRequestSequence = 0;
+  private summaryRequest?: Subscription;
+  private episodeTitleRequests?: Subscription;
   private shareReviewRequest?: Subscription;
   private ratingDetailsRequest?: Subscription;
 
@@ -161,7 +160,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private readonly api: HomeApiService,
     private readonly contentApi: ContentApiService,
-    private readonly feedApi: FeedApiService,
     private readonly session: AuthSessionService,
     private readonly shellState: AppShellStateService,
     private readonly router: Router,
@@ -183,6 +181,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.summaryRequest?.unsubscribe();
+    this.episodeTitleRequests?.unsubscribe();
     this.genreLabelChanges?.unsubscribe();
     this.genreLabelObserver?.disconnect();
     this.shareReviewRequest?.unsubscribe();
@@ -190,6 +190,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected loadSummary(userId = this.session.user()?.id, preserveExisting = false): void {
+    this.summaryRequest?.unsubscribe();
     if (!userId) {
       this.session.clear();
       void this.router.navigateByUrl('/login');
@@ -199,19 +200,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!preserveExisting) {
       this.status.set('loading');
       this.errorMessage.set(null);
-      this.socialActivityDetailsLoaded.set(false);
-      this.socialDetailsRequestSequence += 1;
+      this.episodeTitleRequests?.unsubscribe();
       this.shellState.clearHomeState();
     }
-    this.api.getHomeSummary(userId).subscribe({
+    this.summaryRequest = this.api.getHomeSummary(userId, true).subscribe({
       next: (summary) => {
         this.summary.set(summary);
-        this.loadSocialActivityDetails(summary.socialActivities);
         this.shellState.updateHomeState(
           summary.viewer,
           summary.hasUnreadNotifications,
         );
         this.status.set('ready');
+        this.loadEpisodeActivityTitles(summary.socialActivities);
       },
       error: (error: unknown) => {
         if (preserveExisting && this.summary()) {
@@ -1225,7 +1225,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected socialLikeUnavailable(activity: HomeSocialActivity): boolean {
-    return !this.socialActivityDetailsLoaded() || activity.likedByMe == null;
+    return activity.likedByMe == null;
   }
 
   protected socialLikeBusy(activity: HomeSocialActivity): boolean {
@@ -1322,48 +1322,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.formatLongDate(value);
   }
 
-  private loadSocialActivityDetails(activities: HomeSocialActivity[]): void {
-    const requestSequence = ++this.socialDetailsRequestSequence;
-    if (!activities.some((activity) => activity.eventType === 'DIARY_ENTRY')) {
-      this.socialActivityDetailsLoaded.set(true);
-      return;
-    }
-
-    this.socialActivityDetailsLoaded.set(false);
-    this.feedApi.getFeed({ size: 3 }).subscribe({
-      next: (feed) => {
-        if (requestSequence !== this.socialDetailsRequestSequence) return;
-        const detailsById = new Map(feed.content.map((activity) => [activity.id, activity] as const));
-        this.summary.update((current) => current ? {
-          ...current,
-          socialActivities: current.socialActivities.map((activity) => {
-            const details = detailsById.get(activity.id);
-            return details ? {
-              ...activity,
-              user: {
-                ...activity.user,
-                profilePicture: details.user.profilePicture ?? activity.user.profilePicture,
-              },
-              score: details.score,
-              comment: details.comment,
-              likedByMe: details.likedByMe,
-              likesCount: details.likesCount,
-              commentsCount: details.commentsCount,
-            } : activity;
-          }),
-        } : current);
-        this.loadEpisodeActivityTitles(feed.content, requestSequence);
-        this.socialActivityDetailsLoaded.set(true);
-      },
-      error: () => {
-        if (requestSequence === this.socialDetailsRequestSequence) {
-          this.socialActivityDetailsLoaded.set(false);
-        }
-      },
-    });
-  }
-
-  private loadEpisodeActivityTitles(activities: HomeSocialActivity[], requestSequence: number): void {
+  private loadEpisodeActivityTitles(activities: HomeSocialActivity[]): void {
+    this.episodeTitleRequests?.unsubscribe();
+    this.episodeTitleRequests = new Subscription();
     for (const activity of activities) {
       const contentId = activity.content?.id;
       if (
@@ -1374,9 +1335,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         continue;
       }
 
-      this.contentApi.getEpisodePage(contentId).subscribe({
+      this.episodeTitleRequests.add(this.contentApi.getEpisodePage(contentId).subscribe({
         next: (page) => {
-          if (requestSequence !== this.socialDetailsRequestSequence) return;
           this.summary.update((current) => current ? {
             ...current,
             socialActivities: current.socialActivities.map((item) => item.id === activity.id
@@ -1389,7 +1349,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           } : current);
         },
         error: () => {},
-      });
+      }));
     }
   }
 

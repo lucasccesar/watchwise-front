@@ -197,10 +197,11 @@ export interface DiaryEntryUpdateRequest {
 export class HomeApiService {
   constructor(private readonly http: HttpClient) {}
 
-  getHomeSummary(userId: string): Observable<HomeSummary> {
-    return this.http.get<HomeSummary>(
-      `/api/v1/users/${encodeURIComponent(userId)}/summary/home`,
-    );
+  getHomeSummary(userId: string, includeDiaryActivity = false): Observable<HomeSummary> {
+    const url = `/api/v1/users/${encodeURIComponent(userId)}/summary/home`;
+    return includeDiaryActivity
+      ? this.http.get<HomeSummary>(url, { params: { includeDiaryActivity } })
+      : this.http.get<HomeSummary>(url);
   }
 
   createDiaryEntry(request: DiaryEntryCreationRequest): Observable<unknown> {
