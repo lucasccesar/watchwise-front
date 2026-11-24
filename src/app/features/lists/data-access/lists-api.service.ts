@@ -237,6 +237,29 @@ export interface ListDetailView {
   items: ListDetailPage;
 }
 
+export type ListEditorCard = Pick<ListCardPreview,
+  'type' | 'tmdbId' | 'seriesTmdbId' | 'seasonNumber' | 'episodeNumber' |
+  'title' | 'releaseYear' | 'posterPath'> & Partial<Pick<ListCardPreview, 'customPosterUrl'>>;
+
+export interface ListEditorItem {
+  id: string;
+  position: number;
+  card: ListEditorCard | null;
+  customPosterUrl: string | null;
+  nestedList?: Pick<NonNullable<ListDetailItem['nestedList']>, 'id' | 'name' | 'previewCards'> | null;
+}
+
+export interface ListEditorFields {
+  name: string;
+  description?: string | null;
+  visibility: ListVisibility;
+  itemScope?: string | null;
+}
+
+export type ListEditorView =
+  | (ListEditorFields & { status: 'READY'; items: ListEditorItem[] })
+  | { status: 'READ_ONLY' | 'LEGACY' };
+
 export interface ListComment {
   id: string;
   user: ListOwner;
@@ -414,6 +437,10 @@ export class ListsApiService {
       description: null,
       customPosterUrl: null,
     });
+  }
+
+  getEditor(listId: string): Observable<ListEditorView> {
+    return this.http.get<ListEditorView>(`/api/v1/lists/${encodeURIComponent(listId)}/editor`);
   }
 
   getDetail(listId: string, options: { page: number; size: number; type?: 'MOVIE' | 'SERIES' | 'SEASON' | 'EPISODE'; genre?: string; watchStatus?: 'WATCHED' | 'PARTIALLY_WATCHED' | 'UNWATCHED' | 'UNKNOWN'; sortBy?: 'position' | 'dateAdded' | 'duration' | 'episodeAvgRating' | 'globalEpisodeAvgRating' | 'contentAvgRating'; sortDirection?: 'asc' | 'desc' }): Observable<ListDetailView> {

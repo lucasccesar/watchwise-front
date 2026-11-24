@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { concatMap, from, Subscription, toArray } from 'rxjs';
 import { ContentApiService, ContentEpisodeSelection, ContentSeasonSelection } from '../../../content/data-access/content-api.service';
-import { ListsApiService, ListCardPreview, ListContentReference, ListDetailItem, ListDetailView, ListVisibility } from '../../data-access/lists-api.service';
+import { ListsApiService, ListContentReference, ListDetailItem, ListDetailView, ListEditorCard, ListEditorFields, ListEditorItem, ListVisibility } from '../../data-access/lists-api.service';
 import { SearchApiService, SearchContentView } from '../../../search-content/data-access/search-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
@@ -117,7 +117,7 @@ export class ListCreateComponent implements OnDestroy {
     if (!listId) return;
     this.editListId.set(listId);
     this.loadingList.set(true);
-    this.loadExistingList(listId, 1, []);
+    this.loadEditor(listId);
   }
 
   protected updateName(event: Event): void {
@@ -361,7 +361,7 @@ export class ListCreateComponent implements OnDestroy {
     if (!listId) return;
     this.loadError.set('');
     this.loadingList.set(true);
-    this.loadExistingList(listId, 1, []);
+    this.loadEditor(listId);
   }
 
   ngOnDestroy(): void {
@@ -371,43 +371,71 @@ export class ListCreateComponent implements OnDestroy {
     this.listRequest?.unsubscribe();
   }
 
-  private loadExistingList(listId: string, page: number, accumulated: ListDetailItem[], firstPage?: ListDetailView): void {
+  private loadEditor(listId: string): void {
     this.listRequest?.unsubscribe();
-    this.listRequest = this.listsApi.getDetail(listId, { page, size: 30, sortBy: 'position', sortDirection: 'asc' }).subscribe({
-      next: (detail) => {
-        const initial = firstPage ?? detail;
-        if (page === 1) {
-          if (detail.owner.id !== this.session.user()?.id) {
-            this.loadingList.set(false);
-            this.toasts.error(this.copy.loadListError);
-            void this.router.navigate(['/lists', listId]);
-            return;
-          }
-          this.name.set(detail.name);
-          this.description.set(detail.description ?? '');
-          this.visibility.set(detail.visibility);
-          if (detail.itemScope === 'SEASON') this.kind.set('SEASONS');
-          else if (detail.itemScope === 'EPISODE') this.kind.set('EPISODES');
+    this.listRequest = new Subscription();
+    this.listRequest.add(this.listsApi.getEditor(listId).subscribe({
+      next: (editor) => {
+        switch (editor.status) {
+          case 'READY':
+            this.applyEditor(editor, editor.items);
+            break;
+          case 'READ_ONLY':
+            this.redirectFromEditor(listId);
+            break;
+          case 'LEGACY':
+            this.loadLegacyList(listId, 1, []);
+            break;
         }
-        const items = [...accumulated, ...detail.items.content];
-        if (detail.items.hasNext) {
-          this.loadExistingList(listId, page + 1, items, initial);
-          return;
-        }
-        const composerItems = items.map((item) => this.toComposerItem(item)).filter((item): item is ListComposerItem => item !== null);
-        this.originalItemIds.set(new Set(items.map((item) => item.id)));
-        this.selectedItems.set(composerItems);
-        this.nestedListEdit.set(initial.itemScope === 'LIST' || composerItems.some((item) => item.nestedListId));
-        this.loadingList.set(false);
       },
-      error: () => {
-        this.loadingList.set(false);
-        this.loadError.set(this.copy.loadListError);
-      },
-    });
+      error: () => this.handleListLoadError(),
+    }));
   }
 
-  private toComposerItem(item: ListDetailItem): ListComposerItem {
+  private loadLegacyList(listId: string, page: number, accumulated: ListDetailItem[], firstPage?: ListDetailView): void {
+    this.listRequest?.add(this.listsApi.getDetail(listId, { page, size: 30, sortBy: 'position', sortDirection: 'asc' }).subscribe({
+      next: (detail) => {
+        if (page === 1 && detail.owner.id !== this.session.user()?.id) {
+          this.redirectFromEditor(listId);
+          return;
+        }
+        const initial = firstPage ?? detail;
+        const items = [...accumulated, ...detail.items.content];
+        if (detail.items.hasNext) {
+          this.loadLegacyList(listId, page + 1, items, initial);
+          return;
+        }
+        this.applyEditor(initial, items);
+      },
+      error: () => this.handleListLoadError(),
+    }));
+  }
+
+  private applyEditor(fields: ListEditorFields, items: ListEditorItem[]): void {
+    this.name.set(fields.name);
+    this.description.set(fields.description ?? '');
+    this.visibility.set(fields.visibility);
+    if (fields.itemScope === 'SEASON') this.kind.set('SEASONS');
+    else if (fields.itemScope === 'EPISODE') this.kind.set('EPISODES');
+    const composerItems = items.map((item) => this.toComposerItem(item));
+    this.originalItemIds.set(new Set(items.map((item) => item.id)));
+    this.selectedItems.set(composerItems);
+    this.nestedListEdit.set(fields.itemScope === 'LIST' || composerItems.some((item) => item.nestedListId));
+    this.loadingList.set(false);
+  }
+
+  private redirectFromEditor(listId: string): void {
+    this.loadingList.set(false);
+    this.toasts.error(this.copy.loadListError);
+    void this.router.navigate(['/lists', listId]);
+  }
+
+  private handleListLoadError(): void {
+    this.loadingList.set(false);
+    this.loadError.set(this.copy.loadListError);
+  }
+
+  private toComposerItem(item: ListEditorItem): ListComposerItem {
     const card = item.card;
     if (card) {
       return {
@@ -444,7 +472,7 @@ export class ListCreateComponent implements OnDestroy {
     };
   }
 
-  private referenceFromCard(card: ListCardPreview): ListContentReference | null {
+  private referenceFromCard(card: ListEditorCard): ListContentReference | null {
     if ((card.type === 'MOVIE' || card.type === 'SERIES') && card.tmdbId) return { type: card.type, tmdbId: card.tmdbId };
     if (card.type === 'SEASON' && card.seriesTmdbId && card.seasonNumber !== null) {
       return { type: 'SEASON', seriesTmdbId: card.seriesTmdbId, seasonNumber: card.seasonNumber };
