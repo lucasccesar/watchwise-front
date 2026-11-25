@@ -47,7 +47,7 @@ export interface WatchlistView {
   totalPages: number;
   hasNext: boolean;
   backdropPath?: string | null;
-  availableGenres?: string[];
+  availableGenres: string[];
   aggregate: {
     totalCount: number;
     movieCount: number;
@@ -69,6 +69,7 @@ export class WatchlistApiService {
     direction: 'ASC' | 'DESC';
     page: number;
     size: number;
+    includeGenreOptions?: boolean;
   }): Observable<WatchlistView> {
     let params = new HttpParams()
       .set('status', options.status)
@@ -78,6 +79,7 @@ export class WatchlistApiService {
       .set('size', options.size);
     if (options.type) params = params.set('type', options.type);
     if (options.genre) params = params.set('genre', options.genre);
+    if (options.includeGenreOptions) params = params.set('includeGenreOptions', true);
     return this.http.get<WatchlistView>(
       `/api/v1/users/${encodeURIComponent(userId)}/watchlist/view`,
       { params },

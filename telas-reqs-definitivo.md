@@ -1674,7 +1674,7 @@ contagens por tipo, runtime total e upcoming. `TITLE`/`RATING` podem responder
 `400` acima do limite de candidatos materializados. A leitura respeita a
 visibilidade do perfil, não cria `Content`, não chama `/contents/details` e não
 cacheia o envelope materializado.
-`availableGenres` retorna os gêneros distintos presentes em toda a Watchlist visível,
+Com `includeGenreOptions=true`, `availableGenres` retorna os gêneros distintos presentes em toda a Watchlist visível,
 independentemente dos filtros e da página, para popular o seletor sem buscar páginas
 adicionais no navegador.
 

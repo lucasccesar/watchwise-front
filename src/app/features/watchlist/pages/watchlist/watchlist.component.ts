@@ -104,7 +104,8 @@ export class WatchlistComponent implements OnDestroy {
     const items = this.view()?.content ?? [];
     return this.upcomingMode() === 'HIDE' ? items.filter((item) => item.status !== 'UPCOMING') : items;
   });
-  protected readonly genreOptions = signal<string[]>([]);
+  protected readonly genreOptions = computed(() =>
+    [...new Set(this.view()?.availableGenres ?? [])].sort((a, b) => a.localeCompare(b, 'pt-BR')));
   private readonly session = inject(AuthSessionService);
   private readonly api = inject(WatchlistApiService);
   private readonly contentApi = inject(ContentApiService);
@@ -196,11 +197,11 @@ export class WatchlistComponent implements OnDestroy {
       direction: this.direction(),
       page: this.page(),
       size: this.pageSize,
+      includeGenreOptions: true,
     }).subscribe({
       next: (view) => {
         if (view.availableGenres) {
-          const genres = [...view.availableGenres].sort((left, right) => left.localeCompare(right, 'pt-BR'));
-          this.genreOptions.set(genres);
+          const genres = view.availableGenres;
           const selectedGenre = this.genre();
           if (selectedGenre && !genres.some(
             (genre) => genre.toLocaleLowerCase('pt-BR') === selectedGenre.toLocaleLowerCase('pt-BR'),
@@ -210,8 +211,6 @@ export class WatchlistComponent implements OnDestroy {
             this.load(true);
             return;
           }
-        } else {
-          this.genreOptions.set([]);
         }
         const backdropPath = view.backdropPath ?? null;
         this.heroBackdropPath.set(backdropPath);

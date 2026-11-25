@@ -25,4 +25,17 @@ describe('Watchlist page genre options', () => {
     expect(received?.availableGenres).toEqual(['Comédia', 'Drama', 'Terror']);
     expect(http.get).toHaveBeenCalledTimes(1);
   });
+  it('requests complete menu options only when the caller opts in', () => {
+    const http = { get: vi.fn().mockReturnValue(of({ content: [], availableGenres: ['Drama'] })) };
+    const api = new WatchlistApiService(http as never);
+    const page = { type: 'MOVIE', genre: 'Drama', status: 'ALL', sort: 'DATE_ADDED', direction: 'DESC',
+      page: 2, size: 18 } as const;
+    api.getView('viewer', { ...page, includeGenreOptions: true }).subscribe();
+    api.getView('viewer', page).subscribe();
+
+    expect(http.get).toHaveBeenCalledTimes(2);
+    expect(http.get.mock.calls.map(([, { params }]) =>
+      [params.get('page'), params.get('size'), params.get('genre'), params.get('includeGenreOptions')]))
+      .toEqual([['2', '18', 'Drama', 'true'], ['2', '18', 'Drama', null]]);
+  });
 });

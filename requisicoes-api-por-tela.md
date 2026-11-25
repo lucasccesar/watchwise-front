@@ -131,7 +131,7 @@ O campo `recentActivity` do resumo contém `id` e `source` além da referência 
 - `history`: `GET /api/v1/users/{userId}/summary/all-time` e `GET /api/v1/users/{userId}/diary` com filtros de tipo, série, nota, período, ordenação e paginação.
 - `reviews`: `GET /api/v1/users/{userId}/diary` com `hasReview=true`, tipo, ordenação e paginação.
 - `lists`: `GET /api/v1/users/{userId}/lists/view?page={página}&size={tamanho}` com filtros e ordenação.
-- `watchlist`: `GET /api/v1/users/{userId}/watchlist/view?...`; a lista de gêneros é derivada percorrendo páginas desse mesmo endpoint.
+- `watchlist`: `GET /api/v1/users/{userId}/watchlist/view?...`; a tela envia `includeGenreOptions=true` no GET paginado e usa `availableGenres` da mesma resposta.
 - `picks`: `GET /api/v1/users/{userId}/picks?page={página}&size={tamanho}`.
 - `episode-ratings-map`: `GET /api/v1/users/{userId}/episode-ratings-map?page={página}&size=11`.
 - `episode-ratings-map/{seriesTmdbId}`: `GET /api/v1/users/{userId}/series/{seriesTmdbId}/episode-ratings`.
@@ -191,7 +191,7 @@ O campo `recentActivity` do resumo contém `id` e `source` além da referência 
 ### `/watchlist` — minha Watchlist
 
 - `GET /api/v1/users/{userId}/watchlist/view?...` — carrega itens paginados, com tipo, gênero, status, ordenação e direção.
-- `GET /api/v1/users/{userId}/watchlist/view?...` — a busca de opções de gênero percorre páginas do mesmo endpoint.
+- A tela envia `includeGenreOptions=true` no GET paginado e usa `availableGenres` da mesma resposta para o menu global.
 
 **Ações nos itens:**
 

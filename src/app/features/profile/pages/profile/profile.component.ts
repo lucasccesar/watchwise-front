@@ -698,6 +698,9 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
         this.listSource.set('ALL');
         this.watchlistType.set(null);
         this.watchlistGenre.set(null);
+        this.watchlistRequest?.unsubscribe();
+        this.watchlistRequest = undefined;
+        this.watchlistGenreOptions.set([]);
         this.watchlistStatus.set('ALL');
         this.watchlistSort.set('DATE_ADDED');
         this.watchlistDirection.set('DESC');
@@ -3004,23 +3007,20 @@ export class ProfileComponent implements AfterViewInit, OnDestroy {
       this.watchlistRequest = this.watchlistApi.getView(userId, {
         type: this.watchlistType(), genre: this.watchlistGenre(), status: this.watchlistStatus(), sort: this.watchlistSort(),
         direction: this.watchlistDirection(), page: this.currentPage(), size: this.pageSize,
+        includeGenreOptions: true,
       }).subscribe({
         next: (data) => {
           if (this.profile()?.id !== userId || this.section() !== 'watchlist') return;
-          if (data.availableGenres) {
-            const genres = [...data.availableGenres].sort((left, right) => left.localeCompare(right, 'pt-BR'));
-            this.watchlistGenreOptions.set(genres);
-            const selectedGenre = this.watchlistGenre();
-            if (selectedGenre && !genres.some(
-              (genre) => genre.toLocaleLowerCase('pt-BR') === selectedGenre.toLocaleLowerCase('pt-BR'),
-            )) {
-              this.watchlistGenre.set(null);
-              this.currentPage.set(1);
-              this.loadSection(userId, preserveExisting);
-              return;
-            }
-        } else {
-          this.watchlistGenreOptions.set([]);
+          const genres = [...new Set(data.availableGenres ?? [])].sort((left, right) => left.localeCompare(right, 'pt-BR'));
+          this.watchlistGenreOptions.set(genres);
+          const selectedGenre = this.watchlistGenre();
+          if (data.availableGenres && selectedGenre && !genres.some(
+            (genre) => genre.toLocaleLowerCase('pt-BR') === selectedGenre.toLocaleLowerCase('pt-BR'),
+          )) {
+            this.watchlistGenre.set(null);
+            this.currentPage.set(1);
+            this.loadSection(userId, preserveExisting);
+            return;
           }
           this.watchlist.set(data);
         },

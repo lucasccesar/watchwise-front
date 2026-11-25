@@ -1383,6 +1383,11 @@ paths:
       parameters:
         - $ref: "#/components/parameters/userId"
         - $ref: "#/components/parameters/watchlistTypeQuery"
+        - name: includeGenreOptions
+          in: query
+          required: false
+          description: Retorna as opções globais do menu legado em availableGenres, com fallback para gêneros locais nulos.
+          schema: { type: boolean, default: false }
         - name: genre
           in: query
           required: false
@@ -6876,6 +6881,10 @@ components:
               type: array
               items: { $ref: "#/components/schemas/WatchlistCard" }
             aggregate: { $ref: "#/components/schemas/WatchlistAggregate" }
+            availableGenres:
+              type: array
+              description: Nomes de gênero da Watchlist visível inteira, independentemente da página e dos filtros.
+              items: { type: string }
 
     DroppedEntry:
       type: object
