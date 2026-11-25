@@ -52,3 +52,19 @@ watchwise-prototype/
 /.dev-server*.log
 /.tmp-vitest/
 #docs/
+
+# Benchmark and integration evidence kept on the local machine
+/.watchwise-private-backups/
+/performance/.local/
+/performance/benchmarks/.local/
+/performance/benchmarks/node_modules/
+/performance/benchmarks/results/*
+!/performance/benchmarks/results/*/
+!/performance/benchmarks/results/*.md
+/performance/benchmarks/results/**/*
+!/performance/benchmarks/results/**/
+!/performance/benchmarks/results/**/*.md
+/performance/**/.env
+/performance/**/.env.local
+/performance/**/*.dump
+/performance/**/*.dpapi

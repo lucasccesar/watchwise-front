@@ -1,0 +1,1 @@
+{"name":"watchwise-benchmarks","private":true,"type":"module","scripts":{"bench":"node run.mjs"},"dependencies":{"playwright":"1.65.1"}}
