@@ -267,6 +267,7 @@ O campo `recentActivity` do resumo contém `id` e `source` além da referência 
 ### `/notifications` — notificações
 
 - `GET /api/v1/users/{userId}/summary/home` — consulta o estado de notificações não lidas exibido pela tela.
+- `GET /api/v1/users/me/summary/latest-watched-backdrop` — seleciona o fundo do banner independentemente da listagem.
 - `GET /api/v1/notifications/view?page={página}&size={tamanho}&isRead={true|false}` — carrega e filtra notificações.
 - `PATCH /api/v1/notifications/{notificationId}/read` — marca uma notificação como lida; pode ser repetida para várias notificações.
 - `POST /api/v1/users/me/follow-requests/{requesterId}/accept` — aceita solicitação de seguir.

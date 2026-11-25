@@ -132,6 +132,12 @@ export interface FollowRequestPage {
 export class NotificationsApiService {
   constructor(private readonly http: HttpClient) {}
 
+  getBannerBackdrop(): Observable<{ latestWatchedBackdropPath: string | null }> {
+    return this.http.get<{ latestWatchedBackdropPath: string | null }>(
+      '/api/v1/users/me/summary/latest-watched-backdrop',
+    );
+  }
+
   getView(options: { page: number; size: number; isRead?: boolean }): Observable<NotificationViewPage> {
     let params = new HttpParams().set('page', options.page).set('size', options.size);
     if (options.isRead !== undefined) params = params.set('isRead', options.isRead);

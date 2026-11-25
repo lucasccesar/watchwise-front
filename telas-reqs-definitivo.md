@@ -306,6 +306,11 @@ pessoa e `targetPreview` para texto, score, capa de template ou card de conteúd
 interface deve agrupar as linhas por data usando `createdAt`; `updatedAt` representa a atualização
 de agregados sociais e pode ser usado para o texto relativo da atividade.
 
+O fundo do banner usa `GET /users/me/summary/latest-watched-backdrop`. A leitura é
+independente da lista e retorna apenas `latestWatchedBackdropPath`. O valor nulo
+seleciona a imagem padrão. A lista de notificações determina o estado de
+carregamento dos cartões.
+
 ## Contrato visual por tipo
 
 `NotificationView` preserva os campos do retorno raw e acrescenta os previews necessários para a

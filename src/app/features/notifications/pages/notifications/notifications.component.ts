@@ -5,7 +5,6 @@ import { catchError, expand, reduce, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppShellStateService } from '../../../../core/ui/app-shell-state.service';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { HomeApiService } from '../../../home/data-access/home-api.service';
 import {
   NotificationView,
   NotificationsApiService,
@@ -56,15 +55,13 @@ export class NotificationsComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly shellState = inject(AppShellStateService);
   private readonly session = inject(AuthSessionService);
-  private readonly homeApi = inject(HomeApiService);
   private readonly toasts = inject(ToastNotificationsService);
 
   constructor(private readonly api: NotificationsApiService) {}
 
   ngOnInit(): void {
-    const user = this.session.user();
-    if (user) {
-      this.homeApi.getHomeSummary(user.id)
+    if (this.session.user()) {
+      this.api.getBannerBackdrop()
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({ next: (summary) => this.heroBackdropPath.set(summary.latestWatchedBackdropPath) });
     }
