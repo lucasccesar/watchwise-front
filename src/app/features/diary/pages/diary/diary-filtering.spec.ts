@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { diarySeriesOptions, filterDiaryEntries, type DiaryFilters, type FilterableDiaryEntry } from './diary-filtering';
+import { filterDiaryEntries, type DiaryFilters, type FilterableDiaryEntry } from './diary-filtering';
 
-const defaults: DiaryFilters = { type: 'all', ratingMin: 1, ratingMax: 10, seriesId: '', dateFrom: '', dateTo: '', theaterOnly: false, sort: 'newest' };
+const defaults: DiaryFilters = { type: 'all', ratingMin: 1, ratingMax: 10, dateFrom: '', dateTo: '', theaterOnly: false, sort: 'newest' };
 const entry = (id: string, type = 'MOVIE', overrides: Partial<FilterableDiaryEntry> = {}): FilterableDiaryEntry => ({
   id, content: { type, tmdbId: id, seriesTmdbId: type === 'MOVIE' ? null : 'show' },
   card: { title: id }, watchedDate: '2026-10-20', score: 7, watchedInTheater: false, ...overrides,
@@ -39,27 +39,6 @@ describe('Diary filtering', () => {
     expect(ids(entries, { theaterOnly: true })).toEqual(['yes']);
     expect(ids(entries)).toEqual(['no', 'unknown', 'yes']);
   });
-  it('matches a series and linked children without matching a movie with the same tmdbId', () => {
-    expect(ids([...types, entry('collision', 'MOVIE', { content: { type: 'MOVIE', tmdbId: 'show', seriesTmdbId: 'show' } })], { seriesId: 'show' })).toEqual(['episode', 'season', 'series']);
-  });
-  it('offers only actual series records with their own titles and removes duplicate IDs', () => {
-    expect(diarySeriesOptions([...types, entry('duplicate', 'SERIES')])).toEqual([{ id: 'show', title: 'series' }]);
-  });
-  it('accepts the tmdbId of an actual SERIES record when seriesTmdbId is absent', () => {
-    const show = entry('real', 'SERIES', { content: { type: 'SERIES', tmdbId: 'real', seriesTmdbId: null } });
-    expect(ids([show], { seriesId: 'real' })).toEqual(['real']);
-    expect(diarySeriesOptions([show])).toEqual([{ id: 'real', title: 'real' }]);
-  });
-  it('uses genuine parent-series metadata for children without using episode or movie titles', () => {
-    const children = [entry('episode-title', 'EPISODE'), entry('film')];
-    expect(diarySeriesOptions(children, [
-      { seriesTmdbId: 'show', seriesTitle: 'Série real' },
-      { seriesTmdbId: 'film', seriesTitle: 'Filme que não é série' },
-      { seriesTmdbId: 'unwatched', seriesTitle: 'Outra série' },
-    ])).toEqual([{ id: 'show', title: 'Série real' }]);
-    expect(diarySeriesOptions(children)).toEqual([]);
-  });
-
   const sortable = [entry('a', 'MOVIE', { watchedDate: '2026-10-19', score: 9 }), entry('b', 'MOVIE', { watchedDate: '2026-10-21', score: 4 }), entry('c', 'MOVIE', { watchedDate: '2026-10-20', score: null })];
   it.each([['newest', ['b', 'c', 'a']], ['oldest', ['a', 'c', 'b']], ['highest', ['a', 'b', 'c']], ['lowest', ['b', 'a', 'c']]] as const)('sorts %s with unrated scores last', (sort, expected) => {
     expect(ids(sortable, { sort })).toEqual(expected);
@@ -76,10 +55,9 @@ describe('Diary filtering', () => {
     ids(source, { sort: 'oldest' });
     expect(source.map(item => item.id)).toEqual(['a', 'b', 'c']);
   });
-  it('keeps unknown content in the all view and excludes it from exact type and series menus', () => {
+  it('keeps unknown content in the all view and excludes it from exact type filters', () => {
     const unknown = entry('unknown', 'MOVIE', { content: { type: null, tmdbId: '1', seriesTmdbId: null } });
     expect(ids([unknown])).toEqual(['unknown']);
     expect(ids([unknown], { type: 'movies' })).toEqual([]);
-    expect(diarySeriesOptions([unknown])).toEqual([]);
   });
 });

@@ -343,7 +343,6 @@
 }
 
 .diary-series-group-button { margin-left: auto; }
-.diary-collapse-button:not(.diary-series-group-button) { margin-left: 0; }
 .diary-series-group-button-active,
 .diary-series-group-button-active:hover { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text); }
 .diary-collapse-button:disabled { cursor: wait; opacity: .7; }
@@ -1376,14 +1375,11 @@
 .diary-filter-wrap { min-width: 0; max-width: 100%; }
 .diary-filter-button { max-width: 100%; }
 .diary-filter-button svg, .diary-collapse-button svg { flex: 0 0 16px; }
-.diary-control-label { overflow: hidden; text-overflow: ellipsis; }
-.diary-filter-wrap--series { max-width: 320px; }
 .diary-filter-menu { box-sizing: border-box; max-height: 360px; max-width: min(360px, calc(100vw - 32px)); overflow-y: auto; }
 .diary-filter-menu > button { min-height: 40px; flex-shrink: 0; gap: var(--space-3); font-size: var(--font-size-sm); font-weight: 500; line-height: var(--line-height-sm); white-space: normal; overflow-wrap: anywhere; }
 .diary-filter-menu > button > span:first-child { flex: 1 1 auto; min-width: 0; }
 .diary-filter-menu > button[aria-pressed='true'] { background: var(--color-secondary); color: var(--color-text); }
 .diary-filter-check { width: 16px; height: 16px; flex: 0 0 16px; fill: none; stroke: var(--color-primary); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.diary-series-count { display: inline-flex; min-width: 22px; height: 22px; box-sizing: border-box; flex: 0 0 auto; align-items: center; justify-content: center; padding-inline: 6px; border-radius: 9999px; background: var(--color-secondary); color: var(--color-text); font-size: var(--font-size-xs); font-weight: 600; line-height: var(--line-height-xs); }
 .diary-filter-button:focus-visible,
 .diary-collapse-button:focus-visible,
 .diary-series-group-button:focus-visible,
@@ -1393,7 +1389,6 @@
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
 }
-.diary-filter-wrap--series .diary-filter-menu { min-width: 240px; }
 .diary-date-menu { width: min(344px, calc(100vw - 32px)); gap: var(--space-3); }
 .diary-date-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
 .diary-date-inputs label, .diary-date-inputs input { min-width: 0; width: 100%; box-sizing: border-box; }
@@ -1476,7 +1471,6 @@
   .diary-heading-subtitle { margin-top: 0; }
   .diary-filter-wrap { position: static; }
   .diary-filter-menu { left: 0; right: auto; }
-  .diary-filter-wrap--series { max-width: 100%; }
   .diary-filter-wrap--rating .diary-filter-menu { left: 0; }
   .diary-filter-wrap--date .diary-filter-menu { left: 0; right: auto; }
   .diary-filter-toolbar { position: relative; }

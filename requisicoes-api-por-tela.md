@@ -157,8 +157,7 @@ O campo `recentActivity` do resumo contém `id` e `source` além da referência 
 
 - `GET /api/v1/users/{userId}/summary/home` — resumo exibido no cabeçalho da tela.
 - `GET /api/v1/users/{userId}/diary/series` — opções de filtro de série.
-- `GET /api/v1/users/{userId}/diary?page={página}&size=1000&sortBy=NEWEST` — registros do diário; a tela percorre as páginas.
-- `GET /api/v1/users/{userId}/diary/view?page={página}&size=1000&grouped=true` — itens agrupados para a apresentação do diário; também percorre as páginas.
+- `GET /api/v1/users/{userId}/diary?includeCompletions=true&page={página}&size=30&sortBy=NEWEST` — eventos assistidos e conclusões SERIES/SEASON numa timeline paginada pelo servidor.
 
 **Ações:**
 
@@ -168,9 +167,8 @@ O campo `recentActivity` do resumo contém `id` e `source` além da referência 
 
 ### `/diary/reviews` — resenhas do diário
 
-- `GET /api/v1/users/{userId}/summary/home` — resumo do cabeçalho.
-- `GET /api/v1/users/{userId}/diary/series` — opções de filtro.
-- `GET /api/v1/users/{userId}/reviews?page={página}&size=1000` — lista de resenhas, percorrida página a página.
+- `GET /api/v1/users/{userId}/summary/diary-reviews` — seis totais de atividade e imagem de fundo do cabeçalho.
+- `GET /api/v1/users/{userId}/reviews?page={página}&size=15` — página de resenhas. Os filtros e a ordenação visível operam sobre a página carregada.
 - Não solicita `/diary/view` nesta rota.
 - Curtir/remover curtida usa `POST` ou `DELETE /api/v1/{diary|reviews|dropped}/{entryId}/like`.
 

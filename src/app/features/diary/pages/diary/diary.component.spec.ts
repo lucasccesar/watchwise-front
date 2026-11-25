@@ -4,20 +4,28 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthSessionService } from '../../../../core/session/session.service';
-import { HomeApiService } from '../../../home/data-access/home-api.service';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ConfirmationDialogService } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.service';
+import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { DiaryApiService } from '../../data-access/diary-api.service';
 import { DiaryComponent } from './diary.component';
 
 function diary(reviews = false) {
+  const emptyPage = { content: [], page: 1, size: 15, totalElements: 0, totalPages: 1, hasNext: false };
   const api = {
-    getDiaryPage: vi.fn().mockReturnValue(of({ content: [], page: 1, size: 1000, totalElements: 0, totalPages: 1, hasNext: false })),
-    getAllDiaryEntries: vi.fn().mockReturnValue(of([])),
-    getDiarySeries: vi.fn().mockReturnValue(of([{ seriesTmdbId: 'show', title: 'A série real', entriesCount: 2 }])),
+    getReviewsSummary: vi.fn(() => of({
+      latestWatchedBackdropPath: null, totalMinutesWatchedMovies: 0, totalMinutesWatchedEpisodes: 0,
+      totalMoviesWatched: 0, totalDistinctMoviesWatched: 0, totalEpisodesWatched: 0, distinctSeriesWatched: 0,
+    })),
+    getReviewsPage: vi.fn(() => of(emptyPage)),
+    getDiaryTimelinePage: vi.fn(() => of(timelinePage())),
   };
   const injector = Injector.create({ providers: [
+    { provide: ToastNotificationsService, useValue: { success: vi.fn(), error: vi.fn() } },
+    ConfirmationDialogService,
+    { provide: ContentApiService, useValue: {} },
     { provide: ActivatedRoute, useValue: { snapshot: { data: { mode: reviews ? 'reviews' : 'history' } } } },
-    { provide: AuthSessionService, useValue: { user: () => ({ id: 'viewer' }) } },
-    { provide: HomeApiService, useValue: { getHomeSummary: () => of(null) } },
+    { provide: AuthSessionService, useValue: { user: () => ({ id: 'viewer', username: 'viewer' }) } },
     { provide: DiaryApiService, useValue: api },
     { provide: Router, useValue: { navigateByUrl: vi.fn(), navigate: vi.fn() } },
   ] });
@@ -31,17 +39,31 @@ const records = [
   { id: 'unrated', content: { type: 'SERIES', tmdbId: null, seriesTmdbId: 'show' }, card: { title: 'A série real' }, watchedDate: '2026-10-20', score: null, watchedInTheater: null },
 ];
 
+function timelinePage(...items: typeof records) {
+  return {
+    content: items.map(entry => ({ kind: 'PERSISTED_ENTRY' as const, entry: { ...entry, createdAt: entry.watchedDate + 'T12:00:00' } })),
+    page: 1, size: 30, totalElements: items.length, totalPages: 1, hasNext: false,
+  };
+}
+
 describe('Diary control state', () => {
   afterEach(() => vi.useRealTimers());
-  it.each([false, true])('loads complete history and authoritative series options with reviews=%s', reviews => {
-    const { page, api } = diary(reviews);
-    expect(api.getAllDiaryEntries).toHaveBeenCalledWith('viewer', reviews ? true : undefined);
-    expect(api.getDiarySeries).toHaveBeenCalledWith('viewer');
-    expect(page.seriesOptions()).toEqual([{ id: 'show', title: 'A série real' }]);
+  it.each([false, true])('loads the first page with reviews=%s', reviews => {
+    const { api } = diary(reviews);
+    expect(api.getReviewsSummary).toHaveBeenCalledExactlyOnceWith('viewer');
+    if (reviews) {
+      expect(api.getReviewsPage).toHaveBeenCalledExactlyOnceWith('viewer', 1, 15);
+      expect(api.getDiaryTimelinePage).not.toHaveBeenCalled();
+    } else {
+      expect(api.getDiaryTimelinePage).toHaveBeenCalledExactlyOnceWith('viewer', expect.objectContaining({ page: 1, size: 30, sortBy: 'NEWEST' }));
+      expect(api.getReviewsPage).not.toHaveBeenCalled();
+    }
   });
   it('clamps and rounds both rating handles, prevents crossing, and resets immediately', () => {
-    const { page } = diary();
-    page.diaryEntries.set(records);
+    const { page, api } = diary();
+    const [old, recent, unrated] = records;
+    page.diaryEntries.set([recent, unrated, old]);
+    api.getDiaryTimelinePage.mockReturnValue(of(timelinePage(recent, unrated, old)));
     page.updateRating('min', input('4.4'));
     expect(page.ratingMin()).toBe(4);
     page.updateRating('max', input('8.8'));
@@ -115,25 +137,34 @@ describe('Diary control state', () => {
     expect([page.dateFrom(), page.dateTo(), page.page()]).toEqual([from, to, 1]);
   });
   it('applies manual date bounds immediately and preserves them when reopened', () => {
-    const { page } = diary();
-    page.diaryEntries.set(records);
+    const { page, api } = diary();
+    api.getDiaryTimelinePage.mockReturnValueOnce(of(timelinePage(records[1], records[2])));
     page.page.set(2);
     page.updateDate('from', input('2026-10-20'));
-    expect(page.entries()).toHaveLength(2);
+    expect(api.getDiaryTimelinePage).toHaveBeenLastCalledWith('viewer', expect.objectContaining({ page: 1, dateFrom: '2026-10-20' }));
+    expect(page.entries().map((entry: any) => entry.id)).toEqual(['new', 'unrated']);
     expect(page.page()).toBe(1);
     page.toggleFilter('date');
     page.toggleFilter('date');
     expect(page.dateFrom()).toBe('2026-10-20');
   });
-  it('applies all four sorts without requesting more data', () => {
+  it('requests the first page in each server sort and preserves its result order', () => {
     const { page, api } = diary();
-    page.diaryEntries.set(records);
-    for (const [sort, expected] of [['newest', ['new', 'unrated', 'old']], ['oldest', ['old', 'new', 'unrated']], ['highest', ['old', 'new', 'unrated']], ['lowest', ['new', 'old', 'unrated']]]) {
+    const [old, recent, unrated] = records;
+    const scenarios = [
+      ['newest', 'NEWEST', [recent, unrated, old]],
+      ['oldest', 'OLDEST', [old, recent, unrated]],
+      ['highest', 'RATING_DESC', [old, recent, unrated]],
+      ['lowest', 'RATING_ASC', [recent, old, unrated]],
+    ] as const;
+    for (const [sort, sortBy, reply] of scenarios) {
+      api.getDiaryTimelinePage.mockReturnValueOnce(of(timelinePage(...reply)));
       page.setSort(sort);
-      expect(page.entries().map((entry: any) => entry.id)).toEqual(expected);
+      expect(api.getDiaryTimelinePage).toHaveBeenLastCalledWith('viewer', expect.objectContaining({ page: 1, sortBy }));
+      expect(page.entries().map((entry: any) => entry.id)).toEqual(reply.map(entry => entry.id));
       expect(page.activeFilter()).toBeNull();
     }
-    expect(api.getAllDiaryEntries).toHaveBeenCalledTimes(1);
+    expect(api.getDiaryTimelinePage).toHaveBeenCalledTimes(5);
   });
   it('keeps all date groups expanded when switching between grouped and flat modes', () => {
     const { page } = diary();
@@ -153,16 +184,6 @@ describe('Diary control state', () => {
     const group = page.groups().find((value: any) => value.key === '2026-10-20');
     expect([group.date.getFullYear(), group.date.getMonth(), group.date.getDate()]).toEqual([2026, 9, 20]);
   });
-  it('exposes real series only and combines type, series, and theater controls locally', () => {
-    const { page, api } = diary();
-    page.diaryEntries.set(records);
-    expect(page.seriesOptions()).toEqual([{ id: 'show', title: 'A série real' }]);
-    page.setSeriesFilter('show');
-    page.setTypeFilter('episodes');
-    page.toggleTheaterFilter();
-    expect(page.entries().map((entry: any) => entry.id)).toEqual(['new']);
-    expect(api.getAllDiaryEntries).toHaveBeenCalledTimes(1);
-  });
   it('returns keyboard focus to each opener after selecting or dismissing a control', () => {
     const { page } = diary();
     const opener = { focus: vi.fn() };
@@ -170,29 +191,12 @@ describe('Diary control state', () => {
     page.toggleFilter('type', event);
     page.setTypeFilter('movies');
     expect(opener.focus).toHaveBeenCalledTimes(1);
-    page.toggleFilter('series', event);
-    page.setSeriesFilter('show');
-    expect(opener.focus).toHaveBeenCalledTimes(2);
     page.toggleFilter('sort', event);
     page.setSort('lowest');
-    expect(opener.focus).toHaveBeenCalledTimes(3);
+    expect(opener.focus).toHaveBeenCalledTimes(2);
     page.toggleFilter('rating', event);
     page.closeFilter();
     expect(page.activeFilter()).toBeNull();
-    expect(opener.focus).toHaveBeenCalledTimes(4);
-  });
-  it('keeps known parent-series options when a different content type is selected', () => {
-    const { page } = diary();
-    page.diaryEntries.set(records.slice(0, 2));
-    page.diarySeries.set([{ seriesTmdbId: 'show', title: 'Série de verdade', entriesCount: 1 }]);
-    page.setTypeFilter('movies');
-    expect(page.seriesOptions()).toEqual([{ id: 'show', title: 'Série de verdade' }]);
-    page.setTypeFilter('episodes');
-    page.setSeriesFilter('show');
-    expect(page.seriesFilterLabel()).toBe('Série: Série de verdade');
-    page.toggleFilter('series');
-    page.toggleFilter('series');
-    expect(page.seriesFilterLabel()).toBe('Série: Série de verdade');
-    expect(page.entries().map((entry: any) => entry.id)).toEqual(['new']);
+    expect(opener.focus).toHaveBeenCalledTimes(3);
   });
 });

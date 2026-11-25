@@ -839,14 +839,29 @@ Este endpoint não aceita `page`, `size`, `sortBy` ou `year`. `dateFrom` e
 ### 4. Entradas paginadas do histórico
 
 ```http
-GET /users/{userId}/diary?type=<type>&dateFrom=<YYYY-MM-DD>&dateTo=<YYYY-MM-DD>&hasReview=false&seriesTmdbId=<seriesTmdbId>&scoreFrom=<1-10>&scoreTo=<1-10>&sortBy=NEWEST&page=1&size=20
+GET /users/{userId}/diary?includeCompletions=true&type=<type>&dateFrom=<YYYY-MM-DD>&dateTo=<YYYY-MM-DD>&hasReview=false&seriesTmdbId=<seriesTmdbId>&scoreFrom=<1-10>&scoreTo=<1-10>&sortBy=NEWEST&page=1&size=20
 ```
 
-Usar `content` para obter os IDs internos dos conteúdos e os campos sociais já
-retornados na entrada, incluindo `likesCount`, `likedByMe` e `commentsCount`.
+`content` é uma única timeline paginada com dois tipos de item. A API combina e
+ordena eventos assistidos e conclusões derivadas antes de selecionar a página:
+`includeCompletions=true` é o padrão da tela; `false` preserva o formato legado
+somente com eventos MOVIE/EPISODE para consumidores que ainda precisem dele.
+
+- `kind=PERSISTED_ENTRY`: `entry` contém o DiaryEntry com card TMDB e campos
+  sociais como `likesCount`, `likedByMe` e `commentsCount`.
+- `kind=DERIVED_COMPLETION`: `completion` contém a referência e os dados da
+  conclusão SERIES/SEASON; `card` contém o card TMDB do item e `seriesCard`
+  identifica a série pai de uma conclusão SEASON. Use `completionKey` como chave
+  de interface; a conclusão não tem `diaryEntryId` e não aceita mutações de
+  DiaryEntry.
+
+As conclusões são projeções dos eventos de episódio e não criam linhas de diário.
+Não carregar `/users/{userId}/diary/view` em paralelo para montar a mesma timeline.
+
 Os filtros aceitos pela tela são:
 
-- `type`: `MOVIE`, `SERIES`, `SEASON` ou `EPISODE`;
+- `type`: `MOVIE`, `SERIES`, `SEASON` ou `EPISODE`; SERIES/SEASON selecionam
+  conclusões derivadas;
 - `seriesTmdbId`: identidade normalizada da série;
 - `dateFrom` e `dateTo`: intervalo inclusivo;
 - `scoreFrom` e `scoreTo`: faixa inclusiva de nota entre 1 e 10;
@@ -862,11 +877,11 @@ resumo diário não deve ser calculado a partir apenas dos itens da página atua
 
 ### 5. Cards visuais da página
 
-Cada entrada do `GET /users/{userId}/diary` já pode trazer `card`, com metadata
-básica e stats públicos. Usar `customPosterUrl` quando disponível, respeitar
-`previewStatus` e manter a entrada textual/social mesmo quando o card estiver
-parcial ou indisponível. Não fazer `/contents/details` por página e não chamar
-`POST /contents/reference` durante a leitura.
+Eventos persistidos usam `entry.card`; conclusões derivadas usam `card` e, para
+temporadas, `seriesCard`. Os cards incluem metadata básica e stats públicos.
+Usar `customPosterUrl` quando disponível, respeitar `previewStatus` e manter o
+item mesmo quando o card estiver parcial ou indisponível. Não fazer
+`/contents/details` por página nem chamar `POST /contents/reference` durante a leitura.
 
 ## Mapeamento dos blocos da tela
 
@@ -876,14 +891,15 @@ parcial ou indisponível. Não fazer `/contents/details` por página e não cham
 | Totais de episódios, séries, filmes e tempo | `summary/home` | Uma chamada |
 | Filtros de série | `diary/series` | Uma chamada, reutilizada durante a sessão da tela |
 | Agrupamento por dia | `diary/daily-summary` | Repetir ao alterar filtros ou intervalo |
-| Cards do histórico | `diary[].card` | Nenhuma chamada adicional |
-| Curtidas e comentários no card | `likesCount`, `likedByMe`, `commentsCount` | Nenhuma chamada adicional |
+| Cards de eventos assistidos | `diary[].entry.card` | Nenhuma chamada adicional |
+| Cards de conclusões | `diary[].card` e `diary[].seriesCard` | Nenhuma chamada adicional |
+| Curtidas e comentários em eventos | `entry.likesCount`, `entry.likedByMe`, `entry.commentsCount` | Nenhuma chamada adicional |
 
 ## Ordem recomendada de carregamento
 
 1. Validar a sessão autenticada.
 2. Disparar em paralelo `GET /users/{userId}`, `summary/home`,
-   `diary/series`, `diary/daily-summary` e a primeira página de `diary`.
+   `diary/series`, `diary/daily-summary` e a primeira página combinada de `diary`.
 3. Renderizar o cabeçalho, os totais e os agrupamentos diários assim que
    chegarem.
 4. Renderizar `diary[].card` e aplicar placeholder conforme `previewStatus`.

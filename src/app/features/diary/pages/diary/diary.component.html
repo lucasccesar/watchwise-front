@@ -78,18 +78,9 @@
           <button type="button" class="diary-filter-button" [class.diary-filter-button-active]="typeFilter() !== 'all'" [attr.aria-expanded]="activeFilter() === 'type'" aria-controls="diary-type-menu" (click)="toggleFilter('type', $event)" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg>{{ typeFilterLabel() }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
           @if (activeFilter() === 'type') {
             <div id="diary-type-menu" class="diary-filter-menu" role="group" [attr.aria-label]="copy.typeFilter.replace('{value}', '')" data-ww-menu>
-              @for (option of typeOptions; track option.value) {
+              @for (option of historyTypeOptions; track option.value) {
                 <button type="button" [attr.aria-pressed]="typeFilter() === option.value" (click)="setTypeFilter(option.value)" data-ww-menu-item><span>{{ option.label }}</span>@if (typeFilter() === option.value) { <app-check-icon class="diary-filter-check" /> }</button>
               }
-            </div>
-          }
-        </div>
-        <div class="diary-filter-wrap diary-filter-wrap--series">
-          <button type="button" class="diary-filter-button" [class.diary-filter-button-active]="!!selectedSeriesId()" [attr.aria-expanded]="activeFilter() === 'series'" aria-controls="diary-series-menu" (click)="toggleFilter('series', $event)" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 2 4 4 4-4"/></svg><span class="diary-control-label">{{ seriesFilterLabel() }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
-          @if (activeFilter() === 'series') {
-            <div id="diary-series-menu" class="diary-filter-menu" role="group" [attr.aria-label]="copy.series" data-ww-menu>
-              <button type="button" [attr.aria-pressed]="!selectedSeriesId()" (click)="setSeriesFilter('')" data-ww-menu-item><span>{{ copy.allSeries }}</span>@if (!selectedSeriesId()) { <app-check-icon class="diary-filter-check" /> }</button>
-              @for (option of seriesOptions(); track option.id) { <button type="button" [attr.aria-pressed]="selectedSeriesId() === option.id" (click)="setSeriesFilter(option.id)" data-ww-menu-item><span>{{ option.title }}</span><span class="diary-series-count" [attr.aria-label]="copy.seriesEntryCount.replace('{count}', seriesEntriesCount(option.id).toString())">{{ seriesEntriesCount(option.id) }}</span>@if (selectedSeriesId() === option.id) { <app-check-icon class="diary-filter-check" /> }</button> }
             </div>
           }
         </div>
@@ -134,10 +125,8 @@
         </div>
         <button type="button" class="diary-filter-button diary-theater-filter-button" [class.diary-filter-button-active]="theaterOnly()" [attr.aria-pressed]="theaterOnly()" (click)="toggleTheaterFilter()" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2h20v-2a3 3 0 0 1 0-6V7H2v2Zm11 0v1m0 2v1m0 2v1"/></svg>{{ copy.watchedInTheaters }}</button>
         </div>
-        <button type="button" class="diary-collapse-button diary-series-group-button" [class.diary-series-group-button-active]="seriesGrouping()" [disabled]="seriesGroupingBusy()" [attr.aria-label]="seriesGrouping() ? copy.ungroupSeries : copy.groupSeries" [attr.title]="seriesGrouping() ? copy.ungroupSeries : copy.groupSeries" [attr.aria-pressed]="seriesGrouping()" [attr.aria-busy]="seriesGroupingBusy()" (click)="toggleSeriesGrouping()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z" /><path d="M11 8h2M8 11v2M16 11v2M11 16h2" /></svg></button>
         <button type="button" class="diary-collapse-button" [attr.aria-label]="grouped() ? copy.ungroupDays : copy.groupByDay" [attr.title]="grouped() ? copy.ungroupDays : copy.groupByDay" [attr.aria-pressed]="!grouped()" (click)="toggleGrouping()"><svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="grouped() ? 'M4 12h16M12 3v7m-4-4 4 4 4-4M12 21v-7m-4 4 4-4 4 4' : 'M4 12h16M12 10V3m-4 4 4-4 4 4M12 14v7m-4-4 4 4 4-4'" /></svg></button>
       </div>
-      @if (seriesGroupingError()) { <p class="diary-grouping-error" role="alert">{{ seriesGroupingError() }}</p> }
     </section>
   } @else {
     <section class="diary-filters diary-review-filters ww-filter-surface" [attr.aria-label]="copy.filters" (keydown.escape)="closeFilter($event)">
@@ -150,15 +139,6 @@
                 @for (option of typeOptions; track option.value) {
                   <button type="button" [attr.aria-pressed]="typeFilter() === option.value" (click)="setTypeFilter(option.value)" data-ww-menu-item><span>{{ option.label }}</span>@if (typeFilter() === option.value) { <app-check-icon class="diary-filter-check" /> }</button>
                 }
-              </div>
-            }
-          </div>
-          <div class="diary-filter-wrap diary-filter-wrap--series">
-            <button type="button" class="diary-filter-button" [class.diary-filter-button-active]="!!selectedSeriesId()" [attr.aria-expanded]="activeFilter() === 'series'" aria-controls="diary-review-series-menu" (click)="toggleFilter('series', $event)" data-ww-select-trigger><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 2 4 4 4-4"/></svg><span class="diary-control-label">{{ seriesFilterLabel() }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
-            @if (activeFilter() === 'series') {
-              <div id="diary-review-series-menu" class="diary-filter-menu" role="group" [attr.aria-label]="copy.series" data-ww-menu>
-                <button type="button" [attr.aria-pressed]="!selectedSeriesId()" (click)="setSeriesFilter('')" data-ww-menu-item><span>{{ copy.allSeries }}</span>@if (!selectedSeriesId()) { <app-check-icon class="diary-filter-check" /> }</button>
-                @for (option of seriesOptions(); track option.id) { <button type="button" [attr.aria-pressed]="selectedSeriesId() === option.id" (click)="setSeriesFilter(option.id)" data-ww-menu-item><span>{{ option.title }}</span><span class="diary-series-count" [attr.aria-label]="copy.seriesEntryCount.replace('{count}', seriesEntriesCount(option.id).toString())">{{ seriesEntriesCount(option.id) }}</span>@if (selectedSeriesId() === option.id) { <app-check-icon class="diary-filter-check" /> }</button> }
               </div>
             }
           </div>
@@ -209,8 +189,8 @@
     </section>
   }
 
-  @if (status() === 'loading') {
-    <section class="diary-history diary-loading" [class.diary-review-loading]="isReviewsPage" role="status" [attr.aria-label]="copy.loading">
+  @if (status() === 'loading' || cursorLoading()) {
+    <section class="diary-history diary-loading" [class.diary-review-loading]="isReviewsPage" role="status" aria-busy="true" [attr.aria-label]="copy.loading">
       <span class="diary-visually-hidden">{{ copy.loading }}</span>
       @if (isReviewsPage) {
         <div class="diary-review-skeleton-list" aria-hidden="true">
@@ -237,15 +217,23 @@
     <section class="diary-state" role="alert"><h2>{{ copy.errorTitle }}</h2><p>{{ errorMessage() }}</p><button type="button" (click)="load()">{{ copy.retry }}</button></section>
   } @else if (entries().length === 0) {
     <section class="diary-state diary-empty ww-empty-panel ww-empty-panel--page"><h2>{{ diaryEntries().length ? copy.noMatches : isReviewsPage ? copy.noReviews : copy.noEntries }}</h2><p>{{ diaryEntries().length ? copy.noMatchesDescription : isReviewsPage ? copy.noReviewsDescription : copy.noEntriesDescription }}</p></section>
+    @if (isReviewsPage && totalPages() > 1) {
+      <nav class="diary-pagination diary-pagination--bottom" [attr.aria-label]="copy.pagination">
+        <button type="button" [disabled]="page() === 1 || cursorLoading()" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+        @for (item of paginationItems(); track item.key) { @if (item.page === null) { <span class="diary-page-ellipsis" aria-hidden="true">…</span> } @else { <button type="button" [disabled]="cursorLoading()" [class.diary-page-active]="page() === item.page" [attr.aria-current]="page() === item.page ? 'page' : null" (click)="goToPage(item.page)">{{ item.page }}</button> } }
+        <button type="button" [disabled]="page() === totalPages() || cursorLoading()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+      </nav>
+      <p class="diary-showing">{{ showingLabel() }}</p>
+    }
   } @else {
     <div class="diary-pagination-row" [class.diary-pagination-row--reviews]="isReviewsPage">
     <nav class="diary-pagination" [attr.aria-label]="copy.pagination">
-      <button type="button" [disabled]="page() === 1 || cursorLoading() || seriesGroupingBusy()" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+      <button type="button" [disabled]="page() === 1 || cursorLoading()" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
       @for (item of paginationItems(); track item.key) {
         @if (item.page === null) { <span class="diary-page-ellipsis" aria-hidden="true">…</span> }
-        @else { <button type="button" [disabled]="cursorLoading() || seriesGroupingBusy()" [class.diary-page-active]="page() === item.page" [attr.aria-current]="page() === item.page ? 'page' : null" (click)="goToPage(item.page)">{{ item.page }}</button> }
+        @else { <button type="button" [disabled]="cursorLoading()" [class.diary-page-active]="page() === item.page" [attr.aria-current]="page() === item.page ? 'page' : null" (click)="goToPage(item.page)">{{ item.page }}</button> }
       }
-      <button type="button" [disabled]="page() === totalPages() || cursorLoading() || seriesGroupingBusy()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+      <button type="button" [disabled]="page() === totalPages() || cursorLoading()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
     </nav>
     <p class="diary-showing">{{ showingLabel() }}</p>
     </div>
@@ -325,7 +313,6 @@
                           @if (image) { <img [src]="image" alt="" loading="lazy" /> }
                           @else { <span class="diary-entry-poster-empty">{{ groupedTitle(entry) }}</span> }
                           <span class="diary-entry-type"
-                            [class.diary-entry-type--episode]="entry.groupType === 'EPISODE'"
                             [class.diary-entry-type--season]="entry.groupType === 'SEASON'"
                             [class.diary-entry-type--series]="entry.groupType === 'SERIES'">
                             <span aria-hidden="true"></span>{{ groupedTypeLabel(entry) }}
@@ -434,9 +421,9 @@
       }
     </section>
     <nav class="diary-pagination diary-pagination--bottom" [attr.aria-label]="copy.pagination">
-      <button type="button" [disabled]="page() === 1 || cursorLoading() || seriesGroupingBusy()" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-      @for (item of paginationItems(); track item.key) { @if (item.page === null) { <span class="diary-page-ellipsis" aria-hidden="true">…</span> } @else { <button type="button" [disabled]="cursorLoading() || seriesGroupingBusy()" [class.diary-page-active]="page() === item.page" [attr.aria-current]="page() === item.page ? 'page' : null" (click)="goToPage(item.page)">{{ item.page }}</button> } }
-      <button type="button" [disabled]="page() === totalPages() || cursorLoading() || seriesGroupingBusy()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
+      <button type="button" [disabled]="page() === 1 || cursorLoading()" [attr.aria-label]="copy.previousPage" (click)="goToPage(page() - 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+      @for (item of paginationItems(); track item.key) { @if (item.page === null) { <span class="diary-page-ellipsis" aria-hidden="true">…</span> } @else { <button type="button" [disabled]="cursorLoading()" [class.diary-page-active]="page() === item.page" [attr.aria-current]="page() === item.page ? 'page' : null" (click)="goToPage(item.page)">{{ item.page }}</button> } }
+      <button type="button" [disabled]="page() === totalPages() || cursorLoading()" [attr.aria-label]="copy.nextPage" (click)="goToPage(page() + 1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
     </nav>
   }
 </main>

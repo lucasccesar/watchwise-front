@@ -1,13 +1,21 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, concatMap, from, map, of, toArray } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { readAllPages } from '../../../shared/data-access/read-all-pages';
-
-export interface DiarySeriesOption { seriesTmdbId: string; title: string; entriesCount: number; }
 
 export type DiaryContentType = 'MOVIE' | 'EPISODE' | 'SEASON' | 'SERIES';
 export type DiarySortBy = 'NEWEST' | 'OLDEST' | 'RATING_DESC' | 'RATING_ASC';
 export type ProgressSortBy = 'LAST_WATCHED' | 'LAST_RELEASED' | 'REMAINING_EPISODES' | 'REMAINING_RUNTIME';
+
+export interface DiaryReviewsSummary {
+  totalMinutesWatchedMovies: number;
+  totalMinutesWatchedEpisodes: number;
+  totalMoviesWatched: number;
+  totalDistinctMoviesWatched: number;
+  totalEpisodesWatched: number;
+  distinctSeriesWatched: number;
+  latestWatchedBackdropPath: string | null;
+}
 
 export interface DiaryRecord {
   id: string;
@@ -85,79 +93,48 @@ export interface DiaryRecordPage {
   backdropPath?: string | null;
 }
 
-export interface DiaryViewContentRef {
-  id: string | null;
-  tmdbId: string | null;
-  type: DiaryContentType;
-  seriesTmdbId: string | null;
-  seasonNumber: number | null;
-  episodeNumber: number | null;
-  runtimeMinutes: number | null;
+export type DiaryViewContentRef = DiaryRecord['content'] & {
   totalRuntimeMinutes?: number | null;
-  releaseYear?: number | null;
+};
+
+export interface DiaryViewReviewPreview {
+  id?: string;
+  comment?: string | null;
+  watchNumber?: number | null;
 }
 
-export interface DiaryViewEntryItem {
-  kind: 'PERSISTED_ENTRY' | 'DERIVED_COMPLETION';
-  diaryEntryId: string | null;
-  completionKey: string | null;
+export interface DiaryViewCompletion {
+  kind: 'DERIVED_COMPLETION';
+  diaryEntryId: null;
+  completionKey: string;
   content: DiaryViewContentRef;
-  watchNumber: number | null;
+  watchNumber: number;
   anchorEntryId: string | null;
   watchedDate: string | null;
-  orderedAt: string;
+  orderedAt: string | null;
   currentScore: number | null;
   currentRatingVersion: number | null;
   reviewPreviews: DiaryViewReviewPreview[];
   reviewCount: number;
-  relatedDiaryEntryIds?: string[];
+  relatedDiaryEntryIds: string[];
 }
 
-export interface DiaryViewReviewPreview {
-  id?: string;
-  publicationKind?: 'WRITTEN_REVIEW';
-  contextKind?: 'UNKNOWN' | 'MANUAL' | 'COMPLETION';
-  comment?: string | null;
-  scoreAtPublication?: number | null;
-  watchNumber?: number | null;
-  sourcePublishedAt?: string | null;
-  sourcePublishedOn?: string | null;
-  createdAt?: string;
+export interface DiaryTimelineEntryItem {
+  kind: 'PERSISTED_ENTRY';
+  entry: DiaryRecord;
 }
 
-export interface DiaryViewGroupedItem {
-  kind: 'GROUPED';
-  content: DiaryViewContentRef;
-  ratingContentId: string | null;
-  groupType: DiaryContentType;
-  backdropPath?: string | null;
-  seasonCount: number;
-  seasonNumbers?: number[];
-  seasonEpisodeCounts?: Array<{ seasonNumber: number; episodeCount: number }>;
-  episodeCount: number;
-  totalRuntimeMinutes: number | null;
-  groupDate: string;
-  watchNumber: number | null;
-  orderedAt: string;
-  memberEntryIds?: string[];
+export interface DiaryTimelineCompletionItem {
+  kind: 'DERIVED_COMPLETION';
+  completion: DiaryViewCompletion;
+  card: DiaryRecord['card'];
+  seriesCard: DiaryRecord['card'];
 }
 
-export type DiaryViewResponseItem = DiaryViewEntryItem | DiaryViewGroupedItem;
+export type DiaryTimelineItem = DiaryTimelineEntryItem | DiaryTimelineCompletionItem;
 
-export interface DiaryViewPage {
-  content: DiaryViewResponseItem[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  hasNext: boolean;
-}
-
-export interface DiaryViewCursorPage {
-  content: DiaryViewResponseItem[];
-  size: number;
-  nextCursor: string | null;
-  hasNext: boolean;
+export interface DiaryTimelinePage extends Omit<DiaryRecordPage, 'content'> {
+  content: DiaryTimelineItem[];
 }
 
 export interface SeriesSeasonProgress {
@@ -229,10 +206,6 @@ export interface SeriesInProgressPage {
 export class DiaryApiService {
   constructor(private readonly http: HttpClient) {}
 
-  getDiarySeries(userId: string): Observable<DiarySeriesOption[]> {
-    return this.http.get<DiarySeriesOption[]>(`/api/v1/users/${encodeURIComponent(userId)}/diary/series`);
-  }
-
   deleteSeriesDiaryHistory(seriesTmdbId: string): Observable<void> {
     return this.http.delete<void>(`/api/v1/diary/series/${encodeURIComponent(seriesTmdbId)}`);
   }
@@ -251,81 +224,25 @@ export class DiaryApiService {
     }));
   }
 
-  getAllDiaryViewItems(userId: string, grouped: boolean): Observable<DiaryViewResponseItem[]> {
-    return readAllPages(page => this.getDiaryViewPage(userId, { page, size: 1000, grouped }));
-  }
-
-  getDiaryViewPage(
-    userId: string,
-    options: { page: number; size: number; grouped: boolean },
-  ): Observable<DiaryViewPage> {
-    const params = new HttpParams()
-      .set('page', options.page)
-      .set('size', options.size)
-      .set('grouped', options.grouped);
-    return this.http.get<DiaryViewPage>(
-      `/api/v1/users/${encodeURIComponent(userId)}/diary/view`,
-      { params },
-    );
-  }
-
-  getDiaryViewCursorPage(
-    userId: string,
-    options: {
-      cursor?: string | null;
-      size: number;
-      type?: DiaryContentType;
-      dateStart?: string;
-      dateEnd?: string;
-      scoreMin?: number;
-      scoreMax?: number;
-      seriesTmdbId?: string;
-      watchedInTheater?: boolean;
-      sortBy?: DiarySortBy;
-    },
-  ): Observable<DiaryViewCursorPage> {
-    let params = new HttpParams().set('grouped', true).set('size', options.size);
-    if (options.cursor) params = params.set('cursor', options.cursor);
-    if (options.type) params = params.set('type', options.type);
-    if (options.dateStart) params = params.set('dateStart', options.dateStart);
-    if (options.dateEnd) params = params.set('dateEnd', options.dateEnd);
-    if (options.scoreMin !== undefined) params = params.set('scoreMin', options.scoreMin);
-    if (options.scoreMax !== undefined) params = params.set('scoreMax', options.scoreMax);
-    if (options.seriesTmdbId) params = params.set('seriesTmdbId', options.seriesTmdbId);
-    if (options.watchedInTheater !== undefined) params = params.set('watchedInTheater', options.watchedInTheater);
-    if (options.sortBy) params = params.set('sortBy', options.sortBy);
-    return this.http.get<DiaryViewCursorPage>(
-      `/api/v1/users/${encodeURIComponent(userId)}/diary/view`,
-      { params },
-    );
-  }
-
-  getDiaryEntriesByIds(userId: string, entryIds: string[]): Observable<DiaryRecord[]> {
-    const uniqueIds = [...new Set(entryIds)];
-    if (!uniqueIds.length) return of([]);
-    const batches: string[][] = [];
-    for (let index = 0; index < uniqueIds.length; index += 500) {
-      batches.push(uniqueIds.slice(index, index + 500));
-    }
-    return from(batches).pipe(
-      concatMap((batch) => this.http.post<DiaryRecord[]>(
-        `/api/v1/users/${encodeURIComponent(userId)}/diary/batch`,
-        { entryIds: batch },
-      )),
-      toArray(),
-      map((results) => results.flat()),
-    );
-  }
-
   getAllReviews(userId: string): Observable<DiaryRecord[]> {
-    return readAllPages(page => this.getUserReviewsPage(userId, page, 1000)).pipe(
-      map(records => records.map(record => ({
-        ...record,
-        reviewSource: record.source,
-        watchedDate: record.watchedDate ?? record.createdAt.slice(0, 10),
-        watchNumber: record.watchNumber,
-      }))),
+    return readAllPages(page => this.getReviewsPage(userId, page, 1000));
+  }
+
+  getReviewsSummary(userId: string): Observable<DiaryReviewsSummary> {
+    return this.http.get<DiaryReviewsSummary>(
+      `/api/v1/users/${encodeURIComponent(userId)}/summary/diary-reviews`,
     );
+  }
+
+  getReviewsPage(userId: string, page: number, size: number): Observable<DiaryRecordPage> {
+    return this.getUserReviewsPage(userId, page, size).pipe(map(response => ({
+      ...response,
+      content: response.content.map(({ source, ...record }) => ({
+        ...record,
+        reviewSource: source,
+        watchedDate: record.watchedDate ?? record.createdAt.slice(0, 10),
+      })),
+    })));
   }
 
   getUserReviewsPage(userId: string, page: number, size: number): Observable<DiaryReviewApiPage> {
@@ -352,10 +269,55 @@ export class DiaryApiService {
       dateTo?: string;
     },
   ): Observable<DiaryRecordPage> {
+    return this.http.get<DiaryRecordPage>(
+      `/api/v1/users/${encodeURIComponent(userId)}/diary`,
+      { params: this.diaryPageParams(options, false) },
+    );
+  }
+
+  getDiaryTimelinePage(
+    userId: string,
+    options: {
+      page: number;
+      size: number;
+      type?: DiaryContentType;
+      hasReview?: boolean;
+      sortBy?: DiarySortBy;
+      seriesTmdbId?: string;
+      score?: number;
+      scoreFrom?: number;
+      scoreTo?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+  ): Observable<DiaryTimelinePage> {
+    return this.http.get<DiaryTimelinePage>(
+      `/api/v1/users/${encodeURIComponent(userId)}/diary`,
+      { params: this.diaryPageParams(options, true) },
+    );
+  }
+
+  private diaryPageParams(
+    options: {
+      page: number;
+      size: number;
+      type?: DiaryContentType;
+      hasReview?: boolean;
+      sortBy?: DiarySortBy;
+      seriesTmdbId?: string;
+      score?: number;
+      scoreFrom?: number;
+      scoreTo?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+    includeCompletions: boolean,
+  ): HttpParams {
     let params = new HttpParams()
       .set('page', options.page)
       .set('size', options.size)
-      .set('sortBy', options.sortBy ?? 'NEWEST');
+      .set('sortBy', options.sortBy ?? 'NEWEST')
+      .set('includeCompletions', includeCompletions);
     if (options.type) params = params.set('type', options.type);
     if (options.hasReview !== undefined) params = params.set('hasReview', options.hasReview);
     if (options.seriesTmdbId) params = params.set('seriesTmdbId', options.seriesTmdbId);
@@ -364,10 +326,7 @@ export class DiaryApiService {
     if (options.scoreTo !== undefined) params = params.set('scoreTo', options.scoreTo);
     if (options.dateFrom) params = params.set('dateFrom', options.dateFrom);
     if (options.dateTo) params = params.set('dateTo', options.dateTo);
-    return this.http.get<DiaryRecordPage>(
-      `/api/v1/users/${encodeURIComponent(userId)}/diary`,
-      { params },
-    );
+    return params;
   }
 
   getSeriesInProgress(
