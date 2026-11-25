@@ -2,6 +2,8 @@ import '@angular/compiler';
 import { DOCUMENT } from '@angular/common';
 import { ElementRef, Injector, runInInjectionContext } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
+import { ContentApiService } from '../../../features/content/data-access/content-api.service';
+import { ToastNotificationsService } from '../toast-notifications/toast-notifications.service';
 import { SharePreviewComponent } from './share-preview.component';
 
 function preview() {
@@ -10,7 +12,11 @@ function preview() {
   const first = { focus: vi.fn(() => { document.activeElement = first; }) };
   const last = { focus: vi.fn(() => { document.activeElement = last; }) };
   const root = { querySelectorAll: () => [first, last], contains: (element: unknown) => element === first || element === last, focus: vi.fn() };
-  const injector = Injector.create({ providers: [{ provide: DOCUMENT, useValue: document }] });
+  const injector = Injector.create({ providers: [
+    { provide: DOCUMENT, useValue: document },
+    { provide: ContentApiService, useValue: { getContentImages: vi.fn(() => { throw new Error('Unexpected request for backdrop images'); }) } },
+    { provide: ToastNotificationsService, useValue: { success: vi.fn(), error: vi.fn() } },
+  ] });
   const component = runInInjectionContext(injector, () => new SharePreviewComponent()) as any;
   const closed = vi.fn();
   component.closed.subscribe(closed);
