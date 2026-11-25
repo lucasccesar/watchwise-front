@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, distinctUntilChanged, forkJoin, map, merge, of, shareReplay, Subscription, switchMap, tap } from 'rxjs';
 import { ContentImageAction, ContentImageActionSelection, ContentImageActionsComponent, ContentListTarget } from '../../../../shared/components/content-image-actions/content-image-actions.component';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksApiService, PicksAnswer, PicksCommentPreview, PicksOptionView, PicksTemplateDetail, PicksTemplatePickView } from '../../data-access/picks-api.service';
@@ -29,7 +30,7 @@ export class PickTemplateComponent {
   protected readonly copy = messageCatalog['pt-BR'].pickTemplatePage;
   protected readonly picksCopy = messageCatalog['pt-BR'].picksPage;
   protected readonly homeCopy = messageCatalog['pt-BR'].home;
-  protected readonly templateId = inject(ActivatedRoute).snapshot.paramMap.get('templateId') ?? '';
+  protected templateId = '';
   protected readonly status = signal<PickTemplateStatus>('loading');
   protected readonly detail = signal<PicksTemplateDetail | null>(null);
   protected readonly myPicks = signal<PicksTemplatePickView[]>([]);
@@ -53,22 +54,59 @@ export class PickTemplateComponent {
   private readonly api = inject(PicksApiService);
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastNotificationsService);
+  private readonly destroyRef = inject(DestroyRef);
+  private loading?: Subscription;
 
-  constructor() { if (this.templateId) this.load(); else void this.router.navigateByUrl('/picks'); }
+  constructor() {
+    inject(ActivatedRoute).paramMap.pipe(
+      map((params) => params.get('templateId') ?? ''),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((templateId) => {
+      this.templateId = templateId;
+      this.communitySort.set('RECENT');
+      this.activeOptionMenu.set('');
+      this.likesBusy.set(false);
+      this.busyPickIds.set(new Set());
+      this.commentText.set('');
+      this.commentSpoiler.set(false);
+      this.postingComment.set(false);
+      if (templateId) this.load();
+      else {
+        this.loading?.unsubscribe();
+        void this.router.navigateByUrl('/picks');
+      }
+    });
+  }
 
   protected load(): void {
+    this.loading?.unsubscribe();
     this.status.set('loading'); this.error.set('');
-    forkJoin({
-      template: this.api.getTemplate(this.templateId),
+    this.detail.set(null);
+    this.optionViews.set(new Map());
+    const template$ = this.api.getTemplate(this.templateId).pipe(
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+    const detail$ = forkJoin({
+      template: template$,
       mine: this.api.getMyTemplatePicks(this.templateId, 1, 10),
       community: this.api.getTemplatePicks(this.templateId, { page: 1, size: 10, sort: this.communitySort() }),
       comments: this.api.getTemplateComments(this.templateId, 1, 20),
-    }).subscribe({
-      next: ({ template, mine, community, comments }) => {
+    }).pipe(
+      tap(({ template, mine, community, comments }) => {
         this.detail.set(template); this.myPicks.set(mine.content); this.communityPicks.set(community.content); this.comments.set(comments.content); this.status.set('ready');
-        this.loadOptionViews(template);
+      }),
+    );
+    const options$ = template$.pipe(
+      switchMap((template) => this.loadOptionViews(template)),
+      tap((options) => this.optionViews.set(options)),
+    );
+    this.loading = merge(detail$, options$).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      error: (error: unknown) => {
+        this.optionViews.set(new Map());
+        this.status.set('error');
+        this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.copy.connectionError : this.copy.loadError);
       },
-      error: (error: unknown) => { this.status.set('error'); this.error.set(error instanceof HttpErrorResponse && error.status === 0 ? this.copy.connectionError : this.copy.loadError); },
     });
   }
 
@@ -89,6 +127,7 @@ export class PickTemplateComponent {
     const request = detail.isLikedByViewer ? this.api.unlikeTemplate(detail.id) : this.api.likeTemplate(detail.id);
     request.subscribe({
       next: () => {
+        if (this.templateId !== detail.id) return;
         this.detail.update((current) => current ? {
           ...current,
           isLikedByViewer: !current.isLikedByViewer,
@@ -96,15 +135,17 @@ export class PickTemplateComponent {
         } : current);
         this.likesBusy.set(false);
       },
-      error: () => this.likesBusy.set(false),
+      error: () => { if (this.templateId === detail.id) this.likesBusy.set(false); },
     });
   }
   protected togglePickLike(pick: PicksTemplatePickView): void {
     if (this.busyPickIds().has(pick.id)) return;
     this.busyPickIds.update((current) => new Set(current).add(pick.id));
     const request = pick.isLikedByViewer ? this.api.unlikePick(pick.id) : this.api.likePick(pick.id);
+    const templateId = this.templateId;
     request.subscribe({
       next: () => {
+        if (this.templateId !== templateId) return;
         this.busyPickIds.update((current) => { const next = new Set(current); next.delete(pick.id); return next; });
         this.communityPicks.update((items) => items.map((item) => item.id === pick.id ? {
           ...item,
@@ -112,7 +153,9 @@ export class PickTemplateComponent {
           likesCount: Math.max(0, (item.likesCount ?? 0) + (item.isLikedByViewer ? -1 : 1)),
         } : item));
       },
-      error: () => this.busyPickIds.update((current) => { const next = new Set(current); next.delete(pick.id); return next; }),
+      error: () => {
+        if (this.templateId === templateId) this.busyPickIds.update((current) => { const next = new Set(current); next.delete(pick.id); return next; });
+      },
     });
   }
   protected optionPoster(option: PicksOptionView): string | null { const card = option.preview?.contentCard; return tmdbImageUrl(card?.customPosterUrl || card?.posterPath || option.preview?.person?.profileUrl, 'w342'); }
@@ -163,9 +206,16 @@ export class PickTemplateComponent {
     event.preventDefault(); const text = this.commentText().trim();
     if (!text || this.postingComment()) return;
     this.postingComment.set(true);
-    this.api.createTemplateComment(this.templateId, { text, containsSpoiler: this.commentSpoiler() }).subscribe({
-      next: (comment) => { this.comments.update((items) => [comment, ...items]); this.commentText.set(''); this.commentSpoiler.set(false); this.postingComment.set(false); },
-      error: () => { this.postingComment.set(false); this.toasts.error(this.copy.commentError); },
+    const templateId = this.templateId;
+    this.api.createTemplateComment(templateId, { text, containsSpoiler: this.commentSpoiler() }).subscribe({
+      next: (comment) => {
+        if (this.templateId !== templateId) return;
+        this.comments.update((items) => [comment, ...items]); this.commentText.set(''); this.commentSpoiler.set(false); this.postingComment.set(false);
+      },
+      error: () => {
+        if (this.templateId !== templateId) return;
+        this.postingComment.set(false); this.toasts.error(this.copy.commentError);
+      },
     });
   }
   protected updateComment(event: Event): void { this.commentText.set((event.target as HTMLTextAreaElement).value); }
@@ -175,16 +225,13 @@ export class PickTemplateComponent {
   protected progressLabel(pick: PicksTemplatePickView): string { return this.copy.progress.replace('{answered}', String(pick.answeredCategoriesCount)).replace('{total}', String(pick.totalCategoriesCount)); }
   protected previewAnswers(pick: PicksTemplatePickView): PicksAnswer[] { return pick.answeredCategories.slice(0, 3); }
 
-  private loadOptionViews(template: PicksTemplateDetail): void {
-    const requests = template.categories.filter((category) => category.optionMode === 'FIXED' && category.options?.length)
-      .map((category) => this.api.getTemplateOptionViews(template.id, category.id));
-    if (!requests.length) { this.optionViews.set(new Map()); return; }
-    forkJoin(requests).subscribe({
-      next: (pages) => {
-        const fixed = template.categories.filter((category) => category.optionMode === 'FIXED' && category.options?.length);
-        this.optionViews.set(new Map(fixed.map((category, index) => [category.id, pages[index].content])));
-      },
-      error: () => this.optionViews.set(new Map()),
-    });
+  private loadOptionViews(template: PicksTemplateDetail) {
+    const fixed = template.categories.filter((category) => category.optionMode === 'FIXED' && category.options?.length);
+    if (!fixed.length) return of(new Map<string, PicksOptionView[]>());
+
+    return forkJoin(fixed.map((category) => this.api.getTemplateOptionViews(template.id, category.id))).pipe(
+      map((pages) => new Map(fixed.map((category, index) => [category.id, pages[index].content]))),
+      catchError(() => of(new Map<string, PicksOptionView[]>())),
+    );
   }
 }
