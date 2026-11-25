@@ -85,6 +85,26 @@ export interface PicksMyPickPage {
   hasNext: boolean;
 }
 
+export interface PicksMyListCard {
+  id: string;
+  picksTemplate: {
+    name: string;
+    coverImage: string | null;
+    creator: { username: string | null; name: string | null; profilePicture: string | null } | null;
+  };
+  visibility: PicksMyPickCard['visibility'];
+  createdAt: string;
+  answeredCategoriesCount: number;
+  totalCategoriesCount: number;
+  answeredCategories: Array<{ categoryId: string; name: string }>;
+  likesCount: number;
+  commentsCount: number;
+}
+
+export type PicksMyListPage = Omit<PicksMyPickPage, 'content' | 'backdropPath'> & {
+  content: PicksMyListCard[];
+};
+
 export interface PicksTemplateCategory {
   id: string;
   name: string;
@@ -244,6 +264,15 @@ export class PicksApiService {
   getMyPicksView(page = 1, size = 10): Observable<PicksMyPickPage> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<PicksMyPickPage>('/api/v1/users/me/picks/view', { params });
+  }
+
+  getMyPicksList(page = 1, size = 10): Observable<PicksMyListPage> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PicksMyListPage>('/api/v1/users/me/picks/list', { params });
+  }
+
+  getMyTotals(): Observable<{ picksCount: number | null; templatesCount: number | null }> {
+    return this.http.get<{ picksCount: number | null; templatesCount: number | null }>('/api/v1/users/me/picks/totals');
   }
 
   getMyTemplates(options: { page?: number; size?: number; sort?: PicksTemplateSort } = {}): Observable<PicksTemplatePage> {

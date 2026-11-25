@@ -150,8 +150,16 @@ export class PicksExploreComponent {
   protected dateLabel(date: string | null): string { return date ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date)) : ''; }
 
   private loadStats(): void {
-    this.api.getMyPicksView(1, 1).subscribe({ next: (page) => this.myPicksCount.set(page.totalElements), error: () => this.myPicksCount.set(null) });
-    this.api.getMyTemplates({ page: 1, size: 1 }).subscribe({ next: (page) => this.myTemplatesCount.set(page.totalElements), error: () => this.myTemplatesCount.set(null) });
+    this.api.getMyTotals().subscribe({
+      next: ({ picksCount, templatesCount }) => {
+        this.myPicksCount.set(picksCount);
+        this.myTemplatesCount.set(templatesCount);
+      },
+      error: () => {
+        this.myPicksCount.set(null);
+        this.myTemplatesCount.set(null);
+      },
+    });
   }
 
   private fail(error: unknown): void {

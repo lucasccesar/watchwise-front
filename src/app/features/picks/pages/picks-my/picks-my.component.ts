@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PicksApiService, PicksMyPickCard, PicksMyPickPage, PicksTemplatePage, PicksTemplatePreview } from '../../data-access/picks-api.service';
+import { PicksApiService, PicksMyListCard, PicksMyListPage, PicksTemplatePage, PicksTemplatePreview } from '../../data-access/picks-api.service';
 import { messageCatalog } from '../../../../shared/i18n/messages';
 import { PicksPageHeroComponent } from '../../shared/picks-page-hero.component';
 import { PageSkeletonComponent } from '../../../../shared/components/page-skeleton/page-skeleton.component';
@@ -22,7 +22,7 @@ export class PicksMyComponent {
   protected readonly pickCopy = messageCatalog['pt-BR'].pickTemplatePage;
   protected readonly status = signal<PicksLoadState>('loading');
   protected readonly page = signal(1);
-  protected readonly picks = signal<PicksMyPickPage | null>(null);
+  protected readonly picks = signal<PicksMyListPage | null>(null);
   protected readonly templatesPageNumber = signal(1);
   protected readonly templates = signal<PicksTemplatePage | null>(null);
   protected readonly templatesStatus = signal<PicksLoadState>('loading');
@@ -37,7 +37,6 @@ export class PicksMyComponent {
       .replace('{picks}', new Intl.NumberFormat('pt-BR').format(page.totalElements))
       .replace('{templates}', new Intl.NumberFormat('pt-BR').format(templates));
   });
-  protected readonly backdropPath = computed(() => this.picks()?.backdropPath ?? null);
 
   private readonly api = inject(PicksApiService);
   private readonly pageSize = 10;
@@ -51,7 +50,7 @@ export class PicksMyComponent {
   protected load(): void {
     this.status.set('loading');
     this.error.set('');
-    this.api.getMyPicksView(this.page(), this.pageSize).subscribe({
+    this.api.getMyPicksList(this.page(), this.pageSize).subscribe({
       next: (page) => { this.picks.set(page); this.status.set('ready'); },
       error: (error: unknown) => {
         this.status.set('error');
@@ -100,15 +99,15 @@ export class PicksMyComponent {
     this.loadTemplates();
   }
 
-  protected trackPick(_index: number, pick: PicksMyPickCard): string { return pick.id; }
-  protected pickRoute(pick: PicksMyPickCard): string[] { return ['/picks', pick.id]; }
+  protected trackPick(_index: number, pick: PicksMyListCard): string { return pick.id; }
+  protected pickRoute(pick: PicksMyListCard): string[] { return ['/picks', pick.id]; }
   protected templateRoute(template: PicksTemplatePreview): string[] { return ['/picks/templates', template.id]; }
   protected trackTemplate(_index: number, template: PicksTemplatePreview): string { return template.id; }
   protected templateOriginLabel(template: PicksTemplatePreview): string { return template.origin === 'OFFICIAL' ? this.copy.official : this.copy.community; }
   protected templateCountLabel(): string { return this.countLabel(this.templateCount() ?? 0); }
-  protected creatorName(pick: PicksMyPickCard): string { return pick.picksTemplate.creator?.name || pick.picksTemplate.creator?.username || this.copy.unknownCreator; }
-  protected creatorHandle(pick: PicksMyPickCard): string | null { return pick.picksTemplate.creator?.username ? '@' + pick.picksTemplate.creator.username : null; }
-  protected visibilityLabel(pick: PicksMyPickCard): string {
+  protected creatorName(pick: PicksMyListCard): string { return pick.picksTemplate.creator?.name || pick.picksTemplate.creator?.username || this.copy.unknownCreator; }
+  protected creatorHandle(pick: PicksMyListCard): string | null { return pick.picksTemplate.creator?.username ? '@' + pick.picksTemplate.creator.username : null; }
+  protected visibilityLabel(pick: PicksMyListCard): string {
     if (pick.visibility === 'FOLLOWERS') return this.pickCopy.followers;
     if (pick.visibility === 'PRIVATE') return this.pickCopy.private;
     return this.pickCopy.public;
@@ -117,16 +116,16 @@ export class PicksMyComponent {
     if (!date) return '';
     return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date));
   }
-  protected progressLabel(pick: PicksMyPickCard): string {
+  protected progressLabel(pick: PicksMyListCard): string {
     return this.copy.pickProgress
       .replace('{answered}', new Intl.NumberFormat('pt-BR').format(pick.answeredCategoriesCount))
       .replace('{total}', new Intl.NumberFormat('pt-BR').format(pick.totalCategoriesCount));
   }
-  protected progressPercent(pick: PicksMyPickCard): number {
+  protected progressPercent(pick: PicksMyListCard): number {
     if (!pick.totalCategoriesCount) return 0;
     return Math.min(100, Math.round((pick.answeredCategoriesCount / pick.totalCategoriesCount) * 100));
   }
-  protected extraAnswers(pick: PicksMyPickCard): number {
+  protected extraAnswers(pick: PicksMyListCard): number {
     return Math.max(0, pick.answeredCategoriesCount - (pick.answeredCategories?.length ?? 0));
   }
   protected countLabel(count: number): string {
