@@ -1,14 +1,17 @@
 import '@angular/compiler';
-import { Injector, runInInjectionContext } from '@angular/core';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { DOCUMENT } from '@angular/common';
+import { Injector, Renderer2, runInInjectionContext } from '@angular/core';
+import { DomSanitizer, Title } from '@angular/platform-browser';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { NEVER, of, Subject, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthSessionService } from '../../../../core/session/session.service';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
 import { ContentApiService } from '../../data-access/content-api.service';
 import { EpisodeComponent } from './episode.component';
 
 const result = (content: any[], page = 1, hasNext = true) => ({ content, page, size: 20, totalElements: 40, totalPages: 2, hasNext });
-const episode = () => ({ details: { contentId: 'episode-id', type: 'EPISODE', runtimeMinutes: 25 }, viewerState: { myRating: 5, myReview: 'Anterior', latestDiaryEntryId: 'watch-id', lastWatchedDate: '2024-02-03', watchStatus: 'WATCHED' }, navigation: { seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 1, seasonEpisodeCount: 3, previousEpisode: { seriesTmdbId: 'show', seasonNumber: 1, episodeNumber: 9 }, nextEpisode: { seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 2 } } });
+const episode = () => ({ details: { contentId: 'episode-id', type: 'EPISODE', runtimeMinutes: 25 }, viewerState: { myRating: 5, myReview: 'Anterior', latestDiaryEntryId: 'watch-id', lastWatchedDate: '2024-02-03', watchStatus: 'WATCHED' }, navigation: { seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 1, seasonEpisodeCount: 3, previousEpisode: { type: 'EPISODE', seriesTmdbId: 'show', seasonNumber: 1, episodeNumber: 9 }, nextEpisode: { type: 'EPISODE', seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 2 } } });
 function episodePage() {
   const params = new Subject<ReturnType<typeof convertToParamMap>>();
   const api = {
@@ -18,6 +21,12 @@ function episodePage() {
     updateDiaryEntry: vi.fn().mockReturnValue(NEVER), createSeriesDiaryEntry: vi.fn().mockReturnValue(NEVER), createComment: vi.fn().mockReturnValue(NEVER),
   };
   const injector = Injector.create({ providers: [
+    { provide: ToastNotificationsService, useValue: { success: vi.fn(), error: vi.fn() } },
+    { provide: DOCUMENT, useValue: { baseURI: 'http://localhost/', head: {} } },
+    { provide: Renderer2, useValue: { createElement: vi.fn(() => ({})), setAttribute: vi.fn(), appendChild: vi.fn(), removeChild: vi.fn() } },
+    { provide: Router, useValue: { getCurrentNavigation: () => null, navigateByUrl: vi.fn() } },
+    { provide: Title, useValue: { setTitle: vi.fn() } },
+    { provide: DomSanitizer, useValue: { bypassSecurityTrustResourceUrl: vi.fn() } },
     { provide: ActivatedRoute, useValue: { paramMap: params } }, { provide: ContentApiService, useValue: api },
     { provide: AuthSessionService, useValue: { user: () => ({ id: 'viewer' }) } },
   ] });
@@ -27,35 +36,50 @@ function episodePage() {
 }
 
 describe('Episode review fixes', () => {
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
   it('edits the latest diary opinion without replacing its existing watch date or creating a watch', () => {
     const { page, api } = episodePage();
+    page.openRating();
     page.selectedRating.set(8);
     page.reviewText.set('Alterada');
-    page.saveRating();
-    expect(api.updateDiaryEntry).toHaveBeenCalledWith('watch-id', { score: 8, comment: 'Alterada' });
+    page.saveWatch();
+    expect(api.updateDiaryEntry).toHaveBeenCalledWith('watch-id', { watchedDate: '2024-02-03', score: 8, comment: 'Alterada' });
     expect(api.createSeriesDiaryEntry).not.toHaveBeenCalled();
     expect(page.page().viewerState.lastWatchedDate).toBe('2024-02-03');
   });
   it('can remove an existing review comment without creating a watch', () => {
     const { page, api } = episodePage();
+    page.openRating();
     page.selectedRating.set(8);
     page.reviewText.set('  ');
-    page.saveRating();
-    expect(api.updateDiaryEntry).toHaveBeenCalledWith('watch-id', { score: 8, comment: '' });
+    page.saveWatch();
+    expect(api.updateDiaryEntry).toHaveBeenCalledWith('watch-id', { watchedDate: '2024-02-03', score: 8, comment: '' });
+    expect(api.createSeriesDiaryEntry).not.toHaveBeenCalled();
   });
   it('uses POST for a first rating/viewing when no diary entry exists', () => {
     const { page, api } = episodePage();
     page.page.update((value: any) => ({ ...value, viewerState: { ...value.viewerState, latestDiaryEntryId: null } }));
+    page.openRating();
+    page.selectWatchDate('2024-02-04');
     page.selectedRating.set(7);
-    page.saveRating();
+    page.saveWatch();
     expect(api.updateDiaryEntry).not.toHaveBeenCalled();
-    expect(api.createSeriesDiaryEntry).toHaveBeenCalledWith(expect.objectContaining({ content: { type: 'EPISODE', seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 1, runtimeMinutes: 25 }, score: 7 }));
+    expect(api.createSeriesDiaryEntry).toHaveBeenCalledWith(expect.objectContaining({ content: { type: 'EPISODE', seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 1 }, watchedDate: '2024-02-04', score: 7 }));
   });
   it('keeps explicit rewatch separate from editing', () => {
+    vi.stubGlobal('HTMLElement', class {});
     const { page, api } = episodePage();
     page.markWatched();
-    expect(api.createSeriesDiaryEntry).toHaveBeenCalledWith(expect.objectContaining({ isRewatch: true }));
+    expect(page.watchLogOpen()).toBe(true);
+    expect(api.createSeriesDiaryEntry).not.toHaveBeenCalled();
+    page.saveWatchLog({ watchedDate: '2024-02-04', isRewatch: true });
+    expect(api.createSeriesDiaryEntry).toHaveBeenCalledWith({
+      content: { type: 'EPISODE', seriesTmdbId: 'show', seasonNumber: 2, episodeNumber: 1 },
+      watchedDate: '2024-02-04', isRewatch: true,
+    });
     expect(api.updateDiaryEntry).not.toHaveBeenCalled();
   });
   it('uses authoritative adjacent navigation even when series.details.episodes is empty', () => {

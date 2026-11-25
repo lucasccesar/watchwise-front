@@ -404,7 +404,7 @@ export class EpisodeComponent implements OnDestroy {
       comment: this.reviewText().trim() || null,
     };
     const request = diaryEntryId
-      ? this.api.updateDiaryEntry(diaryEntryId, changes)
+      ? this.api.updateDiaryEntry(diaryEntryId, { ...changes, comment: changes.comment ?? '' })
       : this.api.createSeriesDiaryEntry({
           ...changes,
           content: { type: 'EPISODE', seriesTmdbId: this.tmdbId(), seasonNumber: this.seasonNumber(), episodeNumber: this.episodeNumber() },
