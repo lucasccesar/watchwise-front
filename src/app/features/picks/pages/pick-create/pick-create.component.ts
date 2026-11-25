@@ -147,7 +147,7 @@ export class PickCreateComponent implements OnDestroy {
     if (!categories.length || categories.some((item) => !item.name.trim())) { this.step.set(2); this.formError.set(this.copy.categoryNameRequired); return; }
     if (categories.some((item) => item.optionMode === 'FIXED' && (!item.options.length || item.pendingNames.length))) { this.step.set(3); this.formError.set(this.copy.optionsRequired); return; }
     const requestCategories: PicksTemplateCategoryInput[] = categories.map((item, index) => ({
-      name: item.name.trim(), description: item.description.trim() || null, group: item.group, displayOrder: index, allowedType: item.allowedType, optionMode: item.optionMode,
+      name: item.name.trim(), description: item.description.trim() || null, group: item.group, displayOrder: index + 1, allowedType: item.allowedType, optionMode: item.optionMode,
       ...(item.optionMode === 'FIXED' ? { options: item.options.map((option) => ({ target: option.target })) } : {}),
     }));
     this.creating.set(true); this.formError.set('');
