@@ -1,5 +1,5 @@
 import '@angular/compiler';
-import { signal } from '@angular/core';
+import { Injector, runInInjectionContext, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -11,6 +11,8 @@ import {
   TrendingResponse,
   TrendingType,
 } from '../../data-access/trending-api.service';
+import { ToastNotificationsService } from '../../../../shared/components/toast-notifications/toast-notifications.service';
+import { ContentApiService } from '../../../content/data-access/content-api.service';
 import { TrendingComponent } from './trending.component';
 import type { PostWatchRatingTarget } from '../../../../shared/components/post-watch-rating-flow/post-watch-rating-flow.component';
 import type { SeriesBulkWatchSubmission } from '../../../../shared/components/series-bulk-watch-dialog/series-bulk-watch-dialog.component';
@@ -49,6 +51,13 @@ function read(component: TrendingComponent) {
   };
 }
 
+function createTrending(api: TrendingApiService, session: AuthSessionService, router: Router) {
+  const injector = Injector.create({ providers: [
+    { provide: ToastNotificationsService, useValue: { success: vi.fn(), error: vi.fn() } },
+  ] });
+  return runInInjectionContext(injector, () => new TrendingComponent(api, {} as ContentApiService, session, router));
+}
+
 describe('TrendingComponent', () => {
   it('replaces the initial 12 cards with the expanded first page', () => {
     const expanded: TrendingResponse = {
@@ -60,7 +69,7 @@ describe('TrendingComponent', () => {
       getTrending: vi.fn().mockReturnValue(of(initial)),
       getSection: vi.fn().mockReturnValue(of(expanded)),
     };
-    const component = new TrendingComponent(
+    const component = createTrending(
       api as unknown as TrendingApiService,
       {} as AuthSessionService,
       {} as Router,
@@ -83,7 +92,7 @@ describe('TrendingComponent', () => {
         .fn()
         .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 }))),
     };
-    const component = new TrendingComponent(
+    const component = createTrending(
       api as unknown as TrendingApiService,
       session as unknown as AuthSessionService,
       router as unknown as Router,

@@ -8,7 +8,8 @@ describe('Content opinion request contracts', () => {
     const http = { put: vi.fn().mockReturnValue(of({ score: 8, version: 8 })) };
     const service = new ContentApiService(http as never) as any;
     service.setContentRating('season/id', 8, expectedVersion).subscribe();
-    expect(http.put).toHaveBeenCalledWith('/api/v1/contents/season%2Fid/my-rating', { score: 8, expectedVersion });
+    const body = expectedVersion === null ? { score: 8 } : { score: 8, expectedVersion };
+    expect(http.put).toHaveBeenCalledExactlyOnceWith('/api/v1/contents/season%2Fid/my-rating', body);
   });
   it('patches an existing diary opinion without content, watch count, or date changes', () => {
     const http = { patch: vi.fn().mockReturnValue(of({})) };

@@ -3,6 +3,7 @@ import { Injector, runInInjectionContext } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NEVER, of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ToastNotificationsService } from '../../../shared/components/toast-notifications/toast-notifications.service';
 import { ContentApiService } from '../../content/data-access/content-api.service';
 import { SearchApiService } from '../../search-content/data-access/search-api.service';
 import { PicksApiService } from '../data-access/picks-api.service';
@@ -20,6 +21,7 @@ describe('Picks episode selection', () => {
       getSeriesSeasons: vi.fn().mockReturnValue(of(seasons)), getSeasonEpisodes: vi.fn().mockReturnValue(of([episode])),
     };
     const injector = Injector.create({ providers: [
+      { provide: ToastNotificationsService, useValue: { success: vi.fn(), error: vi.fn() } },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'template' } } } },
       { provide: Router, useValue: {} }, { provide: ContentApiService, useValue: api },
       { provide: SearchApiService, useValue: {} }, { provide: PicksApiService, useValue: { getTemplate: () => NEVER } },
