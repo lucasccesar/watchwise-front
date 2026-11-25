@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { Observable, catchError, finalize, map, of, shareReplay, switchMap, tap } from 'rxjs';
+import { Observable, catchError, finalize, of, shareReplay, switchMap, tap } from 'rxjs';
 import type { AuthenticatedUser } from '../../features/auth/data-access/auth-api.service';
 
 export interface SessionUser {
@@ -16,7 +16,7 @@ export interface SessionUser {
   preferredRegion?: string | null;
 }
 
-interface CurrentUserResponse extends SessionUser {}
+const SESSION_IDENTITY_URL = '/api/v1/users/me/session';
 
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
@@ -61,14 +61,13 @@ export class AuthSessionService {
   }
 
   private fetchCurrentUser(): Observable<SessionUser | null> {
-    return this.http.get<CurrentUserResponse>('/api/v1/users/me').pipe(
+    return this.http.get<SessionUser>(SESSION_IDENTITY_URL).pipe(
       catchError((error: unknown) => {
         if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
           return of(null);
         }
         return this.http.post<void>('/api/v1/auth/refresh', null).pipe(
-          switchMap(() => this.http.get<CurrentUserResponse>('/api/v1/users/me')),
-          map((user) => user as SessionUser),
+          switchMap(() => this.http.get<SessionUser>(SESSION_IDENTITY_URL)),
           catchError(() => of(null)),
         );
       }),
