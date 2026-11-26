@@ -549,6 +549,20 @@ export class DiaryReviewDetailComponent {
       ).subscribe({ next: (page: SeriesPage) => { this.parentTitle.set(page.details.title || ''); this.setBackdrop(page.details.backdropPath); } });
       return;
     }
+    if (ref.type === 'MOVIE') {
+      this.backdrop.set(null);
+      if (!ref.id) return;
+
+      this.api.getMovieDetails(ref.id).subscribe({
+        next: (details) => {
+          if (this.entry()?.id === entry.id && details.contentId === ref.id && details.type === 'MOVIE') {
+            this.setBackdrop(details.backdropPath);
+          }
+        },
+        error: () => { /* The record and its poster are available without a backdrop. */ },
+      });
+      return;
+    }
     if (ref.id) {
       this.api.getPage(ref.id).subscribe({ next: (page) => this.setBackdrop(page.details.backdropPath) });
     }

@@ -654,6 +654,12 @@ export class ContentApiService {
     return this.http.get<ContentPage>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`);
   }
 
+  getMovieDetails(contentId: string): Observable<Pick<MovieDetails, 'contentId' | 'type' | 'backdropPath'>> {
+    return this.http.get<Pick<MovieDetails, 'contentId' | 'type' | 'backdropPath'>>(
+      `/api/v1/contents/${encodeURIComponent(contentId)}/details`,
+    );
+  }
+
   getSeriesPage(contentId: string): Observable<SeriesPage> {
     return this.http
       .get<SeriesPageResponse>(`/api/v1/contents/${encodeURIComponent(contentId)}/page`)
