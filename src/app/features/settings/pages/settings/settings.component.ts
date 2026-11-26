@@ -14,7 +14,7 @@ import {
 } from '../../../notifications/data-access/notifications-api.service';
 import {
   BlockedUserRecord,
-  SettingsView,
+  SettingsForm,
   SettingsApiService,
   UpdateUserSettingsRequest,
   UserSettingsUpdate,
@@ -89,7 +89,7 @@ export class SettingsComponent {
   protected readonly loadingMoreBlockedUsers = signal(false);
   protected readonly blockedUserActionId = signal<string | null>(null);
   protected readonly blockedUsersError = signal('');
-  protected readonly settingsBaseline = signal<SettingsView | null>(null);
+  protected readonly settingsBaseline = signal<SettingsForm | null>(null);
   protected readonly isProfileDirty = computed(() => {
     const baseline = this.settingsBaseline();
     if (!baseline) return false;
@@ -483,7 +483,7 @@ export class SettingsComponent {
   }
 
   private loadSettings(onLoaded?: () => void): void {
-    this.settingsApi.getSettings().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.settingsApi.getSettingsForm().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (settings) => {
         this.applySettings(settings);
         onLoaded?.();
@@ -495,7 +495,7 @@ export class SettingsComponent {
     });
   }
 
-  private applySettings(settings: SettingsView): void {
+  private applySettings(settings: SettingsForm): void {
     this.settingsBaseline.set(settings);
     this.settingsLoaded.set(true);
     this.displayName.set(settings.profile.name ?? '');

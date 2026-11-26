@@ -33,7 +33,7 @@ export interface SettingsConnectionPreview {
   profilePicture: string | null;
 }
 
-export interface SettingsView {
+export interface SettingsForm {
   profile: {
     id: string;
     username: string;
@@ -43,6 +43,14 @@ export interface SettingsView {
     banner: string | null;
     isProfilePublic: boolean | null;
   };
+  contentPreferences: {
+    preferredLanguage: string | null;
+    preferredRegion: string | null;
+  };
+  account: { email: string };
+}
+
+export interface SettingsView extends SettingsForm {
   privacy: {
     followersCount: number;
     followingCount: number;
@@ -51,11 +59,6 @@ export interface SettingsView {
     blockedUsersCount: number;
     blockedUsers: SettingsConnectionPreview[];
   };
-  contentPreferences: {
-    preferredLanguage: string | null;
-    preferredRegion: string | null;
-  };
-  account: { email: string };
 }
 
 export interface UserSettingsUpdate {
@@ -91,6 +94,10 @@ export class SettingsApiService {
 
   getSettings(): Observable<SettingsView> {
     return this.http.get<SettingsView>('/api/v1/users/me/settings');
+  }
+
+  getSettingsForm(): Observable<SettingsForm> {
+    return this.http.get<SettingsForm>('/api/v1/users/me/settings/form');
   }
 
   updateUser(settings: UpdateUserSettingsRequest): Observable<UserSettingsUpdate> {
